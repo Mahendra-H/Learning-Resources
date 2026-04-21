@@ -1,6 +1,35 @@
 # SAML 2.0 + IAM Concepts — Complete Reference Guide
 
-> **Scope:** SAML 2.0 protocol, SP-initiated and IdP-initiated SSO, Single Logout, building blocks (assertions, protocols, bindings, profiles, metadata), application onboarding end-to-end, security attacks and hardening, IAM fundamentals (identity lifecycle, AD/LDAP, SCIM, RBAC, ABAC, JIT, PAM), and SAML vs OIDC comparison. Apigee and PingFederate configuration are covered in the separate Apigee track.
+> **Scope:** SAML 2.0 protocol, SP-initiated and IdP-initiated SSO, Single Logout, building blocks, application onboarding, security hardening, IAM fundamentals (identity lifecycle, AD/LDAP, SCIM, IGA, RBAC, ABAC, JIT, PAM), and SAML vs OIDC comparison. Apigee and PingFederate configuration are a separate track.
+
+---
+
+## 🗺️ Learning Roadmap
+
+```
+Phase 1 — Foundations        Phase 2 — The SSO Flows      Phase 3 — Onboarding
+┌──────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+│ M1: What SAML is     │  →  │ M3: SP-initiated SSO │  →  │ M5: App onboarding   │
+│ M2: Building blocks  │     │ M4: IdP-init + SLO   │     │     end-to-end       │
+└──────────────────────┘     └──────────────────────┘     └──────────────────────┘
+                                        ↓
+Phase 4 — Security           Phase 5 — IAM Concepts        Phase 6 — Production
+┌──────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+│ M6: Attacks +        │  →  │ M7: Identity          │  →  │ M9: Use cases +      │
+│     hardening        │     │     lifecycle + IGA   │     │     SAML vs OIDC     │
+└──────────────────────┘     │ M8: RBAC, ABAC, JIT  │     └──────────────────────┘
+                              └──────────────────────┘
+```
+
+| Symbol | Meaning |
+|:---:|---|
+| 💡 | Core concept |
+| 🔐 | Security critical |
+| 🏭 | Production pattern |
+| ⚠️ | Common mistake / pitfall |
+| 📖 | Real-world example |
+| 🔧 | Configuration |
+| 🛠️ | Debugging |
 
 ---
 
@@ -14,101 +43,105 @@
 6. [Module 6 — SAML security attacks and hardening](#module-6)
 7. [Module 7 — IAM fundamentals](#module-7)
 8. [Module 8 — Authorisation models: RBAC, ABAC, JIT, PAM](#module-8)
-9. [Module 9 — Production use cases + SAML vs OIDC decision guide](#module-9)
-10. [Quick Reference — Cheat Sheet](#quick-reference)
+9. [Module 9 — Production use cases + SAML vs OIDC](#module-9)
+10. [Quick Reference Cheat Sheet](#quick-reference)
 
 ---
 
 ## Module 1 — What SAML is and why it exists {#module-1}
 
-### The enterprise problem
+### 💡 The enterprise problem SAML was built to solve
 
-Before SAML, enterprises had a painful reality: 15 apps meant 15 passwords, 15 separate account databases, and when someone left the company, IT had to manually disable accounts in every system — and often missed some.
+Before SAML, enterprises had a painful reality: 15 apps meant 15 different passwords, 15 separate account databases, and when someone left the company, IT had to manually disable 15 accounts — and often missed some.
 
-SAML (Security Assertion Markup Language) was built in 2002 to solve this: one verified identity, one login, access everywhere — including across organisational boundaries.
-
-```
-Before SAML:                          After SAML:
-────────────                          ────────────
-User has 15 different passwords       User has 1 corporate password
-IT provisions 15 accounts manually    IT manages 1 identity in AD
-Leaver: 15 manual account disables   Leaver: disable 1 AD account = all access revoked
-Password resets = IT helpdesk chaos   Self-service MFA resets at IdP only
-```
-
-### The three actors
+> **📖 Year 2001, large bank:** A relationship manager has separate logins for Salesforce (CRM), Bloomberg (data), risk management system, treasury platform, email, SharePoint, JIRA, the expense system, and seven more. When she leaves the company, her manager emails IT. IT remembers to disable AD, Salesforce, and email — but misses the Bloomberg terminal. Six months later, her Bloomberg credentials are still active.
 
 ```
-┌─────────────────┐                    ┌─────────────────┐
-│    Principal    │ ─── authenticates ─▶│      IdP        │
-│   (the user)    │                    │ (Identity       │
-│                 │                    │  Provider)      │
-│  Has identity   │                    │ PingFed / Okta  │
-│  at the IdP     │                    │ Azure AD / ADFS │
-└────────┬────────┘                    └────────┬────────┘
-         │                                      │
-         │ wants access                         │ issues signed
-         │                                      │ SAML Assertion
-         ▼                                      ▼
-┌─────────────────────────────────────────────────────────┐
-│                Service Provider (SP)                     │
-│          Salesforce / Workday / ServiceNow / AWS         │
-│  Trusts assertions from the IdP · Grants access based    │
-│  on the assertion content · Never sees user's password   │
-└─────────────────────────────────────────────────────────┘
-
-         ◄──── Pre-established trust via metadata exchange ────►
+Before SAML                           After SAML
+──────────────────────────────────    ──────────────────────────────────
+Employee has 15 separate passwords    Employee has 1 corporate password
+IT provisions 15 accounts manually   IT manages 1 identity in AD
+Leaver: 15 manual disables           Leaver: 1 AD disable = all access gone
+Helpdesk flooded with password resets One MFA reset fixes everything
+One breach = multiple systems at risk One credential scope limited by time
 ```
 
-| Actor | Role | Examples |
+### 💡 The three actors
+
+```mermaid
+graph TD
+    P["👤 Principal\n(the user / employee)"]
+    IdP["🔐 Identity Provider\nPingFed / Okta / Azure AD / ADFS\nAuthenticates users · Issues assertions"]
+    SP["📱 Service Provider\nSalesforce / Workday / ServiceNow\nTrusts IdP · Grants access on assertion"]
+
+    P -- "1 · authenticates" --> IdP
+    IdP -- "2 · signed SAML\n    Assertion" --> SP
+    SP -- "3 · access granted" --> P
+
+    P -.->|"wants access to"| SP
+    IdP <-.->|"pre-established trust\nvia metadata exchange"| SP
+```
+
+| Actor | Role | Real-world examples |
 |---|---|---|
-| Principal | The user who wants access. Has an account at the IdP (usually AD). Never interacts directly with SAML XML. | Employees, contractors, partners |
-| Identity Provider (IdP) | Authenticates the user. Issues signed SAML Assertions. Source of truth for identity. | PingFederate, Okta, Azure AD, ADFS, Google Workspace |
-| Service Provider (SP) | The application. Trusts the IdP. Validates the assertion. Creates a local session. | Salesforce, Workday, ServiceNow, AWS, any SaaS app |
+| **Principal** | The user. Has an account at the IdP (usually AD). Never sees SAML XML — it all happens via browser redirects. | Employees, contractors, partners |
+| **Identity Provider (IdP)** | Authenticates users. Issues signed SAML Assertions. The trust authority. | PingFederate, Okta, Azure AD, ADFS, Google Workspace |
+| **Service Provider (SP)** | The app. Trusts the IdP. Validates the assertion. Creates a local session. Never sees the user's password. | Salesforce, Workday, ServiceNow, AWS, any SaaS app |
 
-### What SAML is and is not
+### 💡 What SAML is and is not
 
-- **SAML IS:** an authentication AND attribute federation protocol. It answers: "who is this user?" AND "what are their attributes (roles, department)?"
-- **SAML IS NOT:** an authorisation protocol for APIs. It doesn't issue access tokens for API calls.
-- **SAML IS NOT:** a user provisioning protocol. It handles login, not account lifecycle. SCIM handles provisioning.
+```
+SAML IS:    An authentication + attribute federation protocol
+            Answers: "Who is this user?" + "What are their attributes?"
+            Designed for: SSO between organisations and across apps
 
-### SAML vs OAuth/OIDC vs both
+SAML IS NOT: An authorisation protocol for APIs
+             It doesn't issue access tokens for API calls (that's OAuth)
+
+SAML IS NOT: A user provisioning protocol
+             It handles login, not account lifecycle (that's SCIM)
+```
+
+### 💡 SAML vs OAuth/OIDC vs both
 
 | Factor | SAML 2.0 | OIDC | OAuth 2.0 |
 |---|---|---|---|
-| Primary purpose | Enterprise SSO + attribute federation | Identity + modern SSO | API authorisation + delegation |
-| Data format | XML (~5KB assertions) | JSON / JWT (compact) | JSON / JWT |
-| Transport | Browser redirects only | Browser + native apps + APIs | Any HTTP client |
-| Mobile support | Poor | Excellent | Excellent |
-| Setup complexity | High (metadata, certs, XML) | Medium | Medium |
-| Enterprise legacy | Dominant | Growing | Universal for APIs |
-| Use when | Enterprise B2B SSO, legacy SaaS | Modern apps, consumer, new builds | API access, microservices |
+| **Primary purpose** | Enterprise SSO + attribute federation | Identity + modern SSO | API authorisation |
+| **Data format** | XML (~5KB assertions) | JSON / JWT (compact) | JSON / JWT |
+| **Transport** | Browser redirects only | Browser + native + APIs | Any HTTP client |
+| **Mobile support** | Poor | Excellent | Excellent |
+| **Setup complexity** | High | Medium | Medium |
+| **Use when** | Legacy enterprise SaaS, B2B federation | Modern apps, new builds | API access, microservices |
 
-**Key insight:** Modern enterprise IdPs (PingFederate, Okta, Azure AD) support all three protocols simultaneously from the same user store. Legacy apps use SAML. Modern apps use OIDC. APIs use OAuth.
+> **🏭 Key insight:** Modern enterprise IdPs (PingFederate, Okta, Azure AD) support all three simultaneously from the same user store. Legacy apps use SAML. Modern apps use OIDC. APIs use OAuth. The IdP bridges all three.
 
 ---
 
 ## Module 2 — SAML building blocks {#module-2}
 
-SAML has four layers: **Assertions** (what is said), **Protocols** (how it is asked/answered), **Bindings** (how messages travel), and **Profiles** (how layers combine for a specific use case). Metadata underpins all of them.
+SAML has four technical layers. Understanding all four is the difference between successful onboarding in 2 days vs weeks of confusing back-and-forth with vendors.
 
-### Layer 1: Assertions
+```
+Layer 4 — Profiles    (Web Browser SSO, Single Logout, ECP)
+               ↑
+Layer 3 — Bindings    (HTTP-Redirect, HTTP-POST, Artifact)
+               ↑
+Layer 2 — Protocols   (AuthnRequest, SAMLResponse, LogoutRequest)
+               ↑
+Layer 1 — Assertions  (Authentication, Attribute, AuthzDecision)
+               ↑
+Foundation — Metadata (establishes trust before any flow can work)
+```
 
-A SAML Assertion is a signed XML document the IdP issues. It is the core artefact of SAML — the signed permission slip that proves who the user is.
+### 💡 Layer 1: Assertions — the signed XML identity claim
 
-Three types of assertions:
-- **Authentication Assertion** — proves the user authenticated (when, how)
-- **Attribute Assertion** — carries the user's attributes (email, roles, department)
-- **Authorisation Decision Assertion** — rarely used; says whether a specific action is permitted
-
-#### Complete annotated SAML Assertion
+A SAML Assertion is a signed XML document that says: *"I have verified this user, here is who they are, here is how they authenticated, here are their attributes."*
 
 ```xml
 <!-- The outer Response wrapper -->
-<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+<samlp:Response
   ID="_resp_8f3a2b1c4d5e6f7a"
-  InResponseTo="_req_1a2b3c4d5e"    <!-- ties back to SP's AuthnRequest -->
-  IssueInstant="2024-04-18T09:30:00Z"
+  InResponseTo="_req_1a2b3c4d5e"     ← ties back to SP's AuthnRequest
   Destination="https://salesforce.com/saml/SSO">
 
   <saml:Issuer>https://pingfed.bank.com</saml:Issuer>
@@ -118,42 +151,41 @@ Three types of assertions:
     <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
   </samlp:Status>
 
-  <saml:Assertion ID="_assert_9g4b3c2d5e6f" IssueInstant="2024-04-18T09:30:00Z">
+  <saml:Assertion ID="_assert_9g4b3c2d5e6f">
 
-    <!-- ① SUBJECT: who the assertion is about -->
+    <!-- ① WHO: the user identifier -->
     <saml:Subject>
-      <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">
-        jane.smith@bank.com
-      </saml:NameID>
-      <saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+      <saml:NameID Format="...emailAddress">jane.smith@bank.com</saml:NameID>
+      <saml:SubjectConfirmation Method="...bearer">
         <saml:SubjectConfirmationData
-          NotOnOrAfter="2024-04-18T09:35:00Z"   <!-- 5-min validity window -->
+          NotOnOrAfter="2024-04-18T09:35:00Z"      ← 5-min validity window
           Recipient="https://salesforce.com/saml/SSO"
-          InResponseTo="_req_1a2b3c4d5e"/>
+          InResponseTo="_req_1a2b3c4d5e"/>          ← links back to request
       </saml:SubjectConfirmation>
     </saml:Subject>
 
-    <!-- ② CONDITIONS: validity window + intended audience -->
+    <!-- ② WHEN: validity window + intended audience -->
     <saml:Conditions NotBefore="2024-04-18T09:29:55Z"
                      NotOnOrAfter="2024-04-18T09:35:00Z">
       <saml:AudienceRestriction>
         <saml:Audience>https://salesforce.com</saml:Audience>
-        <!--            ↑ SP entity ID — assertion is ONLY valid for this SP -->
+        <!--            ↑ SP entity ID — assertion ONLY valid for this SP -->
       </saml:AudienceRestriction>
     </saml:Conditions>
 
-    <!-- ③ AUTHN STATEMENT: how the user authenticated -->
+    <!-- ③ HOW: authentication method used -->
     <saml:AuthnStatement AuthnInstant="2024-04-18T09:29:58Z"
                          SessionIndex="_sess_7h5c4d3e">
+      <!--                             ↑ used by SLO to identify this session -->
       <saml:AuthnContext>
         <saml:AuthnContextClassRef>
           urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
-          <!-- MFA would be: urn:oasis:names:tc:SAML:2.0:ac:classes:MobileTwoFactorUnregistered -->
+          <!-- MFA: ...ac:classes:MobileTwoFactorUnregistered -->
         </saml:AuthnContextClassRef>
       </saml:AuthnContext>
     </saml:AuthnStatement>
 
-    <!-- ④ ATTRIBUTE STATEMENT: user attributes — this drives authorisation -->
+    <!-- ④ ATTRIBUTES: user data that drives authorisation -->
     <saml:AttributeStatement>
       <saml:Attribute Name="email">
         <saml:AttributeValue>jane.smith@bank.com</saml:AttributeValue>
@@ -162,147 +194,215 @@ Three types of assertions:
         <saml:AttributeValue>Relationship_Manager</saml:AttributeValue>
         <saml:AttributeValue>Branch_London_EC2</saml:AttributeValue>
       </saml:Attribute>
-      <saml:Attribute Name="Department">
-        <saml:AttributeValue>Retail Banking</saml:AttributeValue>
-      </saml:Attribute>
     </saml:AttributeStatement>
 
-    <!-- ⑤ SIGNATURE: cryptographic integrity proof -->
-    <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-      <!-- RSA-SHA256 signature over assertion content -->
-      <!-- SP verifies with IdP's public certificate from metadata -->
+    <!-- ⑤ SIGNATURE: cryptographic proof of integrity -->
+    <ds:Signature>
+      <!-- RSA-SHA256 over assertion content -->
+      <!-- SP verifies with IdP's public cert from metadata -->
     </ds:Signature>
 
   </saml:Assertion>
 </samlp:Response>
 ```
 
-**Critical security rule:** always validate the assertion signature specifically — not just the Response-level signature. The XSW attack exploits SPs that only check the outer Response signature.
+> **🔐 Critical rule:** Always validate the **assertion** signature specifically — not just the Response-level signature. The XML Signature Wrapping (XSW) attack exploits SPs that only check the outer Response signature. See Module 6 for the full attack explanation.
 
-#### NameID formats
+### 💡 NameID formats — choosing the right user identifier
 
-| Format | Value | Recommended | Notes |
+| Format | Value example | Stability | Recommendation |
 |---|---|---|---|
-| `emailAddress` | jane@bank.com | No | Email can change — breaks SP accounts |
-| `persistent` | Random opaque ID (stable) | **Yes** | Stable even if email changes |
-| `transient` | Random, changes per session | Privacy use | SP cannot track users across sessions |
-| `unspecified` | Anything (e.g. sAMAccountName) | Legacy only | Must be agreed with SP |
+| `persistent` | `_7f3a2b1c4d5e` (opaque) | Stable forever | ✅ **Recommended** for most cases |
+| `emailAddress` | `jane@bank.com` | Changes if email changes | ⚠️ Breaks SP accounts on email change |
+| `transient` | Random, changes each session | Ephemeral | For privacy — SP cannot track users |
+| `unspecified` | Anything agreed with SP | Varies | Legacy integrations only |
 
-### Layer 2: Protocols
+### 💡 AuthnRequest parameters
 
-**AuthnRequest** — the SP sends this to initiate SP-initiated SSO. Contains: SP entity ID (Issuer), destination (IdP SSO URL), ACS URL (where to return the assertion), NameIDPolicy, RequestedAuthnContext.
+```xml
+<samlp:AuthnRequest
+  ID="_req_1a2b3c4d5e"
+  Destination="https://pingfed.bank.com/idp/SSO.saml2"
+  AssertionConsumerServiceURL="https://salesforce.com/saml/SSO"
+  ForceAuthn="false"
+  <!--
+    ForceAuthn="true"  → Force re-authentication even if IdP session is active
+    Use for: password change flows, wire transfers, sensitive data access
+    The SP demands fresh proof of identity, overriding existing SSO sessions
+  -->
+  IsPassive="false">
+  <!--
+    IsPassive="true"  → Do NOT show a login UI
+    If no active session: return NoPassive error immediately (don't prompt)
+    Use for: silent authentication checks ("is this user still logged in?")
+             background session validation
+    Returns: urn:oasis:names:tc:SAML:2.0:status:NoPassive if no session
+  -->
+  <saml:Issuer>https://salesforce.com</saml:Issuer>
+  <samlp:NameIDPolicy Format="...emailAddress" AllowCreate="true"/>
+</samlp:AuthnRequest>
+```
 
-**SAMLResponse** — the IdP returns this. Contains: InResponseTo (links to AuthnRequest ID), Status (Success/Failure), the Assertion, Signature.
+### 💡 SAML error status codes
 
+When SSO fails, the StatusCode tells you exactly where and why. These are the codes you'll see in production debugging.
+
+```
+Success codes:
+  urn:...status:Success              → All good
+
+Top-level error codes:
+  urn:...status:Requester            → Problem with the SP's request
+                                       (bad AuthnRequest, unknown SP entity ID)
+  urn:...status:Responder            → IdP-side error
+                                       (LDAP down, user not found, internal error)
+  urn:...status:VersionMismatch      → SAML version mismatch
+
+Second-level codes (appear as nested StatusCode):
+  urn:...status:AuthnFailed          → User failed authentication (wrong password, locked)
+  urn:...status:NoPassive            → IsPassive=true but no active session exists
+  urn:...status:RequestDenied        → Policy denied the request (user not in allowed group)
+  urn:...status:InvalidNameIDPolicy  → SP requested NameID format IdP doesn't support
+  urn:...status:UnsupportedBinding   → SP requested binding IdP doesn't support
+```
+
+> **🛠️ Debugging tip:** When a user reports "SSO not working", the status code is the first thing to check. Responder = call the IdP team. Requester = check your SP configuration. AuthnFailed = user credential issue. Start with the SAML-tracer browser extension to see the raw response.
+
+### 💡 Layer 2: Protocols
+
+**AuthnRequest** — SP sends this to initiate SP-initiated SSO.
+**SAMLResponse** — IdP returns this with the signed assertion.
 **LogoutRequest / LogoutResponse** — used for Single Logout propagation.
 
-**Key linkage:** the ID on the AuthnRequest must appear as `InResponseTo` on the SAMLResponse. The SP stores the AuthnRequest ID and validates the response references it — this prevents assertion injection and replay.
+> **🔐 InResponseTo linkage:** The ID on the AuthnRequest must appear as `InResponseTo` on the SAMLResponse. The SP stores the AuthnRequest ID and validates the response references it. This is how the SP knows the response was requested by it — not injected by an attacker.
 
-### Layer 3: Bindings
+### 💡 Layer 3: Bindings — how messages travel
 
-| Binding | Used for | How it works | Size limit |
+| Binding | Used for | Mechanism | Size limit |
 |---|---|---|---|
-| **HTTP-Redirect** | AuthnRequest (SP→IdP) | Deflated, Base64, in URL query string | ~2KB — small messages only |
-| **HTTP-POST** | SAMLResponse (IdP→SP) | Base64 in hidden HTML form, auto-submits | No limit — used for assertions |
-| **Artifact** | High-security back-channel | Reference passed via browser; SP fetches assertion server-to-server | No limit; assertion never in browser |
+| **HTTP-Redirect** | AuthnRequest (SP→IdP) | Deflated, Base64, URL query string | ~2KB — small only |
+| **HTTP-POST** | SAMLResponse (IdP→SP) | Base64 in auto-submitting HTML form | No limit — standard for assertions |
+| **Artifact** | High-security environments | Reference token via browser; SP fetches assertion server-to-server | No limit; assertion never in browser |
 
-The standard Web Browser SSO Profile uses HTTP-Redirect for the AuthnRequest and HTTP-POST for the SAMLResponse.
+```
+Standard Web Browser SSO Profile uses:
+  SP → IdP:  HTTP-Redirect binding  (AuthnRequest in URL)
+  IdP → SP:  HTTP-POST binding      (SAMLResponse in hidden form)
+```
 
-### Layer 4: Profiles
+### 💡 Layer 4: Profiles
 
 | Profile | What it covers |
 |---|---|
 | **Web Browser SSO** | The core profile — SP-initiated and IdP-initiated SSO via browser |
 | **Single Logout (SLO)** | Propagating logout across all SPs with active sessions |
-| **Enhanced Client/Proxy (ECP)** | Non-browser SAML clients (rare — OIDC has replaced this) |
-| **Artifact Resolution** | Back-channel assertion retrieval |
+| **Enhanced Client/Proxy (ECP)** | Non-browser clients (rare — OIDC replaced this use case) |
+| **Artifact Resolution** | Back-channel assertion retrieval (high-security environments) |
 
-### Metadata
+### 💡 Metadata — the foundation of SAML trust
 
-Before any SAML flow can work, IdP and SP exchange metadata XML. This is a one-time setup that establishes trust.
+> **🔐 Metadata is the foundation of SAML security.** The signing certificate in metadata is what each party uses to verify messages. Configure the wrong certificate, and every assertion fails. An attacker who can replace the certificate in metadata can forge assertions. Protect metadata endpoints with TLS and access controls.
 
-**What IdP metadata contains:**
-- IdP Entity ID (the IdP's unique identifier)
-- SSO service URL (where SP should redirect for authentication)
-- SLO service URL (where logout requests go)
-- **Signing certificate** (public key SP uses to verify all assertions)
-- Supported NameID formats
+**IdP metadata** (what IdP publishes for SPs):
+```xml
+<md:EntityDescriptor entityID="https://pingfed.bank.com">
+  <md:IDPSSODescriptor WantAuthnRequestsSigned="true">
 
-**What SP metadata contains:**
-- SP Entity ID (must match AudienceRestriction in every assertion)
-- **ACS URL** (Assertion Consumer Service — where IdP POSTs the SAMLResponse)
-- SLO endpoint
-- SP signing certificate (IdP uses this to verify AuthnRequest signatures)
+    <!-- Certificate SPs use to verify assertion signatures -->
+    <md:KeyDescriptor use="signing">
+      <ds:X509Certificate>MIIDnjCCAoagAwIBAgIGAX...</ds:X509Certificate>
+    </md:KeyDescriptor>
 
-**Metadata exchange in practice:** SP admin exports metadata XML → sends to IdP admin (or gives them a URL). IdP admin imports it and creates an SP Connection. IdP admin exports IdP metadata → SP admin uploads to the app. Done once, renewed when certificates expire.
+    <!-- Where to send browser for SSO login -->
+    <md:SingleSignOnService
+      Binding="...HTTP-Redirect"
+      Location="https://pingfed.bank.com/idp/SSO.saml2"/>
+
+    <!-- Where to send logout requests -->
+    <md:SingleLogoutService
+      Binding="...HTTP-Redirect"
+      Location="https://pingfed.bank.com/idp/SLO.saml2"/>
+
+    <md:NameIDFormat>...emailAddress</md:NameIDFormat>
+    <md:NameIDFormat>...persistent</md:NameIDFormat>
+  </md:IDPSSODescriptor>
+</md:EntityDescriptor>
+```
+
+**SP metadata** (what SP gives to the IdP):
+```xml
+<md:EntityDescriptor entityID="https://salesforce.com">
+  <!--                           ↑ Must match AudienceRestriction in every assertion -->
+  <md:SPSSODescriptor
+    AuthnRequestsSigned="true"
+    WantAssertionsSigned="true">
+
+    <!-- The ACS URL — where IdP POSTs the SAMLResponse -->
+    <md:AssertionConsumerService
+      Binding="...HTTP-POST"
+      Location="https://salesforce.com/saml/SSO"
+      index="0" isDefault="true"/>
+
+    <md:SingleLogoutService
+      Binding="...HTTP-Redirect"
+      Location="https://salesforce.com/saml/logout"/>
+  </md:SPSSODescriptor>
+</md:EntityDescriptor>
+```
 
 ---
 
 ## Module 3 — SP-initiated SSO flow {#module-3}
 
-### When it happens
+### 💡 Complete flow
 
-User clicks "Sign In" on a SaaS app, sees "Sign in with SSO", enters their corporate email, and gets redirected to their company's login page. This is SP-initiated SSO — the flow starts at the Service Provider.
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant B as 🌐 Browser
+    participant SP as 📱 Service Provider<br/>(Salesforce)
+    participant IdP as 🔐 Identity Provider<br/>(PingFederate)
 
-### Complete flow
-
-```
-Step 1: User visits https://salesforce.com/app
-        (not logged in — no active session at SP)
-
-Step 2: SP generates AuthnRequest
-        SP stores AuthnRequest ID (_req_1a2b3c4d5e) in session for later validation
-        SP sets RelayState = "https://salesforce.com/app" (where to go after login)
-
-Step 3: SP redirects browser to IdP (HTTP-Redirect binding)
-        302 → https://pingfed.bank.com/idp/SSO.saml2
-              ?SAMLRequest=PHNhbWx...  (deflated, Base64-encoded AuthnRequest)
-              &RelayState=aHR0cH...   (Base64-encoded original URL)
-              &SigAlg=...
-              &Signature=...
-
-Step 4: Browser follows redirect to IdP
-        IdP decodes and validates the AuthnRequest
-        IdP shows login page (or uses existing SSO session — no login needed)
-
-Step 5: User authenticates (username + password + MFA if required)
-
-Step 6: IdP authenticates user against Active Directory
-        IdP fetches user attributes from AD (groups, department, employee ID)
-        IdP builds a SAML Assertion and signs it with its RSA private key
-
-Step 7: IdP sends an HTML auto-submit form to the browser
-        <form method="POST" action="https://salesforce.com/saml/SSO">
-          <input type="hidden" name="SAMLResponse" value="PHNhbWxw..."/>
-          <input type="hidden" name="RelayState" value="aHR0cHM6..."/>
-        </form>
-        <script>document.forms[0].submit();</script>
-
-Step 8: Browser POSTs the form to SP's ACS URL (HTTP-POST binding)
-        The assertion travels through the browser — but the browser cannot read it
-        (it's Base64-encoded XML, and the browser just submits the form)
-
-Step 9: SP receives SAMLResponse — validates:
-        ✓ Decode Base64 → parse XML
-        ✓ Verify assertion signature using IdP's certificate (from metadata)
-        ✓ Check Issuer = "https://pingfed.bank.com" (expected IdP entity ID)
-        ✓ Check AudienceRestriction = "https://salesforce.com" (my entity ID)
-        ✓ Check NotBefore ≤ now ≤ NotOnOrAfter
-        ✓ Check InResponseTo = "_req_1a2b3c4d5e" (stored AuthnRequest ID)
-        ✓ Check Assertion ID not seen before (replay prevention)
-        ✓ Extract NameID = "jane.smith@bank.com"
-        ✓ Extract attributes: Role, Department, BranchCode
-
-Step 10: SP creates local session
-         SP maps SAML attributes to app roles/permissions
-         SP redirects to RelayState URL → user lands on the page they wanted
-         Total time: ~2-3 seconds including user login
+    U->>B: Visit https://salesforce.com/app
+    B->>SP: GET /app (no session)
+    SP->>SP: Generate AuthnRequest<br/>Store request ID in session
+    SP->>B: 302 Redirect to IdP SSO URL<br/>?SAMLRequest=...&RelayState=...
+    B->>IdP: GET /idp/SSO.saml2?SAMLRequest=...
+    IdP->>IdP: Validate AuthnRequest
+    IdP->>B: Show login page
+    U->>B: Enter credentials + MFA
+    B->>IdP: POST credentials
+    IdP->>IdP: Authenticate against AD<br/>Fetch attributes<br/>Build + sign assertion
+    IdP->>B: HTML auto-submit form<br/><form POST SAMLResponse to ACS URL>
+    B->>SP: POST SAMLResponse to ACS URL<br/>(HTTP-POST binding)
+    SP->>SP: Decode + validate assertion<br/>sig ✓ iss ✓ aud ✓ time ✓<br/>InResponseTo ✓ replayCheck ✓
+    SP->>SP: Map attributes → roles
+    SP->>B: Create session → redirect to RelayState
+    B->>U: User is logged in ✅
 ```
 
-### Real-world: bank employee accessing Salesforce
+### 💡 What the SP validates (step by step)
+
+```
+On receiving SAMLResponse at ACS URL:
+
+Step 1: Decode Base64 → parse XML
+Step 2: Verify assertion signature using IdP's certificate from metadata
+Step 3: Check Issuer = "https://pingfed.bank.com" (expected IdP)
+Step 4: Check AudienceRestriction = "https://salesforce.com" (my entity ID)
+Step 5: Check NotBefore ≤ now ≤ NotOnOrAfter (max 60s clock skew)
+Step 6: Check InResponseTo = stored AuthnRequest ID (prevents injection)
+Step 7: Check Assertion ID not seen before (replay prevention cache)
+Step 8: Check SubjectConfirmation Recipient = this ACS URL
+Step 9: Extract NameID → find or create user account
+Step 10: Extract attributes → assign roles and permissions
+Step 11: Create local session → redirect to RelayState URL
+```
+
+### 📖 Real-world: bank relationship manager accessing Salesforce
 
 ```xml
-<!-- SAML AttributeStatement for a UK bank relationship manager -->
+<!-- SAML AttributeStatement: PingFed → Salesforce -->
 <saml:AttributeStatement>
   <saml:Attribute Name="email">
     <saml:AttributeValue>jane.smith@bank.com</saml:AttributeValue>
@@ -318,656 +418,722 @@ Step 10: SP creates local session
   </saml:Attribute>
 </saml:AttributeStatement>
 
-<!-- Salesforce maps these to:
-  SalesforceProfile="Relationship Manager" → assigns "Standard User" profile
-  BranchCode                               → sets Territory = London EC2
-  Manager="true"                           → grants manager permission set -->
+<!-- Salesforce maps these attributes to:
+  SalesforceProfile="Relationship Manager" → Standard User profile
+  BranchCode="LON-EC2-042"               → Territory: London EC2
+  Manager="true"                         → Manager permission set granted  -->
 ```
 
 ---
 
 ## Module 4 — IdP-initiated SSO + Single Logout {#module-4}
 
-### IdP-initiated SSO
+### 💡 IdP-initiated SSO
 
-User is already logged into the company's identity portal. They click an app tile. The IdP sends an **unsolicited** SAMLResponse directly to the SP — no AuthnRequest was sent first.
+User is already logged into the company portal. They click an app tile. The IdP sends an **unsolicited** SAMLResponse — no AuthnRequest was sent first.
 
-```
-Step 1: User is already authenticated at IdP (logged into company portal)
-Step 2: User clicks "Workday" app tile
-Step 3: IdP builds and signs an assertion (no InResponseTo — unsolicited)
-Step 4: IdP sends HTML auto-submit form to browser
-Step 5: Browser POSTs to Workday's ACS URL
-Step 6: SP validates: signature ✓, Issuer ✓, Audience ✓, time window ✓
-        (Cannot validate InResponseTo — there is no AuthnRequest)
-Step 7: SP creates session → user is in
-```
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant B as 🌐 Browser
+    participant IdP as 🔐 IdP Portal<br/>(PingFederate)
+    participant SP as 📱 Service Provider<br/>(Workday)
 
-**Security difference from SP-initiated:** No AuthnRequest means no InResponseTo to validate. The SP cannot verify this assertion was requested. This makes IdP-initiated flows more vulnerable to:
-- Assertion injection (attacker sends crafted assertion to SP's ACS URL)
-- CSRF (attacker tricks user's browser into completing IdP-initiated flow with attacker's identity)
-
-**Mitigations:**
-- Only accept IdP-initiated flows from known IdP IP ranges
-- Validate all other assertion elements (Issuer, Audience, time window, replay)
-- Use a CSRF token embedded in RelayState
-
-### RelayState
-
-RelayState is an opaque string passed through the entire SSO flow unchanged. Its purpose is to carry context — most importantly, where to send the user after login.
-
-```
-SP-initiated: SP sets RelayState = "https://salesforce.com/account/00123456"
-              After SSO: user lands directly on that specific record ← deep linking
-
-IdP-initiated: IdP sets RelayState = target SP URL
-               Tells browser which SP's ACS URL to POST to
-
-Security risk: never redirect to an arbitrary RelayState URL
-               Whitelist: only redirect to your own domain
-               Prevents: open redirect attacks (post-SSO redirect to phishing site)
+    Note over IdP: User already authenticated at IdP
+    U->>B: Click "Workday" tile in portal
+    B->>IdP: GET tile link
+    IdP->>IdP: Build + sign assertion<br/>No InResponseTo (unsolicited)
+    IdP->>B: HTML auto-submit form
+    B->>SP: POST SAMLResponse to Workday ACS URL
+    SP->>SP: Validate: sig ✓ iss ✓ aud ✓ time ✓<br/>⚠️ No InResponseTo to check
+    SP->>B: Session created
+    B->>U: Logged into Workday ✅
 ```
 
-### Single Logout (SLO)
+> **⚠️ IdP-initiated is less secure than SP-initiated.** Without an AuthnRequest, there is no `InResponseTo` to validate — the SP cannot verify the assertion was requested by it, making injection and CSRF attacks harder to detect. Only accept IdP-initiated flows from trusted IdP IP ranges, and enforce all other assertion validations strictly.
 
-When a user logs out of one SP, SLO propagates the logout to every SP they have an active session with.
+### 💡 RelayState — context across the SSO flow
 
 ```
-Step 1: User clicks "Logout" in Salesforce
-Step 2: Salesforce sends LogoutRequest to IdP (HTTP-Redirect)
-Step 3: IdP terminates its session
-Step 4: IdP sends LogoutRequest to every other SP with an active session
-        → Workday: LogoutRequest → LogoutResponse (success)
-        → ServiceNow: LogoutRequest → LogoutResponse (success)
-        → JIRA: LogoutRequest → LogoutResponse (success)
-Step 5: IdP sends LogoutResponse back to Salesforce
-Step 6: Salesforce terminates its local session
-        User is fully signed out everywhere
+SP-initiated:  SP sets RelayState = "https://salesforce.com/account/00123456"
+               → After SSO, user lands directly on that specific CRM record
+               → This is how deep-linking works through SSO
+
+IdP-initiated: IdP sets RelayState = target SP resource URL
+               → Carries "where to go" to the SP's ACS handler
+
+Security rule: NEVER blindly redirect to RelayState
+               ONLY redirect if RelayState matches your own domain
+               Prevents: open redirect attacks post-SSO (user redirected to phishing site)
 ```
 
-**Reality of SLO in production:** many SaaS apps implement SLO poorly or not at all. The IdP should handle graceful degradation — if an SP doesn't respond to LogoutRequest within timeout, continue with the rest and log the failure. Users should be informed that some apps may still have active sessions.
+### 💡 SessionIndex — the key to Single Logout
+
+The `SessionIndex` in the AuthnStatement is how the IdP tracks **which specific session at each SP** belongs to the current user. Without it, SLO cannot function correctly.
+
+```
+When the assertion is issued:
+  SessionIndex="_sess_7h5c4d3e"
+  ↑ IdP creates a session record linking this value to:
+     • The user (NameID)
+     • The SP (entity ID)
+     • The session start time
+
+When SLO is triggered:
+  IdP looks up all SessionIndex values for this user
+  Sends LogoutRequest to each SP including their specific SessionIndex
+  SP terminates the session that matches that SessionIndex
+  SP sends LogoutResponse back
+
+Why it matters for developers:
+  When handling LogoutRequest: match by SessionIndex to terminate
+  the RIGHT session (a user may have multiple concurrent sessions)
+```
+
+### 💡 Single Logout (SLO) — propagating logout everywhere
+
+```mermaid
+sequenceDiagram
+    participant SP1 as 📱 Salesforce<br/>(initiating SP)
+    participant IdP as 🔐 PingFederate
+    participant SP2 as 📱 Workday
+    participant SP3 as 📱 ServiceNow
+
+    SP1->>IdP: LogoutRequest<br/>(user clicked logout)
+    IdP->>IdP: Terminate IdP session
+    IdP->>SP2: LogoutRequest (SessionIndex)
+    SP2->>IdP: LogoutResponse ✓
+    IdP->>SP3: LogoutRequest (SessionIndex)
+    SP3->>IdP: LogoutResponse ✓
+    IdP->>SP1: LogoutResponse ✓
+    Note over SP1,SP3: All sessions terminated — user is signed out everywhere
+```
+
+> **🏭 Reality of SLO in production:** Many SaaS apps implement SLO poorly or not at all. The IdP should gracefully handle non-responding SPs (timeout, log, continue). Active SP sessions may persist for 4–8 hours after AD account disable — set shorter session timeouts for security-critical applications.
 
 ---
 
 ## Module 5 — Application onboarding end-to-end {#module-5}
 
-### The onboarding lifecycle
+### 💡 The onboarding lifecycle
 
 ```
 Day 0 — Procurement
-  Business approves new SaaS app
-  Security team confirms SAML 2.0 support
-  Vendor confirms supported bindings, NameID formats, and attribute names
-  Vendor provides: SP metadata XML (or Entity ID + ACS URL + certificate)
+├── Business approves new SaaS app
+├── Security confirms SAML 2.0 support
+├── Vendor provides: SP metadata XML or manual values
+│   (Entity ID, ACS URL, NameID format, certificate)
+└── Agreement on attribute names: "what do you call the role field?"
 
 Day 1 — IdP Configuration (PingFederate)
-  Create SP Connection → enter/import SP metadata
-  Configure NameID format (persistent or emailAddress — agree with SP)
-  Define Attribute Contract:
-    What attributes to include in the assertion
-    Map AD/LDAP attributes to assertion attribute names
-  Configure allowed AD groups (which users can access this app)
-  Set authentication policy (password-only vs MFA required)
-  Export IdP metadata → send to SP admin
+├── Create SP Connection → import SP metadata
+├── Configure NameID format
+├── Define Attribute Contract (what attributes to send)
+│   AD attribute    →   Assertion attribute name
+│   mail            →   email
+│   givenName       →   firstName
+│   memberOf        →   groups  (filtered by App_* prefix)
+│   department      →   department
+├── Set authentication policy (password vs MFA required)
+└── Export IdP metadata → send to SP admin
 
 Day 1 — SP Configuration
-  Upload IdP metadata XML (or enter SSO URL, Entity ID, certificate manually)
-  Set NameID format to match IdP
-  Map incoming SAML attributes to app fields (role mapping)
-  Enable JIT provisioning if applicable
-  Enable SAML SSO mode
+├── Upload IdP metadata (or enter manually)
+├── Map SAML attributes to app fields
+├── Enable JIT provisioning (optional)
+└── Enable SAML SSO mode
 
-Day 2 — Testing
-  3–5 pilot users from different AD groups
-  Use SAML-tracer browser extension to inspect assertions
-  Fix the 2–3 configuration errors that always appear (see table below)
+Day 2 — Testing (expect 2–3 config errors — this is normal)
+├── 3–5 pilot users from different AD groups
+├── Use SAML-tracer browser extension to inspect assertions
+└── Fix the errors (see table below)
 
 Day 3 — Go-live
-  Enable app tile in IdP portal for appropriate AD groups
-  Communicate to users
-  Enable SCIM provisioning if the app supports it
-  Document in IAM register
+├── Enable app tile for appropriate AD groups
+├── Communicate to users
+├── Enable SCIM provisioning if supported
+└── Document in IAM register
 ```
 
-### The three most common onboarding failures
+### ⚠️ The three most common onboarding failures
 
-| Error | Cause | Fix |
+| Error message | Root cause | Fix |
 |---|---|---|
-| "Signature validation failed" | Wrong IdP certificate uploaded to SP | Re-export certificate from IdP metadata, re-upload to SP |
-| User logged in but wrong role | Attribute name mismatch (SP expects "Role", IdP sends "groups") | Align attribute names in IdP Attribute Contract or SP mapping config |
-| "AudienceRestriction mismatch" | SP Entity ID in IdP doesn't match what SP reports as its own ID | Verify SP Entity ID is exactly the same string in both IdP SP Connection and SP's own SSO settings |
+| "Signature validation failed" | Wrong IdP certificate uploaded to SP | Re-export from IdP metadata, re-upload |
+| "User logged in but wrong role" | Attribute name mismatch (SP expects `Role`, IdP sends `groups`) | Align names in Attribute Contract or SP mapping |
+| "AudienceRestriction mismatch" | SP Entity ID in IdP ≠ SP's own configured Entity ID | Verify exact string match in both places |
 
-### Attribute contract — the most important configuration
+### 🔐 Zero-downtime certificate rotation
 
-The Attribute Contract defines what user data the IdP sends in every assertion. Mismatch here is the #1 cause of SSO failures in production.
+SAML certificate rotation done wrong will break every SSO flow simultaneously. The correct procedure uses an overlap period.
 
 ```
-PingFederate Attribute Contract example:
-AD attribute              →  Assertion attribute name  → SP field
-─────────────────────────────────────────────────────────────────
-mail                      →  email                    → User email
-givenName                 →  firstName                → First name
-sn                        →  lastName                 → Last name
-department                →  department               → Department
-memberOf (filter: App_*)  →  groups                   → App roles (multi-value)
-employeeID                →  employeeNumber           → Employee ID
-manager                   →  isManager                → Manager flag
+Step 1 — Add new certificate ALONGSIDE the old one in IdP metadata
+         (IdP now has two signing certs listed — both are trusted by SPs)
+
+Step 2 — Give SPs time to refresh their cached metadata
+         If SPs fetch metadata dynamically: wait for cache TTL (typically 24h)
+         If SPs use manually uploaded metadata: contact each SP admin to re-import
+
+Step 3 — Switch IdP to sign new assertions with the NEW certificate
+         Old assertions signed with old cert: still valid (SP trusts both)
+         New assertions signed with new cert: SP validates with new cert ✓
+
+Step 4 — Monitor for any validation failures (there should be none)
+
+Step 5 — Remove the OLD certificate from IdP metadata
+         Notify SP admins to remove old cert if they manage it manually
+
+Total duration: 24-72 hours for a safe rotation with no SSO disruption
+⚠️ NEVER remove the old cert before confirming all SPs have the new cert
 ```
 
-**Debugging attribute mapping:** install the SAML-tracer browser extension (Firefox/Chrome). It intercepts SAML flows and shows you the actual decoded assertion — you can see exactly what attributes are being sent and whether their names match what the SP expects.
+### 📖 Real-world: onboarding ServiceNow to PingFederate
 
-### Typical onboarding timelines
+```
+Healthcare company onboarding ServiceNow ITSM to existing PingFed:
 
-| App type | Timeline | Why |
+What ServiceNow admin exports:
+  → SP metadata XML with:
+     Entity ID: https://company.service-now.com
+     ACS URL:   https://company.service-now.com/navpage.do
+     Certificate: (ServiceNow's signing cert)
+     NameID format: email
+
+What PingFed admin configures:
+  → SP Connection with:
+     SP Entity ID: https://company.service-now.com
+     ACS URL: https://company.service-now.com/navpage.do
+     Attribute contract:
+       mail         → email
+       givenName    → first_name
+       sn           → last_name
+       memberOf     → roles  (mapping: SNOW_ITIL→itil, SNOW_ADMIN→admin)
+
+Errors hit during testing:
+  Error 1: "Email attribute not found"
+    Cause: PingFed was sending "mail" but ServiceNow expected "email"
+    Fix: rename attribute in Attribute Contract to "email"
+
+  Error 2: "User has no roles assigned"
+    Cause: Group filter regex wrong — was matching SNOW_* but groups were named SN_*
+    Fix: update memberOf filter to SN_ITIL, SN_ADMIN
+
+  Error 3: "Signature invalid"
+    Cause: ServiceNow admin uploaded a test cert, not the production IdP cert
+    Fix: re-export production cert from PingFed metadata, re-upload to ServiceNow
+
+Time from start to first successful SSO login: 6 hours (including 2h debugging)
+```
+
+### 💡 Typical onboarding timelines
+
+| App type | Timeline | Key complexity driver |
 |---|---|---|
-| Simple SaaS (Slack, Zoom, Atlassian) | 1–2 days | Standard SAML, clear documentation, pre-built templates in IdP |
-| Complex enterprise SaaS (Salesforce, ServiceNow) | 1–2 weeks | Custom attribute mapping, multiple permission profiles, role hierarchy |
-| Custom-built internal app | 2–4 weeks | Development required for SAML library integration |
-| Legacy enterprise (SAP, Oracle) | 2–4 weeks | Complex configuration, vendor support required |
+| Simple SaaS (Slack, Zoom) | 1–2 days | Standard attributes, clear vendor docs |
+| Salesforce / ServiceNow | 1–2 weeks | Role hierarchy, profile mapping, custom attributes |
+| SAP / Oracle | 2–4 weeks | Vendor support required, complex config |
+| Custom internal app | 2–4 weeks | Development required for SAML library integration |
+| Multi-tenant B2B SaaS | 30–60 min per customer | Attribute contract agreed with each customer's IT |
 
 ---
 
 ## Module 6 — SAML security attacks and hardening {#module-6}
 
-### Attack 1: XML Signature Wrapping (XSW) — the most critical vulnerability
+### 🔐 Attack 1: XML Signature Wrapping (XSW) — the most critical vulnerability
 
-**How it works:**
-1. Attacker logs in legitimately and captures a valid signed SAMLResponse
-2. Attacker copies the signed assertion and creates a malicious assertion (with different NameID — e.g. "admin@bank.com")
-3. Attacker wraps the malicious assertion alongside the legitimate one in the XML
-4. The XML digital signature still validates — it references the legitimate assertion by ID
-5. But naive implementations process the malicious assertion (by XML position, not by ID reference)
-6. Attacker is now authenticated as the admin account
+> **How it works:**
+> 1. Attacker logs in legitimately → captures a valid signed SAMLResponse
+> 2. Creates a malicious assertion (NameID = "admin@bank.com")
+> 3. Inserts malicious assertion into the XML alongside the legitimate one
+> 4. The XML digital signature still validates — it references the legitimate assertion by ID
+> 5. A naive SP processes the **malicious** assertion (by XML position, not by ID reference)
+> 6. Attacker is now authenticated as the admin account
 
-**Why it works:** The XML Digital Signature spec references elements by their ID attribute. The signature is valid — it just points to a different assertion than the one the SP ends up processing.
-
-**Real-world impact:** XSW vulnerabilities have been found in OneLogin, Duo Security, and multiple enterprise SSO implementations.
-
-**Prevention:**
 ```
-1. Always retrieve the assertion to process using the ID referenced in the 
-   signature's <Reference> element — not by XML position or XPath
-2. Use a well-tested SAML library (python3-saml, java-saml, passport-saml)
-   Never implement SAML XML parsing yourself
-3. Validate XML schema before processing
-4. Run SAML security scanners against your implementation
+Legitimate assertion:   <saml:Assertion ID="_real_assert_123">...jane@bank.com...</saml:Assertion>
+Malicious wrapper:      <saml:Assertion ID="_evil">...admin@bank.com...
+                          <saml:Assertion ID="_real_assert_123">...jane@bank.com...</saml:Assertion>
+                        </saml:Assertion>
+Signature references:   <Reference URI="#_real_assert_123"/> ← signature is valid!
+SP processes:           The OUTER assertion (admin@bank.com) ← WRONG
 ```
 
-### Attack 2: Assertion Replay
+> **🏭 Real-world impact:** XSW vulnerabilities have been found in OneLogin, Duo Security, and multiple enterprise SSO products. This is not theoretical — it has been exploited in production.
 
-**How it works:** intercept a valid SAML assertion (XSS, network sniffing, log exposure). Submit it to the SP's ACS URL before NotOnOrAfter expires (typically 5-minute window). The SP validates signature and time — both pass. Attacker is logged in as the victim.
+> **Prevention:**
+> ```
+> 1. Use a security-reviewed SAML library (python3-saml, java-saml, passport-saml)
+>    Never implement XML parsing yourself
+> 2. Always process the assertion referenced by the signature's <Reference URI>
+>    NOT by XML position (first child, last child, etc.)
+> 3. Schema-validate the XML before processing
+> 4. Sign both the Response AND the inner Assertion (belt and braces)
+> ```
 
-**Prevention:**
+### 🔐 Attack 2: Assertion Replay
+
+```
+Attack:
+  1. Attacker intercepts a valid SAML assertion (XSS, network, log exposure)
+  2. Submits it to SP's ACS URL before NotOnOrAfter expires (5-min window)
+  3. SP validates: signature ✓, time window ✓ — both pass
+  4. Attacker is logged in as the victim
+
+Prevention (SP-side):
+```
+
 ```python
-# SP maintains a cache of used assertion IDs
-# Redis with TTL = NotOnOrAfter timestamp
-
 async def validate_assertion(assertion):
-    assertion_id = assertion.get_id()
+    assertion_id    = assertion.get_id()
     not_on_or_after = assertion.get_not_on_or_after()
-    
-    # Check if this ID was already used
+
+    # Check if this assertion ID was already used
     if await redis.exists(f"saml:used:{assertion_id}"):
-        raise SecurityError("Assertion replay detected")
-    
-    # Mark this ID as used (expires automatically at NotOnOrAfter)
-    ttl = not_on_or_after - datetime.utcnow()
-    await redis.setex(f"saml:used:{assertion_id}", int(ttl.seconds), "1")
-    
-    # Continue with normal validation...
+        raise SecurityError("Assertion replay detected — ID already seen")
+
+    # Mark as used (auto-expires when assertion becomes invalid)
+    ttl = (not_on_or_after - datetime.utcnow()).seconds
+    await redis.setex(f"saml:used:{assertion_id}", ttl, "1")
+
+    # Continue normal validation...
 ```
 
-### Attack 3: Open Redirect via RelayState
+### 🔐 Attack 3: Open Redirect via RelayState
 
-**How it works:** attacker crafts a link with RelayState pointing to a phishing site. User sees the legitimate company login page, authenticates successfully, and is redirected to `https://attacker.com`.
+```
+Attack:  Attacker crafts link with RelayState=https://attacker.com/phishing
+         User sees legitimate company login page
+         Logs in successfully
+         Gets redirected to attacker's site
 
-**Prevention:**
+Prevention:
+  Only redirect to RelayState values matching your own domain
+```
+
 ```python
-# WRONG: blind redirect to RelayState
-return redirect(relay_state)
-
-# CORRECT: only allow same-origin RelayState values
 from urllib.parse import urlparse
 
 def safe_redirect(relay_state, allowed_host="yourapp.com"):
     if relay_state:
         parsed = urlparse(relay_state)
         if parsed.netloc and parsed.netloc != allowed_host:
-            return redirect("/dashboard")  # fallback
-        return redirect(relay_state)
-    return redirect("/dashboard")
+            return redirect("/dashboard")  # fallback to safe default
+    return redirect(relay_state or "/dashboard")
 ```
 
-### Production hardening checklist
+### 🔐 Attack 4: Login CSRF via IdP-initiated SSO
+
+> **How it works:**
+> 1. Attacker initiates an IdP-initiated SSO flow using the **victim's** browser
+> 2. Victim's browser submits an assertion for the **attacker's** account to the SP
+> 3. Victim is now logged in as the attacker — anything they do (enter payment info,
+>    change settings) is done in the attacker's account
+
+> **Prevention:**
+> - For SP-initiated flows: always validate `InResponseTo` against a stored request ID
+> - For IdP-initiated flows: embed a CSRF token in RelayState and validate it on receipt
+> - Reject any IdP-initiated assertions where you cannot validate the flow origin
+
+### ✅ Production hardening checklist
 
 **SP must validate on every assertion:**
 ```
-✅ Assertion signature using IdP's certificate (from metadata — not user-supplied)
-✅ Issuer element matches the expected IdP entity ID exactly (string match)
-✅ AudienceRestriction contains this SP's entity ID
+✅ Assertion signature (not just Response) using IdP cert from metadata
+✅ Issuer = expected IdP entity ID (exact string match)
+✅ AudienceRestriction = this SP's entity ID
 ✅ NotBefore ≤ now ≤ NotOnOrAfter (max 60s clock skew)
-✅ InResponseTo matches a stored AuthnRequest ID (SP-initiated flows)
-✅ Assertion ID not in the replay prevention cache
+✅ InResponseTo = stored AuthnRequest ID (SP-initiated flows)
+✅ Assertion ID not in replay prevention cache
 ✅ SubjectConfirmation Recipient = this ACS URL
-✅ Status code = Success before processing any assertion
+✅ StatusCode = Success (before processing any assertion content)
 ```
 
 **Implementation rules:**
 ```
-✅ TLS 1.2+ on all SAML endpoints (ACS, SLO, metadata)
-✅ Use a security-reviewed SAML library — never roll your own XML parsing
+✅ TLS 1.2+ on all SAML endpoints (ACS, SLO, metadata URL)
+✅ Use a security-reviewed SAML library — never DIY XML parsing
 ✅ Schema-validate XML before processing
 ✅ Whitelist RelayState redirects to own domain only
-✅ Process assertion by signature Reference ID, not position
-✅ Certificate rotation plan: update metadata before cert expires (overlap period)
-✅ Log all assertion IDs and validation failures for SIEM alerting
-✅ Sign AuthnRequests (WantAuthnRequestsSigned=true in IdP metadata)
+✅ Process assertion by signature Reference ID, not XML position
+✅ Zero-downtime cert rotation plan (see Module 5)
+✅ Log all assertion IDs and validation failures → SIEM
+✅ Sign AuthnRequests (WantAuthnRequestsSigned="true" in IdP metadata)
 ```
 
 ---
 
 ## Module 7 — IAM fundamentals {#module-7}
 
-### The four pillars of IAM
+### 💡 The four pillars of IAM
 
 ```
-┌────────────┐   ┌────────────────┐   ┌──────────────────┐   ┌──────────┐
-│  Identity  │ → │ Authentication │ → │  Authorisation   │ → │  Audit   │
-│            │   │                │   │                  │   │          │
-│ Who are    │   │ Prove it       │   │ What can you do? │   │ What did │
-│ you?       │   │                │   │                  │   │ you do?  │
-│            │   │                │   │                  │   │          │
-│ AD / LDAP  │   │ PingFed / Okta │   │ RBAC / ABAC      │   │ SIEM /   │
-│ SCIM / HR  │   │ ADFS / Azure   │   │ PAM / IGA        │   │ IGA logs │
-└────────────┘   └────────────────┘   └──────────────────┘   └──────────┘
+┌────────────┐    ┌──────────────────┐    ┌──────────────────┐    ┌──────────┐
+│  IDENTITY  │ →  │ AUTHENTICATION   │ →  │ AUTHORISATION    │ →  │  AUDIT   │
+│            │    │                  │    │                  │    │          │
+│ Who are    │    │ Prove it         │    │ What can you do? │    │ What did │
+│ you?       │    │                  │    │                  │    │ you do?  │
+│            │    │                  │    │                  │    │          │
+│ AD / LDAP  │    │ PingFed / Okta   │    │ RBAC / ABAC      │    │ SIEM     │
+│ SCIM / HR  │    │ ADFS / Azure AD  │    │ PAM / IGA        │    │ IGA logs │
+└────────────┘    └──────────────────┘    └──────────────────┘    └──────────┘
 
-SAML operates at the Authentication ↔ Authorisation boundary:
-proves identity AND carries attribute claims that drive authorisation
+SAML sits at the Authentication ↔ Authorisation boundary:
+  proves identity AND carries attribute claims that drive authorisation decisions
 ```
 
-### Active Directory and LDAP
+### 💡 Active Directory and LDAP
 
-**Active Directory** is the dominant on-premises enterprise identity store. It stores user accounts, groups, and policies for an entire organisation.
+Active Directory (AD) is the dominant on-premises enterprise identity store. PingFederate connects to AD via LDAP to authenticate users and read attributes for SAML assertions.
 
-Key concepts:
-- **Domain** — a security boundary (e.g. `bank.com`)
-- **Forest** — a collection of domains with shared trust
-- **Organisational Unit (OU)** — a container for organising objects (e.g. OU=Finance, OU=IT)
-- **Group** — a collection of users. Group membership is what PingFederate reads to determine what SAML attributes to issue
-- **sAMAccountName** — the Windows login name (e.g. `jsmith`)
-- **userPrincipalName** — the UPN, typically the email format (e.g. `jane.smith@bank.com`)
-
-**How PingFederate connects to AD:**
-1. PingFed has an LDAP Datastore configured pointing to AD domain controllers
-2. When a user authenticates, PingFed binds to AD with a service account
-3. PingFed searches for the user's LDAP entry
-4. PingFed reads the attributes configured in the Attribute Contract (mail, givenName, memberOf etc.)
-5. PingFed maps these AD attributes to the SAML assertion attribute names the SP expects
-
-### Identity lifecycle: Joiner / Mover / Leaver
-
-**Joiner (new employee):**
 ```
-Day 0 (HR): New employee created in HR system (Workday/SAP HR)
-Day 0 (IGA): Identity Governance triggers provisioning workflow
-Day 0 (AD): AD account created → added to role-based security groups
-Day 0 (SCIM): SCIM pushes account creation to 30+ connected SaaS apps
-Day 0 (Portal): App tiles appear in IdP portal
-Day 1 (First login): Employee logs in → SAML SSO works across all apps
+Key AD concepts:
+  Domain        → security boundary (e.g. bank.com)
+  Forest        → collection of domains with shared trust
+  OU            → Organisational Unit — container for organising objects
+  Group         → collection of users (what PingFed reads for SAML attributes)
+  sAMAccountName → Windows login name (jsmith)
+  userPrincipalName → UPN — typically email format (jane.smith@bank.com)
 
-Target SLA: all access granted within 4 hours of start date
+How PingFederate uses AD:
+  1. User submits credentials at PingFed login page
+  2. PingFed binds to AD with service account
+  3. Validates user credentials via LDAP
+  4. Reads attributes: mail, givenName, sn, memberOf, department, employeeID
+  5. Maps AD attributes → SAML assertion attribute names per Attribute Contract
+  6. Issues signed assertion
 ```
 
-**Mover (role change):**
+### 💡 IGA — Identity Governance and Administration
+
+**IGA** (Identity Governance and Administration) is the layer above SCIM and AD that manages the *lifecycle* and *governance* of identity — who should have access, for how long, and how that gets reviewed.
+
 ```
-Manager submits access change request → IGA workflow approval
-Old AD group memberships removed → new groups added
-SCIM updates app roles automatically (active sync)
-Next SAML login → assertion carries new roles → SP applies new permissions
+IGA sits above all other IAM systems:
 
-Challenge: SP sessions created before the role change still have the old
-roles until the session expires or the user re-authenticates
-Solution: short SP session timeouts (4-8 hours) or IdP session force-logout
-```
+  HR System (Workday/SAP HR)
+      ↓ hire/move/terminate events
+  IGA Platform (SailPoint, Saviynt, Omada)
+      ↓ translates business roles to technical entitlements
+  AD / LDAP             SCIM Provisioning
+      ↓                       ↓
+  PingFederate          SaaS App accounts
+      ↓
+  SAML SSO to all connected apps
 
-**Leaver (employee exits):**
-```
-HR triggers termination → IGA workflow
-T+0: AD account DISABLED immediately (automated, no human needed)
-T+0: All SAML SSO attempts fail immediately
-      (IdP authenticates against AD — disabled accounts fail authentication)
-T+5min: SCIM deprovisions accounts in all connected apps
-T+60min: Audit confirms all access removed
-
-Note: Active SP sessions may persist until their local timeout expires
-      (typically 4-8 hours for web apps). Critical apps should have shorter
-      session timeouts or implement session invalidation via SLO.
-
-SLA target: AD disabled within 1 hour of termination notice
-            (many organisations target 15 minutes)
+IGA key functions:
+  • Joiner/Mover/Leaver workflow automation
+  • Role-based access request and approval
+  • Access certification (periodic reviews: "does Jane still need this?")
+  • Segregation of Duties (SoD) — prevent conflicting role combinations
+  • Orphaned account detection and cleanup
+  • Compliance reporting (SOX, GDPR, ISO 27001)
 ```
 
-### SCIM — System for Cross-domain Identity Management
+> **📖 Real-world:** A bank runs quarterly access reviews via IGA. Every manager certifies their team's access. Access that isn't certified within 30 days is automatically revoked. This is how the bank demonstrates SOX compliance and avoids audit findings.
 
-SAML handles login. SCIM handles account existence. Together they form complete identity lifecycle management.
+### 💡 Identity lifecycle: Joiner / Mover / Leaver
 
-**SCIM 2.0 endpoints:**
+```
+JOINER (new employee):
+  08:00  HR system creates record (start date triggers workflow)
+  08:15  IGA provisions AD account + adds to role-based security groups
+  08:30  SCIM pushes account to 35 core apps (email, calendar, Salesforce, ITSM)
+  09:00  Employee arrives → portal shows all app tiles
+         → SAML SSO works for all 80 connected apps immediately
+  Target SLA: all access ready within 4 hours of start date
+
+MOVER (role change — e.g. promoted to manager):
+  Manager submits change request → IGA approval workflow
+  Old AD groups removed → new groups added (same day)
+  SCIM updates app roles automatically
+  Next SAML login: assertion carries new roles → SP applies new permissions
+  ⚠️ Challenge: active SP sessions keep old roles until session expires
+     Solution: short session timeouts (4-8h) or SLO-triggered re-authentication
+
+LEAVER (employee exits):
+  T+0:   HR triggers termination → IGA automated workflow
+  T+0:   AD account DISABLED immediately
+  T+0:   All SAML SSO attempts fail instantly (IdP auth against AD fails)
+  T+5m:  SCIM deprovisions all app accounts
+  T+1h:  Manual audit confirms all access removed
+  Target SLA: AD disabled within 1 hour of termination
+  ⚠️ Active SP sessions may persist 4-8h until local timeout
+     Critical apps (trading, wire transfers): 15-30 min sessions + SLO
+```
+
+### 💡 SCIM — automated account lifecycle
+
+SAML handles login. SCIM handles account existence. Together they give you both SSO and automated provisioning.
 
 ```bash
-# Create a user account
+# Create user (new joiner arriving at ServiceNow)
 POST https://app.example.com/scim/v2/Users
-Authorization: Bearer <SCIM provisioning token>
-{
-  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
-  "userName": "jane.smith@bank.com",
-  "name": { "givenName": "Jane", "familyName": "Smith" },
-  "emails": [{ "value": "jane.smith@bank.com", "primary": true }],
+{ "userName": "jane.smith@bank.com",
   "active": true,
-  "roles": [{ "value": "Relationship Manager", "primary": true }]
-}
+  "roles": [{"value": "itil", "primary": true}] }
 
-# Disable a user (leaver)
+# Disable user (leaver)
 PATCH https://app.example.com/scim/v2/Users/{id}
-{ "Operations": [{ "op": "replace", "path": "active", "value": false }] }
+{ "Operations": [{"op": "replace", "path": "active", "value": false}] }
 
-# Update role (mover)
+# Update roles (mover)
 PATCH https://app.example.com/scim/v2/Users/{id}
-{ "Operations": [{ "op": "replace", "path": "roles",
-  "value": [{"value": "Senior Manager", "primary": true}] }] }
-
-# Get all groups
-GET https://app.example.com/scim/v2/Groups
+{ "Operations": [{"op": "replace", "path": "roles",
+  "value": [{"value": "itil_manager", "primary": true}]}] }
 ```
 
-**SCIM vs JIT provisioning:**
-
-| | SCIM | JIT (Just-In-Time) |
+| | SCIM | JIT provisioning |
 |---|---|---|
-| When accounts are created | Before first login (proactive) | On first login (reactive) |
-| When accounts are disabled | Immediately on deprovisioning event | Only when AD login fails |
-| Best for | Apps needing pre-loaded data, strict deprovisioning SLA | Simple apps, small scale |
-| Required for | Zero-day access (account exists on day one) | Apps where on-demand creation is fine |
+| Account creation | Before first login (proactive) | On first login (reactive) |
+| Deprovisioning | Immediately on event | Only when AD auth fails |
+| Best for | Zero-day access, strict deprovisioning SLA | Simple apps, small scale |
 
 ---
 
 ## Module 8 — Authorisation models: RBAC, ABAC, JIT, PAM {#module-8}
 
-### RBAC — Role-Based Access Control
+### 💡 RBAC — Role-Based Access Control
 
-Users are assigned roles. Roles have permissions. SAML carries roles in the AttributeStatement.
+Users → assigned to roles → roles have permissions. SAML carries roles in the AttributeStatement.
 
 ```xml
-<!-- SAML assertion carries roles -->
 <saml:Attribute Name="Role">
   <saml:AttributeValue>Manager</saml:AttributeValue>
 </saml:Attribute>
-
 <!-- SP maps:
-  Manager  → read + write + approve team records
+  Manager  → read + write + approve
   Employee → read + write own records only
-  Auditor  → read only, all records
-  Admin    → full access                     -->
+  Auditor  → read only                    -->
 ```
 
-**Limitations of RBAC at enterprise scale:**
-- Role explosion: 500 employees × 20 apps = thousands of roles to manage
-- Coarse-grained: "Manager" role gives all-or-nothing access; can't restrict by data sensitivity
-- Static: same access regardless of time, location, or device
+> **⚠️ RBAC limitation at enterprise scale:** 500 employees × 20 apps = thousands of roles to manage. Roles become too coarse-grained. A "Manager" role gives all-or-nothing access — it can't restrict by data sensitivity, time, or location. This is where ABAC steps in.
 
-### ABAC — Attribute-Based Access Control
+### 💡 ABAC — Attribute-Based Access Control
 
-Access decisions based on attributes of the **user**, **resource**, **action**, and **environment**.
+Access decisions based on attributes of the **user**, **resource**, **action**, and **environment**. All user attributes come from the SAML assertion.
 
 ```
 Policy rule (pseudo-code):
-ALLOW access to patient record IF
-  user.department = "Oncology"
-  AND user.role = "Physician"
-  AND resource.patient_treating_team CONTAINS user.employeeId
+ALLOW IF
+  user.department = "Finance"
+  AND user.clearanceLevel >= "Level3"
+  AND resource.classification = "Confidential"
+  AND action = "read"
+  AND time BETWEEN "08:00" AND "18:00"
+  AND user.location = "corporate-network"
+
+Healthcare example:
+ALLOW patient record access IF
+  user.role = "Physician"
+  AND user.employeeId IN patient.treatingTeamIds
   AND action IN ["read", "write"]
-  AND time BETWEEN "07:00" AND "21:00"
-  AND user.device_compliance = "compliant"
-
-All user attributes come from the SAML assertion:
-department, role, employeeId, device_compliance
-Resource attributes come from the application's data store
 ```
 
-**When ABAC is essential:**
-- Healthcare: patient record access restricted to treating physicians
-- Finance: trade approval requires specific clearance level + dual control
-- Legal: matter access restricted to assigned attorneys
-- Government: data classified by clearance level + need-to-know
+### 💡 JIT provisioning
 
-### JIT provisioning — account creation on first login
-
-When a user first SSOs into an app, the SP creates their account automatically using the SAML assertion attributes.
+When a user first SSOs into an app, the SP automatically creates their account from the SAML assertion.
 
 ```
-First login to ServiceNow via SSO:
-1. SAML assertion arrives at ServiceNow ACS URL
-2. ServiceNow looks up: does an account exist for NameID "jane.smith@bank.com"?
-3. No → create account:
-   - Username = NameID value
-   - First name = firstName attribute
-   - Last name = lastName attribute
-   - Department = department attribute
-   - Role = map "groups" attribute values to ServiceNow roles
-4. Log user in to newly created account
+First login to ServiceNow via SAML SSO:
+  1. Assertion arrives with valid signature
+  2. SP checks: account exists for "jane.smith@bank.com"? → No
+  3. Create account from assertion attributes:
+       username  = NameID value
+       firstName = firstName attribute
+       lastName  = lastName attribute
+       roles     = map "groups" attribute → ServiceNow roles
+  4. Log user in to newly created account
 
 Subsequent logins:
-- Update account attributes from assertion (keeps attributes in sync with AD)
-- Attribute updates on login = no separate SCIM needed for attribute changes
+  SP updates attributes from assertion → keeps in sync with AD automatically
 ```
 
-### PAM and MFA in the SAML context
+### 💡 AuthnContextClassRef — authentication strength reference
 
-**Privileged Access Management (PAM)** protects high-privilege accounts. In the SAML context, the **AuthnContextClassRef** in the assertion communicates to the SP how strongly the user authenticated.
-
-```xml
-<!-- Standard password authentication -->
-<saml:AuthnContextClassRef>
+```
+Password only:
   urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
-</saml:AuthnContextClassRef>
 
-<!-- MFA (TOTP, push, hardware token) -->
-<saml:AuthnContextClassRef>
+MFA (TOTP, push notification, hardware token):
   urn:oasis:names:tc:SAML:2.0:ac:classes:MobileTwoFactorUnregistered
-</saml:AuthnContextClassRef>
 
-<!-- Smartcard / PKI certificate -->
-<saml:AuthnContextClassRef>
+Smartcard / PKI certificate:
   urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard
-</saml:AuthnContextClassRef>
+
+Kerberos (integrated Windows authentication):
+  urn:oasis:names:tc:SAML:2.0:ac:classes:Kerberos
+
+Windows integrated + MFA:
+  urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword
 ```
 
-**Step-up authentication:** the SP can refuse access to sensitive operations if the AuthnContext is insufficient, and redirect the user to re-authenticate with a higher assurance level.
-
-```
-Example: Banking wire transfer
-1. User logs in with password → AuthnContext = PasswordProtectedTransport
-2. User navigates to wire transfer page (high-risk action)
-3. App checks: AuthnContext indicates MFA not performed
-4. App redirects back to IdP with RequestedAuthnContext = MFA class
-5. IdP prompts for MFA → user completes MFA
-6. New assertion issued with MFA AuthnContext
-7. App allows wire transfer to proceed
-```
+> **📖 Step-up authentication at a bank:**
+> 1. Employee logs in with password → AuthnContext = PasswordProtectedTransport
+> 2. Navigates to wire transfer page (high-risk action)
+> 3. SP checks AuthnContext — MFA not performed → insufficient for this action
+> 4. SP sends new AuthnRequest with `RequestedAuthnContext = MobileTwoFactorUnregistered`
+>    AND `ForceAuthn="true"` (force re-authentication)
+> 5. PingFed prompts for MFA → employee completes
+> 6. New assertion issued with MFA AuthnContext
+> 7. Wire transfer screen now accessible
 
 ---
 
-## Module 9 — Production use cases + SAML vs OIDC decision guide {#module-9}
+## Module 9 — Production use cases + SAML vs OIDC {#module-9}
 
-### Use case A — Global bank: 12,000 employees, 80 SAML apps
+### 📖 Use case A — Global bank: 12,000 employees, 80 SAML apps
 
 ```
 Architecture:
-  Identity source:  Active Directory (2 forests — retail + investment banking)
-  IdP:              PingFederate 11.x cluster (2 nodes, active-active, load balanced)
-  SP connections:   80 SAML 2.0 integrations
-  Provisioning:     SCIM to 35 apps, JIT for remaining 45
-  MFA:              Enforced via AuthnContextClassRef for privileged apps
+  Identity: Active Directory (2 forests — retail + investment banking)
+  IdP:      PingFederate 11.x cluster (2 nodes, active-active, load balanced)
+  SPs:      80 SAML SP connections
+  SCIM:     35 apps (proactive provisioning)
+  JIT:      45 apps (on-demand provisioning)
+  MFA:      Enforced for privileged apps via RequestedAuthnContext
 
-Onboarding SLA (new employee, Day 1):
-  08:00  HR triggers joiner workflow in IGA tool
-  08:15  AD account created, added to role-based security groups
-  08:30  SCIM pushes to 35 core apps (email, calendar, Salesforce, ServiceNow)
-  09:00  Employee arrives → portal shows all app tiles
-         → SAML SSO works for all 80 apps immediately
+Onboarding SLA (Day 1):
+  08:00  HR triggers joiner workflow → IGA automated provisioning
+  08:15  AD account created + added to role groups
+  08:30  SCIM pushes to 35 core apps
+  09:00  Employee arrives → SSO works for all 80 apps ✅
 
-Offboarding SLA (termination):
-  T+0    Manager submits termination → automated workflow triggered
-  T+0    AD account disabled (immediate, automated — no human action)
-  T+0    All SAML SSO attempts fail (AD auth fails for disabled accounts)
-  T+5    SCIM deprovisions all 35 SCIM-connected apps
-  T+60   Manual confirmation all access removed
-  
-Notes on session persistence:
-  Active SP sessions may persist 4–8 hours (typical web app session timeout)
-  Critical apps (trading, wire transfers): 30-min sessions + SLO enforced
-  Active sessions are logged and monitored by SIEM during transition period
+Termination SLA:
+  T+0    AD disabled → ALL SAML SSO fails immediately
+  T+5m   SCIM deprovisions all 35 SCIM-connected apps
+  T+1h   Audit confirms clean
 ```
 
-### Use case B — SaaS platform with multi-tenant SAML
+### 📖 Use case B — SaaS platform: multi-tenant SAML
 
 ```
-Scenario: B2B HR SaaS platform serving 50 enterprise customers
-Each customer has their own corporate IdP (PingFed, Okta, Azure AD, ADFS)
+50 enterprise customers, each with their own corporate IdP
 
-Architecture:
-- Each customer has a separate SP Connection on the platform
-- Each customer has their own tenant-specific Entity ID and ACS URL
-- Login routing: email domain → maps to correct IdP
+Routing by email domain:
+  User enters jane@bigbank.com
+  Platform: domain "bigbank.com" → SP connection "sp-bigbank"
+  Redirect to: https://pingfed.bigbank.com/idp/SSO.saml2
+  Assertion returns to: https://hrplatform.com/saml/acs/bigbank
+                                                          ↑
+                              Tenant-specific ACS URL → strict isolation
 
-Flow:
-1. User visits https://hrplatform.com/login
-2. User enters email: jane@bigbank.com
-3. Platform looks up "bigbank.com" → maps to IdP config for BigBank
-4. Redirect to https://pingfed.bigbank.com/idp/SSO.saml2
-   with SP entity ID = "https://hrplatform.com/saml/bigbank"
-5. PingFed authenticates the user
-6. Returns assertion to https://hrplatform.com/saml/acs/bigbank
-   (tenant-specific ACS URL ensures strict isolation)
+Tenant isolation via AudienceRestriction:
+  BigBank assertion:  Audience = "https://hrplatform.com/saml/bigbank"
+  CapCorp assertion:  Audience = "https://hrplatform.com/saml/capcorp"
+  → BigBank assertion submitted to CapCorp's ACS URL: REJECTED ✓
 
-Tenant isolation:
-  AudienceRestriction = "https://hrplatform.com/saml/bigbank"
-  An assertion for BigBank submitted to CapCorp's ACS URL will be rejected
-  (AudienceRestriction won't match "https://hrplatform.com/saml/capcorp")
-
-Customer onboarding time: 30–60 minutes
-  Bottleneck: agreeing the attribute contract with customer IT teams
-  (every customer names their role attribute differently)
-  Platform now provides a "SAML attribute mapping wizard" that reduced this
-  time from 2 days to 1 hour.
+Customer onboarding time: 30–60 min
+Bottleneck: every customer names their role attribute differently
 ```
 
-### Use case C — Migrating from SAML to OIDC
+### 📖 Use case C — Migrating SAML → OIDC progressively
 
 ```
-Scenario: company with 60 SAML apps wants to modernise
-Strategy: run SAML and OIDC in parallel from the same PingFed instance
+Phase 1 (now):   New apps → OIDC only (no new SAML integrations)
+Phase 2 (6m):    Mobile apps → OIDC + PKCE
+Phase 3 (12m):   SaaS apps that support both → migrate to OIDC
+Phase 4 (ongoing): SAP, Oracle, mainframes → SAML indefinitely
 
-Phase 1 (immediate): New apps → OIDC only (no new SAML integrations)
-Phase 2 (6 months):  Mobile apps → OIDC + PKCE (SAML doesn't work natively)
-Phase 3 (12 months): Modern SaaS that supports both → migrate to OIDC
-Phase 4 (ongoing):   Legacy enterprise (SAP, Oracle, mainframe tools) → SAML indefinitely
+PingFed bridge: same user session → can issue both SAML assertions
+                AND OIDC tokens simultaneously
+                User logs in once → accesses SAML and OIDC apps without re-auth
 
-PingFed bridge: same user session can issue both SAML assertions AND OIDC tokens
-  User logs in once → can access SAML apps AND OIDC apps without re-authentication
-
-Why some apps will always stay on SAML:
-  - SAP, Oracle EBS, mainframe-era tools: only support SAML, no OIDC roadmap
-  - Cross-org B2B federation: deeply embedded corporate trust frameworks
-  - Regulatory: some compliance frameworks (FedRAMP, certain banking regs)
-    have audited SAML implementations that cannot be changed without re-audit
+Why some apps will never migrate:
+  - SAP, Oracle EBS: only support SAML, no OIDC roadmap
+  - Cross-org B2B corporate federation: deeply embedded trust frameworks
+  - Regulated environments: audited SAML configurations cannot change without re-audit
 ```
 
-### SAML vs OIDC — complete decision guide
+### 💡 SAML vs OIDC — complete decision guide
 
 | Factor | Choose SAML | Choose OIDC |
 |---|---|---|
-| App type | Legacy enterprise SaaS (Salesforce, Workday, SAP) | Modern web apps, mobile apps, new builds |
-| Client type | Web browser only | Browser, native mobile, desktop, IoT, CLI |
-| B2B Federation | Cross-organisation corporate IdP federation | Consumer SSO, modern B2B |
-| Token format | App vendor requires XML | App prefers JSON/JWT |
-| API access | Not needed | Required (need OAuth 2.0 access tokens) |
-| Setup effort | Higher (metadata, XML, certs, ACS URLs) | Lower (discovery URL, client registration) |
-| Mobile support | Poor | Excellent |
-| Your choice | You have none — app only supports SAML | You have a choice — always prefer OIDC |
+| **App type** | Legacy enterprise SaaS (Salesforce, SAP, Workday) | Modern web/mobile apps, new builds |
+| **Client** | Web browser only | Browser, native mobile, desktop, IoT |
+| **Federation** | Cross-org corporate IdP federation (B2B) | Consumer SSO, modern B2B |
+| **Token format** | App requires XML assertion | App prefers JSON/JWT |
+| **API access** | Not needed | Required (OAuth access tokens) |
+| **Setup effort** | High (metadata, XML, certs) | Lower (discovery, JWKS) |
+| **Mobile support** | Poor | Excellent |
+| **Your actual choice** | No choice — app only supports SAML | Always prefer OIDC for new builds |
 
-**Architect's decision rule:** if an app supports both SAML and OIDC, always choose OIDC for new integrations. SAML is for apps that leave you no choice — legacy enterprise tools, cross-org corporate federation, or systems built before 2015. For everything else: use OIDC.
+> **🏭 Architect's rule:** If an app supports both protocols, always choose OIDC for new integrations. SAML is for apps that give you no choice — legacy enterprise tools, cross-org corporate federation, or systems built before 2015.
 
 ---
 
-## Quick Reference — Cheat Sheet {#quick-reference}
+## Quick Reference Cheat Sheet {#quick-reference}
 
 ### SAML flow selection
 
 ```
-User starts at...      
-├── The SP (app)        → SP-initiated SSO (most common, more secure)
-└── The IdP (portal)   → IdP-initiated SSO (convenient, less secure)
+User starts at...
+├── The SP (app)      → SP-initiated SSO (more secure, has InResponseTo)
+└── The IdP (portal)  → IdP-initiated SSO (convenient, more attack surface)
 
 Logging out...
-├── One app at a time  → Local logout only (most common in practice)
-└── Everything at once → Single Logout (SLO) — if all SPs support it
+├── One app           → Local logout only (most common in practice)
+└── Everywhere        → Single Logout (SLO) — requires all SPs to support it
 ```
 
-### SP validation checklist (every assertion)
+### SP validation checklist
 
 ```
-✅ Signature on the Assertion (not just the Response) using IdP cert from metadata
-✅ Issuer = expected IdP entity ID
-✅ AudienceRestriction contains this SP's entity ID
-✅ NotBefore ≤ now ≤ NotOnOrAfter (max 60s clock skew tolerance)
-✅ InResponseTo matches a stored, unused AuthnRequest ID (SP-initiated)
-✅ Assertion ID not previously seen (replay prevention cache with TTL)
-✅ SubjectConfirmation Recipient = this ACS URL exactly
-✅ Status code = Success (before processing any assertion content)
+✅ Assertion signature (not just Response) using IdP cert from metadata
+✅ Issuer = expected IdP entity ID (exact string)
+✅ AudienceRestriction = this SP's entity ID
+✅ NotBefore ≤ now ≤ NotOnOrAfter (max 60s clock skew)
+✅ InResponseTo = stored AuthnRequest ID (SP-initiated only)
+✅ Assertion ID not in replay cache
+✅ SubjectConfirmation Recipient = this ACS URL
+✅ StatusCode = Success
 ```
 
-### IAM joiner/mover/leaver quick reference
+### IAM joiner/mover/leaver SLAs
 
-| Event | AD action | SAML impact | SCIM action | SLA |
-|---|---|---|---|---|
-| Joiner | Create account + add to groups | SSO works on day one | Provision accounts in all apps | 4 hours |
-| Mover | Update group membership | New roles on next login | Update roles in all apps | Same day |
-| Leaver | Disable account | All SSO fails immediately | Deprovision all app accounts | 1 hour |
+| Event | AD action | SAML impact | Target SLA |
+|---|---|---|---|
+| Joiner | Create + add to groups | SSO works immediately | 4 hours from start date |
+| Mover | Update group membership | New roles on next login | Same day |
+| Leaver | **Disable account** | All SSO fails **instantly** | **1 hour from termination** |
 
 ### SAML security non-negotiables
 
 ```
-1.  Always validate assertion signature (not just Response signature)
-2.  Always validate Issuer against known IdP entity ID
-3.  Always validate AudienceRestriction against your own entity ID
-4.  Always enforce NotBefore/NotOnOrAfter with strict clock skew
-5.  Always track and reject replayed assertion IDs (Redis cache)
-6.  Always validate InResponseTo in SP-initiated flows
-7.  Never trust RelayState as a redirect target without domain check
-8.  Never process assertion by XML position — use signature Reference ID
-9.  Never implement XML parsing yourself — use a vetted SAML library
-10. TLS on all endpoints, always, no exceptions
+1.  Validate assertion signature specifically (not just Response)
+2.  Validate Issuer against known IdP entity ID
+3.  Validate AudienceRestriction against your own entity ID
+4.  Enforce NotBefore/NotOnOrAfter strictly (60s max skew)
+5.  Cache and reject replayed assertion IDs (Redis with TTL)
+6.  Validate InResponseTo in SP-initiated flows
+7.  Whitelist RelayState redirect targets to own domain
+8.  Process assertion by signature Reference URI, not XML position
+9.  Never roll your own XML parsing — use a vetted SAML library
+10. TLS on all SAML endpoints, always
 ```
+
+### SAML error status codes quick reference
+
+| Status code | Meaning | Who to call |
+|---|---|---|
+| `...status:Success` | All good | — |
+| `...status:Responder` | IdP-side error (LDAP down, user not found) | IdP team |
+| `...status:Requester` | Bad request from SP | SP team (check Entity ID, ACS URL) |
+| `...status:AuthnFailed` | User failed authentication | User or password reset |
+| `...status:NoPassive` | IsPassive=true, no active session | Expected — handle gracefully |
+| `...status:RequestDenied` | Policy denied (user not in allowed group) | Access provisioning team |
 
 ### Protocol landscape — which to use when
 
 ```
-Need enterprise B2B SSO with corporate IdPs?         → SAML 2.0
-Building a modern web or mobile app?                 → OIDC
-Need API access tokens for microservices?            → OAuth 2.0
-SSO for your app that your customers' companies use? → SAML (they'll have PingFed/Okta/ADFS)
-Building a new internal app for employees?           → OIDC
-Legacy SAP / Oracle / mainframe integration?         → SAML (no choice)
+Enterprise B2B SSO with corporate IdPs?    → SAML 2.0
+Building modern web or mobile app?         → OIDC
+API access tokens for microservices?       → OAuth 2.0
+App that enterprise customers will use?    → SAML (they have PingFed/Okta/ADFS)
+New internal app for employees?            → OIDC
+SAP / Oracle / mainframe integration?      → SAML (no choice)
 ```
 
 ---
 
-## What comes next
-
-This document covers the SAML 2.0 protocol and IAM concepts. The next document in this series:
-
-**Apigee + PingFederate** — how to implement OAuth/OIDC token validation and SAML assertion handling at the API gateway layer, using Apigee policies and PingFederate as the combined Auth Server and IdP.
-
----
-
-*SAML 2.0 Core: OASIS saml-core-2.0-os | Web Browser SSO Profile: saml-profiles-2.0-os | SCIM 2.0: RFC 7642–7644 | RBAC: NIST SP 800-162 | ABAC: NIST SP 800-162*
+*SAML 2.0 Core: OASIS saml-core-2.0-os · Web Browser SSO: saml-profiles-2.0-os · SCIM 2.0: RFC 7642–7644 · RBAC: NIST SP 800-162 · ABAC: NIST SP 800-162*

