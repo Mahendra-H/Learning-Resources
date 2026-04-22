@@ -44,7 +44,8 @@ Phase 4 — Security           Phase 5 — IAM Concepts        Phase 6 — Produ
 7. [Module 7 — IAM fundamentals](#module-7)
 8. [Module 8 — Authorisation models: RBAC, ABAC, JIT, PAM](#module-8)
 9. [Module 9 — Production use cases + SAML vs OIDC](#module-9)
-10. [Quick Reference Cheat Sheet](#quick-reference)
+10. [Module 10 — SAML Federation Architecture Patterns](#module-10)
+11. [Quick Reference Cheat Sheet](#quick-reference)
 
 ---
 
@@ -1137,3 +1138,418 @@ SAP / Oracle / mainframe integration?      → SAML (no choice)
 ---
 
 *SAML 2.0 Core: OASIS saml-core-2.0-os · Web Browser SSO: saml-profiles-2.0-os · SCIM 2.0: RFC 7642–7644 · RBAC: NIST SP 800-162 · ABAC: NIST SP 800-162*
+
+---
+
+## Module 10 — SAML Federation Architecture Patterns {#module-10}
+
+> These patterns describe **how SAML trust relationships are structured at scale** — from a single enterprise to cross-organisation federations. Every enterprise running SAML at scale uses one of these patterns, whether they name it or not.
+
+---
+
+### 💡 Hub-and-Spoke vs Mesh Federation
+
+This is the most consequential SAML architecture decision a large enterprise makes. The wrong choice leads to hundreds or thousands of trust relationships that are impossible to manage.
+
+**The problem: bilateral trust doesn't scale**
+
+```
+MESH FEDERATION (bilateral trust between every pair):
+─────────────────────────────────────────────────────
+
+Each IdP must establish a direct trust relationship with each SP.
+If you have 5 IdPs and 80 SaaS apps, that's 5 × 80 = 400 bilateral trusts.
+
+  [Azure AD] ─────── [Salesforce]
+  [Azure AD] ─────── [Workday]
+  [Azure AD] ─────── [ServiceNow]  ← 80 connections from Azure AD alone
+  [Azure AD] ─────── [Jira] ...
+  [Okta]     ─────── [Salesforce]
+  [Okta]     ─────── [Workday]     ← another 80 from Okta
+  ...
+  
+  Total connections = 5 × 80 = 400
+  Each connection needs: metadata exchange, cert management, attribute mapping
+  When an SP's certificate expires: update in ALL 5 IdPs
+  When a new app is added: configure in ALL 5 IdPs
+  → Operational nightmare at scale
+```
+
+```
+HUB-AND-SPOKE FEDERATION (central IdP as the trust hub):
+─────────────────────────────────────────────────────────
+
+All SPs trust ONE hub (PingFederate). All upstream IdPs connect to the hub.
+Adding a new SP = 1 configuration (in PingFed). Always.
+Adding a new upstream IdP = 1 configuration (in PingFed). Always.
+
+  [Azure AD]  ─┐
+  [Okta]      ─┼──▶  [PingFederate HUB]  ◀──▶  [Salesforce]
+  [Ping IdP]  ─┘            │                   [Workday]
+  [ADFS]      ─┘            │                   [ServiceNow]
+                             │                   [Jira]
+                             │                   ...80 SPs
+  
+  Total connections = 5 (upstream IdPs) + 80 (SPs) = 85
+  When an SP's certificate expires: update in PingFed ONLY
+  When a new app is added: configure in PingFed ONLY
+  → Linear scaling, single point of management
+```
+
+| | Mesh | Hub-and-Spoke |
+|---|---|---|
+| **Connections formula** | N × M | N + M |
+| **5 IdPs + 80 SPs** | 400 connections | 85 connections |
+| **Adding a new SP** | Configure in every IdP | Configure in hub only |
+| **Certificate rotation** | Update in every IdP | Update in hub only |
+| **Attribute policy** | Must be replicated per-pair | Centralised in hub |
+| **Suitable for** | Small scale (1 IdP, ≤5 SPs) | Enterprise (any scale) |
+
+> **📖 Real-world scenario — UK financial services firm post-merger:**
+> Barclays acquires a smaller bank. Smaller bank has ADFS as IdP. Barclays has PingFederate. Smaller bank has 12 SAML-connected SaaS apps. Barclays has 80.
+>
+> **Mesh approach (rejected):** Smaller bank's ADFS would need to establish trust with all 80 Barclays SPs. Barclays' PingFed would need to trust all 12 acquired apps. = 92 new bilateral trusts. Certificate updates would need to happen in two systems. Attribute contracts differ between the two IdPs.
+>
+> **Hub-and-spoke approach (chosen):** Configure ADFS as an upstream IdP in PingFed (1 connection). PingFed now brokers authentication for all acquired employees. Their ADFS credentials work for all 80 Barclays apps immediately. IT team manages one config, not 92.
+
+---
+
+### 💡 Identity Brokering — IdP acting as a protocol and attribute proxy
+
+Identity brokering is when a central IdP (like PingFederate) acts as a **middleman** — authenticating against an upstream identity source and issuing its own assertions downstream to SPs. The SPs only ever see and trust the broker, not the upstream IdP.
+
+```
+WITHOUT BROKERING (direct trust):
+  [Azure AD] ──── SAML Assertion ────▶ [Salesforce]
+  [Azure AD] ──── SAML Assertion ────▶ [Workday]
+  [Azure AD] ──── OIDC ID Token ─────▶ [Modern App]
+  
+  Problem: Azure AD must be configured for every SP.
+           Protocol differences (some SPs want SAML, some want OIDC).
+           Attribute mapping differs per SP.
+
+WITH BROKERING (central IdP as proxy):
+  [Azure AD] ──── validates credentials ────▶ [PingFederate BROKER]
+                                                      │
+                                    ┌─────────────────┼──────────────────┐
+                                    ▼                 ▼                  ▼
+                             SAML Assertion    SAML Assertion      OIDC Token
+                                    │                 │                  │
+                             [Salesforce]       [Workday]         [Modern App]
+  
+  PingFed adds:
+    • Attribute transformation (AD attribute names → SP-expected names)
+    • Protocol translation (SAML in → OIDC out, or vice versa)
+    • Policy enforcement (MFA required for finance apps)
+    • Issuer normalisation (all assertions say "iss=pingfed", not "iss=azure")
+```
+
+**What the broker changes in the assertion:**
+
+```
+Azure AD token (what PingFed receives from upstream):
+  iss: https://login.microsoftonline.com/tenant-id
+  sub: AzureAD-user-GUID-abc123
+  email: jane.smith@bank.com
+  groups: ["Azure-Group-Finance", "Azure-Group-London"]
+           ↓ PingFed transforms this ↓
+PingFed assertion (what Salesforce receives):
+  iss: https://pingfed.bank.com          ← broker's entity ID, not Azure AD's
+  sub: jane.smith@bank.com               ← normalised to email format
+  email: jane.smith@bank.com
+  SalesforceProfile: Relationship Manager  ← mapped from Azure group name
+  BranchCode: LON-EC2                      ← looked up from LDAP, not in Azure AD
+  Department: Retail Banking               ← merged from LDAP + Azure AD
+```
+
+> **📖 Real-world scenario — M&A integration:**
+> A pharma company (running Okta) acquires a biotech startup (running Azure AD). Both companies need employees to access the same research collaboration platform (a SAML SP).
+>
+> **Without brokering:** The collaboration platform needs two separate SAML connections — one for Okta, one for Azure AD. Each has different attribute names, different certificate management, different session policies.
+>
+> **With PingFed as broker:**
+> - Pharma employees: Okta → PingFed → Collaboration Platform
+> - Biotech employees: Azure AD → PingFed → Collaboration Platform
+> - Collaboration platform: one SAML connection, always to PingFed
+> - PingFed normalises attributes from both: `department` from Okta = `businessUnit` from Azure AD → both mapped to `ResearchDivision` that the platform expects
+> - Compliance team: one place (PingFed) to set the policy "biotech employees need MFA when accessing lab data"
+
+**Protocol brokering — SAML in, OIDC out (and vice versa):**
+
+```
+Scenario: Legacy enterprise IdP (SAML only) + Modern SaaS app (OIDC only)
+
+  [ADFS]  ──── SAML Assertion ────▶  [PingFederate]  ──── OIDC Token ────▶  [Modern App]
+  (only speaks SAML)                  (translates)         (only speaks OIDC)
+  
+  PingFed:
+    1. Receives SAML assertion from ADFS
+    2. Extracts user identity and attributes
+    3. Issues an OIDC ID token + access token for the modern app
+    4. The modern app never knows the upstream used SAML
+    
+  This is how enterprises modernise: swap SPs from SAML to OIDC one by one
+  without changing the upstream identity source.
+```
+
+---
+
+### 💡 Circle of Trust (CoT) — the formal trust boundary
+
+The **Circle of Trust** is the formal term (originating in the Liberty Alliance's ID-Federation Framework, adopted into SAML 2.0) for the set of all entities — IdPs and SPs — that have mutually exchanged metadata and established trust relationships.
+
+```
+THE CIRCLE OF TRUST VISUALISED:
+
+  ╔═══════════════════════════════════════════════════════════╗
+  ║              CIRCLE OF TRUST — Bank.com                   ║
+  ║                                                           ║
+  ║   ┌──────────────┐     ┌──────────┐   ┌──────────────┐  ║
+  ║   │  PingFed IdP │────▶│Salesforce│   │  ServiceNow  │  ║
+  ║   │  (hub)       │     └──────────┘   └──────────────┘  ║
+  ║   └──────┬───────┘     ┌──────────┐   ┌──────────────┐  ║
+  ║          │             │  Workday │   │     Jira     │  ║
+  ║          │             └──────────┘   └──────────────┘  ║
+  ║          │             ┌──────────────────────────────┐  ║
+  ║          └────────────▶│   ...72 more SP connections  │  ║
+  ║                        └──────────────────────────────┘  ║
+  ╚═══════════════════════════════════════════════════════════╝
+  
+  OUTSIDE THE CIRCLE:         ← No trust. Assertions from outside are REJECTED.
+  [Competitor's IdP]
+  [Unknown SaaS app]
+  [Rogue SAML sender]
+  
+  To join the circle: exchange metadata + security review + IT approval
+```
+
+**What defines membership in the CoT:**
+- Metadata has been exchanged (IdP has SP's metadata, SP has IdP's metadata)
+- Certificates are current and valid
+- Entity IDs are registered and known
+- The relationship is actively maintained (certificate rotation, updates)
+
+**The CoT in PingFederate terminology:**
+In PingFed's admin console, every SP Connection you create represents one SP being admitted to your Circle of Trust. The list of SP Connections IS your Circle of Trust. PingFed will only issue assertions to entity IDs that appear in this list.
+
+> **📖 Real-world scenario — bank admitting a new vendor:**
+> A bank wants to give their new clearing house partner access to their trade reporting system. The clearing house uses their own SAML IdP (not the bank's PingFed).
+>
+> Process to admit them into the CoT:
+> 1. Clearing house exports their IdP metadata XML
+> 2. Bank's IT security team reviews: entity ID, signing certificate, endpoint URLs
+> 3. Legal team approves the federation agreement
+> 4. PingFed admin imports clearing house's metadata (admits them to CoT)
+> 5. Clearing house imports bank's SP metadata for the trade reporting system
+> 6. Test with clearing house's test users
+> 7. Go live — clearing house employees can now SSO to the trade reporting system
+>
+> The entire trust is encoded in the metadata exchange. There are no shared passwords, no VPN, no separate account database for clearing house users.
+
+---
+
+### 💡 Cross-domain / Cross-realm federation — B2B partner access
+
+Cross-domain federation is when two **separate organisations** federate their identity systems so employees of Company A can access Company B's systems using their own corporate credentials — without Company B creating separate accounts for those employees.
+
+```
+CROSS-DOMAIN FEDERATION ARCHITECTURE:
+
+    COMPANY A DOMAIN                     COMPANY B DOMAIN
+  ┌──────────────────┐                 ┌──────────────────────────────┐
+  │                  │                 │                              │
+  │  [Company A IdP] │                 │  [Company B IdP]             │
+  │  PingFed A       │                 │  PingFed B                   │
+  │  Authenticates   │                 │                              │
+  │  Company A users │                 │  [Company B SPs]             │
+  │                  │                 │  Trade portal                │
+  └────────┬─────────┘                 │  Research platform           │
+           │                           │  Data exchange system        │
+           │    Metadata exchange      └──────────────────────────────┘
+           │    (one-time setup)
+           │◀──────────────────────────▶│
+           │
+  Cross-domain flow:
+  Company A employee → authenticates at Company A IdP
+                     → Company A IdP issues assertion
+                     → Assertion accepted by Company B SP (because CoTs are linked)
+                     → Employee accesses Company B's portal
+                     → Company B's system never manages Company A employee's password
+```
+
+**The attribute mapping challenge across domain boundaries:**
+
+```
+Company A sends (their internal naming):        Company B expects:
+  "costCentre": "CC-2045"              →        "department": "Trading"
+  "employeeLevel": "VP"                →        "accessTier": "senior"
+  "companyEmail": "j.smith@company-a.com" →     "externalUserId": "j.smith@company-a.com"
+  "activeDirectoryGroups": [...]       →        "partnerRole": "analyst"
+
+This mapping is configured in whichever IdP is acting as the bridge.
+It's the most time-consuming part of every B2B federation project.
+```
+
+> **📖 Real-world scenario — investment bank giving fund managers access:**
+> A global investment bank provides an online research portal for their institutional clients — fund managers at asset management firms worldwide. Each asset management firm has their own corporate IdP (some have Okta, some have Azure AD, some have PingFed).
+>
+> **Architecture:** Each asset management firm's IdP federates with the bank's portal.
+> - Fund managers log into their own company's SSO portal (their normal daily login)
+> - Click "Bank Research Portal" tile
+> - IdP-initiated SAML assertion sent to bank's portal (cross-domain)
+> - Bank's portal validates: "this assertion is from Goldman Sachs' registered IdP — trusted"
+> - Fund manager is in — without the bank ever creating or managing Goldman Sachs employee accounts
+>
+> **What the bank needs per customer firm:**
+> - The firm's IdP metadata (entity ID, SSO URL, signing certificate)
+> - Agreed NameID format (persistent recommended — so even if Goldman changes someone's email, their portal access persists)
+> - Agreed attribute contract (which attributes identify which access tier)
+>
+> **Time to onboard a new institutional client:** 2–4 hours (mostly legal/contractual, technical config takes 30 minutes)
+
+**NameID considerations in cross-domain federation:**
+
+```
+AVOID emailAddress format in cross-domain:
+  If Goldman Sachs changes john.smith@goldman.com → j.smith@goldman.com
+  The bank's portal sees a different NameID → creates a duplicate account
+  All of John's saved reports, preferences, history: lost
+
+USE persistent format instead:
+  NameID = <opaque ID that never changes>
+  Even if email changes, the NameID stays the same
+  Bank's portal maps NameID → internal user record → history preserved
+  
+  <saml:NameID Format="...persistent">
+    _goldman_user_789a3b2c1d4e
+  </saml:NameID>
+```
+
+---
+
+### 💡 How everything connects — the complete IAM stack
+
+After studying SAML, OAuth, OIDC, SCIM, and IGA separately, here is the single reference architecture showing where every protocol lives and how a single user event flows through all of them.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                           GOVERNANCE LAYER                                       │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  IGA Platform (SailPoint / Saviynt / Omada)                             │    │
+│  │  • Access request & approval workflows                                   │    │
+│  │  • Quarterly access certification campaigns (SOX / GDPR compliance)      │    │
+│  │  • Segregation of Duties (SoD) enforcement                               │    │
+│  │  • Orphaned account detection and cleanup                                │    │
+│  └──────────────────────────────┬──────────────────────────────────────────┘    │
+└─────────────────────────────────┼────────────────────────────────────────────────┘
+                                  │ triggers provisioning on hire/move/terminate
+                                  ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                           IDENTITY LAYER                                         │
+│  ┌──────────────────────┐         ┌──────────────────────────────────────┐      │
+│  │  HR System           │         │  Active Directory / Azure AD         │      │
+│  │  (Workday / SAP HR)  │────────▶│  Source of truth for who users are   │      │
+│  │  Hire/terminate/move │         │  Groups → roles → app access         │      │
+│  └──────────────────────┘         └──────────────┬───────────────────────┘      │
+└─────────────────────────────────────────────────┼─────────────────────────────────┘
+                                                   │ LDAP (authentication + attribute read)
+                                                   ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                        FEDERATION / AUTH PROTOCOL LAYER                          │
+│  ┌────────────────────────────────────────────────────────────────────────┐     │
+│  │  PingFederate (Hub IdP + Auth Server + Protocol Broker)                │     │
+│  │  • Authenticates users against AD                                       │     │
+│  │  • Issues SAML assertions to legacy SaaS apps                          │     │
+│  │  • Issues OIDC tokens to modern apps                                    │     │
+│  │  • Issues OAuth 2.0 access tokens to APIs                              │     │
+│  │  • Brokers between upstream IdPs (Azure AD, Okta, partner IdPs)        │     │
+│  │  • Hub in hub-and-spoke federation topology                            │     │
+│  └────────────────────────┬───────────────────────────────────────────────┘     │
+│                            │                                                     │
+│  ┌─────────────┬───────────┼────────────────────────────┐                      │
+│  │             │           │                            │                      │
+│  ▼             ▼           ▼                            ▼                      │
+│  SAML 2.0    OIDC       OAuth 2.0                   SCIM 2.0                  │
+│  Assertions  ID Tokens  Access Tokens               Provisioning               │
+│  (SSO)       (identity) (API auth)                  (account lifecycle)        │
+└──────────────────────────────────────────────────────────────────────────────────┘
+         │           │            │                         │
+         ▼           ▼            ▼                         ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                           APPLICATION LAYER                                      │
+│                                                                                  │
+│  Salesforce    Workday    ServiceNow    Custom REST API    Mobile App            │
+│  (SAML SSO)   (SAML SSO)  (SAML SSO)   (OAuth 2.0)       (OIDC + OAuth)        │
+│                                                                                  │
+│  SCIM creates accounts    SCIM creates accounts    JIT provisioning on           │
+│  before first login       before first login       first SSO login               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tracing a single employee login across the full stack:**
+
+```
+Jane joins the bank on Monday. Here is what happens to her identity:
+
+SUNDAY (day before):
+  IGA platform triggers joiner workflow
+  AD account created: jane.smith / UPN: jane.smith@bank.com
+  Added to groups: BankEmployees, LondonOffice, RetailBanking, SF_RelationshipManager
+  SCIM provisions Salesforce account (Standard User profile, LON territory)
+  SCIM provisions ServiceNow account (itil role)
+  SCIM provisions Workday account (employee self-service role)
+
+MONDAY 09:00 (Jane's first login):
+  Jane opens laptop → Windows login → Kerberos ticket issued by AD
+  Jane's browser → https://salesforce.com → SP-initiated SAML
+  Salesforce → PingFed: AuthnRequest
+  PingFed → AD: LDAP lookup for jane.smith
+  AD returns: mail, givenName, memberOf=[SF_RelationshipManager, LondonOffice...]
+  PingFed → builds SAML assertion → signs with RSA key
+  Browser → Salesforce ACS URL: SAMLResponse POST
+  Salesforce: sig ✓ aud ✓ time ✓ → maps SF_RelationshipManager → Standard User
+  Jane is in Salesforce in 2 seconds ✅
+  
+  Jane clicks Workday tile in portal → IdP-initiated SSO
+  PingFed → Workday: SAML assertion (different attribute mapping)
+  Jane is in Workday ✅
+  
+Protocols used in Jane's first hour:
+  Kerberos  — Windows desktop authentication
+  LDAP      — PingFed reads Jane's AD attributes
+  SCIM      — Created Jane's app accounts the night before
+  SAML      — SP-initiated and IdP-initiated SSO
+  IGA       — Orchestrated the entire provisioning workflow
+```
+
+**Bilateral vs Multilateral federation — the governance model:**
+
+```
+BILATERAL FEDERATION (pairwise trust):
+  Bank A ↔ Clearing House X   (1 trust relationship, negotiated directly)
+  Bank A ↔ Clearing House Y   (another, separately negotiated)
+  Bank A ↔ Data Vendor Z      (another)
+  
+  N × M relationships. Fine for a handful of partners.
+  Used in: most enterprise B2B, private sector partnerships.
+
+MULTILATERAL FEDERATION (trust network):
+  Central federation authority vets all members.
+  All vetted members trust each other automatically.
+  
+  [NHS Trust 1] ─┐
+  [NHS Trust 2] ─┤
+  [GP Surgery A]─┼──▶  [NHS Identity Federation Hub]  ◀──▶  [Patient Portal]
+  [GP Surgery B]─┤                                           [Lab System]
+  [Hospital X]  ─┘                                           [Pharmacy System]
+  
+  Adding one new NHS Trust = instant access to all 300 connected systems.
+  Used in: UK NHS, US InCommon, European eduGAIN, government sectors.
+  
+  Governance requirement: all members must pass security audit to join.
+  Exit mechanism: federation authority can revoke membership (removes trust instantly).
+```
+
+---
+
+*SAML 2.0 profiles: OASIS saml-profiles-2.0-os · Liberty Alliance ID-FF (Circle of Trust) · InCommon Federation (multilateral example) · UK NHS Login (multilateral government) · SCIM 2.0: RFC 7642–7644*

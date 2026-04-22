@@ -41,7 +41,8 @@ Phase 1 — Foundations          Phase 2 — Grant Types          Phase 3 — OI
 5. [Module 5 — Other grant types](#module-5)
 6. [Module 6 — OpenID Connect (OIDC)](#module-6)
 7. [Module 7 — Production patterns and security hardening](#module-7)
-8. [Quick Reference Cheat Sheet](#quick-reference)
+8. [Module 8 — OAuth Architecture Patterns](#module-8)
+9. [Quick Reference Cheat Sheet](#quick-reference)
 
 ---
 
@@ -892,3 +893,393 @@ Is a human user involved?
 ---
 
 *OAuth 2.0: RFC 6749 · PKCE: RFC 7636 · Device Code: RFC 8628 · JWT: RFC 7519 · JWKS: RFC 7517 · Introspection: RFC 7662 · Revocation: RFC 7009 · OIDC Core 1.0 · OAuth 2.1: draft-ietf-oauth-v2-1 · Mix-up prevention: RFC 9207*
+
+---
+
+## Module 8 — OAuth Architecture Patterns {#module-8}
+
+> These patterns describe **how OAuth flows are structured architecturally** — independent of which grant type is used. Understanding them explains why certain design decisions are made in production systems and why some patterns are considered anti-patterns.
+
+---
+
+### 💡 2-Legged vs 3-Legged OAuth
+
+This is the most searched OAuth architecture concept and the first question engineers ask when they encounter OAuth. The "legs" refer to the number of parties actively participating in the token exchange.
+
+```
+                    2-LEGGED OAUTH
+                    ──────────────
+         ┌──────────────────────────────┐
+         │                              │
+  [1] ⚙️ Client ──── POST /token ────▶ 🔐 Auth Server [2]
+         │           (client_id +        │
+         │            client_secret)     │
+         │                              │
+         │ ◀──── access_token ──────────┘
+         │
+         │ ──── Bearer token ────▶  🌐 Resource Server
+         │
+         └──── ONLY 2 PARTIES in the token exchange ────┘
+         No user. No consent. App IS the resource owner.
+
+         Grant type: Client Credentials
+         The "3rd leg" (Resource Owner / user) doesn't exist.
+```
+
+```
+                    3-LEGGED OAUTH
+                    ──────────────
+       👤 Resource Owner [1]
+          │
+          │ grants consent
+          ▼
+  [2] ⚙️ Client ─── auth code ──▶ 🔐 Auth Server [3]
+          │          exchange          │
+          │                           │
+          │ ◀── access_token ─────────┘
+          │
+          │ ──── Bearer token ────▶  🌐 Resource Server
+          │
+          └── ALL 3 PARTIES actively involved ──────────┘
+         User authenticates. User grants consent. App acts on their behalf.
+
+         Grant types: Authorization Code, Device Code
+```
+
+| | 2-Legged | 3-Legged |
+|---|---|---|
+| **Parties involved** | Client + Auth Server | Client + Auth Server + Resource Owner (user) |
+| **User present** | No | Yes |
+| **Consent screen** | No | Yes |
+| **Grant types** | Client Credentials | Auth Code, Device Code |
+| **`sub` claim** | The `client_id` | The user's unique ID |
+| **Refresh token issued** | No | Yes |
+| **Use when** | Machine-to-machine, services, jobs | User-facing apps, human-in-the-loop |
+
+> **📖 Real-world scenario — a bank's mobile app:**
+> When you open your banking app and log in → **3-legged** (you are the Resource Owner granting the app access to your account data).
+> When the bank's overnight batch job reconciles transactions across all accounts → **2-legged** (no user involved, the batch service uses Client Credentials to call the Core Banking API).
+> Both flows coexist in the same system. The mobile app's APIs are protected with 3-legged tokens. The batch job's APIs are protected with 2-legged tokens. The Resource Server validates both — it just reads different claims (`sub` = user ID vs `sub` = service ID).
+
+---
+
+### 💡 Delegated Authorisation — the precise mental model
+
+OAuth is formally described as a **delegated authorisation** framework. Understanding exactly what "delegated" means unlocks every other OAuth concept.
+
+```
+DELEGATION DEFINED:
+  The Resource Owner (you) permanently own your data.
+  You DELEGATE a specific, limited permission to an application.
+  The application acts ON YOUR BEHALF — but only within what you permitted.
+
+The trust chain:
+
+  👤 Resource Owner
+        │
+        │ "I permit this app to read my calendar"
+        │ (expresses intent → clicks 'Allow' on consent screen)
+        ▼
+  🔐 Auth Server
+        │
+        │ Issues a scoped token encoding the permission
+        │ Token says: "caller=MyApp, acting-for=jane@gmail.com, can-do=calendar.read"
+        ▼
+  📱 Client (MyApp)
+        │
+        │ Presents token to prove delegated permission
+        ▼
+  🌐 Resource Server (Google Calendar API)
+        │
+        │ Verifies the token, checks the scope
+        │ "MyApp is allowed to read Jane's calendar — serve the data"
+        ▼
+  📱 Client receives calendar data — acts on Jane's behalf
+```
+
+**What is delegated (scope) vs what is NOT:**
+
+```
+✅ DELEGATED:                          ❌ NOT DELEGATED:
+  Read your calendar events             Your Google account password
+  Post tweets on your behalf            Ability to change your password
+  Access your GitHub repos              Access to other users' data
+  Read your files in Dropbox            Ability to grant permissions to others
+  Scoped, time-limited, revocable       Your identity credentials
+```
+
+**The `sub` vs `client_id` distinction in delegated tokens:**
+
+```json
+{
+  "sub": "user_jane_123",       ← WHOSE data is being accessed (Resource Owner)
+  "client_id": "calendar-app",  ← WHO is doing the accessing (Client / delegate)
+  "scope": "calendar.read",     ← WHAT was delegated
+  "aud": "https://calendar-api.google.com"
+}
+```
+
+> **📖 Real-world scenario — employee expense app:**
+> Jane uses her company's expense management app. She clicks "Connect to Gmail to import receipts." Google's consent screen shows: "Expense App wants to: Read your email." Jane approves. OAuth issues a delegated token: the app can read Jane's emails, but only for receipt detection. It cannot delete emails, send emails, or access her Google Drive. If Jane leaves the company and deactivates the integration, the token is revoked — the app immediately loses access. This is delegation in practice: limited, auditable, and revocable without changing Jane's password.
+
+**Delegation vs Impersonation:**
+
+```
+DELEGATION (OAuth):             IMPERSONATION (NOT OAuth):
+  App acts ON BEHALF OF user      App pretends TO BE the user
+  Token carries both sub + aud    Token only carries sub
+  Resource Server knows it's      Resource Server thinks it's
+  an app acting for a user        talking directly to the user
+  Auditable (which app, what scope) Opaque (no way to distinguish)
+  ✅ Correct pattern               ⚠️ Anti-pattern — use Token Exchange
+```
+
+---
+
+### 💡 Token Relay pattern — carrying user context through microservices
+
+**The problem:** in a microservice architecture, Service A receives a user's access token (3-legged), then needs to call Service B. But Service B also needs to know the call is on behalf of the original user. Simply forwarding the token is wrong.
+
+```
+THE NAIVE (BROKEN) APPROACH — DO NOT DO THIS:
+
+  Browser ──▶ API Gateway ──▶ Service A ──▶ Service B
+                                  │
+                                  └── Forwards original token ──▶
+                                      Service B validates token:
+                                      aud = "https://api.example.com/service-a" ≠ Service B
+                                      ❌ 401 Unauthorized — audience mismatch
+
+WHY IT BREAKS:
+  The original token's `aud` claim is scoped to Service A.
+  Service B must reject it — if it didn't, any service could forward tokens
+  to any other service, bypassing audience validation entirely.
+```
+
+```
+THE CORRECT APPROACH — Token Relay via RFC 8693 Token Exchange:
+
+  Browser ──▶ API Gateway ──▶ Service A ──▶ 🔐 Auth Server
+                                  │              │
+                                  │  POST /token │ Issues NEW token
+                                  │  grant_type= │ scoped to Service B
+                                  │  token_exchange
+                                  │  subject_token = original_user_token
+                                  │  audience = service-b
+                                  │              │
+                                  │◀─────────────┘
+                                  │  new token:
+                                  │  sub=user_123, aud=service-b, act=service-a
+                                  │
+                                  └──▶ Service B (with exchanged token)
+                                       ✅ aud matches, user context preserved
+```
+
+**The `act` (actor) claim in the exchanged token:**
+
+```json
+{
+  "iss": "https://auth.example.com",
+  "sub": "user_123",              ← STILL the original user
+  "aud": "https://service-b.example.com",
+  "scope": "service-b.read",
+  "act": {                        ← Who is ACTING on behalf of the user
+    "sub": "service-a"            ← Service A is the actor
+  }
+}
+```
+
+> **📖 Real-world scenario — insurance claims processing:**
+> A customer submits an insurance claim via the web portal (3-legged OAuth, user token).
+> Portal calls the Claims Service → Claims Service needs to call the Fraud Detection Service.
+> The Fraud Detection Service must know: (1) which customer submitted this claim (for audit), (2) that it was called by Claims Service (not directly by the user).
+>
+> Using Token Exchange:
+> - Claims Service exchanges the user's token for a new token scoped to Fraud Detection Service
+> - The new token has: `sub=customer_456` (original user) + `act.sub=claims-service` (who called)
+> - Fraud Detection Service sees both: the customer context AND the calling service's identity
+> - Full audit trail: customer → portal → claims-service → fraud-detection
+> - If fraud-detection needs to call sanctions-check, another Token Exchange is made
+
+**When to use Token Relay vs Client Credentials for service-to-service:**
+
+```
+USE TOKEN RELAY (RFC 8693) WHEN:
+  The downstream service needs to know WHICH USER triggered the call
+  Audit logs must trace the original user through the call chain
+  Data access must be scoped to the user's entitlements
+  Example: claims processing, financial transactions, healthcare records
+
+USE CLIENT CREDENTIALS WHEN:
+  The downstream call has no user context (batch job, background sync)
+  The service is acting on its own behalf, not a user's behalf
+  Example: nightly reconciliation, cache warming, system health checks
+```
+
+---
+
+### 💡 Front-channel vs Back-channel — formal architecture definition
+
+These two terms appear throughout OAuth and SAML but are rarely formally defined. They describe the **trust level and visibility** of the communication channel.
+
+```
+FRONT CHANNEL                         BACK CHANNEL
+──────────────────────────────────    ──────────────────────────────────
+Travels through the browser           Direct server-to-server HTTP
+URL redirects, query params           Not visible to the browser
+Visible in browser history            Not logged by browser plugins
+Logged by web servers                 Cannot be intercepted by browser JS
+Subject to referrer header leaks      TLS-only, no browser intermediary
+Controlled by the browser             Controlled entirely by the server
+
+What CAN safely travel:               What MUST travel here:
+  auth_code (short-lived, one-use)      access_token
+  state (CSRF token)                    refresh_token
+  SAMLRequest (AuthnRequest)            id_token
+  SAMLResponse (assertion via POST)     client_secret
+
+What CANNOT travel:                   Security properties:
+  access_token (never in URL)           Cannot be intercepted by page scripts
+  refresh_token                         Cannot appear in browser history
+  client_secret                         Cannot be logged by browser extensions
+```
+
+**Architecture diagram — OAuth Auth Code + PKCE showing both channels:**
+
+```
+  FRONT CHANNEL (browser-mediated):
+  ────────────────────────────────
+  Browser ── GET /authorize?code_challenge=... ──▶ Auth Server
+  Browser ◀── 302 /callback?code=AUTH_CODE ────── Auth Server
+  Browser ── POST SAMLResponse (form submit) ────▶ SP (in SAML)
+
+  BACK CHANNEL (server-to-server):
+  ─────────────────────────────────
+  App Server ── POST /token + code_verifier ──▶ Auth Server
+  App Server ◀── { access_token, id_token } ─── Auth Server
+  App Server ── GET /api + Bearer token ─────▶ Resource Server
+```
+
+> **📖 Why SAML uses both channels:**
+> In SAML SP-initiated SSO, the AuthnRequest travels front-channel (URL redirect) because it's small and doesn't contain sensitive data. The SAMLResponse travels front-channel too (browser form POST) — but it's signed, so tampering is detectable. The browser is just a relay that can't read or modify the signed XML.
+> This is why the HTTP-POST binding is safe for assertions even though it passes through the browser: the browser cannot forge a valid signature, so the payload is tamper-evident even if not confidential.
+
+---
+
+### 💡 How everything connects — the N-tier identity architecture
+
+After studying OAuth 2.0, OIDC, SAML, SCIM, and IGA separately, here is the single reference architecture showing where every protocol lives in the complete identity stack — and how a single user login event flows through all of them.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        GOVERNANCE LAYER                                     │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  IGA Platform (SailPoint / Saviynt)                                  │  │
+│  │  Access requests · Certification campaigns · SoD · Audit reports     │  │
+│  └──────────────┬───────────────────────────────────────────────────────┘  │
+└─────────────────┼───────────────────────────────────────────────────────────┘
+                  │ joiner/mover/leaver
+                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        IDENTITY LAYER                                       │
+│  ┌────────────────────┐      ┌────────────────────────────────────────┐    │
+│  │  Active Directory  │      │  HR System (Workday / SAP HR)          │    │
+│  │  Source of truth   │◀─────│  Employee data → triggers workflows    │    │
+│  │  for who users are │      └────────────────────────────────────────┘    │
+│  └─────────┬──────────┘                                                    │
+│             │ LDAP                   SCIM 2.0 (automated provisioning)     │
+│             ▼                 ┌──────────────────────────────────────┐     │
+│  ┌──────────────────────┐     │  Creates/updates/disables accounts   │     │
+│  │  PingFederate (IdP)  │────▶│  in all connected SaaS apps          │     │
+│  │  Auth Server + IdP   │     └──────────────────────────────────────┘     │
+│  └──────────┬───────────┘                                                  │
+└─────────────┼───────────────────────────────────────────────────────────────┘
+              │
+              │ Issues:  SAML Assertions (enterprise SSO)
+              │          OIDC ID Tokens (modern apps)
+              │          OAuth 2.0 Access Tokens (API access)
+              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        AUTH PROTOCOL LAYER                                  │
+│                                                                             │
+│   SAML 2.0              OIDC                    OAuth 2.0                  │
+│   ───────────────────   ──────────────────────  ──────────────────────     │
+│   Enterprise SSO        Modern web/mobile SSO   API access tokens          │
+│   XML assertions        JSON/JWT                JWT                        │
+│   Salesforce/Workday    New SaaS apps            Microservices              │
+│   Legacy enterprise     Consumer apps            Machine-to-machine         │
+└─────────────────────────────────────────────────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        APPLICATION LAYER                                    │
+│                                                                             │
+│   [Salesforce]  [Workday]  [ServiceNow]  [Custom API]  [Mobile App]       │
+│   SAML SSO      SAML SSO   SAML SSO      OAuth 2.0      OIDC + OAuth       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Tracing a single login event through every layer:**
+
+```
+08:55  Jane opens Salesforce → no session found
+08:55  SP-initiated SAML: Salesforce builds AuthnRequest → redirects to PingFed
+08:55  PingFed receives AuthnRequest → checks Jane's AD session
+08:55  Jane's AD session is active (logged in at 08:00) → no re-auth needed
+08:55  PingFed queries AD via LDAP: reads mail, givenName, memberOf, department
+08:55  PingFed builds SAML Assertion: {email, role=RM, branch=LON-EC2}
+08:55  PingFed signs assertion with RSA private key
+08:55  Browser POSTs SAMLResponse to Salesforce ACS URL
+08:55  Salesforce validates: sig ✓ iss ✓ aud ✓ time ✓
+08:55  Salesforce maps Role=RM → Standard User profile
+08:55  Jane is in Salesforce ✅ — 2 seconds end-to-end
+
+Protocols touched in 2 seconds:
+  LDAP    — PingFed reads Jane's attributes from AD
+  SAML    — AuthnRequest + Assertion exchange
+  SCIM    — (background) Jane's Salesforce account was created by SCIM when she joined
+  IGA     — (background) her group memberships were set by IGA during onboarding
+  Kerberos — (background) her AD session was established via Windows login at 08:00
+```
+
+**Bilateral vs Multilateral federation — how trust is governed at scale:**
+
+```
+BILATERAL FEDERATION:
+  Each IdP-SP pair has a directly negotiated trust relationship.
+  Trust is established one pair at a time.
+
+  IdP-A ←──(metadata)──▶ SP-1   ← 1 trust relationship
+  IdP-A ←──(metadata)──▶ SP-2   ← another trust relationship
+  IdP-A ←──(metadata)──▶ SP-3   ← another trust relationship
+  Total: N × M relationships
+
+  ✅ Fine for small scale (1 IdP + 5 SPs = 5 relationships)
+  ⚠️ Breaks at enterprise scale (5 IdPs + 80 SPs = 400 relationships)
+
+MULTILATERAL FEDERATION (federation hub / registry):
+  A central authority vets all members. Members trust the hub's decisions.
+  Adding one new member gives them access to all others automatically.
+
+       ┌────────────────────────────┐
+       │   Federation Authority     │
+       │   (hub / trust registry)   │
+       │   Vets and governs members │
+       └──────┬─────────────────────┘
+              │
+    ┌─────────┼──────────┐
+    ▼         ▼          ▼
+  IdP-A     SP-1       SP-2     ← All trust each other via the hub
+  IdP-B     SP-3       SP-4     ← New member = instant access to all
+
+  ✅ Scales to hundreds of members
+  📖 Real examples:
+     UK NHS Login (healthcare)
+     InCommon (US academic)
+     eduGAIN (global academic federation)
+     UK government's GOV.UK One Login
+```
+
+---
+
+*Architecture patterns: RFC 8693 (Token Exchange) · RFC 9207 (OAuth 2.0 Authorization Server Mix-Up Mitigation) · Liberty Alliance ID-FF (Circle of Trust origin) · InCommon / eduGAIN (multilateral federation examples)*
