@@ -5,228 +5,230 @@
 
 ## Part 1 — Copilot Prompting Strategy (Claude Models)
 
-Use these prompts in GitHub Copilot Chat with the Claude model selected.
+Paste these directly into GitHub Copilot Chat with a Claude model selected.
 
 ---
 
-### Prompt 1 — Understand an Existing TeamCity Pipeline
-
-Use this when you open a TeamCity build config and need to understand what it actually does.
+### Prompt 1 — Decode a TeamCity Build Config
 
 ```
-You are a senior DevOps engineer. I am a developer with no deep DevOps knowledge.
+You are a senior DevOps engineer. I am a developer with no DevOps background.
 
-I have this TeamCity build configuration. Explain it to me in plain English:
-- What does each build step do?
-- What triggers the pipeline?
-- What environment variables or parameters are used?
-- What is the deployment target and mechanism?
-- Are there any implicit dependencies I should know about?
+Analyse this TeamCity build configuration for a TypeScript Node.js API on AWS.
+Tell me in plain English:
+- What each build step does and why it exists
+- What triggers this pipeline and on which branches
+- Every environment variable / parameter used — what it is and where it comes from
+- The exact deployment mechanism and target (Lambda / ECS / EB / S3 etc.)
+- Any hidden dependencies, shared templates, or implicit behaviour I must know before migrating
 
 TeamCity config:
-[PASTE YOUR TEAMCITY CONFIG XML OR BUILD STEPS HERE]
+[PASTE XML OR BUILD STEPS]
 ```
 
 ---
 
-### Prompt 2 — Convert a TeamCity Pipeline to GitHub Actions
+### Prompt 2 — Convert TC Pipeline to GitHub Actions
 
-Use this after you understand the TC pipeline.
+Run after Prompt 1 so you understand what you're converting.
 
 ```
-You are a senior DevOps engineer. Convert the following TeamCity build configuration
-into a GitHub Actions workflow for a TypeScript Node.js API deployed to AWS.
+You are a senior DevOps engineer. Convert the TeamCity config below into a
+GitHub Actions workflow for a TypeScript Node.js API deployed to AWS.
 
-Requirements:
-- Use GitHub Actions best practices (reusable workflows where applicable)
-- The pipeline must support two environments: dev and prod
-- Use GitHub Environments for secrets separation (dev secrets vs prod secrets)
-- Use OIDC-based AWS authentication (no long-lived AWS keys)
-- The Node.js version should be parameterized
-- Include caching for node_modules
-- Add a manual approval gate before prod deployment
+Hard requirements:
+- Two environments: dev (auto-deploy on push) and prod (manual approval gate)
+- GitHub Environments for secret isolation — no repo-level secrets for deploy creds
+- OIDC-based AWS auth — no static AWS keys anywhere
+- Node.js version as a workflow input, not hardcoded
+- npm ci with node_modules cache
+- Pinned action versions (@v4 minimum, never @latest)
+- timeout-minutes on every job
+- concurrency block to prevent parallel deploys to the same environment
 
-TeamCity config:
-[PASTE CONFIG]
-
-AWS deployment mechanism currently used:
-[e.g., CDK deploy / ECS / Lambda / Elastic Beanstalk — fill this in]
+TeamCity config: [PASTE]
+AWS deploy mechanism: [CDK / SAM / Lambda CLI / ECS / EB — fill in]
 ```
 
 ---
 
-### Prompt 3 — Audit Generated Workflow for Security and Best Practices
+### Prompt 3 — Security & Quality Audit
 
-Run this on any workflow YAML Copilot generates before you use it.
-
-```
-Audit this GitHub Actions workflow for:
-1. Security issues (exposed secrets, overly broad IAM permissions, missing OIDC constraints)
-2. Missing best practices (pinned action versions, timeout settings, concurrency controls)
-3. Anything that would cause silent failures in a prod deployment
-4. Cost or performance improvements
-
-Flag each issue with: [CRITICAL] [WARNING] [SUGGESTION]
-
-Workflow:
-[PASTE YAML]
-```
-
----
-
-### Prompt 4 — Generate Reusable Workflow for 15 APIs
-
-Use this to avoid copy-pasting 15 near-identical YAML files.
+Run on every generated workflow before committing.
 
 ```
-I have 15 TypeScript Node.js APIs deployed to AWS. Each has nearly the same
-CI/CD steps. Design a GitHub Actions reusable workflow strategy where:
+Audit this GitHub Actions workflow. Flag every issue as [CRITICAL] [WARNING] [SUGGESTION].
 
-- A caller workflow in each repo passes service-specific parameters
-- The reusable workflow handles: install, lint, test, build, deploy
-- Secrets are injected via GitHub Environments (dev / prod)
-- The reusable workflow lives in a shared repo called [YOUR-ORG/shared-workflows]
+Check for:
+- Secrets exposed via echo, logs, or env vars printed in steps
+- Actions pinned to @latest or unpinned (supply chain risk)
+- Overly broad IAM permissions or missing permissions: block
+- Missing timeout-minutes (runaway job risk)
+- Missing concurrency control (parallel deploy risk)
+- Conditions that will never evaluate true
+- Steps that will silently succeed even when they fail
+- Any prod deploy reachable without a manual approval gate
 
-Show me:
-1. The reusable workflow file (.github/workflows/node-aws-deploy.yml)
-2. An example caller workflow for one of my APIs
-3. What inputs and secrets the reusable workflow should accept
+Workflow: [PASTE YAML]
 ```
 
 ---
 
-### Prompt 5 — Validate a Workflow Without Running It
+### Prompt 4 — Pre-Flight Validation Without Running
 
 ```
-Without running this GitHub Actions workflow, validate it for:
+Validate this GitHub Actions workflow without executing it.
+
+Check for:
 - YAML syntax errors
-- Incorrect GitHub Actions syntax (wrong keys, missing required fields)
-- Logic errors (steps that will never run, wrong condition expressions)
-- Missing permissions blocks
+- Invalid GitHub Actions keys or missing required fields
+- if: expressions that are syntactically wrong or will never be true
+- Jobs referencing secrets or inputs that are never declared
+- Missing permissions blocks required for OIDC or artifact access
 
-Workflow:
-[PASTE YAML]
+Workflow: [PASTE YAML]
 ```
 
 ---
 
-## Part 2 — Understanding TeamCity vs GitHub Actions
+## Part 2 — TeamCity vs GitHub Actions: What You Need to Know
 
-### Core Concept Mapping
+### Concept Mapping
 
-| TeamCity Concept | GitHub Actions Equivalent | Notes |
+| TeamCity | GitHub Actions | Notes |
 |---|---|---|
-| Build Configuration | Workflow file (`.github/workflows/*.yml`) | One YAML file per workflow |
-| Build Step | `step` in a job | Sequential by default |
-| Build Agent | `runs-on` runner | Use `ubuntu-latest` for most cases |
-| VCS Root | `on: push / pull_request` trigger | Configured in the workflow |
-| Build Trigger | `on:` block | Push, PR, schedule, manual (`workflow_dispatch`) |
-| Build Parameters | `inputs` (manual) or `env` (static) | |
-| Agent Requirements | `runs-on` labels or self-hosted runner tags | |
-| Build Chain (dependencies) | `needs:` between jobs | Explicit DAG |
-| Artifact Publishing | `actions/upload-artifact` | |
-| Artifact Downloading | `actions/download-artifact` | |
-| Shared Build Template | Reusable Workflow (`.github/workflows/`) | Called with `uses:` |
-| Environment Variables | `env:` at workflow / job / step level | |
-| Build Feature: SSH Agent | `webfactory/ssh-agent` action | |
-| Deployment environments | GitHub Environments (with protection rules) | Replaces TC deployment configs |
-| Approval gates | GitHub Environment required reviewers | |
-| TeamCity secrets | GitHub Secrets (repo or environment level) | |
+| Build Configuration | `.github/workflows/*.yml` | One YAML file = one workflow |
+| Build Step | `step` inside a job | Sequential within a job |
+| Build Agent | `runs-on: ubuntu-latest` | GitHub-hosted; no infrastructure to manage |
+| VCS Trigger | `on: push / pull_request` | Defined inside the workflow |
+| Build Parameters (`%name%`) | `inputs:` or `env:` | `inputs` for manual triggers; `env` for static values |
+| Build Chain | `needs:` between jobs | Explicit dependency graph |
+| Shared Build Template | Reusable Workflow (`workflow_call`) | Called with `uses:` from any repo |
+| Deployment Environment | GitHub Environment | Holds secrets + approval rules per environment |
+| Approval Gate | Environment → Required Reviewers | Blocks job until a human approves in GitHub UI |
+| TC Secrets | GitHub Secrets (Environment-scoped) | Never use repo-level secrets for deploy credentials |
+| Artifact publish/download | `upload-artifact` / `download-artifact` | Passes files between jobs in the same run |
 
 ---
 
-### How to Read a TeamCity Build Config (Quick Guide)
+### How to Read a TeamCity Build Config
 
-When you open a TeamCity project, look for these things in order:
+Open TC admin and inspect these **in this order** before you migrate anything:
 
-**1. VCS Settings** — tells you which branch triggers the build and what the checkout rules are.
+**1. VCS Settings** — source repo, branch filter, checkout rules. Tells you *what code* and *when*.
 
-**2. Build Steps** — the ordered list of commands. Each step has a Runner Type:
-- `Command Line` → raw shell commands
-- `Gradle`, `Maven`, `Node.js` → language-specific runners
-- `AWS CodeDeploy`, `S3 Upload` → deployment steps
+**2. Build Steps** — ordered list of commands. Each has a Runner Type:
+- `Command Line` → raw shell
+- `Node.js` → npm/yarn steps
+- `AWS CodeDeploy / S3 Upload` → deployment steps
 
-**3. Parameters** — `%parameter.name%` syntax. These are either:
-- System properties (`system.*`)
-- Environment variables (`env.*`)
-- Config parameters (used in step definitions)
+**3. Parameters** — `%parameter.name%` syntax. Three types:
+- `env.*` → become environment variables at runtime
+- `system.*` → passed as system properties to the build tool
+- Config params → used inside step definitions only, not at runtime
 
-**4. Build Features** — things like SSH Agent, automatic merge, or Docker support running alongside the build.
+**4. Build Features** — things running *alongside* the build (SSH agent, Docker support, auto-merge). Easy to miss — check this tab explicitly.
 
-**5. Dependencies** — if a build waits for another build to finish first (Snapshot or Artifact dependency).
+**5. Dependencies** — does this build wait for another build's artifact or completion? If yes, replicate that ordering with `needs:` in GA.
 
-**6. Triggers** — VCS trigger (on code push), schedule trigger, or dependency trigger.
+**6. Triggers** — VCS (code push), schedule, or dependency trigger. Map each to the `on:` block.
 
-**7. Failure Conditions** — what counts as a failed build (non-zero exit code, test failure count, etc.).
+**7. Failure Conditions** — GA fails on non-zero exit by default. Custom thresholds (test count, metric gates) need scripting in GA.
 
 ---
 
 ### GitHub Actions Workflow Anatomy
 
 ```yaml
-name: Deploy API                        # Workflow name
+name: Deploy API
 
-on:                                     # TRIGGERS (replaces TC VCS Trigger)
+on:                                       # TRIGGERS — replaces TC VCS Trigger
   push:
-    branches: [main]
-  workflow_dispatch:                    # Manual trigger
+    branches: [main, develop]
+  workflow_dispatch:                      # Manual trigger from GitHub UI
 
-env:                                    # GLOBAL ENV VARS
-  NODE_VERSION: '20'
+env:
+  NODE_VERSION: '20'                      # Global constant — change once, applies everywhere
 
 jobs:
-  build:                                # JOB 1
-    runs-on: ubuntu-latest              # AGENT (replaces TC Agent Requirement)
-    steps:
-      - uses: actions/checkout@v4       # STEP: checkout code
 
-      - uses: actions/setup-node@v4     # STEP: set up runtime
+  build:                                  # JOB 1: CI gate — must pass before any deploy runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15                   # Always set — prevents runaway billing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci                     # STEP: shell command
+          cache: 'npm'                    # Caches based on package-lock.json hash
+      - run: npm ci                       # Clean install — never mutates the lockfile
+      - run: npm run lint
       - run: npm test
 
   deploy-dev:
-    needs: build                        # DEPENDENCY (replaces TC Snapshot Dependency)
+    needs: build                          # DEPENDENCY — replaces TC Snapshot Dependency
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-    environment: dev                    # GITHUB ENVIRONMENT (secrets + approval rules)
+    timeout-minutes: 20
+    environment: dev                      # Pulls dev secrets; no approval needed
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: true           # Cancel stale runs on fast pushes
+    permissions:
+      id-token: write                     # Required for OIDC
+      contents: read
     steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: npm ci
       - run: npm run deploy
 
   deploy-prod:
-    needs: deploy-dev
+    needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: prod                   # Prod requires manual approval
+    timeout-minutes: 20
+    environment: prod                     # Blocks here until a required reviewer approves
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false          # Never cancel an in-flight prod deploy
+    permissions:
+      id-token: write
+      contents: read
     steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - run: npm ci
       - run: npm run deploy
 ```
 
 ---
 
-### AWS Authentication — Do It Right (OIDC, No Static Keys)
+### AWS Authentication via OIDC (One-Time Setup)
 
-**Never store `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` as GitHub secrets.**
+**Never store `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` as secrets.**
+OIDC gives GitHub a short-lived token from AWS per run — no rotating keys, no leak risk.
 
-Use OIDC instead — GitHub proves its identity to AWS and gets a short-lived token.
+**Step 1 — AWS Console → IAM → Identity Providers → Add Provider**
+- Provider URL: `https://token.actions.githubusercontent.com`
+- Audience: `sts.amazonaws.com`
 
-**Step 1 — One-time AWS setup (do this once per account)**
-
-```bash
-# Create the OIDC identity provider in AWS IAM
-# Provider URL: https://token.actions.githubusercontent.com
-# Audience: sts.amazonaws.com
-```
-
-**Step 2 — Create an IAM Role with this trust policy**
+**Step 2 — Create one IAM Role per environment with this trust policy**
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
-    "Principal": { "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com" },
+    "Principal": {
+      "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
+    },
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
       "StringLike": {
@@ -237,46 +239,71 @@ Use OIDC instead — GitHub proves its identity to AWS and gets a short-lived to
 }
 ```
 
-**Step 3 — Use in workflow**
+Change `environment:prod` to `environment:dev` for the dev role. Store each ARN in its GitHub Environment as `AWS_ROLE_ARN`.
+
+**Step 3 — Verify OIDC before writing any deploy logic**
 
 ```yaml
-permissions:
-  id-token: write
-  contents: read
-
-steps:
-  - uses: aws-actions/configure-aws-credentials@v4
-    with:
-      role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-      aws-region: us-east-1
+- uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+    aws-region: us-east-1
+- run: aws sts get-caller-identity    # If this prints your role ARN, OIDC is working
 ```
 
-Store `AWS_ROLE_ARN` in your GitHub Environment (dev / prod separately).
+---
+
+### Key Runtime Concepts
+
+**Contexts** — variables GitHub injects per run:
+
+| Context | Value |
+|---|---|
+| `github.ref` | `refs/heads/main` |
+| `github.sha` | Full commit SHA |
+| `github.actor` | Who triggered the run |
+| `secrets.NAME` | Encrypted secret value |
+| `inputs.NAME` | Value passed to reusable or manual workflow |
+
+**Expressions** — `if:` conditions:
+```yaml
+if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+```
+
+**Job outputs** — pass values between jobs (e.g., image tag from build to deploy):
+```yaml
+jobs:
+  build:
+    outputs:
+      image-tag: ${{ steps.tag.outputs.value }}
+  deploy:
+    needs: build
+    env:
+      IMAGE: ${{ needs.build.outputs.image-tag }}
+```
 
 ---
 
 ## Part 3 — Migration Plan: 15 APIs
 
-### Phase 0 — Preparation (Before Touching Any Pipeline)
+### Phase 0 — Audit Before You Touch Anything
 
-**Checklist:**
-
-- [ ] Export all 15 TeamCity build configs (XML export from TC admin)
-- [ ] For each API, document: trigger branch, build steps, deploy target, env vars used
-- [ ] Identify which APIs share identical (or near-identical) pipelines → candidates for reusable workflow
-- [ ] Set up GitHub Environments in each repo: `dev` and `prod`
-- [ ] Set up OIDC in AWS (one-time)
-- [ ] Create dev IAM role and prod IAM role with least-privilege policies
-- [ ] Create a shared workflow repo: `your-org/shared-workflows` (if applicable)
-- [ ] Agree on branch strategy: is `main` → prod and `develop` → dev? Confirm this.
+- [ ] Export all 15 TC build configs (TC Admin → Project → Export as XML)
+- [ ] For each API record: trigger branch, exact build steps, deploy target, all env vars
+- [ ] Group APIs by deploy pattern → each group calls one reusable workflow
+- [ ] Create GitHub Environments (`dev`, `prod`) in every repo before writing any workflow
+- [ ] Add required reviewers to every `prod` environment immediately
+- [ ] Create dev IAM role and prod IAM role in AWS with least-privilege policies
+- [ ] Create `your-org/shared-workflows` repo for the reusable template
+- [ ] Confirm branch strategy with team: `develop` → dev, `main` → prod
 
 ---
 
-### Phase 1 — Build the Reusable Workflow Template (Week 1)
+### Phase 1 — Build the Reusable Workflow (Week 1)
 
-Do this once. All 15 APIs will use it.
+Write this once. All 15 APIs call it. Changes to the pipeline logic happen here, not in 15 repos.
 
-**File:** `your-org/shared-workflows/.github/workflows/node-aws-deploy.yml`
+**`your-org/shared-workflows/.github/workflows/node-aws-deploy.yml`**
 
 ```yaml
 name: Node.js AWS Deploy (Reusable)
@@ -291,10 +318,6 @@ on:
         required: false
         type: string
         default: '20'
-      working-directory:
-        required: false
-        type: string
-        default: '.'
     secrets:
       AWS_ROLE_ARN:
         required: true
@@ -302,10 +325,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: ${{ inputs.environment }}
-    defaults:
-      run:
-        working-directory: ${{ inputs.working-directory }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: ${{ inputs.environment != 'prod' }}
     permissions:
       id-token: write
       contents: read
@@ -318,11 +342,8 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-
       - run: npm run lint
-
       - run: npm test
-
       - run: npm run build
 
       - uses: aws-actions/configure-aws-credentials@v4
@@ -330,32 +351,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - run: npm run deploy  # Replace with your actual deploy command (CDK, SAM, etc.)
+      - run: npm run deploy    # Replace: cdk deploy / sam deploy / aws lambda update-function-code
 ```
 
----
-
-### Phase 2 — Pilot Migration: 1 Low-Risk API (Week 1-2)
-
-Pick one API that is: low-traffic, has good test coverage, not business-critical.
-
-Run the TC pipeline and new GA workflow **in parallel** for 2–3 deploys. Compare:
-- Build times
-- Deployment artifacts
-- Any env var mismatches
-
-Only retire TC for this API after parallel validation passes.
-
----
-
-### Phase 3 — Migrate Remaining 14 APIs (Week 2-4)
-
-**Batch by similarity.** Group APIs that share the same deploy mechanism (e.g., all Lambda, or all ECS). Migrate one group at a time.
-
-For each API, the caller workflow is minimal:
+**Caller workflow in each API repo (`.github/workflows/deploy.yml`):**
 
 ```yaml
-# .github/workflows/deploy.yml (in each API repo)
 name: Deploy
 
 on:
@@ -384,13 +385,113 @@ jobs:
 
 ---
 
+### GitHub Environments — How to Set Them Up (Do This Before Phase 2)
+
+This is referenced throughout the document. Here is exactly how to create them.
+
+**For every API repo, repeat these steps:**
+
+**Create the `dev` environment:**
+1. GitHub repo → Settings → Environments → New environment → name it `dev`
+2. No approval required — deploys automatically on push to `develop`
+3. Add secret: `AWS_ROLE_ARN` → paste the dev IAM role ARN
+4. Add any other API-specific env secrets here (DB connection strings, API keys etc.)
+
+**Create the `prod` environment:**
+1. GitHub repo → Settings → Environments → New environment → name it `prod`
+2. Check **Required reviewers** → add yourself and at least one other person
+3. Set **Wait timer** to 0 (no delay, just approval)
+4. Add secret: `AWS_ROLE_ARN` → paste the prod IAM role ARN (different from dev)
+5. Add prod-specific secrets here
+
+**Result:** When a workflow job targets `environment: prod`, GitHub pauses it and sends a Slack/email notification to the required reviewers. Nobody can skip this — it is enforced by GitHub, not by convention.
+
+---
+
+### AWS Deploy Commands — Replace the Placeholder
+
+The reusable workflow has `npm run deploy` as a placeholder. Your `package.json` deploy script must call one of these. Use whichever matches your setup:
+
+**AWS CDK**
+```json
+// package.json
+"scripts": {
+  "deploy": "cdk deploy --require-approval never"
+}
+```
+
+**AWS SAM**
+```json
+"scripts": {
+  "deploy": "sam deploy --no-confirm-changeset --no-fail-on-empty-changeset"
+}
+```
+
+**Lambda — Direct code update (no infra tool)**
+```json
+"scripts": {
+  "deploy": "aws lambda update-function-code --function-name MY-FUNCTION-NAME --zip-file fileb://dist/function.zip"
+}
+```
+
+**ECS — Force new deployment after pushing image to ECR**
+```json
+"scripts": {
+  "deploy": "aws ecs update-service --cluster MY-CLUSTER --service MY-SERVICE --force-new-deployment"
+}
+```
+
+The environment (dev vs prod) is controlled by the `AWS_ROLE_ARN` OIDC role, not by a flag in the deploy command. The same script runs in both environments — it deploys to whichever AWS account the role belongs to.
+
+---
+
+### Phase 2 — Pilot: 1 Low-Risk API (Week 1–2)
+
+Pick one API: low-traffic, has tests, not customer-facing.
+
+Run **TC and GA in parallel** for 3 consecutive deploys. Validate:
+- Same code lands in the same AWS target
+- All env vars present and correct in GA
+- No timing or ordering regressions
+
+Retire TC for this API only after parallel validation passes. This becomes the reference pattern for all 14 remaining APIs.
+
+---
+
+### Phase 3 — Migrate Remaining 14 APIs (Week 2–4)
+
+**Batch by deploy mechanism** — all Lambda together, all ECS together, all CDK together. Each batch shares the same deploy command in the reusable workflow, so you configure once and apply across the batch.
+
+**For each API in a batch, follow this checklist in order:**
+
+- [ ] Run Prompt 1 (Copilot) on its TC config — document what it actually does
+- [ ] Confirm the deploy command matches the batch's mechanism (see AWS Deploy Commands below)
+- [ ] Create `.github/workflows/deploy.yml` using the caller workflow template from Phase 1
+- [ ] Add `AWS_ROLE_ARN` to the repo's `dev` and `prod` GitHub Environments
+- [ ] Push to `develop` → watch the GA run → compare deployment output against the TC run side-by-side
+- [ ] If GA deploy matches, push to `main` → approve the prod gate → confirm prod deploy lands correctly
+- [ ] Disable TC trigger for this API only after both dev and prod validate
+- [ ] Move to the next API in the batch
+
+**Batch sizing:** 2–3 APIs per day is safe. Don't migrate an entire batch in one day — if something is misconfigured, you want to catch it on API 1, not after all 5 are broken.
+
+**Tracking sheet** — maintain a simple table while migrating (add to this doc or a separate file):
+
+| API | TC Config Documented | GA Workflow Created | Dev Validated | Prod Validated | TC Disabled |
+|---|---|---|---|---|---|
+| api-name-1 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| api-name-2 | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+
+---
+
 ### Phase 4 — Decommission TeamCity
 
-Only after all 15 APIs have had at least 2 successful prod deployments via GitHub Actions.
+Only after all 15 APIs have ≥2 successful prod deployments via GitHub Actions.
 
-- [ ] Disable TC build triggers (don't delete yet)
-- [ ] Monitor for 1 sprint
-- [ ] Delete TC configs and retire the TC server
+- [ ] Disable TC build triggers (do not delete yet)
+- [ ] Run one full sprint with TC triggers off
+- [ ] Confirm no rollbacks were caused by GA issues
+- [ ] Delete TC configs → retire TC server
 
 ---
 
@@ -398,43 +499,132 @@ Only after all 15 APIs have had at least 2 successful prod deployments via GitHu
 
 | Risk | Mitigation |
 |---|---|
-| Hidden env vars in TC not documented | Run every TC build with verbose logging before migration; compare env dumps |
-| Different Node.js version between TC agent and GA runner | Pin `node-version` explicitly in both |
-| Deploy command differences (TC plugin vs CLI) | Document exact deploy commands per API before starting |
-| Prod approval gate not configured → accidental deploy | Set up GitHub Environment protection rules before any prod workflow exists |
-| OIDC misconfiguration → deploy fails silently | Test OIDC auth on a non-destructive AWS CLI call first (`aws sts get-caller-identity`) |
+| Hidden env vars in TC not visible in UI | Run TC build with verbose logging; capture env dump before migration |
+| Node.js version mismatch (TC agent vs GA runner) | Check `node --version` on TC agent; pin exact version in GA |
+| Deploy command differs (TC plugin vs CLI flag) | Document exact CLI command per API in Phase 0; test in dev first |
+| Accidental prod deploy before approval gate is configured | Create GitHub Environments with required reviewers *before* the first workflow commit |
+| OIDC fails silently on first run | Verify with `aws sts get-caller-identity` before any deploy step |
+| Parallel deploys collide during migration window | Keep TC trigger and GA trigger on different branches during overlap |
 
 ---
 
-### Key GitHub Actions Concepts to Know
+## Part 4 — GitHub Actions Best Practices (Simple & Doable)
 
-**Contexts** — variables provided by GitHub at runtime:
-- `github.ref` — branch or tag that triggered the workflow
-- `github.sha` — commit SHA
-- `github.actor` — who triggered it
-- `secrets.*` — encrypted secrets
-- `env.*` — environment variables
+Every item here applies directly to your setup and takes minutes to implement.
 
-**Expressions** — used in `if:` conditions:
+---
+
+### 1. Pin Action Versions — Never Use `@latest`
+
 ```yaml
-if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+# Risk: behaviour changes without warning, supply chain attacks possible
+- uses: actions/checkout@latest        # Bad
+
+# Safe: locked to major version
+- uses: actions/checkout@v4            # Good
+
+# Safest: locked to exact commit SHA (use for security-critical steps)
+- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # Best
 ```
 
-**Concurrency** — prevent two deploys running simultaneously:
-```yaml
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: false  # false for prod; true acceptable for dev
-```
+---
 
-**Job outputs** — pass data between jobs:
+### 2. Set `timeout-minutes` on Every Job
+
+Without it, a hung deploy runs for up to 6 hours, burns billable minutes, and locks the environment.
+
 ```yaml
 jobs:
   build:
-    outputs:
-      image-tag: ${{ steps.tag.outputs.value }}
+    timeout-minutes: 15
+  deploy:
+    timeout-minutes: 20
 ```
 
 ---
 
-*Document version: 1.0 | Use as living document — update as each API migrates.*
+### 3. Use `concurrency` to Prevent Parallel Deploys
+
+```yaml
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true    # true for dev (cancel stale), false for prod (never interrupt)
+```
+
+---
+
+### 4. Minimum `permissions` on Every Job
+
+GA workflows run with broad token permissions by default. Lock them down explicitly:
+
+```yaml
+permissions:
+  contents: read      # Always needed for checkout
+  id-token: write     # Only if using OIDC — remove otherwise
+```
+
+---
+
+### 5. `npm ci` — Not `npm install`
+
+```yaml
+- run: npm ci   # Installs exactly what's in package-lock.json. Never mutates it.
+                # npm install can silently upgrade packages — never use in CI.
+```
+
+---
+
+### 6. Cache `node_modules` — One Line, Free Speed
+
+```yaml
+- uses: actions/setup-node@v4
+  with:
+    node-version: '20'
+    cache: 'npm'    # Caches based on package-lock.json hash. Saves ~40–60s per run.
+```
+
+---
+
+### 7. Secrets at Environment Level, Not Repo Level
+
+**Repo-level secrets** → available to every workflow, every branch, every PR.
+**Environment-level secrets** → only available when a job explicitly targets that environment.
+
+Store `AWS_ROLE_ARN` and any deploy credentials inside the `dev` / `prod` GitHub Environments. A workflow triggered from a feature branch cannot access prod credentials — even if someone writes a workflow that tries.
+
+---
+
+### 8. Never Echo Secrets
+
+```yaml
+# This leaks the value into the workflow log
+- run: echo "Token is ${{ secrets.MY_SECRET }}"   # Never do this
+
+# GA masks known secrets automatically, but masking is not foolproof.
+# If a secret appears in a log at all, rotate it.
+```
+
+---
+
+### 9. Protect the `main` Branch
+
+GitHub → Settings → Branches → Add rule for `main`:
+- Require a pull request before merging
+- Require the build status check to pass before merge
+- Block direct pushes
+
+This means nothing reaches prod without a reviewed PR and a green build — the simplest prod safety net you can add.
+
+---
+
+### 10. Add a Status Badge to Every API's README
+
+```markdown
+![Deploy](https://github.com/YOUR-ORG/YOUR-REPO/actions/workflows/deploy.yml/badge.svg)
+```
+
+Instant visibility into pipeline health. When the badge goes red, the team knows before anyone checks the logs.
+
+---
+
+*Document version: 2.0 | Living document — tick off checklist items as each API migrates.*

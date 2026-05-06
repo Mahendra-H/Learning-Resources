@@ -1481,6 +1481,11 @@ Aim for 2.1 compliance even before it becomes a formal standard.
 
 ## Module 8 — Architecture patterns {#module-8}
 
+### 🎯 The one question that unlocks this module
+
+> **"OAuth has grant types for different situations — but how do all the pieces fit together in a real multi-service system?"**
+> Two-legged for machines, three-legged for users, Token Relay for user context that must travel across service chains. Once you can map any real architecture to the right combination of these, you understand OAuth at a system design level — not just a protocol level.
+
 ### 💡 Delegated authorisation — the precise mental model
 
 ```
@@ -1608,6 +1613,142 @@ START: What are you building?
    (separate guide)   BFF pattern                JWT validation
 ```
 
+### 📖 Real-world: e-commerce platform — mapping every service to the right flow
+
+```
+A real system has multiple actors. Here is how each maps to an OAuth flow.
+
+  Customer uses the React web storefront to browse and buy:
+    → Authorization Code + PKCE (3-legged)
+    → access_token in BFF memory, browser has only a session cookie
+    → sub = customer_456 travels with every order API call
+
+  Customer uses the iOS shopping app:
+    → Authorization Code + PKCE (PKCE mandatory — no client_secret in mobile)
+    → Tokens stored in iOS Keychain
+    → Same scopes, same Auth Server, different client_id from the web app
+
+  Recommendation engine reads customer purchase history to personalise:
+    → Token Exchange (RFC 8693) — user context must reach the Order History API
+    → Recommendation engine exchanges customer token for one scoped to order-history-api
+    → Order History API sees: sub=customer_456, act=recommendation-engine
+    → Audit log shows: recommendation-engine accessed customer_456 order history ✓
+
+  Nightly inventory sync from supplier feed:
+    → Client Credentials (2-legged — no user involved)
+    → inventory-sync service authenticates as itself, scope=inventory.write
+    → Runs at 2am, no user context, no refresh token needed
+
+  Abandoned cart email job:
+    → Client Credentials (2-legged) for the sending action itself
+    → Customer email addresses are passed as job data, not live tokens
+    → Email service does NOT need user tokens to send emails
+
+The rule: draw a box around each interaction. Ask:
+  "Is there a human user whose identity and permissions must travel with this call?"
+  YES → 3-legged (Auth Code + PKCE or Token Exchange)
+  NO  → 2-legged (Client Credentials)
+```
+
+### 🤔 What would you do? — Architecture edition
+
+```
+Scenario: You are designing a new e-commerce platform.
+You have: a web frontend, a mobile app, a recommendation service,
+an order service, an inventory service, and a notifications service.
+Some calls are user-triggered (checkout). Some are background (inventory sync).
+
+How would you structure OAuth for this system?
+
+Recommended architecture:
+
+  Web frontend (browser):
+    → Authorization Code + PKCE → user access token
+    → BFF pattern: tokens stay on the BFF server
+    → Browser only has a session cookie
+
+  Mobile app:
+    → Authorization Code + PKCE (PKCE mandatory — no client_secret in mobile)
+    → Tokens stored in OS Keychain (iOS) / Keystore (Android)
+
+  Recommendation service calling Order service (with user context):
+    → Token Exchange (RFC 8693)
+    → Recommendation service exchanges user token for one scoped to Order API
+    → Order service sees: sub=user_123, act=recommendation-service
+
+  Background inventory sync (no user):
+    → Client Credentials (2-legged)
+    → Scoped to inventory.read inventory.write only
+    → Cached token, refreshed 5 min before expiry
+
+  Notifications service (sends emails to users):
+    → Client Credentials for the sending action itself
+    → User email address passed as data — no live user token needed at send time
+
+Key insight:
+  Not every service needs the same token type.
+  Map each interaction to its correct OAuth flow.
+  Apply least-privilege scopes at every service boundary.
+```
+
+### 🧩 Connect the dots — Module 8
+
+> 🧩 **Delegated authorisation and the N-tier stack:** Every layer in the N-tier architecture diagram (IGA → AD → PingFed → OIDC/OAuth → Apps) is doing a form of delegation. IGA delegates to AD: "this person should be in this group." AD delegates to PingFederate: "this person has these attributes." PingFederate delegates to the client: "this user authorises this app to have these scopes." The client delegates to the API: "I am acting on behalf of this user with these permissions." OAuth formalises the bottom two layers. SAML formalises the middle. IGA operates above the protocol level. Understanding them all as a delegation chain is what separates a practitioner from an expert.
+
+### 🎓 Interview-ready — Module 8
+
+```
+❓ "Your team's microservices all accept JWTs. Service A gets a user
+    token and needs to call Service B. What are your options and
+    what are the trade-offs?"
+⭐ Answer that impresses:
+   "Three options, each with different trade-offs:
+
+   Option 1 — Forward the original token:
+   Simple, but if the token's aud is Service A, Service B MUST reject it
+   (audience mismatch). If Service B ignores the aud check, any service
+   can call any other service with anyone's token — a security hole.
+
+   Option 2 — Client Credentials from Service A to Service B:
+   Simple. But Service B loses all user context — it cannot audit who
+   triggered the call or apply per-user data access restrictions.
+
+   Option 3 — Token Exchange (RFC 8693):
+   Service A exchanges the user token for a new one scoped to Service B.
+   New token carries: sub=original user, aud=Service B, act=Service A.
+   Full audit trail. Correct audience. Per-user scoping preserved.
+   More complex — requires Auth Server support for RFC 8693.
+
+   Best practice: Token Exchange when user context matters for audit or
+   data access. Client Credentials when Service B is a stateless utility
+   with no per-user behaviour (PDF renderer, metrics collector)."
+
+❓ "What is the difference between authentication, authorisation, and delegation?"
+⭐ Answer that impresses:
+   "Authentication: prove who you are.
+   Authorisation: prove what you are allowed to do.
+   Delegation: I transfer a limited, specific permission to this app
+   so it can act on my behalf — without giving it my credentials.
+   OAuth 2.0 is a delegation framework. It does not authenticate users
+   (OIDC adds that). It grants delegated access: scoped, time-bounded,
+   revocable, without password sharing."
+```
+
+### 💬 Mentor aside — Architecture
+
+> 💬 *"A common interview trap: 'Just use Client Credentials everywhere — simpler.' Do not. Client Credentials erases all user context. Your audit log says service-a called the payment endpoint 400 times — but you cannot tell which of your 50,000 users triggered those calls. When compliance asks 'show me every action taken on behalf of user X,' you have nothing. User context in tokens is not a nice-to-have — it is a compliance requirement. Design for it from the start."*
+
+### ⚡ Speed run — Module 8
+
+```
+⚡ Delegated authorisation: app acts ON BEHALF OF user — not AS the user
+⚡ Token Relay (RFC 8693): exchange user token for a new one scoped to the next service
+⚡ 2-legged (Client Credentials): no user — machine-to-machine only
+⚡ 3-legged (Auth Code): human grants consent — access token carries user sub
+⚡ Design each service interaction separately — map it to the right grant type
+
+```
+
 ---
 
 ## Quick reference {#quick-reference}
@@ -1686,322 +1827,4 @@ Need user context across services → Token Exchange (RFC 8693)
 
 ---
 
-*OAuth 2.0: RFC 6749 · PKCE: RFC 7636 · Device Code: RFC 8628 · JWT: RFC 7519 · JWKS: RFC 7517 · Introspection: RFC 7662 · Revocation: RFC 7009 · Token Exchange: RFC 8693 · OIDC Core 1.0 · OAuth 2.1: draft-ietf-oauth-v2-1*
-
-
-### 🤔 What would you do? — JWT edition
-
-```
-Scenario: Your team is debating between JWT tokens and opaque tokens
-for your new payments API. The CTO wants "instant revocation for
-compliance." Your architect wants "no extra latency per request."
-You have been asked to recommend an approach.
-
-Think it through... then read:
-
-The CTO is right about the compliance requirement.
-The architect is right about the performance concern.
-Both requirements are valid. The answer is: both, contextually.
-
-Recommended approach:
-  Standard API calls:     JWT tokens (local validation, 0ms overhead)
-  High-value operations:  Opaque tokens + introspection (instant revocation)
-  (or JWT + short expiry + Redis blocklist for the sensitive endpoints)
-
-Implementation:
-  Issue JWTs for general use (profile reads, list endpoints).
-  Issue short-lived (5 min) JWTs for sensitive operations.
-  Add a Redis blocklist check specifically for payment endpoints.
-  This gives you: fast for 95% of calls, revocable for the 5% that matter.
-
-This is a real architectural pattern used in financial services.
-The cost of introspection on every payment call is acceptable.
-The cost of introspection on every page load is not.
-```
-
-### 🧩 Connect the dots — Module 2
-
-> 🧩 **JWT and the stateless architecture:** In Module 1 you learned that OAuth is about delegated authorisation. JWTs make that delegation *portable* — the delegation decision (what the app is allowed to do) is encoded in the token and travels with every request. Any server, anywhere in your infrastructure, can verify the delegation independently. This is why microservices love JWTs: no shared session store, no central auth server call, no bottleneck. The trust travels with the request.
-
----
-
-### 🧩 Connect the dots — Module 3
-
-> 🧩 **Client Credentials and the 2-legged mental model:** In the VIP event analogy, Client Credentials is your assistant going directly to the box office to get a wristband for the service entrance — you are not there at all. The wristband (access token) says `sub=your-assistant` (the service's client_id), not `sub=you` (a user). When the Resource Server sees this token, it knows: no human is behind this request — it is a service acting as itself. This is why the `sub` claim in Client Credentials tokens is always the `client_id`, not a user ID.
-
-### 🎓 Interview-ready — Module 3
-
-```
-❓ "Why doesn't Client Credentials issue a refresh token?"
-⭐ Answer that impresses:
-   "Because there is no user session to maintain. A refresh token exists to
-   allow an app to silently renew access without disturbing the user.
-   With Client Credentials, the app is the user — it can simply request a
-   new access token at any time by submitting its client_id and client_secret
-   again. There is no user who would be interrupted. The app caches the token
-   and requests a fresh one when it is about to expire — that IS the renewal
-   mechanism. A refresh token would add complexity with no benefit."
-
-❓ "How do you store a client_secret securely in a production service?"
-⭐ Answer that impresses:
-   "Never in source code — even in a private repo. Never in environment
-   variables baked into a container image. The correct approach is:
-   inject at runtime from a secrets manager. In AWS: Secrets Manager or
-   Parameter Store, retrieved via IAM role at startup. In Kubernetes:
-   sealed secrets or Vault Agent injector. The secret should be rotatable
-   without a code deployment — store the reference to the secret, not the
-   secret itself, in your application configuration."
-```
-
----
-
-### 🧩 Connect the dots — Module 5
-
-> 🧩 **Refresh tokens and the 3-legged architecture:** Refresh tokens only exist in 3-legged flows (Authorization Code, Device Code) — never in 2-legged (Client Credentials). This is deliberate: refresh tokens exist because there is a human user whose session must be maintained without interrupting them. When the access token expires, the refresh token lets the app silently get a new one — the user never re-types their password. In 2-legged flows there is no user to interrupt, so there is no need for a refresh token. The service simply requests a new access token with its credentials.
-
-### 🤔 What would you do? — Device Code edition
-
-```
-Scenario: You are building a CLI tool that lets developers deploy
-infrastructure. The CLI needs to call your deployment API on behalf
-of the logged-in developer. The developer runs: deploy --env production
-
-You have two choices:
-  A) Prompt for username + password in the terminal (ROPC)
-  B) Device Code flow — show a URL and code, user approves in browser
-
-What is wrong with Option A?
-  ROPC is removed from OAuth 2.1. The CLI stores or transmits the developer's
-  password. It cannot support MFA (no browser for the MFA prompt).
-  It cannot support SSO (no redirect to the corporate IdP).
-  Modern enterprise deployments REQUIRE MFA and SSO — Option A blocks both.
-
-Why Option B is correct:
-  Developer runs deploy → terminal shows:
-    "Open https://auth.example.com/device in your browser"
-    "Enter code: BDPF-YTVQ"
-  Developer opens their normal browser → already logged into company SSO
-  → one click to approve → terminal gets token → deployment proceeds
-
-  This is exactly how AWS CLI --sso, GitHub CLI, and Azure CLI work.
-  The browser handles SSO and MFA. The terminal gets a token. Everyone wins.
-
-The right answer: Device Code. Always. For any CLI or non-browser tool.
-```
-
-### 🎓 Interview-ready — Module 5
-
-```
-❓ "A user using your CLI tool goes through Device Code auth.
-    After approval, the CLI exits. Tomorrow they run it again.
-    Should they have to authenticate again?"
-⭐ Answer that impresses:
-   "No — if refresh token rotation is implemented correctly. The CLI should
-   store the refresh token securely (OS keychain on macOS, Windows Credential
-   Manager, or libsecret on Linux). On subsequent runs, attempt a silent
-   refresh first: exchange the stored refresh_token for a new access_token.
-   If the refresh token is expired or revoked, fall back to Device Code flow.
-   This gives a seamless 'already authenticated' experience for daily use
-   while still requiring explicit re-auth after long inactivity or token
-   revocation. GitHub CLI does exactly this — you authenticate once and
-   stay authenticated across sessions."
-
-❓ "What is the difference between the device_code and user_code?"
-⭐ Answer that impresses:
-   "The device_code is a long, opaque credential the device sends back
-   to the Auth Server when polling for a token — it is machine-readable
-   and should never be shown to users. The user_code is a short, human-
-   friendly code (like BDPF-YTVQ) that the user types into the browser
-   at the verification URI. They serve different purposes: device_code
-   identifies the pending authorisation on the server; user_code lets
-   the user prove they are physically present with the device."
-```
-
-### ⚡ Speed run — Module 5
-
-```
-⚡ Device Code: device shows a short code + URL, user approves on phone/browser
-⚡ Refresh tokens: silent renewal — user never re-types password between sessions
-⚡ Refresh token rotation: every use issues a NEW token, old one dies — enables theft detection
-⚡ Implicit grant: REMOVED in OAuth 2.1 — tokens in URLs = tokens in logs
-⚡ ROPC: REMOVED in OAuth 2.1 — app collecting passwords defeats all of OAuth's purpose
-```
-
----
-
-### 🤔 What would you do? — OIDC identity edition
-
-```
-Scenario: Your app uses "Sign in with Google." A user logs in.
-Their id_token contains: email=jane@company.com, email_verified=true
-You store email as the primary key in your users table.
-
-Six months later, Jane changes her Google account email to jane.smith@company.com.
-She tries to log in. Your app creates a DUPLICATE account for jane.smith@company.com.
-All of Jane's history, preferences, and data are in the old account.
-She files a support ticket: "I lost all my data."
-
-How would you have prevented this?
-
-The problem:
-  You used email as the identifier. Email is mutable.
-  When it changed, your app saw a completely new identity.
-
-The fix:
-  Store the sub claim (or iss+sub composite) as the primary key.
-  sub is assigned by Google when the account is created.
-  It never changes — not when the email changes, not ever.
-
-  In your database:
-    Wrong:  users.email = "jane@company.com" (primary key)
-    Right:  users.google_sub = "110248495921238986420" (primary key)
-    Right:  users.auth_key = "accounts.google.com|110248495921238986420"
-
-Also allow the user to have multiple emails linked to one account.
-Email is a display name. sub is the identity.
-
-Real consequence: Airbnb, Medium, and dozens of major apps have had
-"login with social loses all data" bugs caused by using email as an
-identifier. The sub claim exists precisely to prevent this.
-```
-
-### 💬 Mentor aside — OIDC
-
-> 💬 *"The id_token vs access_token confusion causes more production bugs than almost any other OIDC mistake. Here is a quick test you can run: decode both tokens at jwt.io and compare the `aud` claim. The access_token's aud should be your API's URL. The id_token's aud should be your client_id. If you ever see your client_id in the aud of a token you are sending to an API — stop. You are sending the wrong token."*
-
----
-
-### 🧩 Connect the dots — Module 7
-
-> 🧩 **Token storage and the front/back-channel split:** In Module 4 you learned that sensitive tokens must never travel through the front channel (URLs, browser redirects). Token *storage* follows the same principle. localStorage is the front channel of storage — accessible to any JavaScript on your page, including third-party scripts. The httpOnly cookie is the back channel of storage — invisible to JavaScript, only read by the browser's HTTP layer. The BFF pattern extends this further: tokens live entirely on the server, and the browser only has a session cookie reference. Front channel for the useless stuff. Back channel for everything that matters.
-
-### 🎓 Interview-ready — Module 7
-
-```
-❓ "A user logs out of your app. 20 minutes later, their access token
-    is used to call your API. The call succeeds. How did this happen
-    and how would you prevent it?"
-⭐ Answer that impresses:
-   "JWTs are stateless — calling logout() clears the local session but
-   the token remains cryptographically valid until its exp claim passes.
-   If the token had 20 minutes remaining when logout was called, those
-   20 minutes of access cannot be reclaimed without additional mechanisms.
-   Prevention options, in order of increasing strictness:
-   1. Short access token expiry (5-15 min): limits the window naturally.
-   2. Token blocklist: on logout, store the JTI in Redis with TTL=remaining
-      validity. Check on every request. Adds one Redis lookup per request.
-   3. Opaque tokens with introspection: revocation is instant because the
-      Auth Server is consulted on every request. Adds 50-100ms per call.
-   4. Combination: short JWTs for standard endpoints, opaque + introspection
-      for sensitive operations (payment, admin, data export).
-   The right choice depends on how quickly you need revocation vs how much
-   latency you can accept. For most apps: option 1 + 2 is the sweet spot."
-```
-
----
-
-### 🤔 What would you do? — Architecture edition
-
-```
-Scenario: You are designing a new e-commerce platform.
-You have: a web frontend, a mobile app, a recommendation service,
-an order service, an inventory service, and a notifications service.
-Some calls are user-triggered (checkout). Some are background (inventory sync).
-
-How would you structure OAuth for this system?
-
-Think through each service and what it needs...
-
-Recommended architecture:
-
-  Web frontend (browser):
-    → Authorization Code + PKCE → user access token
-    → BFF pattern: tokens stay on the BFF server
-    → Browser only has a session cookie
-
-  Mobile app:
-    → Authorization Code + PKCE (PKCE mandatory — no client_secret in mobile)
-    → Tokens stored in OS Keychain (iOS) / Keystore (Android)
-
-  Recommendation service calling Order service (with user context):
-    → Token Exchange (RFC 8693)
-    → Recommendation service exchanges user token for a token scoped to Order API
-    → Order service sees: sub=user_123, act=recommendation-service
-
-  Background inventory sync (no user):
-    → Client Credentials (2-legged)
-    → Scoped to inventory.read inventory.write only
-    → Cached token, refreshed 5 min before expiry
-
-  Notifications service (sends emails to users):
-    → Client Credentials for the sending action
-    → User's email address comes from the original user context (not a live token)
-    → No need for a user token at the point of sending
-
-Key insight:
-  Not every service needs the same type of token.
-  Map each interaction to the correct flow.
-  Apply least-privilege scopes at every boundary.
-```
-
-### 🧩 Connect the dots — Module 8
-
-> 🧩 **Delegated authorisation and the N-tier stack:** Every layer in the N-tier architecture diagram (IGA → AD → PingFed → OIDC/OAuth → Apps) is doing a form of delegation. IGA delegates to AD: "this person should be in this group." AD delegates to PingFederate: "this person has these attributes." PingFederate delegates to the client: "this user authorises this app to have these scopes." The client delegates to the API: "I am acting on behalf of this user with these permissions." OAuth formalises the bottom two layers of this chain. SAML formalises the middle layer. IGA and AD operate above the protocol level. Understanding them all as a delegation chain is what separates a practitioner from an expert.
-
-### 🎓 Interview-ready — Module 8
-
-```
-❓ "Your team's microservices all accept JWTs. Service A gets a user
-    token and needs to call Service B. What are your options and
-    what are the trade-offs?"
-⭐ Answer that impresses:
-   "There are three approaches, each with different trade-offs:
-
-   Option 1 — Forward the original token:
-   Simple to implement. But if the token's aud is Service A, Service B
-   MUST reject it (audience mismatch). If Service B ignores aud validation,
-   you have a security hole — any service can call any other service with
-   anyone's token.
-
-   Option 2 — Client Credentials to Service B:
-   Service A gets its own 2-legged token to call Service B. Simple.
-   But Service B loses all user context — it cannot audit who triggered
-   the call or apply per-user data access restrictions.
-
-   Option 3 — Token Exchange (RFC 8693):
-   Service A exchanges the user token for a new token scoped to Service B.
-   The new token carries: sub=original user, aud=Service B, act=Service A.
-   Full audit trail. Correct audience. Per-user data scoping preserved.
-   More complex to implement — requires Auth Server support for RFC 8693.
-
-   Best practice: use Option 3 when user context matters for audit or
-   data access. Use Option 2 when Service B is a pure utility with no
-   per-user behaviour (e.g. a PDF renderer, a metrics collector)."
-
-❓ "What is the difference between authentication, authorisation,
-    and delegation?"
-⭐ Answer that impresses:
-   "Authentication is identity verification: 'prove who you are.'
-   Authorisation is permission enforcement: 'prove what you are allowed to do.'
-   Delegation is a transfer of limited permission: 'I authorise this app
-   to do X on my behalf without knowing my credentials.'
-   OAuth 2.0 is a delegation framework — it does not authenticate users
-   (OIDC adds that). It grants applications delegated access on behalf of
-   resource owners, with scoped and time-bounded tokens that can be revoked
-   without changing any password."
-```
-
-### 💬 Mentor aside — Architecture
-
-> 💬 *"A common interview trap: 'Just use Client Credentials for everything — simpler.' Do not. Client Credentials erases all user context. Your audit log says service-a called the payment endpoint 400 times — but you cannot tell which of your 50,000 users triggered those calls. When the compliance team asks 'show me every action taken on behalf of user X', you have nothing. User context in tokens is not a nice-to-have — it is a compliance requirement. Design for it from the start."*
-
-### ⚡ Speed run — Module 8
-
-```
-⚡ Delegated authorisation: app acts ON BEHALF OF user — not AS the user
-⚡ Token Relay (RFC 8693): exchange user token for a new one scoped to the next service
-⚡ 2-legged (Client Credentials): no user — use for machine-to-machine only
-⚡ 3-legged (Auth Code): human grants consent — access token carries user sub
-⚡ Design each service interaction separately — not every service needs the same token type
-```
-
+*OAuth 2.0: RFC 6749 
