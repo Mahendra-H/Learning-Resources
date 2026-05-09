@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2 � RAG | ?? Diamond Edition</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D1117;--bg2:#161B22;--bg3:#1F2937;--border:#30363D;
+  --text:#E6EDF3;--muted:#8B949E;--subtle:#C9D1D9;
+  --lc:#79C0FF;--lg:#D2A8FF;--li:#56D364;--hf:#E3B341;
+  --red:#F85149;--emerald:#3FB950;--orange:#F97316;
+  --radius:10px;--font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Code','Fira Code','Consolas',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.75;display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--bg2);border-right:1px solid var(--border);padding:1.25rem .875rem;display:flex;flex-direction:column;gap:2px}
+.sidebar-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:.5rem .5rem .75rem;border-bottom:1px solid var(--border);margin-bottom:.5rem}
+.nav-link{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;font-size:12.5px;color:var(--muted);text-decoration:none;transition:all .15s}
+.nav-link:hover,.nav-link.active{background:var(--bg3);color:var(--text)}
+.ndot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding-top:1rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}
+.main{flex:1;max-width:920px;padding:2.5rem 3rem 6rem;overflow-x:hidden}
+.hero{margin-bottom:3rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:99px;padding:3px 12px;font-size:11.5px;color:#58A6FF;margin-bottom:1.25rem}
+.hero h1{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:.5rem}
+.hero h1 em{font-style:normal;color:var(--lc)}
+.hero-sub{color:var(--muted);font-size:16px;margin-bottom:1.25rem}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:4px 13px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid;letter-spacing:.01em}
+.lc{color:var(--lc);background:rgba(121,192,255,.1);border-color:rgba(121,192,255,.35)}
+.lg{color:var(--lg);background:rgba(210,168,255,.1);border-color:rgba(210,168,255,.35)}
+.li{color:var(--li);background:rgba(86,211,100,.1);border-color:rgba(86,211,100,.35)}
+.hf{color:var(--hf);background:rgba(227,179,65,.1);border-color:rgba(227,179,65,.35)}
+.meta-row{display:flex;gap:2rem;margin-top:1.25rem;flex-wrap:wrap}
+.meta-item{font-size:13px;color:var(--muted)}
+.meta-item strong{color:var(--text);display:block;font-size:15px}
+.section{margin-bottom:4rem;scroll-margin-top:1rem}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+.section-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.section-header h2{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.section-tagline{font-size:14px;color:var(--muted);margin-top:2px}
+p{color:var(--subtle);margin-bottom:.95rem}
+h3{font-size:18px;font-weight:600;margin:2.25rem 0 .75rem;color:var(--text)}
+h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:1.75rem 0 .5rem}
+.callout{border-radius:var(--radius);padding:1rem 1.25rem;margin:1.25rem 0;border-left:3px solid;font-size:14px;line-height:1.65}
+.callout-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.c-brain{background:rgba(121,192,255,.07);border-color:var(--lc)}.c-brain .callout-label{color:var(--lc)}
+.c-gotcha{background:rgba(248,81,73,.07);border-color:var(--red)}.c-gotcha .callout-label{color:var(--red)}
+.c-tip{background:rgba(227,179,65,.07);border-color:var(--hf)}.c-tip .callout-label{color:var(--hf)}
+.diagram{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin:1.75rem 0;overflow-x:auto}
+.diagram-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+.diagram svg{display:block;max-width:100%}
+.code-wrap{position:relative;margin:1rem 0}
+.code-lang{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-family:var(--font);margin-bottom:.6rem}
+pre{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;font-family:var(--mono);font-size:12.5px;line-height:1.65;overflow-x:auto;tab-size:4}
+.comp-table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0}
+.comp-table th{background:var(--bg3);padding:9px 14px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);font-weight:700}
+.comp-table td{padding:9px 14px;border-bottom:1px solid rgba(48,54,61,.6);color:var(--subtle)}
+.comp-table tr:hover td{background:rgba(255,255,255,.02)}
+.checklist{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.75rem;margin:2rem 0}
+.check-group{margin-bottom:1.25rem}
+.check-group-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:.625rem;font-weight:700}
+.ci{display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;font-size:13.5px;color:var(--subtle);border-bottom:1px solid rgba(48,54,61,.35)}
+.ci:last-child{border-bottom:none}
+.cbox{width:20px;height:20px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-title">Module 2 � RAG</div>
+  <a href="#big-picture" class="nav-link active"><span class="ndot" style="background:#58A6FF"></span>Big Picture</a>
+  <a href="#architecture" class="nav-link"><span class="ndot" style="background:var(--lg)"></span>Architecture</a>
+  <a href="#pipeline" class="nav-link"><span class="ndot" style="background:var(--li)"></span>Pipeline</a>
+  <a href="#developer" class="nav-link"><span class="ndot" style="background:var(--hf)"></span>Developer Guide</a>
+  <a href="#example" class="nav-link"><span class="ndot" style="background:#E879F9"></span>Example</a>
+  <a href="#best-practices" class="nav-link"><span class="ndot" style="background:var(--emerald)"></span>Best Practices</a>
+  <div class="sidebar-footer">Diamond Edition � RAG</div>
+</nav>
+<main class="main">
+  <div class="hero">
+    <div class="badge">?? Diamond Edition � Module 2</div>
+    <h1>Retrieval-Augmented <em>Generation</em></h1>
+    <p class="hero-sub">A developer-first master guide to RAG architecture, implementation, and production readiness.</p>
+    <div class="pills">
+      <span class="pill lc">RAG</span>
+      <span class="pill lg">Vector Search</span>
+      <span class="pill li">Knowledge Base</span>
+      <span class="pill hf">Prompt Strategy</span>
+    </div>
+    <div class="meta-row">
+      <div class="meta-item"><strong>Audience</strong>Software engineers</div>
+      <div class="meta-item"><strong>Focus</strong>Architecture + deep implementation</div>
+      <div class="meta-item"><strong>Outcome</strong>Build reliable RAG systems</div>
+    </div>
+  </div>
+
+  <section class="section" id="big-picture">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(88,166,255,.15)">???</div>
+      <div>
+        <h2 style="color:#58A6FF">The Big Picture</h2>
+        <div class="section-tagline">Why RAG is the practical foundation for production AI applications</div>
+      </div>
+    </div>
+    <p>RAG separates domain knowledge from model reasoning. It answers questions using documents and internal content, while preventing the model from inventing unsupported facts.</p>
+    <div class="callout c-brain">
+      <div class="callout-label">Core idea</div>
+      <p>Give the model only the most relevant evidence at runtime, and keep your knowledge in a searchable index.</p>
+    </div>
+    <h3>What is RAG?</h3>
+    <p>Retrieval-Augmented Generation (RAG) is a technique that enhances large language models (LLMs) by providing them with relevant information retrieved from a knowledge base at query time. Instead of relying solely on the model's pre-trained knowledge, RAG dynamically fetches and incorporates external data to generate more accurate, up-to-date, and contextually relevant responses.</p>
+    <p>The key insight is that LLMs are powerful pattern recognizers but have limitations: their knowledge is static (cut off at training time), they can hallucinate facts, and they struggle with domain-specific or proprietary information. RAG addresses these by grounding responses in verifiable sources.</p>
+    <h3>Why RAG over fine-tuning?</h3>
+    <p>While fine-tuning updates the model's weights with domain-specific data, RAG offers several advantages:</p>
+    <ul>
+      <li><strong>Dynamic knowledge:</strong> RAG can access information updated after the model's training cutoff.</li>
+      <li><strong>Cost-effective:</strong> No need to retrain expensive models for new information.</li>
+      <li><strong>Explainability:</strong> Responses can cite sources, making them more trustworthy.</li>
+      <li><strong>Flexibility:</strong> Easily swap or update knowledge bases without model retraining.</li>
+      <li><strong>Scalability:</strong> Handle large knowledge corpora that wouldn't fit in model context.</li>
+    </ul>
+    <div class="callout c-tip">
+      <div class="callout-label">When to use RAG</div>
+      <p>Use RAG when you need accurate, sourced answers from large or frequently updated knowledge bases. Avoid for creative tasks or when model reasoning alone suffices.</p>
+    </div>
+    <h3>RAG vs. traditional search</h3>
+    <p>RAG differs from keyword search or traditional IR systems:</p>
+    <ul>
+      <li><strong>Semantic understanding:</strong> Uses embeddings to find conceptually similar content, not just keyword matches.</li>
+      <li><strong>Generative synthesis:</strong> Combines retrieved information into coherent, natural language responses.</li>
+      <li><strong>Context awareness:</strong> Considers the full query intent, not isolated terms.</li>
+    </ul>
+    <h3>Core components</h3>
+    <p>A RAG system consists of three main components:</p>
+    <ol>
+      <li><strong>Knowledge base:</strong> A collection of documents, articles, or data sources.</li>
+      <li><strong>Retrieval mechanism:</strong> A way to find relevant information based on user queries.</li>
+      <li><strong>Generation model:</strong> An LLM that synthesizes retrieved information into answers.</li>
+    </ol>
+    <p>The retrieval typically uses vector similarity search, where both documents and queries are converted to high-dimensional vectors (embeddings) that capture semantic meaning.</p>
+    <div class="diagram">
+      <div class="diagram-label">?? Diagram � RAG core flow</div>
+      <svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8B949E"/></marker>
+        </defs>
+        <rect x="10" y="50" width="170" height="120" rx="20" fill="rgba(121,192,255,.12)" stroke="rgba(121,192,255,.4)" stroke-width="1.5"/>
+        <text x="95" y="90" font-size="16" fill="#79C0FF" font-weight="700" text-anchor="middle">User Query</text>
+        <text x="95" y="113" font-size="12" fill="#C9D1D9" text-anchor="middle">Question + intent</text>
+        <rect x="270" y="30" width="220" height="160" rx="20" fill="rgba(86,211,100,.12)" stroke="rgba(86,211,100,.4)" stroke-width="1.5"/>
+        <text x="380" y="75" font-size="16" fill="#56D364" font-weight="700" text-anchor="middle">Retrieval</text>
+        <text x="380" y="98" font-size="12" fill="#C9D1D9" text-anchor="middle">Embed + search</text>
+        <rect x="630" y="30" width="220" height="160" rx="20" fill="rgba(210,168,255,.12)" stroke="rgba(210,168,255,.4)" stroke-width="1.5"/>
+        <text x="740" y="75" font-size="16" fill="#D2A8FF" font-weight="700" text-anchor="middle">LLM</text>
+        <text x="740" y="98" font-size="12" fill="#C9D1D9" text-anchor="middle">Generate answer</text>
+        <path d="M180 110 H270" stroke="#8B949E" stroke-width="3" marker-end="url(#arr)"/>
+        <path d="M490 110 H630" stroke="#8B949E" stroke-width="3" marker-end="url(#arr)"/>
+        <rect x="350" y="120" width="220" height="70" rx="16" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.4)" stroke-width="1.5"/>
+        <text x="460" y="154" font-size="16" fill="#E3B341" font-weight="700" text-anchor="middle">Knowledge Base</text>
+        <text x="460" y="176" font-size="12" fill="#C9D1D9" text-anchor="middle">Chunks + embeddings</text>
+      </svg>
+    </div>
+    <h3>Challenges and considerations</h3>
+    <p>While powerful, RAG introduces complexity:</p>
+    <ul>
+      <li><strong>Retrieval quality:</strong> Poor retrieval leads to irrelevant or missing context.</li>
+      <li><strong>Context limits:</strong> LLMs have token limits, so retrieved content must be condensed.</li>
+      <li><strong>Latency:</strong> Vector search adds computational overhead.</li>
+      <li><strong>Hallucinations:</strong> Even with retrieval, models can still generate unsupported claims.</li>
+    </ul>
+    <p>Successful RAG requires careful tuning of chunking, embedding models, retrieval parameters, and prompt design.</p>
+  </section>
+
+  <section class="section" id="architecture">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(210,168,255,.15)">??</div>
+      <div>
+        <h2 style="color:var(--lg)">RAG Architecture</h2>
+        <div class="section-tagline">Break RAG into offline preparation and online execution</div>
+      </div>
+    </div>
+    <p>A production RAG system is not one prompt. It is a multi-stage architecture that manages raw content, embeddings, runtime retrieval, prompt assembly, and answer validation.</p>
+    <h3>Offline preparation</h3>
+    <p>This stage processes raw knowledge into structured, searchable units. If done right, it determines answer quality more than the prompt itself.</p>
+    <h4>1. Source collection</h4>
+    <p>Gather content from documentation, wiki pages, tickets, runbooks, policies, and code comments. The goal is a complete domain corpus.</p>
+    <p><strong>Best practices:</strong> Include diverse sources but ensure quality. Use APIs or web scraping for dynamic content. Store metadata like timestamps, authors, and versions for filtering and freshness checks.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>import os
+from pathlib import Path
+
+def collect_sources(root_dir):
+    sources = []
+    for file_path in Path(root_dir).rglob('*.md'):
+        with open(file_path, 'r') as f:
+            content = f.read()
+        sources.append({
+            'content': content,
+            'metadata': {
+                'source': str(file_path),
+                'type': 'markdown',
+                'last_modified': os.path.getmtime(file_path)
+            }
+        })
+    return sources</code></pre>
+    </div>
+    <h4>2. Text chunking</h4>
+    <p>Split long documents into meaningful passages. Chunks should be semantically coherent and contextually independent.</p>
+    <p><strong>Strategies:</strong></p>
+    <ul>
+      <li><strong>Fixed-size:</strong> Split by token count (e.g., 512 tokens). Simple but may break semantics.</li>
+      <li><strong>Recursive:</strong> Split by paragraphs, then sentences, then words.</li>
+      <li><strong>Document-aware:</strong> Use headings, sections, or code blocks as boundaries.</li>
+      <li><strong>Sliding window:</strong> Overlap chunks for continuity.</li>
+    </ul>
+    <div class="callout c-tip">
+      <div class="callout-label">Developer example</div>
+      <p>For API docs, create one chunk per endpoint, including request/response examples, not a whole page.</p>
+    </div>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+def chunk_documents(documents, chunk_size=1000, overlap=200):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=overlap,
+        separators=["\n## ", "\n### ", "\n#### ", "\n\n", "\n", " ", ""]
+    )
+    chunks = []
+    for doc in documents:
+        doc_chunks = splitter.split_text(doc['content'])
+        for chunk in doc_chunks:
+            chunks.append({
+                'text': chunk,
+                'metadata': {**doc['metadata'], 'chunk_id': len(chunks)}
+            })
+    return chunks</code></pre>
+    </div>
+    <h4>3. Embedding generation</h4>
+    <p>Convert each chunk into an embedding vector. The embedding model choice affects retrieval relevance and performance.</p>
+    <p><strong>Model considerations:</strong></p>
+    <ul>
+      <li><strong>Size:</strong> Larger models (e.g., 768-dim) capture more nuance but are slower.</li>
+      <li><strong>Domain:</strong> Use domain-specific models if available (e.g., code embeddings for codebases).</li>
+      <li><strong>Cost:</strong> Balance quality vs. inference speed and storage.</li>
+      <li><strong>Updates:</strong> Plan for model version changes requiring re-embedding.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('all-MiniLM-L6-v2')  # 384-dim, fast
+
+def generate_embeddings(chunks):
+    texts = [chunk['text'] for chunk in chunks]
+    embeddings = model.encode(texts, show_progress_bar=True)
+    for i, chunk in enumerate(chunks):
+        chunk['embedding'] = embeddings[i].tolist()
+    return chunks</code></pre>
+    </div>
+    <h4>4. Indexing in a vector database</h4>
+    <p>Store vectors, chunk text, and metadata in a vector database or index. Metadata enables filtering and debugging.</p>
+    <p><strong>Database options:</strong></p>
+    <ul>
+      <li><strong>FAISS:</strong> Fast, in-memory, good for small datasets.</li>
+      <li><strong>Pinecone/Weaviate:</strong> Managed, scalable, with filtering.</li>
+      <li><strong>Chroma:</strong> Open-source, easy to self-host.</li>
+      <li><strong>pgvector:</strong> PostgreSQL extension for relational + vector search.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>import chromadb
+
+client = chromadb.PersistentClient(path="./chroma_db")
+collection = client.get_or_create_collection("knowledge_base")
+
+def index_chunks(chunks):
+    ids = [str(chunk['metadata']['chunk_id']) for chunk in chunks]
+    embeddings = [chunk['embedding'] for chunk in chunks]
+    documents = [chunk['text'] for chunk in chunks]
+    metadatas = [chunk['metadata'] for chunk in chunks]
+    
+    collection.add(
+        ids=ids,
+        embeddings=embeddings,
+        documents=documents,
+        metadatas=metadatas
+    )</code></pre>
+    </div>
+
+    <h3>Online execution</h3>
+    <p>The online path handles user questions in real time and must be fast, accurate, and robust to noise.</p>
+    <h4>1. Query normalization</h4>
+    <p>Clean and standardize the question, remove conversational fluff, and optionally detect intent or topic.</p>
+    <p><strong>Techniques:</strong> Lowercase, remove stop words, expand abbreviations, correct spelling. For complex queries, use intent classification.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>import re
+from nltk.corpus import stopwords
+
+stop_words = set(stopwords.words('english'))
+
+def normalize_query(query):
+    # Lowercase and remove punctuation
+    query = re.sub(r'[^\w\s]', '', query.lower())
+    # Remove stop words
+    words = [w for w in query.split() if w not in stop_words]
+    return ' '.join(words)</code></pre>
+    </div>
+    <h4>2. Query embedding</h4>
+    <p>Embed the normalized query using the same model as the offline embeddings. This consistency is essential for similarity search.</p>
+    <p><strong>Important:</strong> Use identical preprocessing and model. Any mismatch reduces retrieval quality.</p>
+    <h4>3. Similarity retrieval</h4>
+    <p>Search the vector database for the top-K most similar chunks. Use metadata filters to constrain the domain or source if needed.</p>
+    <p><strong>Parameters:</strong></p>
+    <ul>
+      <li><strong>top-K:</strong> Number of chunks to retrieve (5-20 typical).</li>
+      <li><strong>Similarity metric:</strong> Cosine, dot product, or Euclidean.</li>
+      <li><strong>Filters:</strong> Metadata-based constraints (e.g., date ranges, categories).</li>
+      <li><strong>Re-ranking:</strong> Optional second pass with cross-encoders for better accuracy.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def retrieve_chunks(query_embedding, top_k=5, filters=None):
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=top_k,
+        where=filters  # e.g., {"doc_type": "api"}
+    )
+    return results['documents'][0], results['metadatas'][0]</code></pre>
+    </div>
+    <h4>4. Context assembly</h4>
+    <p>Select the best chunks, deduplicate overlapping content, and format the retrieval context within the model's token budget.</p>
+    <p><strong>Strategies:</strong> Prioritize by relevance score, diversity, or recency. Truncate or summarize if over limit. Add source citations.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def assemble_context(chunks, max_tokens=2000):
+    context = ""
+    for chunk in chunks:
+        if len(context.split()) + len(chunk.split()) > max_tokens:
+            break
+        context += f"Source: {chunk['metadata']['source']}\n{chunk}\n\n"
+    return context.strip()</code></pre>
+    </div>
+    <h4>5. Prompt composition</h4>
+    <p>Construct a prompt that includes the retrieved evidence, instruction, and user question. Tell the model to answer only from the provided context.</p>
+    <p><strong>Best practices:</strong> Be explicit about using only provided context. Include format instructions and citation requirements.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def build_prompt(context, query):
+    return f"""You are a helpful assistant. Use ONLY the information in the context below to answer the question.
+
+Context:
+{context}
+
+Question: {query}
+
+Instructions:
+- Answer based only on the provided context
+- If the context doesn't contain the answer, say "I don't have enough information"
+- Cite sources when possible
+- Be concise but comprehensive
+
+Answer:"""</code></pre>
+    </div>
+    <h4>6. Answer generation</h4>
+    <p>Call the LLM with the prompt, then optionally post-process the response to add citations, detect hallucinations, or apply formatting rules.</p>
+    <p><strong>Post-processing:</strong> Extract citations, validate against sources, format for readability.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>import openai
+
+def generate_answer(prompt, model="gpt-3.5-turbo"):
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=500,
+        temperature=0.1
+    )
+    return response.choices[0].message.content</code></pre>
+    </div>
+  </section>
+
+  <section class="section" id="pipeline">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(86,211,100,.15)">??</div>
+      <div>
+        <h2 style="color:var(--li)">The Developer Pipeline</h2>
+        <div class="section-tagline">A practical engineering blueprint for RAG systems</div>
+      </div>
+    </div>
+    <p>Treat RAG as a pipeline of independent services: ingestion, chunking, embedding, indexing, retrieval, and generation. This makes debugging and scaling easier.</p>
+    <div class="diagram">
+      <div class="diagram-label">?? Diagram � Offline and Online RAG</div>
+      <svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8B949E"/></marker>
+        </defs>
+        <rect x="20" y="20" width="240" height="220" rx="18" fill="rgba(210,168,255,.12)" stroke="rgba(210,168,255,.4)" stroke-width="1.5"/>
+        <text x="140" y="55" font-size="15" fill="#D2A8FF" font-weight="700" text-anchor="middle">Offline Preparation</text>
+        <text x="140" y="80" font-size="12" fill="#C9D1D9" text-anchor="middle">Documents ? Chunking ? Embeddings ? Index</text>
+        <rect x="40" y="100" width="200" height="40" rx="12" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.4)" stroke-width="1.5"/>
+        <text x="140" y="125" font-size="12" fill="#E3B341" font-weight="700" text-anchor="middle">Chunking</text>
+        <rect x="40" y="150" width="200" height="40" rx="12" fill="rgba(86,211,100,.12)" stroke="rgba(86,211,100,.4)" stroke-width="1.5"/>
+        <text x="140" y="175" font-size="12" fill="#56D364" font-weight="700" text-anchor="middle">Embedding</text>
+        <rect x="40" y="200" width="200" height="40" rx="12" fill="rgba(121,192,255,.12)" stroke="rgba(121,192,255,.4)" stroke-width="1.5"/>
+        <text x="140" y="225" font-size="12" fill="#79C0FF" font-weight="700" text-anchor="middle">Vector DB</text>
+        <path d="M240 120 H290" stroke="#8B949E" stroke-width="3" marker-end="url(#arr2)"/>
+        <rect x="290" y="40" width="240" height="60" rx="18" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.4)" stroke-width="1.5"/>
+        <text x="410" y="70" font-size="14" fill="#E3B341" font-weight="700" text-anchor="middle">Query Normalization</text>
+        <rect x="290" y="120" width="240" height="60" rx="18" fill="rgba(86,211,100,.12)" stroke="rgba(86,211,100,.4)" stroke-width="1.5"/>
+        <text x="410" y="150" font-size="14" fill="#56D364" font-weight="700" text-anchor="middle">Query Embedding</text>
+        <rect x="290" y="200" width="240" height="60" rx="18" fill="rgba(121,192,255,.12)" stroke="rgba(121,192,255,.4)" stroke-width="1.5"/>
+        <text x="410" y="230" font-size="14" fill="#79C0FF" font-weight="700" text-anchor="middle">Similarity Search</text>
+        <path d="M530 230 H560" stroke="#8B949E" stroke-width="3" marker-end="url(#arr2)"/>
+        <rect x="560" y="200" width="220" height="60" rx="18" fill="rgba(210,168,255,.12)" stroke="rgba(210,168,255,.4)" stroke-width="1.5"/>
+        <text x="670" y="230" font-size="14" fill="#D2A8FF" font-weight="700" text-anchor="middle">LLM + Prompt</text>
+      </svg>
+    </div>
+    <div class="callout c-tip">
+      <div class="callout-label">Engineering rule</div>
+      <p>Separate retrieval from generation. Treat each stage as a microservice with independent tests and metrics.</p>
+    </div>
+    <h3>Pipeline architecture</h3>
+    <p>A robust RAG pipeline includes:</p>
+    <ul>
+      <li><strong>Data ingestion:</strong> Automated collection and preprocessing of knowledge sources.</li>
+      <li><strong>Processing pipeline:</strong> Chunking, embedding, and indexing with error handling.</li>
+      <li><strong>Query processing:</strong> Real-time query handling with caching and fallbacks.</li>
+      <li><strong>Monitoring & observability:</strong> Metrics, logging, and alerting for each stage.</li>
+      <li><strong>Feedback loop:</strong> User feedback to improve retrieval and generation.</li>
+    </ul>
+    <h3>Detailed implementation steps</h3>
+    <h4>1. Data ingestion service</h4>
+    <p>Build a service that continuously collects and processes new knowledge sources.</p>
+    <p><strong>Features:</strong> Scheduled crawlers, webhook handlers, file watchers. Include deduplication and change detection.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+class DocHandler(FileSystemEventHandler):
+    def on_modified(self, event):
+        if event.src_path.endswith('.md'):
+            process_document(event.src_path)
+
+def start_ingestion_watcher(docs_dir):
+    observer = Observer()
+    observer.schedule(DocHandler(), docs_dir, recursive=True)
+    observer.start()</code></pre>
+    </div>
+    <h4>2. Chunking and preprocessing</h4>
+    <p>Implement smart chunking with metadata preservation and quality validation.</p>
+    <p><strong>Quality checks:</strong> Minimum/maximum chunk sizes, semantic coherence, metadata completeness.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def validate_chunk(chunk):
+    text = chunk['text']
+    if len(text.split()) < 10:
+        return False, "Chunk too short"
+    if len(text.split()) > 1000:
+        return False, "Chunk too long"
+    if not chunk['metadata'].get('source'):
+        return False, "Missing source metadata"
+    return True, None
+
+def process_chunks(chunks):
+    valid_chunks = []
+    for chunk in chunks:
+        is_valid, error = validate_chunk(chunk)
+        if is_valid:
+            valid_chunks.append(chunk)
+        else:
+            logger.warning(f"Invalid chunk: {error}")
+    return valid_chunks</code></pre>
+    </div>
+    <h4>3. Embedding service</h4>
+    <p>Dedicated service for embedding generation with batching, caching, and model management.</p>
+    <p><strong>Optimizations:</strong> Batch processing, GPU acceleration, embedding caching for unchanged content.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>import hashlib
+
+def get_text_hash(text):
+    return hashlib.md5(text.encode()).hexdigest()
+
+def embed_with_cache(chunks, cache_db):
+    to_embed = []
+    cached_embeddings = []
+    
+    for chunk in chunks:
+        text_hash = get_text_hash(chunk['text'])
+        cached = cache_db.get(text_hash)
+        if cached:
+            chunk['embedding'] = cached
+            cached_embeddings.append(chunk)
+        else:
+            to_embed.append(chunk)
+    
+    if to_embed:
+        # Batch embed new chunks
+        new_embeddings = model.encode([c['text'] for c in to_embed])
+        for i, chunk in enumerate(to_embed):
+            chunk['embedding'] = new_embeddings[i].tolist()
+            cache_db[text_hash] = chunk['embedding']
+    
+    return chunks</code></pre>
+    </div>
+    <h4>4. Indexing and storage</h4>
+    <p>Manage vector database operations with backup, versioning, and performance monitoring.</p>
+    <p><strong>Operations:</strong> Incremental updates, index optimization, backup/restore, multi-tenant support.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def update_index(collection, new_chunks, batch_size=100):
+    for i in range(0, len(new_chunks), batch_size):
+        batch = new_chunks[i:i+batch_size]
+        try:
+            collection.add(
+                ids=[str(c['metadata']['chunk_id']) for c in batch],
+                embeddings=[c['embedding'] for c in batch],
+                documents=[c['text'] for c in batch],
+                metadatas=[c['metadata'] for c in batch]
+            )
+            logger.info(f"Indexed batch {i//batch_size + 1}")
+        except Exception as e:
+            logger.error(f"Failed to index batch: {e}")
+            # Implement retry logic</code></pre>
+    </div>
+    <h4>5. Query processing pipeline</h4>
+    <p>Handle incoming queries with preprocessing, caching, and error handling.</p>
+    <p><strong>Features:</strong> Query validation, rate limiting, result caching, fallback strategies.</p>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>from functools import lru_cache
+import time
+
+@lru_cache(maxsize=1000)
+def cached_retrieval(query_hash, top_k, filters_str):
+    # Cache retrieval results by query hash
+    pass
+
+def process_query(query, user_id=None):
+    start_time = time.time()
+    
+    # Validate query
+    if not query or len(query.strip()) < 3:
+        return {"error": "Query too short"}
+    
+    # Check cache
+    query_hash = hash((query, user_id))
+    cached_result = get_cache(query_hash)
+    if cached_result:
+        return cached_result
+    
+    try:
+        # Process through pipeline
+        normalized = normalize_query(query)
+        embedding = embed_query(normalized)
+        chunks, metadata = retrieve_chunks(embedding)
+        context = assemble_context(chunks)
+        prompt = build_prompt(context, query)
+        answer = generate_answer(prompt)
+        
+        result = {
+            "answer": answer,
+            "sources": [m['source'] for m in metadata],
+            "latency": time.time() - start_time
+        }
+        
+        # Cache result
+        set_cache(query_hash, result, ttl=3600)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Query processing failed: {e}")
+        return {"error": "Internal processing error"}</code></pre>
+    </div>
+    <h4>6. Monitoring and metrics</h4>
+    <p>Implement comprehensive observability for debugging and optimization.</p>
+    <p><strong>Metrics to track:</strong></p>
+    <ul>
+      <li>Query latency and throughput</li>
+      <li>Retrieval precision/recall</li>
+      <li>Embedding generation time</li>
+      <li>Cache hit rates</li>
+      <li>Error rates by component</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>from prometheus_client import Counter, Histogram
+
+query_counter = Counter('rag_queries_total', 'Total queries processed')
+latency_histogram = Histogram('rag_query_latency', 'Query processing latency')
+retrieval_precision = Histogram('rag_retrieval_precision', 'Retrieval precision')
+
+def record_metrics(query, result, latency):
+    query_counter.inc()
+    latency_histogram.observe(latency)
+    
+    if 'sources' in result:
+        # Calculate precision if ground truth available
+        precision = calculate_precision(query, result['sources'])
+        retrieval_precision.observe(precision)</code></pre>
+    </div>
+    <div class="callout c-tip">
+      <div class="callout-label">Production scenario</div>
+      <p>For a compliance assistant, filter retrieval to only policy documents and use timestamp metadata to prefer the latest versions.</p>
+    </div>
+    <h3>Complete pipeline example</h3>
+    <div class="code-wrap">
+      <div class="code-lang">TypeScript</div>
+      <pre><code>async function answerQuestion(query: string, userContext?: any) {
+  const normalized = normalizeText(query);
+  const queryVector = await embedQuery(normalized);
+  
+  // Multi-stage retrieval with fallbacks
+  let results = await vectorDB.search(queryVector, {
+    topK: 5,
+    filter: { docType: 'policy', active: true }
+  });
+  
+  if (results.length === 0) {
+    // Fallback to broader search
+    results = await vectorDB.search(queryVector, { topK: 10 });
+  }
+  
+  const context = results.map(r => `${r.metadata.title}: ${r.text}`).join('\n\n');
+  const prompt = buildPrompt(context, normalized);
+  
+  const response = await llm.generate({ 
+    prompt, 
+    maxTokens: 300,
+    temperature: 0.1
+  });
+  
+  // Post-processing
+  const validatedAnswer = await validateAnswer(response.text, context);
+  
+  return {
+    text: validatedAnswer,
+    sources: results.map(r => r.metadata.source),
+    confidence: calculateConfidence(results)
+  };
+}</code></pre>
+    </div>
+    <h3>Error handling and resilience</h3>
+    <ul>
+      <li><strong>Graceful degradation:</strong> Fall back to keyword search if vector search fails.</li>
+      <li><strong>Circuit breakers:</strong> Temporarily disable failing components.</li>
+      <li><strong>Retry logic:</strong> Exponential backoff for transient failures.</li>
+      <li><strong>Timeouts:</strong> Prevent hanging requests from blocking the system.</li>
+    </ul>
+  </section>
+
+  <section class="section" id="developer">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(227,179,65,.15)">?????</div>
+      <div>
+        <h2 style="color:var(--hf)">Developer Guide</h2>
+        <div class="section-tagline">Master the details that make RAG reliable and maintainable</div>
+      </div>
+    </div>
+    <h3>Chunking strategy</h3>
+    <p>Choose chunk sizes to preserve meaning. For prose, 200–400 tokens is a good starting point. For code examples, use 3–6 logical lines.</p>
+    <p><strong>Advanced chunking techniques:</strong></p>
+    <ul>
+      <li><strong>Sentence-aware:</strong> Split on sentence boundaries to avoid cutting mid-sentence.</li>
+      <li><strong>Structure-preserving:</strong> Use document structure (headings, lists) as split points.</li>
+      <li><strong>Context-overlapping:</strong> Include surrounding context in each chunk for better coherence.</li>
+      <li><strong>Dynamic sizing:</strong> Adjust chunk size based on content type or complexity.</li>
+    </ul>
+    <div class="callout c-tip">
+      <div class="callout-label">Rule of thumb</div>
+      <p>Smaller chunks increase precision; larger chunks may contain more context but also more noise.</p>
+    </div>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def smart_chunk_text(text, max_chunk_size=512, overlap=50):
+    sentences = nltk.sent_tokenize(text)
+    chunks = []
+    current_chunk = ""
+    
+    for sentence in sentences:
+        # Check if adding sentence exceeds limit
+        if len((current_chunk + " " + sentence).split()) > max_chunk_size:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+                # Start new chunk with overlap
+                words = current_chunk.split()
+                overlap_text = " ".join(words[-overlap:]) if len(words) > overlap else current_chunk
+                current_chunk = overlap_text + " " + sentence
+            else:
+                chunks.append(sentence)
+                current_chunk = ""
+        else:
+            current_chunk += " " + sentence
+    
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    
+    return chunks</code></pre>
+    </div>
+    <h3>Embedding strategy</h3>
+    <p>Use the same embedding model for offline and online stages. If you change the model, re-embed the entire dataset. Cache embeddings for static content and refresh only when sources change.</p>
+    <p><strong>Model selection criteria:</strong></p>
+    <ul>
+      <li><strong>Task alignment:</strong> Choose models trained on similar data (e.g., code embeddings for codebases).</li>
+      <li><strong>Performance trade-offs:</strong> Balance speed vs. quality based on your latency requirements.</li>
+      <li><strong>Multilingual support:</strong> If you need multiple languages, choose multilingual models.</li>
+      <li><strong>Quantization:</strong> Use quantized models for faster inference on CPU.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code># Model comparison and selection
+models = {
+    'sentence-transformers/all-MiniLM-L6-v2': {'dim': 384, 'speed': 'fast', 'quality': 'good'},
+    'sentence-transformers/all-mpnet-base-v2': {'dim': 768, 'speed': 'medium', 'quality': 'better'},
+    'text-embedding-ada-002': {'dim': 1536, 'speed': 'slow', 'quality': 'best'}
+}
+
+def select_embedding_model(requirements):
+    if requirements.get('speed') == 'critical':
+        return 'sentence-transformers/all-MiniLM-L6-v2'
+    elif requirements.get('quality') == 'high':
+        return 'text-embedding-ada-002'
+    else:
+        return 'sentence-transformers/all-mpnet-base-v2'</code></pre>
+    </div>
+    <h3>Metadata and filtering</h3>
+    <p>Store metadata such as source type, service name, version, published date, and relevance score. Use it to filter results for multi-domain or multi-tenant systems.</p>
+    <p><strong>Essential metadata fields:</strong></p>
+    <ul>
+      <li><strong>Source identification:</strong> File path, URL, document ID, version.</li>
+      <li><strong>Content classification:</strong> Document type, topic, domain, language.</li>
+      <li><strong>Temporal information:</strong> Creation date, last modified, expiration date.</li>
+      <li><strong>Quality metrics:</strong> Authority score, freshness, user ratings.</li>
+      <li><strong>Access control:</strong> Visibility permissions, user roles.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def enrich_metadata(chunk, source_doc):
+    metadata = {
+        'source': source_doc['path'],
+        'doc_type': source_doc['type'],  # 'api_doc', 'tutorial', 'policy'
+        'service': extract_service_name(source_doc['path']),
+        'version': source_doc.get('version', 'latest'),
+        'last_modified': source_doc['mtime'],
+        'author': source_doc.get('author'),
+        'tags': extract_tags(chunk['text']),
+        'word_count': len(chunk['text'].split()),
+        'has_code': '```' in chunk['text'],
+        'language': detect_language(chunk['text'])
+    }
+    chunk['metadata'] = metadata
+    return chunk</code></pre>
+    </div>
+    <h3>Prompt engineering</h3>
+    <p>Make instructions explicit. Tell the model to answer from the provided context and to say "I don't know" if the answer is not found.</p>
+    <p><strong>Advanced prompt techniques:</strong></p>
+    <ul>
+      <li><strong>Role definition:</strong> Specify the assistant's expertise and constraints.</li>
+      <li><strong>Context formatting:</strong> Structure retrieved information clearly.</li>
+      <li><strong>Output constraints:</strong> Define format, length, and citation requirements.</li>
+      <li><strong>Fallback instructions:</strong> What to do when information is insufficient.</li>
+      <li><strong>Chain-of-thought:</strong> Guide the model through reasoning steps.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def build_structured_prompt(context, query, user_role='developer'):
+    system_prompt = f"""You are an expert {user_role} assistant. Your task is to answer questions using ONLY the provided context.
+
+RULES:
+1. Use ONLY information from the context below
+2. If the context doesn't contain the answer, say "I don't have enough information about that"
+3. Cite specific sources and sections when possible
+4. Be concise but comprehensive
+5. Format code examples properly
+6. If uncertain, express appropriate caveats
+
+CONTEXT:
+{context}
+
+QUESTION: {query}
+
+RESPONSE FORMAT:
+- Start with direct answer
+- Include relevant code/examples if applicable
+- End with source citations"""
+
+    return system_prompt</code></pre>
+    </div>
+    <h3>Validation and guardrails</h3>
+    <p>Apply a lightweight verifier after generation. Compare the answer to retrieved text and catch claims not supported by evidence.</p>
+    <p><strong>Validation strategies:</strong></p>
+    <ul>
+      <li><strong>Fact checking:</strong> Verify claims against source documents.</li>
+      <li><strong>Consistency checks:</strong> Ensure answer aligns with known facts.</li>
+      <li><strong>Confidence scoring:</strong> Rate answer reliability based on evidence strength.</li>
+      <li><strong>Hallucination detection:</strong> Flag content not present in context.</li>
+      <li><strong>Safety filtering:</strong> Remove harmful or inappropriate content.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def validate_answer(answer, context_chunks, query):
+    validation_result = {
+        'is_valid': True,
+        'confidence': 0.0,
+        'issues': [],
+        'citations': []
+    }
+    
+    # Check for unsupported claims
+    answer_sentences = nltk.sent_tokenize(answer)
+    context_text = ' '.join([c['text'] for c in context_chunks])
+    
+    for sentence in answer_sentences:
+        if not is_supported_by_context(sentence, context_text):
+            validation_result['issues'].append(f"Potentially unsupported: {sentence}")
+            validation_result['confidence'] -= 0.2
+    
+    # Extract citations
+    for chunk in context_chunks:
+        if chunk['text'] in answer:
+            validation_result['citations'].append(chunk['metadata']['source'])
+    
+    # Calculate confidence
+    validation_result['confidence'] = max(0.0, min(1.0, 
+        0.8 + validation_result['confidence'] + 
+        len(validation_result['citations']) * 0.1))
+    
+    if validation_result['issues']:
+        validation_result['is_valid'] = False
+    
+    return validation_result</code></pre>
+    </div>
+    <h3>Observability and metrics</h3>
+    <p>Track retrieval precision, prompt token usage, answer latency, and user feedback. These metrics tell you when to improve chunking, search, or prompts.</p>
+    <p><strong>Key metrics to monitor:</strong></p>
+    <ul>
+      <li><strong>Retrieval metrics:</strong> Precision@K, recall, mean reciprocal rank.</li>
+      <li><strong>Generation metrics:</strong> Token usage, response time, coherence scores.</li>
+      <li><strong>User experience:</strong> Satisfaction ratings, follow-up questions.</li>
+      <li><strong>System health:</strong> Error rates, latency percentiles, resource usage.</li>
+      <li><strong>Business impact:</strong> Task completion rates, time saved.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>class RAGMetrics:
+    def __init__(self):
+        self.metrics = {
+            'queries_total': 0,
+            'retrieval_precision': [],
+            'generation_latency': [],
+            'token_usage': [],
+            'user_feedback': []
+        }
+    
+    def record_query(self, query, retrieved_chunks, answer, latency, tokens):
+        self.metrics['queries_total'] += 1
+        self.metrics['generation_latency'].append(latency)
+        self.metrics['token_usage'].append(tokens)
+        
+        # Calculate retrieval precision
+        relevant_found = sum(1 for chunk in retrieved_chunks 
+                           if self.is_relevant(chunk, query))
+        precision = relevant_found / len(retrieved_chunks) if retrieved_chunks else 0
+        self.metrics['retrieval_precision'].append(precision)
+    
+    def get_summary(self):
+        return {
+            'total_queries': self.metrics['queries_total'],
+            'avg_precision': mean(self.metrics['retrieval_precision']),
+            'avg_latency': mean(self.metrics['generation_latency']),
+            'avg_tokens': mean(self.metrics['token_usage']),
+            'p95_latency': percentile(self.metrics['generation_latency'], 95)
+        }</code></pre>
+    </div>
+  </section>
+
+  <section class="section" id="example">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(248,81,73,.15)">??</div>
+      <div>
+        <h2 style="color:var(--red)">Example Scenario</h2>
+        <div class="section-tagline">A realistic developer workflow for internal knowledge retrieval</div>
+      </div>
+    </div>
+    <p>Imagine a developer asks, "How do I configure OAuth for our payment service?" A proper RAG system returns precise details from your internal docs and cites the relevant source.</p>
+    <h3>What happens</h3>
+    <ol>
+      <li>The query is normalized to remove conversational noise.</li>
+      <li>The query is embedded and searched against a vector index of internal docs.</li>
+      <li>The system retrieves the top API config and OAuth example chunks.</li>
+      <li>These chunks are assembled into a prompt with explicit instructions.</li>
+      <li>The model answers using the provided context, with citations to the source documents.</li>
+    </ol>
+    <div class="callout c-gotcha">
+      <div class="callout-label">Why this matters</div>
+      <p>Without RAG, the model may hallucinate configuration values. With RAG, the answer is grounded in actual service documentation.</p>
+    </div>
+    <h3>Detailed walkthrough</h3>
+    <p>Let's trace through a complete RAG query with actual data:</p>
+    <h4>1. Query processing</h4>
+    <div class="code-wrap">
+      <div class="code-lang">Input</div>
+      <pre><code>User query: "Hey, how do I set up OAuth for the payment API? I'm getting auth errors."</code></pre>
+    </div>
+    <div class="code-wrap">
+      <div class="code-lang">Processing</div>
+      <pre><code>// Normalize query
+normalized = "set up OAuth payment API auth errors"
+
+// Remove stop words
+cleaned = "set OAuth payment API auth errors"
+
+// Embed query
+query_embedding = embed("set OAuth payment API auth errors")</code></pre>
+    </div>
+    <h4>2. Retrieval phase</h4>
+    <div class="code-wrap">
+      <div class="code-lang">Vector Search</div>
+      <pre><code>// Search vector database
+results = vectorDB.query({
+  query_embedding: query_embedding,
+  top_k: 5,
+  filter: { service: "payments", doc_type: "api" }
+})
+
+// Retrieved chunks:
+1. "OAuth Configuration" - API docs section
+2. "Payment Service Authentication" - setup guide  
+3. "OAuth Error Codes" - troubleshooting
+4. "API Keys and Tokens" - reference
+5. "Security Best Practices" - general guidelines</code></pre>
+    </div>
+    <h4>3. Context assembly</h4>
+    <div class="code-wrap">
+      <div class="code-lang">Context Building</div>
+      <pre><code>context = """
+Source: api/payments/oauth.md#configuration
+To configure OAuth for the payment service:
+1. Register your application in the developer portal
+2. Obtain client_id and client_secret
+3. Configure redirect URIs
+4. Use the /oauth/authorize endpoint
+
+Source: guides/payment-setup.md#authentication  
+For payment API authentication:
+- Use OAuth 2.0 Authorization Code flow
+- Required scopes: payments:read, payments:write
+- Token endpoint: https://api.company.com/oauth/token
+
+Source: troubleshooting/oauth-errors.md
+Common OAuth errors:
+- invalid_client: Check client_id/secret
+- invalid_grant: Verify authorization code
+- access_denied: Check user permissions
+"""</code></pre>
+    </div>
+    <h4>4. Prompt construction</h4>
+    <div class="code-wrap">
+      <div class="code-lang">Prompt</div>
+      <pre><code>prompt = """
+You are a developer support assistant. Use ONLY the provided context to help with OAuth setup for the payment API.
+
+Context:
+[assembled context above]
+
+Question: How do I set up OAuth for the payment API? I'm getting auth errors.
+
+Instructions:
+- Provide step-by-step setup instructions
+- Explain how to resolve common auth errors
+- Include code examples where helpful
+- Cite sources for each piece of advice
+- If something is unclear, ask for clarification
+
+Answer:"""</code></pre>
+    </div>
+    <h4>5. Generation and validation</h4>
+    <div class="code-wrap">
+      <div class="code-lang">Generated Response</div>
+      <pre><code>Based on our payment API documentation, here's how to set up OAuth:
+
+## Step-by-Step Setup
+
+1. **Register your application** in the developer portal to get your `client_id` and `client_secret`
+
+2. **Configure OAuth flow**:
+   ```javascript
+   const oauthConfig = {
+     clientId: 'your_client_id',
+     clientSecret: 'your_client_secret', 
+     redirectUri: 'https://yourapp.com/callback',
+     scopes: ['payments:read', 'payments:write']
+   };
+   ```
+
+3. **Get authorization code** by redirecting to:
+   `https://api.company.com/oauth/authorize?client_id=...&scope=payments:read payments:write`
+
+4. **Exchange for access token**:
+   ```bash
+   curl -X POST https://api.company.com/oauth/token \
+     -d 'grant_type=authorization_code&code=...&client_id=...&client_secret=...'
+   ```
+
+## Troubleshooting Auth Errors
+
+- **invalid_client**: Verify your client_id and client_secret are correct
+- **invalid_grant**: The authorization code may have expired (5 minutes)  
+- **access_denied**: Check that the user has payment permissions
+
+Sources: 
+- api/payments/oauth.md#configuration
+- guides/payment-setup.md#authentication
+- troubleshooting/oauth-errors.md</code></pre>
+    </div>
+    <h3>Code implementation</h3>
+    <div class="code-wrap">
+      <div class="code-lang">JavaScript</div>
+      <pre><code>async function handleOAuthQuery(userQuery) {
+  // 1. Normalize and embed
+  const normalized = normalizeQuery(userQuery);
+  const queryEmbedding = await embedQuery(normalized);
+  
+  // 2. Retrieve relevant chunks
+  const chunks = await vectorDB.search(queryEmbedding, {
+    topK: 4,
+    filter: { docType: 'api', service: 'payments' }
+  });
+  
+  // 3. Build context with citations
+  const context = chunks
+    .map(chunk => `Source: ${chunk.metadata.title}\n${chunk.text}`)
+    .join('\n\n');
+  
+  // 4. Construct prompt
+  const prompt = `You are a developer assistant. Use the context below to answer the question.\n\n${context}\n\nQuestion:\n${userQuery}`;
+  
+  // 5. Generate answer
+  const result = await llm.generate({ 
+    prompt, 
+    maxTokens: 500,
+    temperature: 0.1
+  });
+  
+  // 6. Validate and return
+  const validation = validateAnswer(result.text, chunks, userQuery);
+  
+  return { 
+    text: result.text, 
+    sources: chunks.map(c => c.metadata.source),
+    confidence: validation.confidence,
+    issues: validation.issues
+  };
+}</code></pre>
+    </div>
+  </section>
+
+  <section class="section" id="best-practices">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(63,185,80,.15)">?</div>
+      <div>
+        <h2 style="color:var(--emerald)">Best Practices</h2>
+        <div class="section-tagline">Build robust, explainable, and scalable RAG systems</div>
+      </div>
+    </div>
+    <ul>
+      <li>Keep RAG knowledge in a dedicated vector store, not in the prompt text alone.</li>
+      <li>Version embeddings and re-index when the model or data schema changes.</li>
+      <li>Use metadata filters to keep domain-specific retrieval precise.</li>
+      <li>Craft prompts that tell the model to rely only on the provided context.</li>
+      <li>Implement fallback behavior when retrieval returns low-quality evidence.</li>
+      <li>Track retrieval relevance, latency, token usage, and user feedback continuously.</li>
+    </ul>
+    <h3>Advanced best practices</h3>
+    <h4>Data management</h4>
+    <ul>
+      <li><strong>Source versioning:</strong> Track document versions and re-index when content changes.</li>
+      <li><strong>Quality curation:</strong> Implement review processes for new knowledge sources.</li>
+      <li><strong>Deduplication:</strong> Remove redundant information across documents.</li>
+      <li><strong>Freshness monitoring:</strong> Flag outdated information and prioritize recent sources.</li>
+      <li><strong>Multi-modal support:</strong> Handle text, code, images, and structured data appropriately.</li>
+    </ul>
+    <h4>Retrieval optimization</h4>
+    <ul>
+      <li><strong>Hybrid search:</strong> Combine vector similarity with keyword matching for better results.</li>
+      <li><strong>Query expansion:</strong> Add synonyms and related terms to improve recall.</li>
+      <li><strong>Re-ranking:</strong> Use cross-encoders to improve result ordering.</li>
+      <li><strong>Query routing:</strong> Direct different query types to appropriate knowledge domains.</li>
+      <li><strong>Personalization:</strong> Use user context and history to refine retrieval.</li>
+    </ul>
+    <h4>Generation excellence</h4>
+    <ul>
+      <li><strong>Context compression:</strong> Summarize or select most relevant parts when context is too large.</li>
+      <li><strong>Multi-turn support:</strong> Maintain conversation context across multiple queries.</li>
+      <li><strong>Structured output:</strong> Generate responses in specific formats (JSON, tables, code).</li>
+      <li><strong>Citation accuracy:</strong> Ensure all claims can be traced to source documents.</li>
+      <li><strong>Confidence calibration:</strong> Provide uncertainty estimates with answers.</li>
+    </ul>
+    <h4>Production readiness</h4>
+    <ul>
+      <li><strong>Scalability:</strong> Design for horizontal scaling of embedding and retrieval services.</li>
+      <li><strong>Reliability:</strong> Implement circuit breakers, retries, and graceful degradation.</li>
+      <li><strong>Security:</strong> Protect sensitive information and implement access controls.</li>
+      <li><strong>Cost optimization:</strong> Cache embeddings, batch requests, and optimize model selection.</li>
+      <li><strong>Compliance:</strong> Handle data privacy, retention, and audit requirements.</li>
+    </ul>
+    <h3>Common pitfalls to avoid</h3>
+    <div class="callout c-gotcha">
+      <div class="callout-label">Critical mistakes</div>
+      <ul>
+        <li><strong>Mixed embeddings:</strong> Using different models for indexing vs. querying.</li>
+        <li><strong>Prompt leakage:</strong> Allowing models to use external knowledge instead of provided context.</li>
+        <li><strong>Chunk size extremes:</strong> Too small loses context, too large hurts precision.</li>
+        <li><strong>Ignoring metadata:</strong> Failing to filter results leads to irrelevant responses.</li>
+        <li><strong>No validation:</strong> Blind trust in generated answers leads to hallucinations.</li>
+      </ul>
+    </div>
+    <h3>Evaluation framework</h3>
+    <p>Measure RAG system quality across multiple dimensions:</p>
+    <h4>Retrieval metrics</h4>
+    <ul>
+      <li><strong>Precision@K:</strong> Fraction of top-K results that are relevant.</li>
+      <li><strong>Recall@K:</strong> Fraction of all relevant documents found in top-K.</li>
+      <li><strong>Mean Reciprocal Rank:</strong> Average position of first relevant result.</li>
+      <li><strong>NDCG:</strong> Normalized Discounted Cumulative Gain for ranked results.</li>
+    </ul>
+    <h4>Generation metrics</h4>
+    <ul>
+      <li><strong>Faithfulness:</strong> How well the answer matches the retrieved context.</li>
+      <li><strong>Relevance:</strong> How well the answer addresses the query.</li>
+      <li><strong>Coherence:</strong> Logical flow and readability of the response.</li>
+      <li><strong>Groundedness:</strong> Every claim supported by evidence.</li>
+    </ul>
+    <h4>User experience metrics</h4>
+    <ul>
+      <li><strong>Satisfaction scores:</strong> User ratings of answer quality.</li>
+      <li><strong>Task completion:</strong> Whether the answer helped solve the problem.</li>
+      <li><strong>Follow-up questions:</strong> Need for clarification or additional queries.</li>
+      <li><strong>Time to resolution:</strong> How quickly users find what they need.</li>
+    </ul>
+    <div class="code-wrap">
+      <div class="code-lang">Python</div>
+      <pre><code>def evaluate_rag_system(test_queries, ground_truth):
+    results = []
+    for query, expected_sources in test_queries.items():
+        # Run RAG pipeline
+        answer, sources, latency = process_query(query)
+        
+        # Calculate metrics
+        precision = len(set(sources) & set(expected_sources)) / len(sources)
+        recall = len(set(sources) & set(expected_sources)) / len(expected_sources)
+        faithfulness = check_faithfulness(answer, sources)
+        
+        results.append({
+            'query': query,
+            'precision': precision,
+            'recall': recall,
+            'faithfulness': faithfulness,
+            'latency': latency
+        })
+    
+    return pd.DataFrame(results)</code></pre>
+    </div>
+    <div class="checklist">
+      <div class="check-group">
+        <div class="check-group-title">Master checklist</div>
+        <div class="ci"><span class="cbox"></span><span>Define knowledge sources and update cadence</span></div>
+        <div class="ci"><span class="cbox"></span><span>Chunk documents with semantic boundaries</span></div>
+        <div class="ci"><span class="cbox"></span><span>Use the same embedding model offline and online</span></div>
+        <div class="ci"><span class="cbox"></span><span>Filter retrieval with metadata and domain tags</span></div>
+        <div class="ci"><span class="cbox"></span><span>Build prompts that enforce context-only answers</span></div>
+        <div class="ci"><span class="cbox"></span><span>Validate generated answers and surface citations</span></div>
+        <div class="ci"><span class="cbox"></span><span>Implement comprehensive monitoring and metrics</span></div>
+        <div class="ci"><span class="cbox"></span><span>Test with real user queries and iterate</span></div>
+        <div class="ci"><span class="cbox"></span><span>Plan for scaling, reliability, and cost optimization</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
