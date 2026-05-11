@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 2 — Model Serving &amp; Inference | 💎 Diamond</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D1117;--bg2:#161B22;--bg3:#1F2937;--border:#30363D;
+  --text:#E6EDF3;--muted:#8B949E;--subtle:#C9D1D9;
+  --red:#F85149;--emerald:#3FB950;--orange:#F97316;--violet:#A855F7;
+  --vllm:#F97316;--ollama:#2DD4BF;--fastapi:#06B6D4;
+  --langserve:#79C0FF;--modal:#A855F7;--replicate:#F472B6;
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Code','Fira Code','Consolas',monospace;
+  --radius:10px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.75;display:flex;min-height:100vh}
+
+.sidebar{width:210px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--bg2);border-right:1px solid var(--border);padding:1.25rem .875rem;display:flex;flex-direction:column;gap:2px}
+.sidebar-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:.5rem .5rem .75rem;border-bottom:1px solid var(--border);margin-bottom:.5rem}
+.nav-link{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;font-size:12.5px;color:var(--muted);text-decoration:none;transition:all .15s}
+.nav-link:hover,.nav-link.active{background:var(--bg3);color:var(--text)}
+.ndot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.pbar-wrap{height:3px;background:var(--bg3);border-radius:3px;margin:1rem .5rem .5rem;overflow:hidden}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--vllm),var(--fastapi));width:0%;transition:width .4s}
+.sidebar-footer{margin-top:auto;padding-top:1rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}
+
+.main{flex:1;max-width:900px;padding:2.5rem 3rem 6rem;overflow-x:hidden}
+
+.hero{margin-bottom:3rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:99px;padding:3px 12px;font-size:11.5px;color:var(--orange);margin-bottom:1.25rem}
+.hero h1{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:.5rem}
+.hero h1 em{font-style:normal;color:var(--orange)}
+.hero-sub{color:var(--muted);font-size:16px;margin-bottom:1.25rem}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:4px 13px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid}
+.p-vllm{color:var(--vllm);background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.35)}
+.p-ollama{color:var(--ollama);background:rgba(45,212,191,.1);border-color:rgba(45,212,191,.35)}
+.p-fastapi{color:var(--fastapi);background:rgba(6,182,212,.1);border-color:rgba(6,182,212,.35)}
+.p-langserve{color:var(--langserve);background:rgba(121,192,255,.1);border-color:rgba(121,192,255,.35)}
+.p-modal{color:var(--modal);background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.35)}
+.p-replicate{color:var(--replicate);background:rgba(244,114,182,.1);border-color:rgba(244,114,182,.35)}
+.meta-row{display:flex;gap:2rem;margin-top:1.25rem;flex-wrap:wrap}
+.meta-item{font-size:13px;color:var(--muted)}
+.meta-item strong{color:var(--text);display:block;font-size:15px}
+
+.whereami{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:2.5rem;font-size:13px;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.wa-step{padding:4px 10px;border-radius:6px;color:var(--muted)}
+.wa-step.done{color:var(--emerald)}
+.wa-step.current{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);color:var(--orange);font-weight:600}
+.wa-arrow{color:var(--border);font-size:11px}
+
+.section{margin-bottom:4rem;scroll-margin-top:1rem}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+.section-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.section-header h2{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.section-tagline{font-size:14px;color:var(--muted);margin-top:2px}
+.divider{height:1px;background:linear-gradient(90deg,var(--border),transparent);margin:3rem 0}
+p{color:var(--subtle);margin-bottom:.875rem}
+h3{font-size:18px;font-weight:600;margin:2.25rem 0 .75rem;color:var(--text)}
+h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:1.75rem 0 .5rem}
+
+.callout{border-radius:var(--radius);padding:1rem 1.25rem;margin:1.25rem 0;border-left:3px solid;font-size:14px;line-height:1.65}
+.callout-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.callout p{margin:0;font-size:14px}
+.c-brain{background:rgba(6,182,212,.07);border-color:var(--fastapi)}.c-brain .callout-label{color:var(--fastapi)}
+.c-gotcha{background:rgba(248,81,73,.07);border-color:var(--red)}.c-gotcha .callout-label{color:var(--red)}
+.c-wild{background:rgba(63,185,80,.07);border-color:var(--emerald)}.c-wild .callout-label{color:var(--emerald)}
+.c-tip{background:rgba(227,179,65,.07);border-color:#E3B341}.c-tip .callout-label{color:#E3B341}
+.c-origin{background:rgba(168,85,247,.07);border-color:var(--violet)}.c-origin .callout-label{color:var(--violet)}
+
+.diagram{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin:1.75rem 0;overflow-x:auto}
+.diagram-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1rem}
+.diagram svg{display:block;max-width:100%}
+
+.code-wrap{position:relative;margin:1rem 0}
+.code-lang{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-family:var(--font);margin-bottom:6px}
+pre{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;font-family:var(--mono);font-size:12.5px;line-height:1.65;overflow-x:auto;tab-size:2}
+.copy-btn{position:absolute;top:28px;right:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10.5px;color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .15s}
+.copy-btn:hover{color:var(--text);border-color:#555}
+.kw{color:#FF7B72}.fn{color:#79C0FF}.st{color:#56D364}.cm{color:var(--muted);font-style:italic}.num{color:#E3B341}.cls{color:#D2A8FF}
+
+.split-code{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:1.25rem 0}
+.split-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.lbl-before{color:var(--red)}.lbl-after{color:var(--emerald)}
+.split-code pre{font-size:11.5px;height:100%}
+
+.scenario-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:1.5rem 0}
+.scenario-head{padding:.875rem 1.25rem;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.scenario-emoji{font-size:24px}
+.scenario-co{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:2px}
+.scenario-title{font-size:15px;font-weight:700;color:var(--text)}
+.scenario-body{padding:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.sc-block h5{font-size:10px;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px;font-weight:700}
+.sc-prob h5{color:var(--red)}.sc-sol h5{color:var(--emerald)}
+.sc-block p{font-size:13.5px;color:var(--subtle);margin:0;line-height:1.6}
+.scenario-result{padding:.875rem 1.25rem;background:rgba(63,185,80,.05);border-top:1px solid var(--border);font-size:13px;color:var(--subtle)}
+.scenario-result strong{color:var(--emerald)}
+
+.ap-list{display:flex;flex-direction:column;gap:10px;margin:1rem 0}
+.ap-item{background:var(--bg2);border:1px solid rgba(248,81,73,.15);border-radius:var(--radius);padding:1rem 1.25rem}
+.ap-num{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--red);font-weight:700;margin-bottom:.625rem}
+.ap-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.ap-col h5{font-size:10px;text-transform:uppercase;letter-spacing:.09em;font-weight:700;margin-bottom:4px}
+.ap-s h5{color:var(--red)}.ap-c h5{color:#E3B341}.ap-f h5{color:var(--emerald)}
+.ap-col p{font-size:13px;color:var(--subtle);margin:0;line-height:1.55}
+
+.comp-table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0}
+.comp-table th{background:var(--bg3);padding:9px 14px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);font-weight:700}
+.comp-table td{padding:9px 14px;border-bottom:1px solid rgba(48,54,61,.6);color:var(--subtle)}
+.comp-table tr:hover td{background:rgba(255,255,255,.02)}
+
+.challenge-card{border:1px solid var(--border);border-radius:var(--radius);margin:1.5rem 0;overflow:hidden}
+.challenge-toggle{width:100%;background:var(--bg2);border:none;padding:.875rem 1.25rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;color:var(--text);font-size:14px;font-weight:600;font-family:var(--font);text-align:left;transition:background .15s}
+.challenge-toggle:hover{background:var(--bg3)}
+.challenge-toggle .arrow{color:var(--muted);transition:transform .2s}
+.challenge-toggle.open .arrow{transform:rotate(90deg)}
+.challenge-body{display:none;padding:1.25rem;background:var(--bg);border-top:1px solid var(--border)}
+.challenge-body.show{display:block}
+.chal-item{padding:.625rem 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:13.5px;color:var(--subtle);display:flex;gap:10px;align-items:flex-start}
+.chal-item:last-child{border-bottom:none;padding-bottom:0}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:700;flex-shrink:0;margin-top:2px}
+.rookie{background:rgba(63,185,80,.15);color:var(--emerald)}
+.builder{background:rgba(227,179,65,.15);color:#E3B341}
+.architect{background:rgba(248,81,73,.15);color:var(--red)}
+
+.checklist{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.75rem;margin:2rem 0}
+.check-group{margin-bottom:1.25rem}.check-group:last-child{margin-bottom:0}
+.check-group-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:.625rem;font-weight:700}
+.ci{display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;font-size:13.5px;color:var(--subtle);border-bottom:1px solid rgba(48,54,61,.35)}
+.ci:last-child{border-bottom:none}
+.cbox{width:20px;height:20px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ci.checked .cbox{background:var(--emerald);border-color:var(--emerald)}
+.ci.checked .cbox::after{content:'✓';font-size:12px;color:#000;font-weight:800}
+.ci.checked .ci-text{text-decoration:line-through;color:var(--muted)}
+
+.nav-footer{display:flex;gap:1rem;margin-top:3.5rem;padding-top:2rem;border-top:1px solid var(--border)}
+.nf-btn{flex:1;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:all .15s;display:block}
+.nf-btn:hover{border-color:var(--orange);background:rgba(249,115,22,.04)}
+.nf-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.nf-title{font-weight:600;font-size:14px}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-title">Module 2 · Model Serving</div>
+  <div class="pbar-wrap"><div class="pbar-fill" id="pbar"></div></div>
+  <a href="#big-picture" class="nav-link"><span class="ndot" style="background:#58A6FF"></span>Big Picture</a>
+  <a href="#vllm"        class="nav-link"><span class="ndot" style="background:var(--vllm)"></span>vLLM</a>
+  <a href="#ollama"      class="nav-link"><span class="ndot" style="background:var(--ollama)"></span>Ollama</a>
+  <a href="#fastapi"     class="nav-link"><span class="ndot" style="background:var(--fastapi)"></span>FastAPI</a>
+  <a href="#langserve"   class="nav-link"><span class="ndot" style="background:var(--langserve)"></span>LangServe</a>
+  <a href="#modal"       class="nav-link"><span class="ndot" style="background:var(--modal)"></span>Modal</a>
+  <a href="#replicate"   class="nav-link"><span class="ndot" style="background:var(--replicate)"></span>Replicate</a>
+  <a href="#decision"    class="nav-link"><span class="ndot" style="background:#E879F9"></span>Decision Map</a>
+  <a href="#capstone"    class="nav-link"><span class="ndot" style="background:var(--orange)"></span>Capstone</a>
+  <a href="#checklist"   class="nav-link"><span class="ndot" style="background:var(--emerald)"></span>Checklist</a>
+  <div class="sidebar-footer">💎 Diamond v1.0</div>
+</nav>
+
+<main class="main">
+
+<div class="hero">
+  <div class="badge">💎 Diamond Edition &nbsp;·&nbsp; Module 2 of 5</div>
+  <h1>Model Serving<br>&amp; <em>Inference</em></h1>
+  <p class="hero-sub">You built the AI logic in Module 1. Now make it fast, accessible, and production-ready — locally, as an API, or in the cloud.</p>
+  <div class="pills">
+    <span class="pill p-vllm">vLLM</span>
+    <span class="pill p-ollama">Ollama</span>
+    <span class="pill p-fastapi">FastAPI</span>
+    <span class="pill p-langserve">LangServe</span>
+    <span class="pill p-modal">Modal</span>
+    <span class="pill p-replicate">Replicate</span>
+  </div>
+  <div class="meta-row">
+    <div class="meta-item"><strong>2–3 Days</strong>Estimated time</div>
+    <div class="meta-item"><strong>6 Tools</strong>Deep coverage</div>
+    <div class="meta-item"><strong>11 Diagrams</strong>Visual guides</div>
+    <div class="meta-item"><strong>6 Real Scenarios</strong>Production examples</div>
+  </div>
+</div>
+
+<div class="whereami">
+  <span class="wa-step done">✅ Master Index</span><span class="wa-arrow">›</span>
+  <span class="wa-step done">✅ Module 1</span><span class="wa-arrow">›</span>
+  <span class="wa-step current">📍 Module 2</span><span class="wa-arrow">›</span>
+  <span class="wa-step">Module 3</span><span class="wa-arrow">›</span>
+  <span class="wa-step">Module 4</span><span class="wa-arrow">›</span>
+  <span class="wa-step">Module 5</span>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     BIG PICTURE
+═════════════════════════════════════════════════ -->
+<section class="section" id="big-picture">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(249,115,22,.15)">🗺️</div>
+    <div><h2 style="color:var(--orange)">The Big Picture</h2>
+    <div class="section-tagline">Module 1 built the brain. Module 2 gives it legs.</div></div>
+  </div>
+
+  <p>In Module 1 you learned to chain prompts, build agents, index documents. But all of that ran as a Python script on your machine. <strong style="color:var(--text)">Serving is the bridge between "works on my laptop" and "works for everyone."</strong> These 6 tools cover every point on that bridge — from zero-setup local inference to serverless cloud deployment at scale.</p>
+
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 1 — The Serving Landscape: All 6 Tools Placed</div>
+    <svg viewBox="0 0 760 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:760px">
+      <defs><marker id="a0" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#8B949E"/></marker></defs>
+      <!-- Axes -->
+      <line x1="60" y1="260" x2="720" y2="260" stroke="#30363D" stroke-width="1.5"/>
+      <line x1="60" y1="20"  x2="60"  y2="260" stroke="#30363D" stroke-width="1.5"/>
+      <!-- Axis labels -->
+      <text x="390" y="290" font-size="11" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif" font-weight="700">← LOCAL / DEV &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CLOUD / PROD →</text>
+      <text x="30" y="145" font-size="11" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif" font-weight="700" transform="rotate(-90,30,145)">← SINGLE USER &nbsp;&nbsp; MANY USERS →</text>
+      <!-- Grid lines faint -->
+      <line x1="60" y1="140" x2="720" y2="140" stroke="#1F2937" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="390" y1="20"  x2="390" y2="260" stroke="#1F2937" stroke-width="1" stroke-dasharray="4,4"/>
+      <!-- Ollama -->
+      <rect x="80"  y="180" width="110" height="52" rx="10" fill="rgba(45,212,191,.12)" stroke="rgba(45,212,191,.5)" stroke-width="1.5"/>
+      <text x="135" y="202" font-size="13" fill="#2DD4BF" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🦙 Ollama</text>
+      <text x="135" y="220" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Local · Zero setup</text>
+      <text x="135" y="232" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Dev &amp; prototyping</text>
+      <!-- HuggingFace pipeline label -->
+      <rect x="80" y="60" width="110" height="52" rx="10" fill="rgba(227,179,65,.1)" stroke="rgba(227,179,65,.4)" stroke-width="1.5"/>
+      <text x="135" y="82" font-size="13" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🤗 HF pipeline</text>
+      <text x="135" y="100" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Local · Research</text>
+      <text x="135" y="112" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">↑ From Module 1</text>
+      <!-- vLLM -->
+      <rect x="230" y="50" width="120" height="52" rx="10" fill="rgba(249,115,22,.12)" stroke="rgba(249,115,22,.5)" stroke-width="1.5"/>
+      <text x="290" y="72" font-size="13" fill="#F97316" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">⚡ vLLM</text>
+      <text x="290" y="90" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">GPU · High throughput</text>
+      <text x="290" y="102" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">On-prem or cloud</text>
+      <!-- FastAPI -->
+      <rect x="300" y="155" width="120" height="52" rx="10" fill="rgba(6,182,212,.12)" stroke="rgba(6,182,212,.5)" stroke-width="1.5"/>
+      <text x="360" y="177" font-size="13" fill="#06B6D4" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🚀 FastAPI</text>
+      <text x="360" y="195" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Wraps any logic</text>
+      <text x="360" y="207" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">as REST API</text>
+      <!-- LangServe -->
+      <rect x="440" y="155" width="120" height="52" rx="10" fill="rgba(121,192,255,.12)" stroke="rgba(121,192,255,.5)" stroke-width="1.5"/>
+      <text x="500" y="177" font-size="13" fill="#79C0FF" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🔗 LangServe</text>
+      <text x="500" y="195" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">LangChain chains</text>
+      <text x="500" y="207" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">as APIs instantly</text>
+      <!-- Modal -->
+      <rect x="530" y="55" width="110" height="52" rx="10" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.5)" stroke-width="1.5"/>
+      <text x="585" y="77" font-size="13" fill="#A855F7" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">☁️ Modal</text>
+      <text x="585" y="95" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Serverless GPU</text>
+      <text x="585" y="107" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Pay per run</text>
+      <!-- Replicate -->
+      <rect x="630" y="175" width="110" height="52" rx="10" fill="rgba(244,114,182,.12)" stroke="rgba(244,114,182,.5)" stroke-width="1.5"/>
+      <text x="685" y="197" font-size="13" fill="#F472B6" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">📦 Replicate</text>
+      <text x="685" y="215" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Hosted models</text>
+      <text x="685" y="227" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">API-first</text>
+    </svg>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 2 — Local vs Cloud Serving Architecture</div>
+    <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:760px">
+      <defs>
+        <marker id="a2" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#8B949E"/></marker>
+        <marker id="a2g" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#3FB950"/></marker>
+        <marker id="a2o" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#F97316"/></marker>
+      </defs>
+      <!-- LOCAL STACK -->
+      <rect x="10" y="8" width="355" height="200" rx="12" fill="rgba(45,212,191,.04)" stroke="rgba(45,212,191,.25)" stroke-width="1.5"/>
+      <text x="187" y="30" font-size="12" fill="#2DD4BF" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">💻 LOCAL STACK</text>
+      <rect x="28"  y="44" width="90"  height="42" rx="8" fill="rgba(45,212,191,.12)" stroke="rgba(45,212,191,.4)" stroke-width="1"/>
+      <text x="73"  y="61" font-size="11" fill="#2DD4BF" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Your App</text>
+      <text x="73"  y="77" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Python script</text>
+      <rect x="148" y="44" width="90"  height="42" rx="8" fill="rgba(6,182,212,.12)"  stroke="rgba(6,182,212,.4)"  stroke-width="1"/>
+      <text x="193" y="61" font-size="11" fill="#06B6D4" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">FastAPI</text>
+      <text x="193" y="77" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">REST API</text>
+      <rect x="268" y="44" width="90"  height="42" rx="8" fill="rgba(45,212,191,.12)" stroke="rgba(45,212,191,.4)" stroke-width="1"/>
+      <text x="313" y="61" font-size="11" fill="#2DD4BF" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Ollama</text>
+      <text x="313" y="77" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Local LLM</text>
+      <line x1="118" y1="65" x2="146" y2="65" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="238" y1="65" x2="266" y2="65" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <!-- vLLM variant -->
+      <rect x="28"  y="120" width="90"  height="42" rx="8" fill="rgba(45,212,191,.12)" stroke="rgba(45,212,191,.4)" stroke-width="1"/>
+      <text x="73"  y="137" font-size="11" fill="#2DD4BF" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Your App</text>
+      <text x="73"  y="153" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Python script</text>
+      <rect x="148" y="120" width="90"  height="42" rx="8" fill="rgba(6,182,212,.12)"  stroke="rgba(6,182,212,.4)"  stroke-width="1"/>
+      <text x="193" y="137" font-size="11" fill="#06B6D4" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">FastAPI</text>
+      <text x="193" y="153" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">REST API</text>
+      <rect x="268" y="120" width="90"  height="42" rx="8" fill="rgba(249,115,22,.12)" stroke="rgba(249,115,22,.4)" stroke-width="1"/>
+      <text x="313" y="137" font-size="11" fill="#F97316" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">vLLM</text>
+      <text x="313" y="153" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">GPU · High QPS</text>
+      <line x1="118" y1="141" x2="146" y2="141" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="238" y1="141" x2="266" y2="141" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <text x="187" y="200" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">LangServe replaces FastAPI for LangChain apps</text>
+      <!-- CLOUD STACK -->
+      <rect x="395" y="8" width="355" height="200" rx="12" fill="rgba(168,85,247,.04)" stroke="rgba(168,85,247,.25)" stroke-width="1.5"/>
+      <text x="572" y="30" font-size="12" fill="#A855F7" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">☁️ CLOUD STACK</text>
+      <rect x="413" y="44" width="90" height="42" rx="8" fill="rgba(45,212,191,.12)" stroke="rgba(45,212,191,.4)" stroke-width="1"/>
+      <text x="458" y="61" font-size="11" fill="#2DD4BF" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Your App</text>
+      <text x="458" y="77" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Anywhere</text>
+      <rect x="533" y="44" width="90" height="42" rx="8" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+      <text x="578" y="61" font-size="11" fill="#A855F7" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Modal</text>
+      <text x="578" y="77" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Serverless GPU</text>
+      <rect x="653" y="44" width="85" height="42" rx="8" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.4)" stroke-width="1"/>
+      <text x="695" y="61" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Model</text>
+      <text x="695" y="77" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Your weights</text>
+      <line x1="503" y1="65" x2="531" y2="65" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="623" y1="65" x2="651" y2="65" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <rect x="413" y="120" width="90" height="42" rx="8" fill="rgba(45,212,191,.12)" stroke="rgba(45,212,191,.4)" stroke-width="1"/>
+      <text x="458" y="137" font-size="11" fill="#2DD4BF" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Your App</text>
+      <text x="458" y="153" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Anywhere</text>
+      <rect x="533" y="120" width="90" height="42" rx="8" fill="rgba(244,114,182,.12)" stroke="rgba(244,114,182,.4)" stroke-width="1"/>
+      <text x="578" y="137" font-size="11" fill="#F472B6" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Replicate</text>
+      <text x="578" y="153" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Hosted models</text>
+      <rect x="653" y="120" width="85" height="42" rx="8" fill="rgba(244,114,182,.12)" stroke="rgba(244,114,182,.4)" stroke-width="1"/>
+      <text x="695" y="137" font-size="11" fill="#F472B6" text-anchor="middle" font-weight="600" font-family="Segoe UI,sans-serif">Community</text>
+      <text x="695" y="153" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">model library</text>
+      <line x1="503" y1="141" x2="531" y2="141" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="623" y1="141" x2="651" y2="141" stroke="#8B949E" stroke-width="1.5" marker-end="url(#a2)"/>
+      <text x="572" y="200" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Modal for your own models · Replicate for community models</text>
+    </svg>
+  </div>
+
+  <div class="callout c-brain">
+    <div class="callout-label">🧠 Brain Anchor</div>
+    <p><strong>Ollama</strong> = home kitchen. <strong>vLLM</strong> = restaurant kitchen (fast, handles many orders). <strong>FastAPI</strong> = the service counter (takes orders via HTTP). <strong>LangServe</strong> = a waiter who already knows the LangChain menu. <strong>Modal</strong> = ghost kitchen that appears when needed and disappears after. <strong>Replicate</strong> = food delivery from someone else's kitchen.</p>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     vLLM
+═════════════════════════════════════════════════ -->
+<section class="section" id="vllm">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(249,115,22,.15)">⚡</div>
+    <div><h2 style="color:var(--vllm)">vLLM</h2>
+    <div class="section-tagline">High-throughput LLM inference — the speed layer</div></div>
+  </div>
+
+  <div class="callout c-origin">
+    <div class="callout-label">🎬 Origin Story — Why It Was Built</div>
+    <p>Woosuk Kwon at UC Berkeley noticed something alarming in 2023: GPU clusters serving LLMs were wasting 60–80% of their memory on the <strong>KV cache</strong> — the data structure LLMs use to remember context across tokens. The waste happened because existing systems pre-allocated worst-case memory per request, leaving most of it unused and fragmented. Kwon borrowed the <strong>paging</strong> concept from operating system memory management — the same idea that lets your laptop run more programs than it has RAM for. The result, <strong>PagedAttention</strong>, became the paper that changed production LLM serving. vLLM deployed PagedAttention as an open-source serving engine and immediately achieved 10–24× higher throughput than naive serving. Today every major LLM serving deployment — Mistral, Anyscale, AWS, Google — uses vLLM or the ideas from it.</p>
+  </div>
+
+  <h3>Before vs After — The Problem It Solves</h3>
+  <div class="split-code">
+    <div>
+      <div class="split-label lbl-before">❌ Naive serving — sequential, GPU starved</div>
+      <pre><span class="cm"># Sequential: users wait in line</span>
+<span class="cm"># GPU sits at 20% utilization between requests</span>
+<span class="kw">from</span> <span class="fn">transformers</span> <span class="kw">import</span> pipeline
+
+model = <span class="fn">pipeline</span>(<span class="st">"text-generation"</span>,
+  model=<span class="st">"meta-llama/Llama-2-7b"</span>)
+
+<span class="cm"># User 1 → wait (GPU busy) → response</span>
+<span class="cm"># User 2 → wait → response</span>
+<span class="cm"># User 3 → wait → response</span>
+<span class="cm"># 10 users = 10× single user latency</span>
+
+<span class="cm"># Problems:</span>
+<span class="cm"># - 1 request at a time</span>
+<span class="cm"># - KV cache pre-allocated = GPU memory wasted</span>
+<span class="cm"># - No batching = throughput of a single lane road</span>
+<span class="cm"># - 100 req/min capacity on a $10k A100</span></pre>
+    </div>
+    <div>
+      <div class="split-label lbl-after">✅ vLLM — batched, GPU saturated</div>
+      <pre><span class="kw">from</span> <span class="fn">vllm</span> <span class="kw">import</span> <span class="cls">LLM</span>, <span class="cls">SamplingParams</span>
+
+llm = <span class="cls">LLM</span>(model=<span class="st">"meta-llama/Llama-2-7b"</span>)
+params = <span class="cls">SamplingParams</span>(
+  temperature=<span class="num">0.7</span>, max_tokens=<span class="num">200</span>
+)
+
+<span class="cm"># All users handled simultaneously</span>
+prompts = [
+  <span class="st">"Summarize quantum computing"</span>,
+  <span class="st">"Explain neural networks"</span>,
+  <span class="st">"What is Rust programming?"</span>,
+  <span class="cm"># ...100 more</span>
+]
+
+<span class="cm"># vLLM batches automatically with PagedAttention</span>
+outputs = llm.generate(prompts, params)
+
+<span class="cm"># Benefits:</span>
+<span class="cm"># - GPU at 80-90% utilization</span>
+<span class="cm"># - 24× throughput vs naive</span>
+<span class="cm"># - 1000+ req/min on same A100</span></pre>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 3 — Sequential vs Batched Inference (Throughput Visualized)</div>
+    <svg viewBox="0 0 740 210" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <!-- Sequential -->
+      <text x="10" y="22" font-size="11" fill="#F85149" font-weight="700" font-family="Segoe UI,sans-serif">❌ NAIVE SEQUENTIAL — 1 request at a time</text>
+      <rect x="10"  y="30" width="130" height="32" rx="6" fill="rgba(6,182,212,.15)" stroke="rgba(6,182,212,.4)" stroke-width="1"/>
+      <text x="75"  y="50" font-size="11" fill="#06B6D4" text-anchor="middle" font-family="Segoe UI,sans-serif">User 1 · 2.4s</text>
+      <rect x="148" y="30" width="40"  height="32" rx="3" fill="rgba(48,54,61,.5)"/>
+      <text x="168" y="50" font-size="9"  fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">idle</text>
+      <rect x="196" y="30" width="130" height="32" rx="6" fill="rgba(168,85,247,.15)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+      <text x="261" y="50" font-size="11" fill="#A855F7" text-anchor="middle" font-family="Segoe UI,sans-serif">User 2 · 2.4s</text>
+      <rect x="334" y="30" width="40"  height="32" rx="3" fill="rgba(48,54,61,.5)"/>
+      <text x="354" y="50" font-size="9"  fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">idle</text>
+      <rect x="382" y="30" width="130" height="32" rx="6" fill="rgba(244,114,182,.15)" stroke="rgba(244,114,182,.4)" stroke-width="1"/>
+      <text x="447" y="50" font-size="11" fill="#F472B6" text-anchor="middle" font-family="Segoe UI,sans-serif">User 3 · 2.4s</text>
+      <text x="530" y="50" font-size="11" fill="#8B949E" font-family="Segoe UI,sans-serif">→ Total: 7.2s for 3 users</text>
+      <text x="10"  y="80" font-size="10" fill="#8B949E" font-family="Segoe UI,sans-serif">GPU utilization: ~20%</text>
+      <!-- Batched -->
+      <text x="10" y="110" font-size="11" fill="#3FB950" font-weight="700" font-family="Segoe UI,sans-serif">✅ vLLM BATCHED — PagedAttention, all users together</text>
+      <rect x="10"  y="120" width="130" height="32" rx="6" fill="rgba(6,182,212,.15)"  stroke="rgba(6,182,212,.4)"  stroke-width="1"/>
+      <text x="75"  y="140" font-size="11" fill="#06B6D4"  text-anchor="middle" font-family="Segoe UI,sans-serif">User 1</text>
+      <rect x="10"  y="155" width="130" height="32" rx="6" fill="rgba(168,85,247,.15)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+      <text x="75"  y="175" font-size="11" fill="#A855F7"  text-anchor="middle" font-family="Segoe UI,sans-serif">User 2</text>
+      <line x1="145" y1="120" x2="160" y2="120" stroke="#30363D" stroke-width="1"/>
+      <line x1="145" y1="187" x2="160" y2="187" stroke="#30363D" stroke-width="1"/>
+      <line x1="160" y1="120" x2="160" y2="187" stroke="#30363D" stroke-width="1"/>
+      <rect x="162" y="120" width="130" height="68" rx="6" fill="rgba(249,115,22,.2)" stroke="rgba(249,115,22,.5)" stroke-width="1.5"/>
+      <text x="227" y="151" font-size="11" fill="#F97316" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">vLLM BATCH</text>
+      <text x="227" y="167" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">~2.5s total</text>
+      <line x1="296" y1="120" x2="310" y2="120" stroke="#30363D" stroke-width="1"/>
+      <line x1="296" y1="187" x2="310" y2="187" stroke="#30363D" stroke-width="1"/>
+      <line x1="310" y1="120" x2="310" y2="187" stroke="#30363D" stroke-width="1"/>
+      <rect x="312" y="132" width="90"  height="44" rx="6" fill="rgba(63,185,80,.12)"  stroke="rgba(63,185,80,.4)"  stroke-width="1"/>
+      <text x="357" y="158" font-size="11" fill="#3FB950"  text-anchor="middle" font-family="Segoe UI,sans-serif">All done ✅</text>
+      <text x="420" y="145" font-size="11" fill="#3FB950" font-family="Segoe UI,sans-serif">→ Total: 2.5s for 3 users</text>
+      <text x="420" y="163" font-size="10" fill="#8B949E" font-family="Segoe UI,sans-serif">GPU utilization: ~85%</text>
+      <text x="370" y="200" font-size="11" fill="#F97316" font-family="Segoe UI,sans-serif" font-weight="600">Result: ~3× faster · Same hardware · 80% GPU utilization gained</text>
+    </svg>
+  </div>
+
+  <h3>Quick Start</h3>
+  <div class="code-wrap">
+    <div class="code-lang">bash + python · requires GPU for production, CPU for small models</div>
+    <button class="copy-btn" onclick="cc(this)">Copy</button>
+    <pre><span class="cm"># Install</span>
+pip install vllm
+
+<span class="cm"># Option 1: OpenAI-compatible API server (drop-in replacement)</span>
+python -m vllm.entrypoints.openai.api_server \
+  --model <span class="st">"mistralai/Mistral-7B-Instruct-v0.3"</span> \
+  --port <span class="num">8000</span>
+
+<span class="cm"># Now use it exactly like OpenAI API — just change base_url</span>
+<span class="kw">from</span> <span class="fn">openai</span> <span class="kw">import</span> <span class="cls">OpenAI</span>
+client = <span class="cls">OpenAI</span>(base_url=<span class="st">"http://localhost:8000/v1"</span>, api_key=<span class="st">"none"</span>)
+response = client.chat.completions.create(
+  model=<span class="st">"mistralai/Mistral-7B-Instruct-v0.3"</span>,
+  messages=[{<span class="st">"role"</span>:<span class="st">"user"</span>, <span class="st">"content"</span>:<span class="st">"Explain RAG in 2 sentences"</span>}]
+)
+<span class="fn">print</span>(response.choices[<span class="num">0</span>].message.content)
+
+<span class="cm"># Option 2: Python API (for batch processing)</span>
+<span class="kw">from</span> <span class="fn">vllm</span> <span class="kw">import</span> <span class="cls">LLM</span>, <span class="cls">SamplingParams</span>
+llm     = <span class="cls">LLM</span>(model=<span class="st">"facebook/opt-125m"</span>)  <span class="cm"># small model, no GPU needed</span>
+params  = <span class="cls">SamplingParams</span>(temperature=<span class="num">0.7</span>, max_tokens=<span class="num">100</span>)
+outputs = llm.generate([<span class="st">"Tell me about Python"</span>, <span class="st">"What is AI?"</span>], params)
+<span class="kw">for</span> o <span class="kw">in</span> outputs:
+  <span class="fn">print</span>(o.outputs[<span class="num">0</span>].text)</pre>
+  </div>
+
+  <h3>Fit Zone Map</h3>
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 4 — vLLM Fit Zones</div>
+    <svg viewBox="0 0 740 218" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <rect x="10" y="6"   width="720" height="60" rx="10" fill="rgba(63,185,80,.08)"  stroke="rgba(63,185,80,.35)"  stroke-width="1.5"/>
+      <rect x="10" y="78"  width="720" height="60" rx="10" fill="rgba(227,179,65,.08)" stroke="rgba(227,179,65,.35)" stroke-width="1.5"/>
+      <rect x="10" y="150" width="720" height="60" rx="10" fill="rgba(248,81,73,.08)"  stroke="rgba(248,81,73,.35)"  stroke-width="1.5"/>
+      <text x="22" y="28"  font-size="11" fill="#3FB950" font-weight="700" font-family="Segoe UI,sans-serif">🟢 GREEN — Built exactly for this</text>
+      <text x="22" y="100" font-size="11" fill="#E3B341" font-weight="700" font-family="Segoe UI,sans-serif">🟡 YELLOW — Works, but not the best choice</text>
+      <text x="22" y="172" font-size="11" fill="#F85149" font-weight="700" font-family="Segoe UI,sans-serif">🔴 RED — Wrong tool, use something else</text>
+      <rect x="22"  y="34" width="185" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="115" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">High-throughput API serving</text>
+      <rect x="215" y="34" width="185" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="307" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Replace OpenAI API (local drop-in)</text>
+      <rect x="408" y="34" width="155" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="486" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Multi-user GPU serving</text>
+      <rect x="571" y="34" width="155" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="649" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Batch inference jobs</text>
+      <rect x="22"  y="106" width="200" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="122" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Single dev user (Ollama is simpler)</text>
+      <rect x="232" y="106" width="240" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="352" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Prototyping / testing (overkill setup)</text>
+      <rect x="22"  y="178" width="200" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="122" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">CPU-only machines → use Ollama</text>
+      <rect x="232" y="178" width="220" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="342" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Laptop inference → use Ollama</text>
+      <rect x="462" y="178" width="256" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="590" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">One-off scripts → raw HuggingFace</text>
+    </svg>
+  </div>
+
+  <h3>Real-World Scenario — Replacing a $50k/Month OpenAI Bill</h3>
+  <div class="scenario-card">
+    <div class="scenario-head">
+      <div class="scenario-emoji">💸</div>
+      <div>
+        <div class="scenario-co">Series B AI Startup · 200k daily active users</div>
+        <div class="scenario-title">Cutting LLM inference cost from $50,000/month to $3,200/month</div>
+      </div>
+    </div>
+    <div class="scenario-body">
+      <div class="sc-block sc-prob">
+        <h5>🔴 The Problem</h5>
+        <p>The startup was spending $50,000/month on OpenAI API calls for a summarization feature. At Series B scale, investors started asking hard questions about unit economics. The LLM cost per user was 4× what it needed to be for a viable margin. OpenAI's rate limits were also becoming a bottleneck at peak hours.</p>
+      </div>
+      <div class="sc-block sc-sol">
+        <h5>🟢 The vLLM Solution</h5>
+        <p>Deployed vLLM serving Llama 3 8B on 2 reserved A100 GPUs ($1,600/month total). Replaced the OpenAI API call with a local endpoint using vLLM's OpenAI-compatible server — zero code change required except the base_url. vLLM's batching handled 3× peak traffic vs before on the same hardware.</p>
+      </div>
+    </div>
+    <div class="scenario-result">
+      <strong>Result:</strong> $50,000/month → $3,200/month (94% cost reduction). Latency improved from 800ms (OpenAI) to 340ms (local vLLM). No rate limits. The OpenAI-compatible API meant zero changes to existing LangChain code — just swapped the base_url.
+    </div>
+  </div>
+
+  <h3>Anti-Patterns</h3>
+  <div class="ap-list">
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #1</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>vLLM crashes immediately or refuses to load the model with a CUDA error.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Running vLLM on a CPU machine. vLLM requires a CUDA-capable GPU. It is not optional — the PagedAttention kernel only runs on GPU.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>For CPU-only machines use Ollama or HuggingFace pipeline. For cloud, use a GPU instance (AWS g5, Lambda Labs, RunPod) or switch to Modal.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #2</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Throughput is no better than naive serving despite using vLLM.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Sending one request at a time and waiting for the response before sending the next. Not using vLLM's batching at all.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Send requests concurrently using asyncio or a load-testing tool. vLLM's value is continuous batching — it only shows up when multiple requests arrive simultaneously.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #3</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Model output quality dropped noticeably after switching to vLLM from OpenAI.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Using INT4 quantization to fit a 13B model on a small GPU. Aggressive quantization degrades quality significantly.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Use a smaller model at float16 instead of a larger model at INT4. A 7B model at float16 usually outperforms a 13B at INT4 and uses comparable VRAM.</p></div>
+    </div></div>
+  </div>
+
+  <div class="challenge-card">
+    <button class="challenge-toggle" onclick="tc(this)">🎮 vLLM Challenges <span class="arrow">›</span></button>
+    <div class="challenge-body">
+      <div class="chal-item"><span class="badge rookie">Rookie</span>Run vLLM with <code style="font-family:var(--mono);font-size:11px">facebook/opt-125m</code> (CPU-friendly). Send 5 prompts in a batch. Measure total time vs sending them one-by-one with time.time().</div>
+      <div class="chal-item"><span class="badge builder">Builder</span>Start vLLM's OpenAI-compatible server. Connect your LangChain chain from Module 1 to it by changing only the base_url. Verify the chain output is identical.</div>
+      <div class="chal-item"><span class="badge architect">Architect</span>Simulate 50 concurrent users with asyncio.gather(). Measure requests/second. Then send the same 50 requests sequentially. Calculate your throughput improvement ratio.</div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     OLLAMA
+═════════════════════════════════════════════════ -->
+<section class="section" id="ollama">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(45,212,191,.15)">🦙</div>
+    <div><h2 style="color:var(--ollama)">Ollama</h2>
+    <div class="section-tagline">Docker for LLMs — run any model locally in one command</div></div>
+  </div>
+
+  <div class="callout c-origin">
+    <div class="callout-label">🎬 Origin Story — Why It Was Built</div>
+    <p>Jeffrey Morgan built Ollama in 2023 after a specific frustration: getting any open-source LLM running locally required downloading model weights in the right format, understanding quantization, writing a server, managing dependencies, and configuring CUDA — a process that took hours even for experienced engineers. His insight was a direct analogy with Docker: Docker made containers accessible by hiding all the complexity behind <code style="background:rgba(0,0,0,.25);padding:1px 5px;border-radius:3px;font-family:var(--mono)">docker run</code>. Ollama would do the same for LLMs with <code style="background:rgba(0,0,0,.25);padding:1px 5px;border-radius:3px;font-family:var(--mono)">ollama run</code>. The project hit 20,000 GitHub stars in the first week. It's now the single fastest way to get a local LLM running — from zero to chatting in under 2 minutes on any Mac or Linux machine.</p>
+  </div>
+
+  <h3>Before vs After — The Problem It Solves</h3>
+  <div class="split-code">
+    <div>
+      <div class="split-label lbl-before">❌ Before Ollama — hours of setup</div>
+      <pre><span class="cm"># Getting Llama running locally — old way</span>
+
+<span class="cm"># Step 1: clone llama.cpp</span>
+<span class="cm"># git clone https://github.com/ggerganov/llama.cpp</span>
+<span class="cm"># cd llama.cpp && make LLAMA_METAL=1</span>
+
+<span class="cm"># Step 2: download weights (Meta approval required)</span>
+<span class="cm"># wget https://huggingface.co/... (14GB)</span>
+
+<span class="cm"># Step 3: convert to GGUF format</span>
+<span class="cm"># python convert.py --outfile llama.gguf ...</span>
+
+<span class="cm"># Step 4: quantize to fit in RAM</span>
+<span class="cm"># ./quantize llama.gguf llama-q4.gguf Q4_K_M</span>
+
+<span class="cm"># Step 5: run the server</span>
+<span class="cm"># ./server -m llama-q4.gguf --port 8080</span>
+
+<span class="cm"># Step 6: figure out the API format</span>
+<span class="cm"># curl -d '{"prompt":"Hi"}' localhost:8080/completion</span>
+
+<span class="cm"># Total time: 3-6 hours, deep technical knowledge needed</span></pre>
+    </div>
+    <div>
+      <div class="split-label lbl-after">✅ With Ollama — 2 minutes, zero expertise</div>
+      <pre><span class="cm"># Install: https://ollama.com (one click)</span>
+
+<span class="cm"># Terminal — that's it</span>
+<span class="cm"># ollama run llama3.2</span>
+
+<span class="cm"># Python integration</span>
+<span class="kw">import</span> ollama
+
+<span class="cm"># Simple chat</span>
+response = ollama.chat(
+  model=<span class="st">'llama3.2'</span>,
+  messages=[{
+    <span class="st">'role'</span>: <span class="st">'user'</span>,
+    <span class="st">'content'</span>: <span class="st">'Explain RAG in 2 sentences'</span>
+  }]
+)
+<span class="fn">print</span>(response[<span class="st">'message'</span>][<span class="st">'content'</span>])
+
+<span class="cm"># Stream tokens as they generate</span>
+<span class="kw">for</span> chunk <span class="kw">in</span> ollama.chat(model=<span class="st">'llama3.2'</span>,
+  messages=[{<span class="st">'role'</span>:<span class="st">'user'</span>,<span class="st">'content'</span>:<span class="st">'Write a haiku'</span>}],
+  stream=<span class="cls">True</span>):
+  <span class="fn">print</span>(chunk[<span class="st">'message'</span>][<span class="st">'content'</span>], end=<span class="st">''</span>)
+
+<span class="cm"># Use with LangChain from Module 1</span>
+<span class="kw">from</span> <span class="fn">langchain_community.llms</span> <span class="kw">import</span> <span class="cls">Ollama</span>
+llm = <span class="cls">Ollama</span>(model=<span class="st">"llama3.2"</span>)  <span class="cm"># drop-in LLM</span></pre>
+    </div>
+  </div>
+
+  <h3>Ollama Model Library Cheat Sheet</h3>
+  <table class="comp-table">
+    <tr><th>Model</th><th>Size</th><th>RAM needed</th><th>Best for</th><th>Pull command</th></tr>
+    <tr><td style="color:var(--ollama)">llama3.2</td><td>3B</td><td>4GB</td><td>Fast general chat, dev work</td><td><code style="font-family:var(--mono);font-size:12px">ollama pull llama3.2</code></td></tr>
+    <tr><td style="color:var(--ollama)">phi3</td><td>3.8B</td><td>4GB</td><td>Smart reasoning, small size</td><td><code style="font-family:var(--mono);font-size:12px">ollama pull phi3</code></td></tr>
+    <tr><td style="color:var(--ollama)">mistral</td><td>7B</td><td>8GB</td><td>Strong instruction following</td><td><code style="font-family:var(--mono);font-size:12px">ollama pull mistral</code></td></tr>
+    <tr><td style="color:var(--ollama)">codellama</td><td>7B</td><td>8GB</td><td>Code generation &amp; review</td><td><code style="font-family:var(--mono);font-size:12px">ollama pull codellama</code></td></tr>
+    <tr><td style="color:var(--ollama)">llava</td><td>7B</td><td>8GB</td><td>Vision — describe images</td><td><code style="font-family:var(--mono);font-size:12px">ollama pull llava</code></td></tr>
+    <tr><td style="color:var(--ollama)">llama3.1</td><td>8B</td><td>8GB</td><td>Best quality at 8B size</td><td><code style="font-family:var(--mono);font-size:12px">ollama pull llama3.1</code></td></tr>
+  </table>
+
+  <h3>Fit Zone Map</h3>
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 5 — Ollama Fit Zones</div>
+    <svg viewBox="0 0 740 218" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <rect x="10" y="6"   width="720" height="60" rx="10" fill="rgba(63,185,80,.08)"  stroke="rgba(63,185,80,.35)"  stroke-width="1.5"/>
+      <rect x="10" y="78"  width="720" height="60" rx="10" fill="rgba(227,179,65,.08)" stroke="rgba(227,179,65,.35)" stroke-width="1.5"/>
+      <rect x="10" y="150" width="720" height="60" rx="10" fill="rgba(248,81,73,.08)"  stroke="rgba(248,81,73,.35)"  stroke-width="1.5"/>
+      <text x="22" y="28"  font-size="11" fill="#3FB950" font-weight="700" font-family="Segoe UI,sans-serif">🟢 GREEN — Built exactly for this</text>
+      <text x="22" y="100" font-size="11" fill="#E3B341" font-weight="700" font-family="Segoe UI,sans-serif">🟡 YELLOW — Works, but consider alternatives</text>
+      <text x="22" y="172" font-size="11" fill="#F85149" font-weight="700" font-family="Segoe UI,sans-serif">🔴 RED — Wrong tool</text>
+      <rect x="22"  y="34" width="175" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="110" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Local dev &amp; prototyping</text>
+      <rect x="205" y="34" width="165" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="288" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Privacy-first apps (offline)</text>
+      <rect x="378" y="34" width="165" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="461" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Testing before cloud deploy</text>
+      <rect x="551" y="34" width="167" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="635" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">API cost = $0 prototyping</text>
+      <rect x="22"  y="106" width="235" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="140" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Small team internal tool (&lt;5 users)</text>
+      <rect x="267" y="106" width="235" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="385" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Custom fine-tuned models (possible but complex)</text>
+      <rect x="22"  y="178" width="240" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="142" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Multi-user production → vLLM or Modal</text>
+      <rect x="272" y="178" width="240" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="392" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Cloud deployment → Modal or Replicate</text>
+      <rect x="522" y="178" width="206" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="625" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">High QPS serving → vLLM</text>
+    </svg>
+  </div>
+
+  <h3>Real-World Scenario — Local Coding Assistant</h3>
+  <div class="scenario-card">
+    <div class="scenario-head"><div class="scenario-emoji">👨‍💻</div>
+      <div><div class="scenario-co">Solo Developer · Personal productivity · Fully offline</div>
+      <div class="scenario-title">A Cursor-like coding assistant that works without internet and costs $0/month</div></div>
+    </div>
+    <div class="scenario-body">
+      <div class="sc-block sc-prob"><h5>🔴 The Problem</h5><p>A developer was spending $30/month on GitHub Copilot and Cursor. More importantly, they worked on client code covered by strict NDAs — sending source code to cloud APIs was a compliance violation they couldn't risk. They needed AI code assistance that was local, fast, and free.</p></div>
+      <div class="sc-block sc-sol"><h5>🟢 The Ollama Solution</h5><p>Ollama running CodeLlama 7B locally. Connected it to VS Code via Continue.dev extension (Ollama-native). Works offline on the train. Zero data leaves the machine. Ollama's REST API means any IDE plugin that supports OpenAI-compatible endpoints works out of the box.</p></div>
+    </div>
+    <div class="scenario-result"><strong>Result:</strong> $30/month → $0. Full NDA compliance. Works offline. 80% of the coding suggestions quality of Copilot at 0% of the cost. The latency is slightly higher (400ms vs 200ms) but acceptable for the tradeoff.</div>
+  </div>
+
+  <h3>Anti-Patterns</h3>
+  <div class="ap-list">
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #1</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Ollama works for you locally, but fails when your colleague tries it or when deployed to a server.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Treating Ollama as a production server. It's designed for single-user local use. It has no authentication, no rate limiting, no concurrency controls.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>For multi-user or production serving, use vLLM (GPU) or wrap Ollama with FastAPI and add auth. Ollama is the dev environment; vLLM is the production environment.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #2</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>App responds slowly or computer becomes sluggish while Ollama runs. Fans spin at full speed.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Running a 7B or 13B model on a machine with less RAM than the model needs. The model spills to swap memory, which is 100× slower than RAM.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Check your RAM: 7B needs ~8GB free RAM, 13B needs ~16GB. If constrained, use a smaller model (phi3 3.8B is excellent quality for its size).</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #3</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Responses are incoherent or repetitive even for simple questions on a capable machine.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Using Q2 or Q3 quantization. These extreme compressions cut model size massively but degrade quality below usable thresholds.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Stick to Q4_K_M (default) or Q5_K_M for better quality. Only drop to Q2/Q3 if you have no choice due to RAM constraints — and accept the quality tradeoff.</p></div>
+    </div></div>
+  </div>
+
+  <div class="challenge-card">
+    <button class="challenge-toggle" onclick="tc(this)">🎮 Ollama Challenges <span class="arrow">›</span></button>
+    <div class="challenge-body">
+      <div class="chal-item"><span class="badge rookie">Rookie</span>Pull 2 different models (try llama3.2 and phi3). Ask both the same question. Time each response. Note quality differences at similar sizes.</div>
+      <div class="chal-item"><span class="badge builder">Builder</span>Connect Ollama to your LangChain chain from Module 1 using <code style="font-family:var(--mono);font-size:11px">Ollama(model="llama3.2")</code>. Run the same chain you built with OpenAI. Compare output quality and latency.</div>
+      <div class="chal-item"><span class="badge architect">Architect</span>Build a multi-model comparison tool: same 10 prompts, 3 different Ollama models, structured output capturing response text + latency + word count. Export results as a comparison table.</div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     FASTAPI
+═════════════════════════════════════════════════ -->
+<section class="section" id="fastapi">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(6,182,212,.15)">🚀</div>
+    <div><h2 style="color:var(--fastapi)">FastAPI</h2>
+    <div class="section-tagline">The service counter — expose your AI as a REST API</div></div>
+  </div>
+
+  <div class="callout c-origin">
+    <div class="callout-label">🎬 Origin Story — Why It Was Built</div>
+    <p>Sebastián Ramírez released FastAPI in 2018. He was building APIs with Flask and Django and kept hitting the same walls: Flask had no type hints, no async support, and documenting the API was manual work. Django was heavyweight for pure API services. He wanted three things simultaneously: <strong>fast to write, fast to run, and self-documenting</strong>. He built FastAPI on top of Starlette (async web framework) and Pydantic (data validation). The result: type-annotated Python functions become REST endpoints, validation is automatic, and you get a free interactive Swagger UI at <code style="background:rgba(0,0,0,.25);padding:1px 5px;border-radius:3px;font-family:var(--mono)">/docs</code> with zero extra work. For AI APIs in particular — where you need async for LLM calls, validation for prompt payloads, and streaming for token output — FastAPI is close to the ideal framework.</p>
+  </div>
+
+  <h3>Before vs After — The Problem It Solves</h3>
+  <div class="split-code">
+    <div>
+      <div class="split-label lbl-before">❌ Flask — sync, manual validation, no docs</div>
+      <pre><span class="kw">from</span> <span class="fn">flask</span> <span class="kw">import</span> Flask, request, jsonify
+
+app = <span class="fn">Flask</span>(__name__)
+
+<span class="cm"># No type hints — manual validation everywhere</span>
+<span class="cm"># No async — LLM call blocks the whole server</span>
+@app.route(<span class="st">'/ask'</span>, methods=[<span class="st">'POST'</span>])
+<span class="kw">def</span> <span class="fn">ask</span>():
+  data = request.get_json()
+
+  <span class="cm"># Manually validate — easy to miss edge cases</span>
+  <span class="kw">if</span> <span class="st">'question'</span> <span class="kw">not in</span> data:
+    <span class="kw">return</span> <span class="fn">jsonify</span>({<span class="st">'error'</span>: <span class="st">'Missing question'</span>}), <span class="num">400</span>
+  <span class="kw">if</span> <span class="fn">len</span>(data[<span class="st">'question'</span>]) > <span class="num">1000</span>:
+    <span class="kw">return</span> <span class="fn">jsonify</span>({<span class="st">'error'</span>: <span class="st">'Too long'</span>}), <span class="num">400</span>
+
+  <span class="cm"># Blocking call — no other requests handled while waiting</span>
+  answer = llm.invoke(data[<span class="st">'question'</span>])
+  <span class="kw">return</span> <span class="fn">jsonify</span>({<span class="st">'answer'</span>: answer})
+<span class="cm"># No /docs UI · No streaming · No type safety</span></pre>
+    </div>
+    <div>
+      <div class="split-label lbl-after">✅ FastAPI — async, auto-validation, auto-docs</div>
+      <pre><span class="kw">from</span> <span class="fn">fastapi</span> <span class="kw">import</span> <span class="cls">FastAPI</span>
+<span class="kw">from</span> <span class="fn">pydantic</span> <span class="kw">import</span> <span class="cls">BaseModel</span>, <span class="cls">Field</span>
+<span class="kw">from</span> <span class="fn">fastapi.responses</span> <span class="kw">import</span> <span class="cls">StreamingResponse</span>
+
+app = <span class="cls">FastAPI</span>(title=<span class="st">"My AI API"</span>)
+
+<span class="cm"># Pydantic validates automatically — no manual checks</span>
+<span class="kw">class</span> <span class="cls">AskRequest</span>(<span class="cls">BaseModel</span>):
+  question: str = <span class="cls">Field</span>(max_length=<span class="num">1000</span>)
+  style:    str = <span class="st">"concise"</span>
+
+<span class="cm"># Async — server handles other requests while LLM runs</span>
+@app.post(<span class="st">"/ask"</span>)
+<span class="kw">async def</span> <span class="fn">ask</span>(req: <span class="cls">AskRequest</span>):
+  answer = <span class="kw">await</span> llm.ainvoke(req.question)
+  <span class="kw">return</span> {<span class="st">"answer"</span>: answer.content}
+
+<span class="cm"># Streaming endpoint — tokens sent as they generate</span>
+@app.post(<span class="st">"/stream"</span>)
+<span class="kw">async def</span> <span class="fn">stream</span>(req: <span class="cls">AskRequest</span>):
+  <span class="kw">return</span> <span class="cls">StreamingResponse</span>(
+    llm.astream(req.question), media_type=<span class="st">"text/plain"</span>
+  )
+<span class="cm"># Free /docs Swagger UI · Type safety · Async</span></pre>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 6 — FastAPI Async Request Lifecycle</div>
+    <svg viewBox="0 0 740 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <defs><marker id="a6" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#06B6D4"/></marker></defs>
+      <!-- Timeline -->
+      <text x="10" y="22" font-size="11" fill="#8B949E" font-weight="700" font-family="Segoe UI,sans-serif">SYNC (Flask) — Requests wait in line</text>
+      <!-- Request 1 sync -->
+      <rect x="10"  y="30" width="220" height="22" rx="5" fill="rgba(6,182,212,.2)" stroke="rgba(6,182,212,.5)" stroke-width="1"/>
+      <text x="120" y="44" font-size="10" fill="#06B6D4" text-anchor="middle" font-family="Segoe UI,sans-serif">Request 1 — LLM call (2s blocked)</text>
+      <rect x="238" y="30" width="130" height="22" rx="5" fill="rgba(244,114,182,.2)" stroke="rgba(244,114,182,.5)" stroke-width="1"/>
+      <text x="303" y="44" font-size="10" fill="#F472B6" text-anchor="middle" font-family="Segoe UI,sans-serif">⏳ Req 2 waiting</text>
+      <rect x="376" y="30" width="120" height="22" rx="5" fill="rgba(168,85,247,.2)" stroke="rgba(168,85,247,.5)" stroke-width="1"/>
+      <text x="436" y="44" font-size="10" fill="#A855F7" text-anchor="middle" font-family="Segoe UI,sans-serif">⏳ Req 3 waiting</text>
+      <text x="510" y="44" font-size="11" fill="#F85149" font-family="Segoe UI,sans-serif">Total: 6s for 3 users</text>
+
+      <text x="10" y="82" font-size="11" fill="#8B949E" font-weight="700" font-family="Segoe UI,sans-serif">ASYNC (FastAPI) — All requests handled concurrently</text>
+      <!-- Timeline bars async -->
+      <rect x="10"  y="90" width="220" height="22" rx="5" fill="rgba(6,182,212,.2)" stroke="rgba(6,182,212,.5)" stroke-width="1"/>
+      <text x="120" y="104" font-size="10" fill="#06B6D4" text-anchor="middle" font-family="Segoe UI,sans-serif">Request 1 — awaiting LLM (non-blocking)</text>
+      <rect x="10"  y="118" width="200" height="22" rx="5" fill="rgba(244,114,182,.2)" stroke="rgba(244,114,182,.5)" stroke-width="1"/>
+      <text x="110" y="132" font-size="10" fill="#F472B6" text-anchor="middle" font-family="Segoe UI,sans-serif">Request 2 — awaiting LLM (non-blocking)</text>
+      <rect x="10"  y="146" width="215" height="22" rx="5" fill="rgba(168,85,247,.2)" stroke="rgba(168,85,247,.5)" stroke-width="1"/>
+      <text x="113" y="160" font-size="10" fill="#A855F7" text-anchor="middle" font-family="Segoe UI,sans-serif">Request 3 — awaiting LLM (non-blocking)</text>
+      <!-- Done markers -->
+      <rect x="234" y="90" width="60" height="22" rx="5" fill="rgba(63,185,80,.2)" stroke="rgba(63,185,80,.5)" stroke-width="1"/>
+      <text x="264" y="104" font-size="10" fill="#3FB950" text-anchor="middle" font-family="Segoe UI,sans-serif">Done ✅</text>
+      <rect x="214" y="118" width="60" height="22" rx="5" fill="rgba(63,185,80,.2)" stroke="rgba(63,185,80,.5)" stroke-width="1"/>
+      <text x="244" y="132" font-size="10" fill="#3FB950" text-anchor="middle" font-family="Segoe UI,sans-serif">Done ✅</text>
+      <rect x="229" y="146" width="60" height="22" rx="5" fill="rgba(63,185,80,.2)" stroke="rgba(63,185,80,.5)" stroke-width="1"/>
+      <text x="259" y="160" font-size="10" fill="#3FB950" text-anchor="middle" font-family="Segoe UI,sans-serif">Done ✅</text>
+      <text x="310" y="140" font-size="11" fill="#3FB950" font-family="Segoe UI,sans-serif">Total: ~2s for all 3 users</text>
+
+      <!-- Validation flow -->
+      <text x="10" y="196" font-size="11" fill="#8B949E" font-weight="700" font-family="Segoe UI,sans-serif">REQUEST LIFECYCLE: Incoming JSON → Pydantic validates → Handler → Response</text>
+      <rect x="10"  y="204" width="100" height="22" rx="6" fill="rgba(6,182,212,.12)" stroke="rgba(6,182,212,.4)" stroke-width="1"/>
+      <text x="60"  y="218" font-size="10" fill="#06B6D4" text-anchor="middle" font-family="Segoe UI,sans-serif">JSON payload</text>
+      <rect x="130" y="204" width="120" height="22" rx="6" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.4)" stroke-width="1"/>
+      <text x="190" y="218" font-size="10" fill="#E3B341" text-anchor="middle" font-family="Segoe UI,sans-serif">Pydantic validates</text>
+      <rect x="270" y="204" width="120" height="22" rx="6" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+      <text x="330" y="218" font-size="10" fill="#A855F7" text-anchor="middle" font-family="Segoe UI,sans-serif">async handler</text>
+      <rect x="410" y="204" width="100" height="22" rx="6" fill="rgba(63,185,80,.12)" stroke="rgba(63,185,80,.4)" stroke-width="1"/>
+      <text x="460" y="218" font-size="10" fill="#3FB950" text-anchor="middle" font-family="Segoe UI,sans-serif">Response</text>
+      <line x1="110" y1="215" x2="128" y2="215" stroke="#06B6D4" stroke-width="1.5" marker-end="url(#a6)"/>
+      <line x1="250" y1="215" x2="268" y2="215" stroke="#06B6D4" stroke-width="1.5" marker-end="url(#a6)"/>
+      <line x1="390" y1="215" x2="408" y2="215" stroke="#06B6D4" stroke-width="1.5" marker-end="url(#a6)"/>
+    </svg>
+  </div>
+
+  <h3>Fit Zone Map</h3>
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 7 — FastAPI Fit Zones</div>
+    <svg viewBox="0 0 740 218" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <rect x="10" y="6"   width="720" height="60" rx="10" fill="rgba(63,185,80,.08)"  stroke="rgba(63,185,80,.35)"  stroke-width="1.5"/>
+      <rect x="10" y="78"  width="720" height="60" rx="10" fill="rgba(227,179,65,.08)" stroke="rgba(227,179,65,.35)" stroke-width="1.5"/>
+      <rect x="10" y="150" width="720" height="60" rx="10" fill="rgba(248,81,73,.08)"  stroke="rgba(248,81,73,.35)"  stroke-width="1.5"/>
+      <text x="22" y="28"  font-size="11" fill="#3FB950" font-weight="700" font-family="Segoe UI,sans-serif">🟢 GREEN — Built exactly for this</text>
+      <text x="22" y="100" font-size="11" fill="#E3B341" font-weight="700" font-family="Segoe UI,sans-serif">🟡 YELLOW — Works, but not ideal</text>
+      <text x="22" y="172" font-size="11" fill="#F85149" font-weight="700" font-family="Segoe UI,sans-serif">🔴 RED — Wrong tool</text>
+      <rect x="22"  y="34" width="175" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="110" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">AI model REST APIs</text>
+      <rect x="205" y="34" width="175" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="293" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Streaming token endpoints</text>
+      <rect x="388" y="34" width="175" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="476" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Custom business logic APIs</text>
+      <rect x="571" y="34" width="157" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="650" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Microservices</text>
+      <rect x="22"  y="106" width="200" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="122" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">LangChain apps (LangServe faster)</text>
+      <rect x="232" y="106" width="240" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="352" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Simple script that doesn't need HTTP</text>
+      <rect x="22"  y="178" width="220" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="132" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Full-stack web apps → use Django</text>
+      <rect x="252" y="178" width="220" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="362" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">WebSockets-heavy → use Django Channels</text>
+    </svg>
+  </div>
+
+  <h3>Real-World Scenario — Team AI API Platform</h3>
+  <div class="scenario-card">
+    <div class="scenario-head"><div class="scenario-emoji">🔌</div>
+      <div><div class="scenario-co">40-person Tech Company · Cross-team AI access</div>
+      <div class="scenario-title">A single AI API endpoint serving 5 different product teams</div></div>
+    </div>
+    <div class="scenario-body">
+      <div class="sc-block sc-prob"><h5>🔴 The Problem</h5><p>Five product teams all needed LLM access. Each team was managing their own OpenAI keys, writing their own retry logic, paying separately, and building the same rate-limiting code from scratch. No usage visibility. No shared cost management. No consistent response format.</p></div>
+      <div class="sc-block sc-sol"><h5>🟢 The FastAPI Solution</h5><p>One FastAPI service exposing /summarize, /extract, /classify, /chat — all backed by the same LLM pool with shared rate limiting via a Redis token bucket. Pydantic schemas enforce consistent request/response formats. Auto-generated /docs replaced all internal API documentation. Usage logged per team per endpoint.</p></div>
+    </div>
+    <div class="scenario-result"><strong>Result:</strong> API key sprawl eliminated. Monthly LLM spend made visible per team. 5 teams onboarded in 1 day (self-serve via /docs). Retry logic written once, shared everywhere. Engineering time saved: ~3 weeks of duplicated work per quarter.</div>
+  </div>
+
+  <h3>Anti-Patterns</h3>
+  <div class="ap-list">
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #1</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Server appears to hang under moderate load. Single LLM call blocks all other incoming requests for 2–5 seconds.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Using <code style="font-family:var(--mono);font-size:11px">llm.invoke()</code> (synchronous) inside an <code style="font-family:var(--mono);font-size:11px">async def</code> endpoint. This blocks the entire async event loop.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Use <code style="font-family:var(--mono);font-size:11px">await llm.ainvoke()</code> for async LLM calls. Every LangChain LLM has an async version prefixed with <code style="font-family:var(--mono);font-size:11px">a</code>: ainvoke, astream, abatch.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #2</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Bad request payloads crash your handler with confusing Python errors instead of clean 422 responses.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Using <code style="font-family:var(--mono);font-size:11px">request.json()</code> and manually accessing dict keys without defining a Pydantic model. Missing the automatic validation FastAPI provides.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Always define a Pydantic <code style="font-family:var(--mono);font-size:11px">BaseModel</code> for every endpoint's request body. FastAPI returns a detailed 422 error automatically for invalid payloads — no extra code.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #3</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>LLM exceptions bubble up to the user as unformatted 500 errors with Python stack traces in the response body.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>No exception handling in endpoint handlers. LLM APIs can fail with rate limits, context length errors, content policy violations — all unhandled.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Wrap LLM calls in try/except. Return <code style="font-family:var(--mono);font-size:11px">HTTPException(status_code=503, detail="LLM unavailable")</code> for recoverable errors. Log the full trace server-side.</p></div>
+    </div></div>
+  </div>
+
+  <div class="challenge-card">
+    <button class="challenge-toggle" onclick="tc(this)">🎮 FastAPI Challenges <span class="arrow">›</span></button>
+    <div class="challenge-body">
+      <div class="chal-item"><span class="badge rookie">Rookie</span>Build a FastAPI app with 3 endpoints: POST /summarize, POST /translate, GET /health. Use Pydantic models for all request bodies. Test via the auto-generated /docs UI.</div>
+      <div class="chal-item"><span class="badge builder">Builder</span>Add streaming to your /summarize endpoint using StreamingResponse. Connect it to Ollama. Watch tokens appear one-by-one in the browser. Add a word counter that logs total tokens per request.</div>
+      <div class="chal-item"><span class="badge architect">Architect</span>Add API key authentication using FastAPI's Security dependency. Add per-key rate limiting (max 10 req/minute). Log every request with: key, endpoint, latency, token count. Test with a script that fires 15 rapid requests.</div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     LANGSERVE
+═════════════════════════════════════════════════ -->
+<section class="section" id="langserve">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(121,192,255,.15)">🔗</div>
+    <div><h2 style="color:var(--langserve)">LangServe</h2>
+    <div class="section-tagline">Deploy any LangChain chain as an API in one line</div></div>
+  </div>
+
+  <div class="callout c-origin">
+    <div class="callout-label">🎬 Origin Story — Why It Was Built</div>
+    <p>After LangChain gained adoption, the LangChain team noticed a pattern: every developer deploying a chain was writing the same FastAPI boilerplate. Define a request model. Add an invoke endpoint. Add a batch endpoint. Add a streaming endpoint. Handle errors. Repeat for every new chain. LangServe, released in late 2023, collapsed that boilerplate into a single function call: <code style="background:rgba(0,0,0,.25);padding:1px 5px;border-radius:3px;font-family:var(--mono)">add_routes(app, chain, path="/my-chain")</code>. Immediately, every chain gets four free endpoints — <code style="font-family:var(--mono);font-size:13px">/invoke</code>, <code style="font-family:var(--mono);font-size:13px">/batch</code>, <code style="font-family:var(--mono);font-size:13px">/stream</code>, and <code style="font-family:var(--mono);font-size:13px">/playground</code> — the last of which is a visual, browser-based UI to test your chain without any frontend code. For teams sharing LangChain work internally, LangServe went from "deploy in 2 days" to "deploy in 10 minutes."</p>
+  </div>
+
+  <h3>Before vs After — The Problem It Solves</h3>
+  <div class="split-code">
+    <div>
+      <div class="split-label lbl-before">❌ Manual FastAPI for a LangChain chain</div>
+      <pre><span class="kw">from</span> <span class="fn">fastapi</span> <span class="kw">import</span> <span class="cls">FastAPI</span>
+<span class="kw">from</span> <span class="fn">pydantic</span> <span class="kw">import</span> <span class="cls">BaseModel</span>
+<span class="kw">from</span> <span class="fn">fastapi.responses</span> <span class="kw">import</span> <span class="cls">StreamingResponse</span>
+
+app = <span class="cls">FastAPI</span>()
+chain = prompt | llm | parser  <span class="cm"># your chain</span>
+
+<span class="kw">class</span> <span class="cls">Input</span>(<span class="cls">BaseModel</span>):
+  input: dict
+
+<span class="cm"># Manually write all 4 endpoints</span>
+@app.post(<span class="st">"/invoke"</span>)
+<span class="kw">async def</span> <span class="fn">invoke</span>(body: <span class="cls">Input</span>):
+  <span class="kw">return</span> <span class="kw">await</span> chain.ainvoke(body.input)
+
+@app.post(<span class="st">"/batch"</span>)
+<span class="kw">async def</span> <span class="fn">batch</span>(body: <span class="cls">Input</span>):
+  <span class="kw">return</span> <span class="kw">await</span> chain.abatch(body.input)
+
+@app.post(<span class="st">"/stream"</span>)
+<span class="kw">async def</span> <span class="fn">stream</span>(body: <span class="cls">Input</span>):
+  <span class="kw">return</span> <span class="cls">StreamingResponse</span>(chain.astream(body.input))
+
+<span class="cm"># No playground UI</span>
+<span class="cm"># Same boilerplate for every chain you deploy</span></pre>
+    </div>
+    <div>
+      <div class="split-label lbl-after">✅ LangServe — one line, 4 endpoints + playground</div>
+      <pre><span class="kw">from</span> <span class="fn">fastapi</span> <span class="kw">import</span> <span class="cls">FastAPI</span>
+<span class="kw">from</span> <span class="fn">langserve</span> <span class="kw">import</span> <span class="fn">add_routes</span>
+
+app   = <span class="cls">FastAPI</span>(title=<span class="st">"My Chain API"</span>)
+chain = prompt | llm | parser  <span class="cm"># same chain</span>
+
+<span class="cm"># One line → 4 endpoints automatically</span>
+<span class="fn">add_routes</span>(app, chain, path=<span class="st">"/ask"</span>)
+
+<span class="cm"># You now get FOR FREE:</span>
+<span class="cm"># POST /ask/invoke   → single call</span>
+<span class="cm"># POST /ask/batch    → parallel calls</span>
+<span class="cm"># POST /ask/stream   → streaming response</span>
+<span class="cm"># GET  /ask/playground → visual UI to test!</span>
+
+<span class="cm"># Add multiple chains just as easily</span>
+<span class="fn">add_routes</span>(app, summary_chain, path=<span class="st">"/summarize"</span>)
+<span class="fn">add_routes</span>(app, translate_chain, path=<span class="st">"/translate"</span>)
+
+<span class="cm"># Run: uvicorn main:app --reload</span>
+<span class="cm"># Visit: localhost:8000/ask/playground</span></pre>
+    </div>
+  </div>
+
+  <div class="callout c-wild">
+    <div class="callout-label">🏢 In the Wild</div>
+    <p>Teams at companies like <strong>Replit</strong> and <strong>Weights &amp; Biases</strong> use LangServe to share internal LangChain chains across teams as self-documenting APIs. The /playground feature is especially popular for non-engineers — product managers and designers can test and iterate on prompt behavior without touching any code.</p>
+  </div>
+
+  <h3>LangServe vs FastAPI — When to Use Which</h3>
+  <table class="comp-table">
+    <tr><th>Factor</th><th>LangServe</th><th>FastAPI (manual)</th></tr>
+    <tr><td>Setup time for a LangChain chain</td><td style="color:var(--emerald)">1 line</td><td style="color:#E3B341">20–50 lines</td></tr>
+    <tr><td>Streaming support</td><td style="color:var(--emerald)">Built-in</td><td style="color:#E3B341">Manual</td></tr>
+    <tr><td>Playground UI</td><td style="color:var(--emerald)">Free at /playground</td><td style="color:var(--red)">Not included</td></tr>
+    <tr><td>Works with non-LangChain code</td><td style="color:var(--red)">No</td><td style="color:var(--emerald)">Yes — anything</td></tr>
+    <tr><td>Custom middleware / auth / routing</td><td style="color:#E3B341">Limited</td><td style="color:var(--emerald)">Full control</td></tr>
+    <tr><td>Best for</td><td>Deploying chains fast</td><td>Custom AI APIs</td></tr>
+  </table>
+
+  <h3>Fit Zone Map</h3>
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 8 — LangServe Fit Zones</div>
+    <svg viewBox="0 0 740 218" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <rect x="10" y="6"   width="720" height="60" rx="10" fill="rgba(63,185,80,.08)"  stroke="rgba(63,185,80,.35)"  stroke-width="1.5"/>
+      <rect x="10" y="78"  width="720" height="60" rx="10" fill="rgba(227,179,65,.08)" stroke="rgba(227,179,65,.35)" stroke-width="1.5"/>
+      <rect x="10" y="150" width="720" height="60" rx="10" fill="rgba(248,81,73,.08)"  stroke="rgba(248,81,73,.35)"  stroke-width="1.5"/>
+      <text x="22" y="28"  font-size="11" fill="#3FB950" font-weight="700" font-family="Segoe UI,sans-serif">🟢 GREEN — Built exactly for this</text>
+      <text x="22" y="100" font-size="11" fill="#E3B341" font-weight="700" font-family="Segoe UI,sans-serif">🟡 YELLOW — Works but FastAPI gives more control</text>
+      <text x="22" y="172" font-size="11" fill="#F85149" font-weight="700" font-family="Segoe UI,sans-serif">🔴 RED — Wrong tool</text>
+      <rect x="22"  y="34" width="200" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="122" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Deploying LangChain chains fast</text>
+      <rect x="230" y="34" width="200" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="330" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Sharing chains across teams</text>
+      <rect x="438" y="34" width="200" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="538" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Non-engineer chain testing (playground)</text>
+      <rect x="22"  y="106" width="240" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="142" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Custom auth / rate limiting needed</text>
+      <rect x="272" y="106" width="240" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="392" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Complex middleware or routing logic</text>
+      <rect x="22"  y="178" width="240" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="142" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Non-LangChain code → use FastAPI</text>
+      <rect x="272" y="178" width="240" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="392" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Full API product → use FastAPI</text>
+    </svg>
+  </div>
+
+  <h3>Real-World Scenario — Shared RAG Pipeline Across Teams</h3>
+  <div class="scenario-card">
+    <div class="scenario-head"><div class="scenario-emoji">🤝</div>
+      <div><div class="scenario-co">Mid-size SaaS · 5 Product Teams · Shared AI Infrastructure</div>
+      <div class="scenario-title">One LangServe endpoint powering 5 different product features</div></div>
+    </div>
+    <div class="scenario-body">
+      <div class="sc-block sc-prob"><h5>🔴 The Problem</h5><p>Five teams all needed a "ask about docs" feature. Each team started building their own RAG pipeline separately. The ML team had the best implementation but couldn't share it — it was a Python script, not an API. 3 weeks of duplicated work already spent.</p></div>
+      <div class="sc-block sc-sol"><h5>🟢 The LangServe Solution</h5><p>ML team wrapped their LlamaIndex + LangChain RAG chain with LangServe. One add_routes() call. Teams called POST /rag/invoke from their own frontends regardless of their stack (React, Rails, mobile). The /playground gave non-engineers a way to test the chain behavior without code.</p></div>
+    </div>
+    <div class="scenario-result"><strong>Result:</strong> 3 weeks of duplicated work → 1 afternoon. All 5 teams using the same RAG pipeline by end of day. Product manager used /playground to iterate on the system prompt without needing an engineer. Streaming endpoint used in the React app for a ChatGPT-like typing effect.</div>
+  </div>
+
+  <h3>Anti-Patterns</h3>
+  <div class="ap-list">
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #1</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>You're trying to deploy regular Python functions or non-LangChain ML models with LangServe and getting confusing errors.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>LangServe only works with LangChain Runnables (chains, agents, etc.). It does not accept arbitrary functions.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Use <code style="font-family:var(--mono);font-size:11px">RunnableLambda</code> to wrap any Python function as a LangChain Runnable: <code style="font-family:var(--mono);font-size:11px">from langchain.schema.runnable import RunnableLambda</code>.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #2</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Team members don't know how to test the deployed chain. You're writing curl documentation nobody reads.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Not telling anyone about the /playground endpoint. It's the most valuable feature and consistently overlooked.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Share the /playground URL as the primary way to interact with your chain. It's a visual interface anyone can use — no curl, no Postman, no code.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #3</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Frontend shows partial responses or garbled data when using the /stream endpoint.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Reading the stream as plain text. LangServe streams Server-Sent Events (SSE), which have a specific format that needs to be parsed.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Use the official LangServe JS/TS client: <code style="font-family:var(--mono);font-size:11px">npm install langserve</code>. It handles SSE parsing automatically and provides a <code style="font-family:var(--mono);font-size:11px">RemoteRunnable</code> client.</p></div>
+    </div></div>
+  </div>
+
+  <div class="challenge-card">
+    <button class="challenge-toggle" onclick="tc(this)">🎮 LangServe Challenges <span class="arrow">›</span></button>
+    <div class="challenge-body">
+      <div class="chal-item"><span class="badge rookie">Rookie</span>Take your Module 1 LangChain chain and deploy it with LangServe in one add_routes() call. Test all 4 endpoints via /playground. No Postman needed.</div>
+      <div class="chal-item"><span class="badge builder">Builder</span>Deploy 3 different chains (summarize, translate, classify) as separate routes on one FastAPI app. Build a simple HTML page that calls all 3 and displays the results side-by-side.</div>
+      <div class="chal-item"><span class="badge architect">Architect</span>Add API key authentication to LangServe using FastAPI's dependency injection. Deploy to fly.io or Railway (both have free tiers). Share the /playground URL with someone and have them test it.</div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL
+═════════════════════════════════════════════════ -->
+<section class="section" id="modal">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(168,85,247,.15)">☁️</div>
+    <div><h2 style="color:var(--modal)">Modal</h2>
+    <div class="section-tagline">Serverless GPU — run Python functions in the cloud, pay per second</div></div>
+  </div>
+
+  <div class="callout c-origin">
+    <div class="callout-label">🎬 Origin Story — Why It Was Built</div>
+    <p>Erik Bernhardsson — former CTO of Better.com and before that the creator of Spotify's recommendation system — founded Modal in 2021. His thesis came from years of pain: running ML models in production required maintaining Kubernetes clusters, Docker registries, GPU drivers, and deployment pipelines that took teams weeks to set up and months to maintain. <strong>GPU compute should be as easy as calling a Python function.</strong> You decorate your function with <code style="background:rgba(0,0,0,.25);padding:1px 5px;border-radius:3px;font-family:var(--mono)">@app.function(gpu="A10G")</code>, run it, and Modal provisions the GPU, installs dependencies in an isolated container, runs your code, and tears the container down — all in seconds. No Docker. No Kubernetes. No servers to maintain. Pay only for the compute seconds you actually use.</p>
+  </div>
+
+  <h3>Before vs After — The Problem It Solves</h3>
+  <div class="split-code">
+    <div>
+      <div class="split-label lbl-before">❌ Before Modal — DevOps nightmare</div>
+      <pre><span class="cm"># Running GPU inference before Modal:</span>
+
+<span class="cm"># 1. Launch EC2 GPU instance (p3.2xlarge = $3.06/hr)</span>
+<span class="cm">#    — pays even when idle</span>
+
+<span class="cm"># 2. Write Dockerfile</span>
+<span class="cm"># FROM nvidia/cuda:12.0-base</span>
+<span class="cm"># RUN pip install torch transformers ...</span>
+<span class="cm"># COPY model_server.py .</span>
+<span class="cm"># CMD ["python", "model_server.py"]</span>
+
+<span class="cm"># 3. Build and push to ECR</span>
+<span class="cm"># docker build -t my-model .</span>
+<span class="cm"># docker push 123456.ecr.us-east-1.amazonaws.com/my-model</span>
+
+<span class="cm"># 4. Write CloudFormation / Terraform</span>
+<span class="cm"># ... 200 lines of YAML ...</span>
+
+<span class="cm"># 5. Debug GPU driver issues for 3 hours</span>
+
+<span class="cm"># 6. Pay $2,200/month for the instance</span>
+<span class="cm"># whether you use it or not</span></pre>
+    </div>
+    <div>
+      <div class="split-label lbl-after">✅ Modal — decorate and run</div>
+      <pre><span class="kw">import</span> modal
+
+app = modal.<span class="cls">App</span>(<span class="st">"my-inference"</span>)
+
+<span class="cm"># This entire function runs on a cloud GPU</span>
+<span class="cm"># Modal handles: container, GPU, dependencies</span>
+@app.<span class="fn">function</span>(
+  gpu=<span class="st">"A10G"</span>,                       <span class="cm"># 24GB VRAM</span>
+  image=modal.<span class="cls">Image</span>.debian_slim().pip_install(
+    <span class="st">"transformers"</span>, <span class="st">"torch"</span>
+  ),
+  timeout=<span class="num">300</span>
+)
+<span class="kw">def</span> <span class="fn">run_inference</span>(prompt: str) -> str:
+  <span class="kw">from</span> <span class="fn">transformers</span> <span class="kw">import</span> pipeline
+  pipe = <span class="fn">pipeline</span>(<span class="st">"text-generation"</span>,
+    model=<span class="st">"meta-llama/Llama-3-8B-Instruct"</span>)
+  <span class="kw">return</span> <span class="fn">pipe</span>(prompt, max_new_tokens=<span class="num">200</span>)[<span class="num">0</span>][<span class="st">'generated_text'</span>]
+
+@app.local_entrypoint()
+<span class="kw">def</span> <span class="fn">main</span>():
+  result = run_inference.remote(<span class="st">"Explain vLLM"</span>)
+  <span class="fn">print</span>(result)
+<span class="cm"># modal run inference.py — that's it</span>
+<span class="cm"># Pay: ~$0.0006 per second of GPU time</span></pre>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 9 — Modal Function Lifecycle (Cold Start → Warm → Idle)</div>
+    <svg viewBox="0 0 740 175" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <defs><marker id="a9" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#A855F7"/></marker></defs>
+      <!-- Timeline bar -->
+      <text x="10" y="22" font-size="11" fill="#8B949E" font-weight="700" font-family="Segoe UI,sans-serif">FUNCTION INVOCATION TIMELINE</text>
+      <!-- Cold start -->
+      <rect x="10"  y="35" width="160" height="50" rx="8" fill="rgba(248,81,73,.12)" stroke="rgba(248,81,73,.4)" stroke-width="1.5"/>
+      <text x="90"  y="58" font-size="12" fill="#F85149" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">❄️ Cold Start</text>
+      <text x="90"  y="74" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">~2–4s · Container boot</text>
+      <!-- Warm running -->
+      <rect x="178" y="35" width="200" height="50" rx="8" fill="rgba(168,85,247,.15)" stroke="rgba(168,85,247,.5)" stroke-width="1.5"/>
+      <text x="278" y="58" font-size="12" fill="#A855F7" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🔥 Running</text>
+      <text x="278" y="74" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Your code · GPU active · Billed</text>
+      <!-- Warm idle -->
+      <rect x="386" y="35" width="150" height="50" rx="8" fill="rgba(227,179,65,.1)" stroke="rgba(227,179,65,.4)" stroke-width="1.5"/>
+      <text x="461" y="58" font-size="12" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">♨️ Warm Idle</text>
+      <text x="461" y="74" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">~30s grace period</text>
+      <!-- Second call warm -->
+      <rect x="544" y="35" width="185" height="50" rx="8" fill="rgba(63,185,80,.12)" stroke="rgba(63,185,80,.4)" stroke-width="1.5"/>
+      <text x="636" y="55" font-size="12" fill="#3FB950" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">✅ 2nd Call</text>
+      <text x="636" y="71" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">No cold start! Already warm</text>
+      <!-- Arrows -->
+      <line x1="170" y1="60" x2="176" y2="60" stroke="#A855F7" stroke-width="1.5" marker-end="url(#a9)"/>
+      <line x1="378" y1="60" x2="384" y2="60" stroke="#A855F7" stroke-width="1.5" marker-end="url(#a9)"/>
+      <line x1="536" y1="60" x2="542" y2="60" stroke="#A855F7" stroke-width="1.5" marker-end="url(#a9)"/>
+      <!-- Second timeline — scale out -->
+      <text x="10" y="120" font-size="11" fill="#8B949E" font-weight="700" font-family="Segoe UI,sans-serif">SCALE OUT — Modal spawns parallel containers automatically</text>
+      <rect x="10"  y="130" width="110" height="30" rx="6" fill="rgba(168,85,247,.15)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+      <text x="65"  y="148" font-size="10" fill="#A855F7" text-anchor="middle" font-family="Segoe UI,sans-serif">Container 1</text>
+      <rect x="128" y="130" width="110" height="30" rx="6" fill="rgba(168,85,247,.15)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+      <text x="183" y="148" font-size="10" fill="#A855F7" text-anchor="middle" font-family="Segoe UI,sans-serif">Container 2</text>
+      <rect x="246" y="130" width="110" height="30" rx="6" fill="rgba(168,85,247,.15)" stroke="rgba(168,85,247,.4)" stroke-width="1"/>
+      <text x="301" y="148" font-size="10" fill="#A855F7" text-anchor="middle" font-family="Segoe UI,sans-serif">Container 3</text>
+      <text x="380" y="148" font-size="11" fill="#8B949E" font-family="Segoe UI,sans-serif">… up to 100+ concurrent — auto-scales, auto-terminates</text>
+    </svg>
+  </div>
+
+  <h3>Fit Zone Map</h3>
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 10 — Modal Fit Zones</div>
+    <svg viewBox="0 0 740 218" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <rect x="10" y="6"   width="720" height="60" rx="10" fill="rgba(63,185,80,.08)"  stroke="rgba(63,185,80,.35)"  stroke-width="1.5"/>
+      <rect x="10" y="78"  width="720" height="60" rx="10" fill="rgba(227,179,65,.08)" stroke="rgba(227,179,65,.35)" stroke-width="1.5"/>
+      <rect x="10" y="150" width="720" height="60" rx="10" fill="rgba(248,81,73,.08)"  stroke="rgba(248,81,73,.35)"  stroke-width="1.5"/>
+      <text x="22" y="28"  font-size="11" fill="#3FB950" font-weight="700" font-family="Segoe UI,sans-serif">🟢 GREEN — Built exactly for this</text>
+      <text x="22" y="100" font-size="11" fill="#E3B341" font-weight="700" font-family="Segoe UI,sans-serif">🟡 YELLOW — Works, consider tradeoffs</text>
+      <text x="22" y="172" font-size="11" fill="#F85149" font-weight="700" font-family="Segoe UI,sans-serif">🔴 RED — Wrong tool</text>
+      <rect x="22"  y="34" width="175" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="110" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Serverless GPU inference</text>
+      <rect x="205" y="34" width="165" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="288" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">ML training jobs (on-demand)</text>
+      <rect x="378" y="34" width="165" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="461" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Scheduled AI batch tasks</text>
+      <rect x="551" y="34" width="167" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="635" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Burst / unpredictable workloads</text>
+      <rect x="22"  y="106" width="240" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="142" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Always-hot endpoints (cold start cost)</text>
+      <rect x="272" y="106" width="240" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="392" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Very high steady-state traffic (use reserved)</text>
+      <rect x="22"  y="178" width="230" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="137" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">&lt;50ms latency required → vLLM on reserved GPU</text>
+      <rect x="262" y="178" width="230" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="377" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">On-premise data requirements → self-host</text>
+    </svg>
+  </div>
+
+  <h3>Real-World Scenario — On-Demand Fine-Tuning Pipeline</h3>
+  <div class="scenario-card">
+    <div class="scenario-head"><div class="scenario-emoji">🧬</div>
+      <div><div class="scenario-co">AI Startup · 8-person team · No dedicated ML infra</div>
+      <div class="scenario-title">Running weekly fine-tuning jobs without owning any GPU hardware</div></div>
+    </div>
+    <div class="scenario-body">
+      <div class="sc-block sc-prob"><h5>🔴 The Problem</h5><p>The team needed to fine-tune Llama 3 on customer data weekly as new labeled examples came in. A dedicated A100 instance ($2,200/month) would sit idle 90% of the time. AWS SageMaker was powerful but required weeks of setup and MLOps expertise they didn't have.</p></div>
+      <div class="sc-block sc-sol"><h5>🟢 The Modal Solution</h5><p>A Modal function decorated with <code style="background:rgba(0,0,0,.25);padding:1px 5px;border-radius:3px;font-family:var(--mono)">gpu="A100"</code>. Triggered every Sunday at midnight via Modal's built-in scheduler. Runs fine-tuning for 45 minutes, saves model to S3, terminates. Total cost per week: ~$3.50.</p></div>
+    </div>
+    <div class="scenario-result"><strong>Result:</strong> $2,200/month → $14/month (99.4% cost reduction). Zero server maintenance. Fine-tuned model available in S3 by Monday morning. The team never SSH'd into a server or wrote a single line of Docker or Terraform.</div>
+  </div>
+
+  <h3>Anti-Patterns</h3>
+  <div class="ap-list">
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #1</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Users complain of 3–5 second delays on every request to your Modal-powered endpoint.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Cold starts on every request because the container is idle between calls and gets terminated after the grace period.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Add <code style="font-family:var(--mono);font-size:11px">keep_warm=1</code> to your @app.function decorator. This keeps one container always alive, eliminating cold starts for the cost of one idle container.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #2</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Data written to local files inside Modal functions disappears between invocations.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Modal containers are ephemeral and stateless. Local file writes don't persist between function calls — the container is destroyed after each run.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Use Modal Volumes for persistent storage, or write to S3/GCS. Modal Volumes mount as a filesystem but persist across invocations: <code style="font-family:var(--mono);font-size:11px">modal.Volume</code>.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #3</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Modal costs are higher than expected. Bill shows hundreds of GPU hours even for a lightly-used endpoint.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Using keep_warm on a GPU function with high concurrency_limit. Each warm container bills for idle GPU time whether or not it's handling requests.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Only use keep_warm for latency-critical endpoints. For batch jobs, let containers cold start — the 3s overhead is fine when jobs run for minutes. Use CPU instances for health checks.</p></div>
+    </div></div>
+  </div>
+
+  <div class="challenge-card">
+    <button class="challenge-toggle" onclick="tc(this)">🎮 Modal Challenges <span class="arrow">›</span></button>
+    <div class="challenge-body">
+      <div class="chal-item"><span class="badge rookie">Rookie</span>Write a Modal function that runs a HuggingFace summarization pipeline in the cloud. Call it with .remote() from your local terminal. Time the cold start vs warm start.</div>
+      <div class="chal-item"><span class="badge builder">Builder</span>Create a Modal web endpoint (using @modal.web_endpoint) that accepts a prompt and streams tokens back. Test it with curl. This is a complete serverless AI API with zero infrastructure.</div>
+      <div class="chal-item"><span class="badge architect">Architect</span>Build a Modal-powered batch pipeline: read 50 texts from a CSV, run inference on all 50 in parallel using .map(), write results back to a new CSV. Measure total time vs sequential. Calculate cost.</div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     REPLICATE
+═════════════════════════════════════════════════ -->
+<section class="section" id="replicate">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(244,114,182,.15)">📦</div>
+    <div><h2 style="color:var(--replicate)">Replicate</h2>
+    <div class="section-tagline">Pre-deployed community models as instant API calls</div></div>
+  </div>
+
+  <div class="callout c-origin">
+    <div class="callout-label">🎬 Origin Story — Why It Was Built</div>
+    <p>Ben Firshman — a co-creator of Docker — founded Replicate in 2019. He saw the same problem in ML that Docker had solved in software: sharing a working environment was nearly impossible. A researcher would publish a model on arXiv and GitHub, but getting it running required cloning the repo, installing conflicting dependencies, configuring GPU drivers, and hunting down missing weights. Firshman containerized the entire problem: Replicate packages any model (code + weights + runtime) as an immutable, versioned container accessible through a single API call. No setup. No dependencies. Just call the API with your input, get the output back. Today Replicate hosts thousands of models — Stable Diffusion, Llama, Whisper, DALL-E alternatives — and is the fastest way for non-ML teams to consume AI capabilities.</p>
+  </div>
+
+  <h3>Before vs After — The Problem It Solves</h3>
+  <div class="split-code">
+    <div>
+      <div class="split-label lbl-before">❌ Running a community model without Replicate</div>
+      <pre><span class="cm"># Trying to run Stable Diffusion locally</span>
+
+<span class="cm"># 1. Clone the repo</span>
+<span class="cm"># git clone https://github.com/CompVis/stable-diffusion</span>
+
+<span class="cm"># 2. Create environment (CUDA version hell)</span>
+<span class="cm"># conda create -n ldm python=3.8.5</span>
+<span class="cm"># conda activate ldm</span>
+<span class="cm"># conda env update -f environment.yaml</span>
+<span class="cm"># pip install -e .</span>
+
+<span class="cm"># 3. Download weights (4.2GB)</span>
+<span class="cm"># wget -O models/ldm/stable-diffusion-v1/model.ckpt \</span>
+<span class="cm">#   https://huggingface.co/.../sd-v1-4.ckpt</span>
+
+<span class="cm"># 4. Debug CUDA/PyTorch version conflicts for 2 hours</span>
+
+<span class="cm"># 5. Finally run</span>
+<span class="cm"># python scripts/txt2img.py \</span>
+<span class="cm">#   --prompt "a dragon" --n_samples 1</span>
+
+<span class="cm"># 6. Repeat for every new model you want to try</span></pre>
+    </div>
+    <div>
+      <div class="split-label lbl-after">✅ Replicate — any model, one API call</div>
+      <pre>pip install replicate
+
+<span class="kw">import</span> replicate
+
+<span class="cm"># Image generation — Stable Diffusion</span>
+output = replicate.run(
+  <span class="st">"stability-ai/stable-diffusion:ac732df..."</span>,
+  input={<span class="st">"prompt"</span>: <span class="st">"A dragon in neon Tokyo"</span>,
+         <span class="st">"num_outputs"</span>: <span class="num">1</span>}
+)
+<span class="fn">print</span>(output[<span class="num">0</span>])  <span class="cm"># URL to generated image</span>
+
+<span class="cm"># LLM — Llama 3 8B</span>
+<span class="kw">for</span> token <span class="kw">in</span> replicate.run(
+  <span class="st">"meta/meta-llama-3-8b-instruct"</span>,
+  input={<span class="st">"prompt"</span>: <span class="st">"Explain vLLM in 2 sentences"</span>}
+):
+  <span class="fn">print</span>(token, end=<span class="st">""</span>)
+
+<span class="cm"># Speech-to-text — Whisper</span>
+output = replicate.run(
+  <span class="st">"openai/whisper"</span>,
+  input={<span class="st">"audio"</span>: open(<span class="st">"speech.mp3"</span>, <span class="st">"rb"</span>)}
+)
+<span class="cm"># Works for 1000+ models. Same API. Always.</span></pre>
+    </div>
+  </div>
+
+  <h3>Fit Zone Map</h3>
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 11 — Replicate Fit Zones</div>
+    <svg viewBox="0 0 740 218" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <rect x="10" y="6"   width="720" height="60" rx="10" fill="rgba(63,185,80,.08)"  stroke="rgba(63,185,80,.35)"  stroke-width="1.5"/>
+      <rect x="10" y="78"  width="720" height="60" rx="10" fill="rgba(227,179,65,.08)" stroke="rgba(227,179,65,.35)" stroke-width="1.5"/>
+      <rect x="10" y="150" width="720" height="60" rx="10" fill="rgba(248,81,73,.08)"  stroke="rgba(248,81,73,.35)"  stroke-width="1.5"/>
+      <text x="22" y="28"  font-size="11" fill="#3FB950" font-weight="700" font-family="Segoe UI,sans-serif">🟢 GREEN — Built exactly for this</text>
+      <text x="22" y="100" font-size="11" fill="#E3B341" font-weight="700" font-family="Segoe UI,sans-serif">🟡 YELLOW — Works, but cost or control may be issue</text>
+      <text x="22" y="172" font-size="11" fill="#F85149" font-weight="700" font-family="Segoe UI,sans-serif">🔴 RED — Wrong tool</text>
+      <rect x="22"  y="34" width="185" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="115" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Prototyping with diverse models</text>
+      <rect x="215" y="34" width="185" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="308" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Non-ML teams using AI</text>
+      <rect x="408" y="34" width="185" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="501" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Image / audio / video AI</text>
+      <rect x="601" y="34" width="127" height="24" rx="6" fill="rgba(63,185,80,.12)"/><text x="665" y="50" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Model exploration</text>
+      <rect x="22"  y="106" width="230" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="137" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">High-volume production (per-call cost adds up)</text>
+      <rect x="262" y="106" width="240" height="24" rx="6" fill="rgba(227,179,65,.12)"/><text x="382" y="122" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Popular models (cold starts on less-used ones)</text>
+      <rect x="22"  y="178" width="230" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="137" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Proprietary / private models → Modal</text>
+      <rect x="262" y="178" width="230" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="377" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Sensitive data (goes to their cloud)</text>
+      <rect x="502" y="178" width="226" height="24" rx="6" fill="rgba(248,81,73,.12)"/><text x="615" y="194" font-size="11" fill="#C9D1D9" text-anchor="middle" font-family="Segoe UI,sans-serif">Custom fine-tuned models → Modal</text>
+    </svg>
+  </div>
+
+  <h3>Real-World Scenario — Design Agency's AI Prototyping Workflow</h3>
+  <div class="scenario-card">
+    <div class="scenario-head"><div class="scenario-emoji">🎨</div>
+      <div><div class="scenario-co">10-person Design Agency · No ML engineers</div>
+      <div class="scenario-title">Generating client concept visuals with 8 different AI image models — same day</div></div>
+    </div>
+    <div class="scenario-body">
+      <div class="sc-block sc-prob"><h5>🔴 The Problem</h5><p>A design agency wanted to use AI image generation to speed up client concept work. They had designers, not ML engineers. Running Stable Diffusion locally required GPUs they didn't have. The HuggingFace setup guide was 12 steps long and required CUDA configuration. They needed something that worked today.</p></div>
+      <div class="sc-block sc-sol"><h5>🟢 The Replicate Solution</h5><p>Built a simple Python script connecting to 8 different image models on Replicate (Stable Diffusion XL, FLUX, Midjourney-style alternatives). One pip install, one API key. Designers submit a brief, script generates 4 variations per model, outputs are organized into a client-ready folder. No GPU, no setup, no ML knowledge.</p></div>
+    </div>
+    <div class="scenario-result"><strong>Result:</strong> First concept batch running in 45 minutes. 8 models tested in a single afternoon that would have taken 3 engineers a week to set up locally. Cost: $0.023 per image generation. For client pitches (20–40 images), cost is under $1 per presentation.</div>
+  </div>
+
+  <h3>Anti-Patterns</h3>
+  <div class="ap-list">
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #1</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Monthly bill is shocking. Replicate costs are 10× what you expected for a moderately trafficked feature.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Using Replicate for high-volume production instead of prototyping. Per-call pricing is great for low volume, expensive at scale.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Break-even calculation: if you're spending &gt;$150/month on Replicate for a specific model, run it on Modal or vLLM instead. Replicate is the exploration phase; self-hosted is the production phase.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #2</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Requests to less popular models time out or take 30+ seconds to return the first token.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Models with low request volume on Replicate are completely unloaded when idle. Cold starts for large models (13B+) can take 30–60 seconds.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>Check the model's "recent runs" on the Replicate page. Popular models stay warm. For cold models, set client timeout to 90s and show a loading state. Or switch to a more popular equivalent.</p></div>
+    </div></div>
+    <div class="ap-item"><div class="ap-num">Anti-Pattern #3</div><div class="ap-grid">
+      <div class="ap-col ap-s"><h5>🔴 Symptom</h5><p>Compliance team blocks the project. Legal says you can't send that type of data to external APIs.</p></div>
+      <div class="ap-col ap-c"><h5>🟡 Root Cause</h5><p>Sending PII, medical records, legal documents, or proprietary business data to Replicate's cloud without checking data residency and privacy policies first.</p></div>
+      <div class="ap-col ap-f"><h5>🟢 Fix</h5><p>For sensitive data, use Modal (your own cloud account, your data) or self-hosted Ollama/vLLM. Replicate is public cloud infrastructure — treat it like any third-party API.</p></div>
+    </div></div>
+  </div>
+
+  <div class="challenge-card">
+    <button class="challenge-toggle" onclick="tc(this)">🎮 Replicate Challenges <span class="arrow">›</span></button>
+    <div class="challenge-body">
+      <div class="chal-item"><span class="badge rookie">Rookie</span>Run Llama 3 8B on Replicate with 5 different prompts. Time each call. Compare output quality to your local Ollama model on the same prompts.</div>
+      <div class="chal-item"><span class="badge builder">Builder</span>Build a multi-modal pipeline: use Whisper (Replicate) to transcribe an audio file, then feed the transcript to Llama 3 (Replicate) to summarize it. Chain the two API calls in Python.</div>
+      <div class="chal-item"><span class="badge architect">Architect</span>Build a cost comparison tool: given a list of 100 prompts, calculate the estimated cost on Replicate vs Modal (using real pricing). At what volume does Modal become cheaper? Plot a breakeven chart.</div>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     DECISION MAP
+═════════════════════════════════════════════════ -->
+<section class="section" id="decision">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(232,121,249,.15)">🗺️</div>
+    <div><h2 style="color:#E879F9">The Serving Decision Map</h2>
+    <div class="section-tagline">Given your situation, which tool do you reach for?</div></div>
+  </div>
+
+  <div class="diagram">
+    <div class="diagram-label">📐 Diagram 12 — Serving Decision Flowchart</div>
+    <svg viewBox="0 0 720 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px">
+      <defs><marker id="afd" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#8B949E"/></marker></defs>
+      <rect x="260" y="8" width="190" height="42" rx="21" fill="rgba(88,166,255,.2)" stroke="#58A6FF" stroke-width="2"/>
+      <text x="355" y="33" font-size="13" fill="#58A6FF" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">I need to run a model</text>
+
+      <polygon points="355,80 440,108 355,136 270,108" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.5)" stroke-width="1.5"/>
+      <text x="355" y="104" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">Local only?</text>
+      <text x="355" y="120" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">Free? Offline?</text>
+
+      <rect x="510" y="83" width="175" height="48" rx="10" fill="rgba(45,212,191,.12)" stroke="rgba(45,212,191,.5)" stroke-width="1.5"/>
+      <text x="597" y="104" font-size="13" fill="#2DD4BF" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🦙 Ollama</text>
+      <text x="597" y="120" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Zero setup · Any model</text>
+
+      <polygon points="355,165 440,193 355,221 270,193" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.5)" stroke-width="1.5"/>
+      <text x="355" y="189" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">High throughput?</text>
+      <text x="355" y="205" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">GPU serving?</text>
+
+      <rect x="510" y="168" width="175" height="48" rx="10" fill="rgba(249,115,22,.12)" stroke="rgba(249,115,22,.5)" stroke-width="1.5"/>
+      <text x="597" y="189" font-size="13" fill="#F97316" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">⚡ vLLM</text>
+      <text x="597" y="205" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">GPU required · Max throughput</text>
+
+      <polygon points="355,250 440,278 355,306 270,278" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.5)" stroke-width="1.5"/>
+      <text x="355" y="274" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">No infra?</text>
+      <text x="355" y="290" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">Serverless GPU?</text>
+
+      <rect x="510" y="253" width="175" height="48" rx="10" fill="rgba(168,85,247,.12)" stroke="rgba(168,85,247,.5)" stroke-width="1.5"/>
+      <text x="597" y="274" font-size="13" fill="#A855F7" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">☁️ Modal</text>
+      <text x="597" y="290" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Decorate a function · Pay per use</text>
+
+      <polygon points="355,335 440,363 355,391 270,363" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.5)" stroke-width="1.5"/>
+      <text x="355" y="359" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">Community model,</text>
+      <text x="355" y="375" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">quick prototype?</text>
+
+      <rect x="510" y="338" width="175" height="48" rx="10" fill="rgba(244,114,182,.12)" stroke="rgba(244,114,182,.5)" stroke-width="1.5"/>
+      <text x="597" y="359" font-size="13" fill="#F472B6" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">📦 Replicate</text>
+      <text x="597" y="375" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">1000+ hosted models</text>
+
+      <polygon points="355,420 440,448 355,476 270,448" fill="rgba(227,179,65,.12)" stroke="rgba(227,179,65,.5)" stroke-width="1.5"/>
+      <text x="355" y="444" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">Need a REST API?</text>
+      <text x="355" y="460" font-size="11" fill="#E3B341" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">Custom logic?</text>
+
+      <rect x="128" y="510" width="155" height="42" rx="10" fill="rgba(6,182,212,.12)" stroke="rgba(6,182,212,.5)" stroke-width="1.5"/>
+      <text x="206" y="530" font-size="12" fill="#06B6D4" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🚀 FastAPI</text>
+      <text x="206" y="545" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">Custom API · Full control</text>
+
+      <rect x="413" y="510" width="175" height="42" rx="10" fill="rgba(121,192,255,.12)" stroke="rgba(121,192,255,.5)" stroke-width="1.5"/>
+      <text x="500" y="530" font-size="12" fill="#79C0FF" text-anchor="middle" font-weight="700" font-family="Segoe UI,sans-serif">🔗 LangServe</text>
+      <text x="500" y="545" font-size="10" fill="#8B949E" text-anchor="middle" font-family="Segoe UI,sans-serif">If using LangChain · 1 line</text>
+
+      <!-- Arrows down -->
+      <line x1="355" y1="50"  x2="355" y2="78"  stroke="#8B949E" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="355" y1="136" x2="355" y2="163" stroke="#8B949E" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="355" y1="221" x2="355" y2="248" stroke="#8B949E" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="355" y1="306" x2="355" y2="333" stroke="#8B949E" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="355" y1="391" x2="355" y2="418" stroke="#8B949E" stroke-width="1.5" marker-end="url(#afd)"/>
+      <!-- YES horizontal arrows -->
+      <line x1="440" y1="108" x2="508" y2="108" stroke="#3FB950" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="440" y1="193" x2="508" y2="193" stroke="#3FB950" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="440" y1="278" x2="508" y2="278" stroke="#3FB950" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="440" y1="363" x2="508" y2="363" stroke="#3FB950" stroke-width="1.5" marker-end="url(#afd)"/>
+      <!-- YES/NO labels -->
+      <text x="472" y="103" font-size="10" fill="#3FB950" font-family="Segoe UI,sans-serif">YES</text>
+      <text x="342" y="150" font-size="10" fill="#F85149" font-family="Segoe UI,sans-serif">NO ↓</text>
+      <text x="472" y="188" font-size="10" fill="#3FB950" font-family="Segoe UI,sans-serif">YES</text>
+      <text x="342" y="235" font-size="10" fill="#F85149" font-family="Segoe UI,sans-serif">NO ↓</text>
+      <text x="472" y="273" font-size="10" fill="#3FB950" font-family="Segoe UI,sans-serif">YES</text>
+      <text x="342" y="320" font-size="10" fill="#F85149" font-family="Segoe UI,sans-serif">NO ↓</text>
+      <text x="472" y="358" font-size="10" fill="#3FB950" font-family="Segoe UI,sans-serif">YES</text>
+      <text x="342" y="405" font-size="10" fill="#F85149" font-family="Segoe UI,sans-serif">NO ↓</text>
+      <!-- Branch at bottom -->
+      <line x1="355" y1="476" x2="355" y2="495" stroke="#8B949E" stroke-width="1.5"/>
+      <line x1="355" y1="495" x2="205" y2="495" stroke="#8B949E" stroke-width="1.5"/>
+      <line x1="355" y1="495" x2="500" y2="495" stroke="#8B949E" stroke-width="1.5"/>
+      <line x1="205" y1="495" x2="205" y2="508" stroke="#06B6D4" stroke-width="1.5" marker-end="url(#afd)"/>
+      <line x1="500" y1="495" x2="500" y2="508" stroke="#79C0FF" stroke-width="1.5" marker-end="url(#afd)"/>
+      <text x="280" y="492" font-size="10" fill="#8B949E" font-family="Segoe UI,sans-serif">Custom code</text>
+      <text x="358" y="492" font-size="10" fill="#8B949E" font-family="Segoe UI,sans-serif">LangChain chain</text>
+    </svg>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     CAPSTONE
+═════════════════════════════════════════════════ -->
+<section class="section" id="capstone">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(249,115,22,.15)">🏗️</div>
+    <div><h2 style="color:var(--orange)">Module 2 Capstone Build</h2>
+    <div class="section-tagline">A production-ready local AI API — Ollama + FastAPI, deployable via Modal</div></div>
+  </div>
+
+  <div class="callout c-tip">
+    <div class="callout-label">🎯 What You're Building</div>
+    <p>A complete model serving stack: <strong>Ollama</strong> runs the LLM locally → <strong>FastAPI</strong> exposes it as a REST API with streaming + validation → <strong>LangServe</strong> alternative shown → <strong>Modal</strong> deployment script to push the whole thing to the cloud when ready.</p>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-lang">python · server.py — run with: uvicorn server:app --reload</div>
+    <button class="copy-btn" onclick="cc(this)">Copy</button>
+    <pre><span class="kw">from</span> <span class="fn">fastapi</span> <span class="kw">import</span> <span class="cls">FastAPI</span>, <span class="cls">HTTPException</span>
+<span class="kw">from</span> <span class="fn">fastapi.responses</span> <span class="kw">import</span> <span class="cls">StreamingResponse</span>
+<span class="kw">from</span> <span class="fn">pydantic</span> <span class="kw">import</span> <span class="cls">BaseModel</span>, <span class="cls">Field</span>
+<span class="kw">from</span> <span class="fn">langchain_community.llms</span> <span class="kw">import</span> <span class="cls">Ollama</span>
+<span class="kw">from</span> <span class="fn">langchain.prompts</span> <span class="kw">import</span> <span class="cls">ChatPromptTemplate</span>
+<span class="kw">from</span> <span class="fn">langchain.schema.output_parser</span> <span class="kw">import</span> <span class="cls">StrOutputParser</span>
+<span class="kw">import</span> time, logging
+
+logging.basicConfig(level=logging.INFO)
+app = <span class="cls">FastAPI</span>(title=<span class="st">"Local AI API"</span>, version=<span class="st">"1.0"</span>)
+
+<span class="cm"># ── LLM + Chain setup (once at startup) ──────────────────────</span>
+llm    = <span class="cls">Ollama</span>(model=<span class="st">"llama3.2"</span>)       <span class="cm"># Ollama must be running</span>
+parser = <span class="cls">StrOutputParser</span>()
+
+<span class="cm"># ── Request / Response models ─────────────────────────────────</span>
+<span class="kw">class</span> <span class="cls">ChatRequest</span>(<span class="cls">BaseModel</span>):
+  message:     str = <span class="cls">Field</span>(min_length=<span class="num">1</span>, max_length=<span class="num">2000</span>)
+  system:      str = <span class="st">"You are a helpful AI assistant."</span>
+  temperature: float = <span class="cls">Field</span>(default=<span class="num">0.7</span>, ge=<span class="num">0.0</span>, le=<span class="num">1.0</span>)
+
+<span class="cm"># ── Endpoints ─────────────────────────────────────────────────</span>
+@app.get(<span class="st">"/health"</span>)
+<span class="kw">async def</span> <span class="fn">health</span>():
+  <span class="kw">return</span> {<span class="st">"status"</span>:<span class="st">"ok"</span>, <span class="st">"model"</span>:<span class="st">"llama3.2"</span>, <span class="st">"backend"</span>:<span class="st">"ollama"</span>}
+
+@app.post(<span class="st">"/chat"</span>)
+<span class="kw">async def</span> <span class="fn">chat</span>(req: <span class="cls">ChatRequest</span>):
+  prompt = <span class="cls">ChatPromptTemplate</span>.from_messages([
+    (<span class="st">"system"</span>, req.system),
+    (<span class="st">"human"</span>, <span class="st">"{message}"</span>)
+  ])
+  chain = prompt | llm | parser
+  <span class="kw">try</span>:
+    t0  = time.time()
+    ans = <span class="kw">await</span> chain.ainvoke({<span class="st">"message"</span>: req.message})
+    logging.info(<span class="st">f"chat | {time.time()-t0:.2f}s | {len(ans)} chars"</span>)
+    <span class="kw">return</span> {<span class="st">"response"</span>: ans, <span class="st">"model"</span>:<span class="st">"llama3.2"</span>}
+  <span class="kw">except</span> <span class="cls">Exception</span> <span class="kw">as</span> e:
+    <span class="kw">raise</span> <span class="cls">HTTPException</span>(<span class="num">503</span>, <span class="fn">str</span>(e))
+
+@app.post(<span class="st">"/chat/stream"</span>)
+<span class="kw">async def</span> <span class="fn">chat_stream</span>(req: <span class="cls">ChatRequest</span>):
+  prompt = <span class="cls">ChatPromptTemplate</span>.from_messages([
+    (<span class="st">"system"</span>, req.system),
+    (<span class="st">"human"</span>, <span class="st">"{message}"</span>)
+  ])
+  chain = prompt | llm | parser
+  <span class="kw">async def</span> <span class="fn">generate</span>():
+    <span class="kw">async for</span> chunk <span class="kw">in</span> chain.astream({<span class="st">"message"</span>: req.message}):
+      <span class="kw">yield</span> chunk
+  <span class="kw">return</span> <span class="cls">StreamingResponse</span>(<span class="fn">generate</span>(), media_type=<span class="st">"text/plain"</span>)
+
+<span class="cm"># Test: curl -X POST http://localhost:8000/chat \</span>
+<span class="cm">#   -H "Content-Type: application/json" \</span>
+<span class="cm">#   -d '{"message": "What is a vector database?"}'</span></pre>
+  </div>
+
+  <div class="code-wrap">
+    <div class="code-lang">python · deploy_modal.py — push to cloud with: modal deploy deploy_modal.py</div>
+    <button class="copy-btn" onclick="cc(this)">Copy</button>
+    <pre><span class="kw">import</span> modal
+
+app   = modal.<span class="cls">App</span>(<span class="st">"ai-api"</span>)
+image = modal.<span class="cls">Image</span>.debian_slim().pip_install(
+  <span class="st">"fastapi"</span>, <span class="st">"uvicorn"</span>, <span class="st">"langchain"</span>,
+  <span class="st">"langchain-openai"</span>, <span class="st">"vllm"</span>
+)
+
+@app.<span class="fn">function</span>(image=image, gpu=<span class="st">"A10G"</span>, keep_warm=<span class="num">1</span>)
+@modal.<span class="fn">asgi_app</span>()
+<span class="kw">def</span> <span class="fn">fastapi_app</span>():
+  <span class="kw">from</span> <span class="fn">fastapi</span> <span class="kw">import</span> <span class="cls">FastAPI</span>
+  <span class="kw">from</span> <span class="fn">vllm</span> <span class="kw">import</span> <span class="cls">LLM</span>, <span class="cls">SamplingParams</span>
+
+  app = <span class="cls">FastAPI</span>()
+  llm = <span class="cls">LLM</span>(model=<span class="st">"meta-llama/Llama-3-8B-Instruct"</span>)
+
+  @app.post(<span class="st">"/generate"</span>)
+  <span class="kw">async def</span> <span class="fn">generate</span>(prompt: str):
+    params  = <span class="cls">SamplingParams</span>(temperature=<span class="num">0.7</span>, max_tokens=<span class="num">200</span>)
+    outputs = llm.generate([prompt], params)
+    <span class="kw">return</span> {<span class="st">"text"</span>: outputs[<span class="num">0</span>].outputs[<span class="num">0</span>].text}
+
+  <span class="kw">return</span> app
+<span class="cm"># modal deploy deploy_modal.py → live HTTPS endpoint in 2 minutes</span></pre>
+  </div>
+</section>
+<div class="divider"></div>
+
+<!-- ══════════════════════════════════════════════
+     CHECKLIST
+═════════════════════════════════════════════════ -->
+<section class="section" id="checklist">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(63,185,80,.15)">✅</div>
+    <div><h2 style="color:var(--emerald)">Module 2 Mastery Checklist</h2>
+    <div class="section-tagline">Tick every box before opening Module 3</div></div>
+  </div>
+  <div class="checklist">
+    <div class="check-group">
+      <div class="check-group-title" style="color:var(--vllm)">⚡ vLLM</div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I can explain PagedAttention and why it improves GPU utilization</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've run vLLM and sent multiple concurrent requests to it</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I know how to use vLLM's OpenAI-compatible server as a drop-in replacement</span></div>
+    </div>
+    <div class="check-group">
+      <div class="check-group-title" style="color:var(--ollama)">🦙 Ollama</div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've pulled at least 2 models and tested them locally</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've connected Ollama to a LangChain chain from Module 1</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I understand the RAM requirements for different model sizes</span></div>
+    </div>
+    <div class="check-group">
+      <div class="check-group-title" style="color:var(--fastapi)">🚀 FastAPI</div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've built at least 3 endpoints with Pydantic models for validation</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I use await llm.ainvoke() — never blocking the event loop</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've built a streaming endpoint and seen tokens arrive in real time</span></div>
+    </div>
+    <div class="check-group">
+      <div class="check-group-title" style="color:var(--langserve)">🔗 LangServe</div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've deployed a LangChain chain with add_routes() in one line</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've used the /playground UI to test a chain without writing client code</span></div>
+    </div>
+    <div class="check-group">
+      <div class="check-group-title" style="color:var(--modal)">☁️ Modal</div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've run a Modal function with .remote() from my local terminal</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I understand cold starts and when to use keep_warm</span></div>
+    </div>
+    <div class="check-group">
+      <div class="check-group-title" style="color:var(--replicate)">📦 Replicate</div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've called at least 2 different model types via the Replicate API</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I can use the decision map to choose the right serving tool for any scenario</span></div>
+    </div>
+    <div class="check-group">
+      <div class="check-group-title" style="color:var(--orange)">🏗️ Capstone</div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I've built and run the FastAPI + Ollama server with streaming working</span></div>
+      <div class="ci" onclick="ck(this)"><div class="cbox"></div><span class="ci-text">I could deploy this to Modal if needed (written the deploy script)</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="nav-footer">
+  <a href="DOC_01_LLM_FRAMEWORKS_DIAMOND_v3.html" class="nf-btn">
+    <div class="nf-label">← Previous</div>
+    <div class="nf-title">Module 1 · LLM Frameworks</div>
+  </a>
+  <a href="DOC_03_VECTOR_STORAGE_DIAMOND.html" class="nf-btn" style="text-align:right">
+    <div class="nf-label">Next →</div>
+    <div class="nf-title">Module 3 · Vector Storage &amp; Retrieval</div>
+  </a>
+</div>
+</main>
+
+<script>
+window.addEventListener('scroll',()=>{
+  const d=document.documentElement;
+  document.getElementById('pbar').style.width=(d.scrollTop/(d.scrollHeight-d.clientHeight)*100)+'%';
+});
+const secs=document.querySelectorAll('.section'),lnks=document.querySelectorAll('.nav-link');
+secs.forEach(s=>new IntersectionObserver(es=>{
+  es.forEach(e=>{if(e.isIntersecting){lnks.forEach(l=>l.classList.remove('active'));const a=document.querySelector(`.nav-link[href="#${e.target.id}"]`);if(a)a.classList.add('active');}});
+},{threshold:.25}).observe(s));
+function tc(btn){btn.classList.toggle('open');btn.nextElementSibling.classList.toggle('show');}
+function ck(item){item.classList.toggle('checked');}
+function cc(btn){const pre=btn.parentElement.querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',2000);});}
+</script>
+</body>
+</html>
