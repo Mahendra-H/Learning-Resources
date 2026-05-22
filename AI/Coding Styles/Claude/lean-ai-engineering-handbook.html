@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lean AI Engineering Workflow — Principal Engineer Handbook</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg-base:       #0d0f12;
+    --bg-surface:    #13161b;
+    --bg-elevated:   #1a1e26;
+    --bg-overlay:    #1f242e;
+    --bg-hover:      #252b36;
+
+    --border-subtle: #1e2530;
+    --border-muted:  #28303d;
+    --border-active: #3a4455;
+
+    --text-primary:   #e2e8f0;
+    --text-secondary: #8b96a8;
+    --text-muted:     #4d5a6b;
+    --text-accent:    #60a5fa;
+    --text-code:      #93c5fd;
+
+    --accent-blue:   #3b82f6;
+    --accent-cyan:   #06b6d4;
+    --accent-green:  #10b981;
+    --accent-amber:  #f59e0b;
+    --accent-red:    #ef4444;
+    --accent-purple: #8b5cf6;
+
+    --accent-glow:   rgba(59, 130, 246, 0.12);
+    --accent-glow-s: rgba(59, 130, 246, 0.06);
+
+    --sidebar-w: 268px;
+    --header-h:  56px;
+
+    --font-display: 'Syne', sans-serif;
+    --font-body:    'Inter', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+
+    --radius-sm:  4px;
+    --radius-md:  8px;
+    --radius-lg:  12px;
+
+    --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; font-size: 15px; }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-muted); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-active); }
+
+  /* ── TOP HEADER BAR ── */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: rgba(13, 15, 18, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex; align-items: center; padding: 0 24px;
+    z-index: 100;
+    gap: 12px;
+  }
+  #top-bar .logo {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  #top-bar .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent-blue);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800; color: #fff;
+    letter-spacing: -0.02em;
+  }
+  #top-bar .divider { width: 1px; height: 20px; background: var(--border-muted); margin: 0 4px; }
+  #top-bar .subtitle {
+    font-size: 0.75rem; color: var(--text-muted);
+    font-family: var(--font-mono); letter-spacing: 0.04em;
+  }
+  #top-bar .badges { margin-left: auto; display: flex; gap: 8px; }
+  .badge {
+    padding: 3px 9px; border-radius: 99px;
+    font-size: 0.65rem; font-family: var(--font-mono);
+    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .badge-blue  { background: rgba(59,130,246,0.15); color: var(--accent-blue); border: 1px solid rgba(59,130,246,0.25); }
+  .badge-green { background: rgba(16,185,129,0.12); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.2); }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    position: fixed; top: var(--header-h); left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
+    overflow-y: auto;
+    padding: 20px 0 40px;
+    z-index: 90;
+  }
+  .nav-section-label {
+    padding: 14px 20px 6px;
+    font-size: 0.65rem; font-family: var(--font-mono);
+    color: var(--text-muted); letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .nav-section-label:not(:first-child) { margin-top: 8px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 20px;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all var(--transition);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+  .nav-item:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .nav-item.active { color: var(--accent-blue); border-left-color: var(--accent-blue); background: var(--accent-glow-s); }
+  .nav-item .nav-num {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--text-muted); min-width: 18px;
+    font-weight: 500;
+  }
+
+  /* ── MAIN CONTENT ── */
+  #main {
+    margin-left: var(--sidebar-w);
+    margin-top: var(--header-h);
+    flex: 1; min-width: 0;
+    padding: 48px 64px 100px;
+    max-width: calc(var(--sidebar-w) + 860px);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 48px 0 56px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 56px;
+  }
+  .hero-eyebrow {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--accent-blue); letter-spacing: 0.12em;
+    text-transform: uppercase; font-weight: 500;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-eyebrow::before {
+    content: ''; display: block;
+    width: 24px; height: 1px; background: var(--accent-blue);
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: 2.6rem; font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+  .hero h1 span { color: var(--accent-blue); }
+  .hero-desc {
+    font-size: 1rem; color: var(--text-secondary);
+    max-width: 600px; line-height: 1.75;
+    margin-bottom: 28px;
+  }
+  .hero-meta {
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .hero-stat {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .hero-stat .val {
+    font-family: var(--font-mono); font-size: 1.1rem;
+    color: var(--accent-green); font-weight: 600;
+  }
+  .hero-stat .lbl {
+    font-size: 0.72rem; color: var(--text-muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  /* ── SECTIONS ── */
+  .doc-section {
+    margin-bottom: 72px;
+    scroll-margin-top: calc(var(--header-h) + 24px);
+  }
+  .section-header {
+    display: flex; align-items: flex-start; gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .section-num {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--accent-blue); background: var(--accent-glow);
+    border: 1px solid rgba(59,130,246,0.2);
+    padding: 4px 9px; border-radius: var(--radius-sm);
+    font-weight: 600; letter-spacing: 0.06em;
+    margin-top: 5px; white-space: nowrap;
+  }
+  .section-title-wrap { flex: 1; }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1.55rem; font-weight: 700;
+    color: var(--text-primary); letter-spacing: -0.01em;
+    line-height: 1.25; margin-bottom: 6px;
+  }
+  .section-subtitle {
+    font-size: 0.82rem; color: var(--text-muted);
+    font-family: var(--font-mono); letter-spacing: 0.02em;
+  }
+
+  /* ── CONTENT TYPOGRAPHY ── */
+  h3 {
+    font-family: var(--font-display);
+    font-size: 1.05rem; font-weight: 600;
+    color: var(--text-primary);
+    margin: 32px 0 12px;
+    letter-spacing: -0.005em;
+  }
+  h4 {
+    font-size: 0.82rem; font-family: var(--font-mono);
+    color: var(--accent-cyan); letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 500;
+    margin: 24px 0 10px;
+  }
+  p { margin-bottom: 14px; color: var(--text-secondary); font-size: 0.9rem; }
+  strong { color: var(--text-primary); font-weight: 500; }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    position: relative;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+    margin: 16px 0 24px;
+    overflow: hidden;
+  }
+  .code-block-header {
+    display: flex; align-items: center;
+    padding: 10px 16px;
+    background: var(--bg-overlay);
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 10px;
+  }
+  .code-lang {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--text-muted); letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .code-label {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--text-secondary);
+  }
+  .code-tag {
+    font-size: 0.62rem; font-family: var(--font-mono);
+    padding: 2px 7px; border-radius: 99px;
+    font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; margin-left: auto;
+  }
+  .code-tag-prompt { background: rgba(139,92,246,0.15); color: var(--accent-purple); border: 1px solid rgba(139,92,246,0.25); }
+  .code-tag-shell  { background: rgba(6,182,212,0.12);  color: var(--accent-cyan);   border: 1px solid rgba(6,182,212,0.2); }
+  .code-tag-config { background: rgba(245,158,11,0.12); color: var(--accent-amber);  border: 1px solid rgba(245,158,11,0.2); }
+  .code-tag-good   { background: rgba(16,185,129,0.12); color: var(--accent-green);  border: 1px solid rgba(16,185,129,0.2); }
+  .code-tag-bad    { background: rgba(239,68,68,0.12);  color: var(--accent-red);    border: 1px solid rgba(239,68,68,0.2); }
+
+  .copy-btn {
+    margin-left: auto;
+    background: none; border: 1px solid var(--border-muted);
+    color: var(--text-muted); cursor: pointer;
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.04em; transition: all var(--transition);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .copy-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); background: var(--accent-glow-s); }
+  .copy-btn.copied { border-color: var(--accent-green); color: var(--accent-green); background: rgba(16,185,129,0.08); }
+
+  pre {
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--text-code);
+    tab-size: 2;
+  }
+  pre .cm  { color: var(--text-muted); }
+  pre .kw  { color: var(--accent-blue); }
+  pre .st  { color: var(--accent-green); }
+  pre .at  { color: var(--accent-amber); }
+  pre .pu  { color: var(--text-secondary); }
+  pre .hl  { color: var(--accent-cyan); }
+
+  code {
+    font-family: var(--font-mono); font-size: 0.8em;
+    background: var(--bg-elevated); color: var(--text-code);
+    padding: 2px 6px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+  }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    margin: 16px 0;
+    font-size: 0.85rem;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .callout-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+  .callout-note    { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.18); color: #93c5fd; }
+  .callout-warn    { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.18); color: #fcd34d; }
+  .callout-success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.18); color: #6ee7b7; }
+  .callout-rule    { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.18); color: #c4b5fd; }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; margin: 16px 0 24px; }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.83rem;
+  }
+  th {
+    text-align: left; padding: 10px 16px;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 600;
+    background: var(--bg-overlay);
+    border-bottom: 1px solid var(--border-muted);
+  }
+  td {
+    padding: 10px 16px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: top;
+  }
+  td:first-child { color: var(--text-primary); font-weight: 500; }
+  tr:hover td { background: var(--bg-hover); }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── FILE TREE ── */
+  .filetree {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    font-family: var(--font-mono); font-size: 0.8rem;
+    line-height: 2;
+    margin: 16px 0 24px;
+  }
+  .filetree .dir  { color: var(--text-primary); font-weight: 500; }
+  .filetree .file { color: var(--text-secondary); }
+  .filetree .ann  { color: var(--text-muted); font-size: 0.72rem; margin-left: 8px; }
+  .filetree .hi   { color: var(--accent-blue); }
+  .filetree .opt  { color: var(--text-muted); }
+
+  /* ── COLLAPSIBLE ── */
+  .collapsible {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .collapsible-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px;
+    background: var(--bg-elevated);
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--transition);
+  }
+  .collapsible-header:hover { background: var(--bg-hover); }
+  .collapsible-title {
+    font-family: var(--font-mono); font-size: 0.8rem;
+    color: var(--text-primary); font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .collapsible-title .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent-blue);
+    flex-shrink: 0;
+  }
+  .collapsible-chevron {
+    color: var(--text-muted); font-size: 0.7rem;
+    transition: transform var(--transition);
+  }
+  .collapsible.open .collapsible-chevron { transform: rotate(180deg); }
+  .collapsible-body {
+    display: none;
+    padding: 0 18px 18px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-subtle);
+  }
+  .collapsible.open .collapsible-body { display: block; }
+
+  /* ── INLINE FILE REFS ── */
+  .file-ref {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font-mono); font-size: 0.77rem;
+    color: var(--accent-cyan);
+    background: rgba(6,182,212,0.08);
+    border: 1px solid rgba(6,182,212,0.18);
+    padding: 2px 8px; border-radius: var(--radius-sm);
+  }
+
+  /* ── GRID CARDS ── */
+  .card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px; margin: 16px 0 24px;
+  }
+  .card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    transition: border-color var(--transition);
+  }
+  .card:hover { border-color: var(--border-active); }
+  .card-title {
+    font-family: var(--font-mono); font-size: 0.75rem;
+    color: var(--accent-blue); font-weight: 600;
+    margin-bottom: 8px; letter-spacing: 0.02em;
+  }
+  .card-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.55; }
+  .card-meta { margin-top: 10px; font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+  /* ── STEPS / PHASES ── */
+  .steps { display: flex; flex-direction: column; gap: 0; margin: 16px 0 24px; }
+  .step {
+    display: flex; gap: 16px; padding: 16px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    align-items: flex-start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border-radius: 50%; background: var(--bg-overlay);
+    border: 1px solid var(--border-muted);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--accent-blue); font-weight: 700;
+    margin-top: 1px;
+  }
+  .step-content { flex: 1; }
+  .step-title { font-size: 0.9rem; font-weight: 500; color: var(--text-primary); margin-bottom: 4px; }
+  .step-desc  { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.55; }
+
+  /* ── COMPARE / GOOD-BAD ── */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0 24px; }
+  @media (max-width: 700px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-label {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    font-weight: 600; padding: 8px 14px;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+  .compare-bad  .compare-label { background: rgba(239,68,68,0.12); color: var(--accent-red); }
+  .compare-good .compare-label { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+  .compare-body {
+    background: var(--bg-elevated); border: 1px solid var(--border-muted);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    padding: 12px 14px; overflow-x: auto;
+  }
+  .compare-body pre { padding: 0; font-size: 0.78rem; }
+  .compare-bad  .compare-body { border-top: 2px solid var(--accent-red); }
+  .compare-good .compare-body { border-top: 2px solid var(--accent-green); }
+
+  /* ── OPERATING MODEL TABLE ── */
+  .op-rule {
+    display: flex; gap: 16px; padding: 14px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    align-items: flex-start;
+  }
+  .op-rule:last-child { border-bottom: none; }
+  .op-rule-rule { flex: 1; color: var(--text-primary); font-size: 0.88rem; font-weight: 500; }
+  .op-rule-why  { flex: 1.2; color: var(--text-muted); font-size: 0.82rem; }
+
+  /* ── INLINE BADGE ── */
+  .tag {
+    display: inline; font-family: var(--font-mono); font-size: 0.68rem;
+    padding: 1px 7px; border-radius: 99px; font-weight: 600;
+    letter-spacing: 0.04em; vertical-align: middle; margin: 0 2px;
+  }
+  .tag-blue   { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+  .tag-green  { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+  .tag-amber  { background: rgba(245,158,11,0.12);  color: var(--accent-amber); }
+  .tag-purple { background: rgba(139,92,246,0.12); color: var(--accent-purple); }
+  .tag-cyan   { background: rgba(6,182,212,0.10);  color: var(--accent-cyan); }
+
+  /* ── DAILY WORKFLOW BOX ── */
+  .daily-workflow {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-muted);
+    border-radius: var(--radius-lg);
+    overflow: hidden; margin: 16px 0 24px;
+  }
+  .dw-phase {
+    display: flex; gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    align-items: flex-start;
+  }
+  .dw-phase:last-child { border-bottom: none; }
+  .dw-phase-label {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase;
+    min-width: 90px; padding-top: 2px;
+  }
+  .dw-morning .dw-phase-label { color: var(--accent-amber); }
+  .dw-work    .dw-phase-label { color: var(--accent-blue); }
+  .dw-eod     .dw-phase-label { color: var(--accent-green); }
+  .dw-items   { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.8; }
+
+  /* ── RULE: ALWAYS vs NEVER ── */
+  .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0 24px; }
+  @media (max-width: 600px) { .rules-grid { grid-template-columns: 1fr; } }
+  .rules-box { background: var(--bg-elevated); border: 1px solid var(--border-muted); border-radius: var(--radius-md); overflow: hidden; }
+  .rules-box-header { padding: 10px 16px; font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+  .rules-always .rules-box-header { background: rgba(16,185,129,0.1); color: var(--accent-green); border-bottom: 1px solid rgba(16,185,129,0.15); }
+  .rules-never  .rules-box-header { background: rgba(239,68,68,0.08); color: var(--accent-red);   border-bottom: 1px solid rgba(239,68,68,0.12); }
+  .rules-list { padding: 12px 16px; }
+  .rules-list li { font-size: 0.81rem; color: var(--text-secondary); line-height: 1.9; list-style: none; padding-left: 14px; position: relative; }
+  .rules-list li::before { content: '•'; position: absolute; left: 0; color: var(--text-muted); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; padding: 32px 24px 80px; }
+    .hero h1 { font-size: 1.8rem; }
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 80px; padding-top: 32px;
+    border-top: 1px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: gap;
+  }
+  .footer-left { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
+  .footer-right { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
+
+  /* ── SECTION DIVIDER ── */
+  .section-divider {
+    height: 1px; background: var(--border-subtle);
+    margin: 64px 0; border: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div class="logo">
+    <div class="logo-mark">PE</div>
+    Lean AI Engineering Workflow
+  </div>
+  <div class="divider"></div>
+  <span class="subtitle">principal-engineer / handbook</span>
+  <div class="badges">
+    <span class="badge badge-blue">v1.0</span>
+    <span class="badge badge-green">Production Ready</span>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="nav-section-label">Getting Started</div>
+  <a class="nav-item active" href="#overview">
+    <span class="nav-num">00</span> Overview
+  </a>
+
+  <div class="nav-section-label">Core System</div>
+  <a class="nav-item" href="#s1">
+    <span class="nav-num">01</span> Repository Structure
+  </a>
+  <a class="nav-item" href="#s2">
+    <span class="nav-num">02</span> AI Context Files
+  </a>
+  <a class="nav-item" href="#s3">
+    <span class="nav-num">03</span> Context Loading Strategy
+  </a>
+
+  <div class="nav-section-label">Workflows</div>
+  <a class="nav-item" href="#s4">
+    <span class="nav-num">04</span> Feature Development
+  </a>
+  <a class="nav-item" href="#s5">
+    <span class="nav-num">05</span> Reusable Prompt System
+  </a>
+
+  <div class="nav-section-label">Optimization</div>
+  <a class="nav-item" href="#s6">
+    <span class="nav-num">06</span> Token Optimization
+  </a>
+  <a class="nav-item" href="#s7">
+    <span class="nav-num">07</span> VS Code Strategy
+  </a>
+  <a class="nav-item" href="#s8">
+    <span class="nav-num">08</span> Operating Model
+  </a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main id="main">
+
+  <!-- HERO -->
+  <div class="hero" id="overview">
+    <div class="hero-eyebrow">Principal Engineer Handbook</div>
+    <h1>Lean <span>Spec-Driven</span><br>AI Engineering Workflow</h1>
+    <p class="hero-desc">
+      A lightweight, repo-local system designed to eliminate repeated context explanation,
+      reduce token waste, and make AI behave like a project-aware engineering assistant — without documentation theater.
+    </p>
+    <div class="hero-meta">
+      <div class="hero-stat"><span class="val">~5 min/day</span><span class="lbl">Maintenance</span></div>
+      <div class="hero-stat"><span class="val">4 files</span><span class="lbl">Core System</span></div>
+      <div class="hero-stat"><span class="val">0 SaaS</span><span class="lbl">Dependencies</span></div>
+      <div class="hero-stat"><span class="val">100%</span><span class="lbl">Offline Ready</span></div>
+    </div>
+
+    <div style="margin-top: 28px;">
+      <div class="callout callout-note">
+        <span class="callout-icon">◈</span>
+        <span>This system works with <strong>VS Code + GitHub Copilot + Claude/Codex</strong> only. No external SaaS, no MCP servers, no cloud orchestration platforms. Everything is local, repo-driven, and enterprise-safe.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 1 ── -->
+  <section class="doc-section" id="s1">
+    <div class="section-header">
+      <span class="section-num">§ 01</span>
+      <div class="section-title-wrap">
+        <div class="section-title">Minimal High-Value Repository Structure</div>
+        <div class="section-subtitle">One folder addition. Maximum AI context reuse.</div>
+      </div>
+    </div>
+
+    <p>The only structural addition to your existing repo is a <code>.ai/</code> folder. Everything else stays as-is. This folder IS the project memory for AI — not for humans during development.</p>
+
+    <div class="filetree">
+<span class="dir">project-root/</span>
+├── <span class="hi dir">.ai/</span>
+│   ├── <span class="hi file">context.md</span><span class="ann">← ALWAYS loaded first (architecture + conventions)</span>
+│   ├── <span class="file">api.md</span><span class="ann">← Load when touching APIs/integrations</span>
+│   ├── <span class="hi file">state.md</span><span class="ann">← Current sprint focus, known issues, WIP</span>
+│   └── <span class="opt file">prompts.md</span><span class="ann">← Reusable prompt templates</span>
+├── <span class="dir">src/</span>
+├── <span class="dir">tests/</span>
+├── <span class="dir">.github/</span>
+│   └── <span class="hi file">copilot-instructions.md</span><span class="ann">← Copilot auto-context</span>
+├── <span class="file">tsconfig.json</span>
+├── <span class="file">package.json</span>
+└── <span class="opt file">README.md</span><span class="ann">← Project summary only (humans, not AI)</span>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">🔵 Always Load</div>
+        <div class="card-desc"><code>context.md</code> + <code>state.md</code></div>
+        <div class="card-meta">Core session context</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🟡 On Demand</div>
+        <div class="card-desc"><code>api.md</code> — only when touching integrations</div>
+        <div class="card-meta">Load per task type</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🟢 Optional</div>
+        <div class="card-desc"><code>prompts.md</code> — macro library for copy-paste</div>
+        <div class="card-meta">Grow over time</div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚙️ Auto-Loaded</div>
+        <div class="card-desc"><code>copilot-instructions.md</code> — mirror of coding rules only</div>
+        <div class="card-meta">Copilot reads automatically</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠</span>
+      <span><strong>AI Read Order:</strong> <code>context.md</code> → <code>state.md</code> → task-specific file. Never dump the full codebase. Never attach <code>node_modules</code>, lock files, or build output.</span>
+    </div>
+  </section>
+
+  <!-- ── SECTION 2 ── -->
+  <section class="doc-section" id="s2">
+    <div class="section-header">
+      <span class="section-num">§ 02</span>
+      <div class="section-title-wrap">
+        <div class="section-title">Core AI Context Files</div>
+        <div class="section-subtitle">High signal. Low noise. Token-efficient by design.</div>
+      </div>
+    </div>
+
+    <!-- context.md -->
+    <h3><span class="file-ref">📄 .ai/context.md</span> — Always Loaded</h3>
+    <p>Single source of truth for architecture, constraints, and patterns. Target: <strong>300–500 lines max.</strong> This is an AI instruction file, not documentation.</p>
+
+    <div class="rules-grid">
+      <div class="rules-box rules-always">
+        <div class="rules-box-header">✓ Put Here</div>
+        <ul class="rules-list">
+          <li>Stack and runtime versions</li>
+          <li>Module boundaries and dependency rules</li>
+          <li>Key architectural decisions + WHY</li>
+          <li>Coding conventions (naming, error handling, async)</li>
+          <li>Explicitly banned anti-patterns</li>
+          <li>Auth/security constraints</li>
+          <li>Performance constraints</li>
+        </ul>
+      </div>
+      <div class="rules-box rules-never">
+        <div class="rules-box-header">✗ Never Put Here</div>
+        <ul class="rules-list">
+          <li>Feature requirements</li>
+          <li>Bug descriptions</li>
+          <li>Sprint or ticket state</li>
+          <li>Endpoint-level implementation details</li>
+          <li>Completed work history</li>
+          <li>Meeting notes</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-lang">markdown</span>
+        <span class="code-label">.ai/context.md — example structure</span>
+        <span class="code-tag code-tag-config">ALWAYS LOAD</span>
+        <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+      </div>
+      <pre>## Stack
+- Runtime: Node 20 + TypeScript 5 (strict mode)
+- HTTP: Express 4, no class-based controllers
+- DB: Postgres via pg-promise, NO ORM
+- Auth: JWT, RS256, validated at middleware layer only
+
+## Module Rules
+- services/ — pure business logic, no HTTP types
+- routes/  — thin, delegates to services immediately
+- No circular imports. services never import from routes.
+
+## Error Handling
+- All async handlers wrapped in asyncHandler(fn)
+- Never throw raw strings.
+  Always: throw new AppError(code, message, statusCode)
+- 4xx = client fault, 5xx = our fault. Never conflate.
+
+## Forbidden Patterns
+- No `any` casts without // ts-ignore justification comment
+- No console.log in production paths — use logger.info/warn/error
+- No synchronous file I/O in request handlers</pre>
+    </div>
+
+    <!-- state.md -->
+    <h3><span class="file-ref">📄 .ai/state.md</span> — Always Loaded, Volatile</h3>
+    <p>Current project reality. AI drift happens when this is stale. Update at end of every session. Target: <strong>50–100 lines max.</strong></p>
+
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-lang">markdown</span>
+        <span class="code-label">.ai/state.md — example structure</span>
+        <span class="code-tag code-tag-config">ALWAYS LOAD</span>
+        <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+      </div>
+      <pre>## Active Work
+Branch: feat/payment-webhooks
+Focus: Stripe webhook ingestion → order state machine
+
+## Known Issues
+- processRefund() has race condition under concurrent calls (unfixed)
+- Email service times out >30s, workaround: fire-and-forget with queue
+
+## Recent Schema Changes
+- orders table: added `webhook_events` JSONB column (2025-01-15)
+- payments: `status` enum added 'disputed' value
+
+## Current Constraints
+- Cannot deploy before Jan 20 (infra freeze)
+- Stripe test mode only until signing key confirmed</pre>
+    </div>
+
+    <!-- api.md -->
+    <h3><span class="file-ref">📄 .ai/api.md</span> — On Demand</h3>
+    <p>External and internal API contracts. Load only when touching integrations. Target: <strong>200–400 lines max.</strong></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Load When</th><th>Don't Load When</th></tr></thead>
+        <tbody>
+          <tr><td>Touching Stripe/external APIs</td><td>Pure business logic changes</td></tr>
+          <tr><td>Designing new endpoints</td><td>Database schema work only</td></tr>
+          <tr><td>Debugging webhook handling</td><td>Frontend-only changes</td></tr>
+          <tr><td>Internal service contracts (microservices)</td><td>Refactoring internal modules</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- copilot-instructions.md -->
+    <h3><span class="file-ref">📄 .github/copilot-instructions.md</span> — Auto-Loaded</h3>
+    <p>GitHub Copilot reads this file automatically. Mirror only the <strong>coding rules section</strong> from <code>context.md</code>. Keep under 150 lines — every wasted line costs Copilot accuracy.</p>
+
+    <div class="callout callout-rule">
+      <span class="callout-icon">◈</span>
+      <span><strong>Key insight:</strong> <code>context.md</code> is an AI instruction file. <code>state.md</code> is a volatile notepad. <code>prompts.md</code> is a macro library. None of these are for humans to read during development — they're machine-readable context that happens to be in plain text.</span>
+    </div>
+  </section>
+
+  <!-- ── SECTION 3 ── -->
+  <section class="doc-section" id="s3">
+    <div class="section-header">
+      <span class="section-num">§ 03</span>
+      <div class="section-title-wrap">
+        <div class="section-title">Context Loading Strategy</div>
+        <div class="section-subtitle">Targeted loading. Zero token flooding.</div>
+      </div>
+    </div>
+
+    <div class="callout callout-success">
+      <span class="callout-icon">✓</span>
+      <span><strong>Always preload (every session):</strong> <code>context.md</code> + <code>state.md</code> only. ~600 lines. Everything AI needs to behave project-aware.</span>
+    </div>
+
+    <h3>Load on Demand</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Task Type</th><th>Additional Context to Load</th></tr></thead>
+        <tbody>
+          <tr><td>API work</td><td><code>.ai/api.md</code></td></tr>
+          <tr><td>Bug fix</td><td>Relevant source file + error log only</td></tr>
+          <tr><td>Refactor</td><td>Only the module being refactored</td></tr>
+          <tr><td>New feature</td><td>Spec only (inline, not a file)</td></tr>
+          <tr><td>DB work</td><td>Schema file or relevant migration</td></tr>
+          <tr><td>Code review</td><td>The specific file being reviewed</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Never Load</h3>
+    <div class="rules-box rules-never" style="margin: 12px 0 24px;">
+      <div class="rules-box-header">✗ Always Omit</div>
+      <ul class="rules-list">
+        <li>Full codebase dumps or entire <code>src/</code> folders</li>
+        <li>Completed feature specs from previous sprints</li>
+        <li>Test files (unless debugging tests specifically)</li>
+        <li><code>node_modules</code>, lock files, build output</li>
+        <li>Previous conversation transcripts</li>
+      </ul>
+    </div>
+
+    <h3>Good vs. Bad Context Loading</h3>
+
+    <div class="compare-grid">
+      <div class="compare-bad">
+        <div class="compare-label">✗ BAD — Token flood, low signal</div>
+        <div class="compare-body">
+          <pre>Here's my entire src/ folder.
+Also here's my README, package.json,
+all my routes, all my models, and my
+previous conversation about the auth
+system from last month. Now help me
+fix this bug.</pre>
+        </div>
+      </div>
+      <div class="compare-good">
+        <div class="compare-label">✓ GOOD — Targeted, high signal</div>
+        <div class="compare-body">
+          <pre>[context.md] [state.md]
+Bug: processRefund() race condition
+File: src/services/payment.service.ts
+Error: duplicate refund under concurrent
+POST /refunds
+
+Fix with DB-level lock or idempotency key.</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-bad">
+        <div class="compare-label">✗ BAD — No anchor</div>
+        <div class="compare-body">
+          <pre>How should I structure
+my payment service?</pre>
+        </div>
+      </div>
+      <div class="compare-good">
+        <div class="compare-label">✓ GOOD — Constrained by context</div>
+        <div class="compare-body">
+          <pre>[context.md loaded]
+Design payment service per module rules.
+Constraints: no ORM, AppError pattern,
+service layer only (no HTTP types).
+Feature: Stripe webhook → order state.
+Output: function signatures + data flow.
+No implementation yet.</pre>
+        </div>
+      </div>
+    </div>
+
+    <h3>Context Reuse Pattern</h3>
+    <p>Create a VS Code snippet (see §07) that auto-inserts the session anchor below. AI treats this as a signal to apply project rules without re-reading if already in session.</p>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-lang">text</span>
+        <span class="code-label">Session anchor prefix</span>
+        <span class="code-tag code-tag-prompt">PROMPT</span>
+        <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+      </div>
+      <pre>[CONTEXT: .ai/context.md + .ai/state.md loaded]</pre>
+    </div>
+  </section>
+
+  <!-- ── SECTION 4 ── -->
+  <section class="doc-section" id="s4">
+    <div class="section-header">
+      <span class="section-num">§ 04</span>
+      <div class="section-title-wrap">
+        <div class="section-title">Feature Development Workflow</div>
+        <div class="section-subtitle">Plan → Validate → Break down → Implement → Review. Never skip phases.</div>
+      </div>
+    </div>
+
+    <div class="callout callout-rule">
+      <span class="callout-icon">◈</span>
+      <span><strong>Phase order is non-negotiable.</strong> Never skip to implementation. One planning prompt saves 10 correction prompts. Never implement before architecture validation.</span>
+    </div>
+
+    <!-- New Feature -->
+    <div class="collapsible open" id="wf-feature">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot"></div>New Feature Workflow</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <p>Input: 1-paragraph description + load <code>context.md</code> + <code>state.md</code></p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Architecture Prompt</div>
+              <div class="step-desc">Validate architecture before any code. Get module touch points, data flow, and risks.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Task Breakdown Prompt</div>
+              <div class="step-desc">Generate ordered implementation task list from the validated architecture. Max 8 tasks.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Implement Per Task</div>
+              <div class="step-desc">One task per prompt. Attach specific file. Follow existing patterns exactly.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Rule-Anchored Review</div>
+              <div class="step-desc">Review against rules from context.md. Request: issues only, no praise.</div>
+            </div>
+          </div>
+        </div>
+
+        <h4>Step 1 — Architecture Prompt</h4>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">COPY & USE</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>[context.md] [state.md]
+Feature: [one paragraph]
+Output:
+1. Which existing modules are touched
+2. New modules/functions needed
+3. Data flow (3–5 steps max)
+4. Risks/constraints given current architecture
+No code yet.</pre>
+        </div>
+
+        <h4>Step 2 — Task Breakdown Prompt</h4>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">COPY & USE</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Given that architecture plan:
+Break into ordered implementation tasks.
+Format: [ ] Task — file — acceptance condition
+Max 8 tasks. Flag any blocked by external dependency.</pre>
+        </div>
+
+        <h4>Step 3 — Implementation Prompt (per task)</h4>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">COPY & USE</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Task: [single task from list]
+File: src/services/payment.service.ts
+Constraints: [from context.md]
+Implement only this task. Follow existing patterns exactly.</pre>
+        </div>
+
+        <h4>Step 4 — Review Prompt</h4>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">COPY & USE</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Review this implementation against these rules:
+[paste context.md rules section]
+Check: error handling, type safety, pattern compliance, edge cases.
+Output: issues only. No praise.
+Format: line — issue — fix</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug Fix -->
+    <div class="collapsible" id="wf-bug">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-red)"></div>Bug Fix Workflow</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">COPY & USE</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>[context.md] [state.md]
+Bug: [symptom]
+File: [file]
+Error/log: [paste]
+
+1. Root cause (not symptoms)
+2. Minimal fix
+3. Regression risk
+4. Any related code with same bug</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Refactor -->
+    <div class="collapsible" id="wf-refactor">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-amber)"></div>Refactor Workflow</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">COPY & USE</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>[context.md]
+Refactor target: [file or function]
+Goal: [specific — "extract DB calls into repository layer"]
+Constraint: no behavior changes, tests must still pass
+Output: refactored code + list of what changed and why</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhancement -->
+    <div class="collapsible" id="wf-enhancement">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-green)"></div>Enhancement Workflow</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <p>Same as New Feature workflow, but start with this preamble:</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">COPY & USE</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Existing behavior: [describe clearly]
+Enhancement: [what changes specifically]
+What must NOT change: [list every invariant]
+
+[then follow New Feature steps 1–4]</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 5 ── -->
+  <section class="doc-section" id="s5">
+    <div class="section-header">
+      <span class="section-num">§ 05</span>
+      <div class="section-title-wrap">
+        <div class="section-title">Reusable Prompt System</div>
+        <div class="section-subtitle">Copy. Fill brackets. Send. Store in .ai/prompts.md</div>
+      </div>
+    </div>
+
+    <p>Store all of these in <code>.ai/prompts.md</code>. Never retype. Trigger with VS Code snippets (see §07).</p>
+
+    <div class="collapsible open">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot"></div>Architecture Planning</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>[context.md]
+Design architecture for: [feature]
+Constraints: [from context.md]
+Output: modules, data flow, interfaces. No implementation. Max 20 lines.</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot"></div>Feature Breakdown</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Feature: [description]
+Architecture: [from previous step or inline]
+Output: ordered task list.
+Format: [ ] task — file — done condition</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot"></div>Implementation Planning</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Task: [single task]
+Context: [relevant function signatures or types only]
+Output: implementation plan (steps, not code). Flag assumptions.</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-red)"></div>Bug Analysis</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Symptom: [what's wrong]
+File: [attached]
+Log: [error]
+Output: 1) root cause  2) fix  3) similar risks in codebase</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-red)"></div>Root Cause Analysis</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Incident: [what broke, when, impact]
+Files involved: [list]
+Output: timeline, root cause, contributing factors, fix, prevention</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-amber)"></div>Code Review</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Review: [attached code]
+Rules: [paste relevant rules from context.md]
+Output: violations only.
+Format: line — issue — fix. No commentary.</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-amber)"></div>Refactoring</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>Refactor: [file/function]
+Goal: [specific improvement]
+Must preserve: [behavior/interface]
+Output: refactored code + diff summary</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="collapsible">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <div class="collapsible-title"><div class="dot" style="background:var(--accent-cyan)"></div>API Design</div>
+        <span class="collapsible-chevron">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-lang">prompt</span>
+            <span class="code-tag code-tag-prompt">REUSABLE PROMPT</span>
+            <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+          </div>
+          <pre>[api.md if relevant]
+Design API endpoint for: [feature]
+Constraints: REST, [auth rules], [error patterns from context.md]
+Output: route, request shape, response shape, error cases.
+No implementation.</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SECTION 6 ── -->
+  <section class="doc-section" id="s6">
+    <div class="section-header">
+      <span class="section-num">§ 06</span>
+      <div class="section-title-wrap">
+        <div class="section-title">Token Optimization Strategies</div>
+        <div class="section-subtitle">Less tokens. Better output. No re-explanation.</div>
+      </div>
+    </div>
+
+    <h3>Core Techniques</h3>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Anchor to context files, never inline re-explain</div>
+          <div class="step-desc">Use <code>[context.md loaded]</code> instead of re-pasting your entire stack and conventions in every prompt.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Scope brutally</div>
+          <div class="step-desc"><strong>Bad:</strong> "Review my payment service" &nbsp; <strong>Good:</strong> "Review error handling in processRefund() only"</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Specify output format upfront</div>
+          <div class="step-desc">Add <code>Output: numbered list, max 5 items, no explanations unless critical</code> to every prompt.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Use negative constraints</div>
+          <div class="step-desc"><code>Do NOT: suggest ORM, add logging beyond existing pattern, change function signatures</code> — eliminates the most common AI drift.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <div class="step-title">One task per prompt</div>
+          <div class="step-desc">Combining design + implement + review produces mediocre output for all three. Sequence them.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <div class="step-title">Kill hallucination with file anchors</div>
+          <div class="step-desc">Always attach the actual file. Never describe code from memory. AI hallucinates descriptions, not attached files.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">7</div>
+        <div class="step-content">
+          <div class="step-title">State.md as drift prevention</div>
+          <div class="step-desc">Update weekly minimum. A fresh read resets AI understanding to current reality without re-explaining history.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Prompt Compression Reference</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Verbose (wasteful)</th><th>Compressed (optimal)</th></tr></thead>
+        <tbody>
+          <tr><td>"Can you please help me understand how I should go about implementing..."</td><td>"Implement: [task]"</td></tr>
+          <tr><td>"Make sure to follow our coding standards and patterns"</td><td>"[context.md loaded]"</td></tr>
+          <tr><td>"Don't use any ORMs or external libraries we haven't approved"</td><td>"Constraints: see context.md §Forbidden Patterns"</td></tr>
+          <tr><td>"Here's the full file, somewhere in here there's a bug..."</td><td>"Bug in processRefund(), lines 45–78 [attached]"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── SECTION 7 ── -->
+  <section class="doc-section" id="s7">
+    <div class="section-header">
+      <span class="section-num">§ 07</span>
+      <div class="section-title-wrap">
+        <div class="section-title">VS Code Workspace Strategy</div>
+        <div class="section-subtitle">Multiple projects. Reusable context. Minimal switching.</div>
+      </div>
+    </div>
+
+    <h3>Multi-Project Workspace Layout</h3>
+    <div class="filetree">
+<span class="dir">~/workspaces/</span>
+├── <span class="hi file">project-alpha.code-workspace</span>
+├── <span class="hi file">project-beta.code-workspace</span>
+└── <span class="dir">shared/</span>
+    └── <span class="hi file">prompt-snippets.code-snippets</span><span class="ann">← Global reusable prompts</span>
+    </div>
+
+    <h3>Workspace File Configuration</h3>
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-lang">json</span>
+        <span class="code-label">project-alpha.code-workspace</span>
+        <span class="code-tag code-tag-config">CONFIG</span>
+        <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+      </div>
+      <pre>{
+  "folders": [{ "path": "/path/to/project" }],
+  "settings": {
+    "editor.formatOnSave": true,
+    "github.copilot.chat.localeOverride": "en",
+    "files.exclude": {
+      "node_modules": true,
+      "dist": true
+    }
+  }
+}</pre>
+    </div>
+
+    <h3>Copilot Chat Context Strategy</h3>
+    <div class="callout callout-note">
+      <span class="callout-icon">◈</span>
+      <span>Open <code>.ai/context.md</code> + <code>.ai/state.md</code> as <strong>pinned tabs</strong> before every Copilot Chat session. Use <code>#file:context.md</code> + <code>#file:state.md</code> in Copilot Chat to attach them directly. Use <code>@workspace</code> sparingly — it scans everything and dilutes context. Prefer <code>#file:</code> for targeted attachment.</span>
+    </div>
+
+    <h3>VS Code Snippets for Prompt Reuse</h3>
+    <p>Save to: <code>~/.config/Code/User/snippets/ai-prompts.code-snippets</code></p>
+
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-lang">json</span>
+        <span class="code-label">ai-prompts.code-snippets</span>
+        <span class="code-tag code-tag-config">CONFIG</span>
+        <button class="copy-btn" onclick="copyBlock(this)">⧉ Copy</button>
+      </div>
+      <pre>{
+  "AI Context Header": {
+    "prefix": "aicontext",
+    "body": "[context.md + state.md loaded]\n$0",
+    "description": "Standard AI context prefix"
+  },
+  "Bug Fix Prompt": {
+    "prefix": "aibug",
+    "body": "[context.md] [state.md]\nBug: $1\nFile: $2\nError: $3\n\n1. Root cause\n2. Minimal fix\n3. Regression risk",
+    "description": "Bug fix prompt"
+  },
+  "Review Prompt": {
+    "prefix": "aireview",
+    "body": "Review: [attached]\nRules: error handling, type safety, pattern compliance\nOutput: violations only. Format: line — issue — fix",
+    "description": "Code review prompt"
+  },
+  "Task Implement": {
+    "prefix": "aitask",
+    "body": "[context.md]\nTask: $1\nFile: $2\nConstraints: follow existing patterns exactly\nImplement only this task.",
+    "description": "Single task implementation"
+  }
+}</pre>
+    </div>
+    <p style="margin-top: 0;">Trigger in any <code>.md</code> file or Copilot Chat input — type prefix, press <kbd style="background:var(--bg-elevated);border:1px solid var(--border-muted);padding:1px 6px;border-radius:3px;font-family:var(--font-mono);font-size:0.75rem;">Tab</kbd>, fill in the blanks.</p>
+
+    <h3>Project Memory Strategy</h3>
+    <div class="callout callout-success">
+      <span class="callout-icon">✓</span>
+      <span><code>state.md</code> IS your project memory. Update it at the end of each working session — 5 minutes max. It replaces: mental context juggling, re-reading old conversations, re-explaining state to AI next session.</span>
+    </div>
+  </section>
+
+  <!-- ── SECTION 8 ── -->
+  <section class="doc-section" id="s8">
+    <div class="section-header">
+      <span class="section-num">§ 08</span>
+      <div class="section-title-wrap">
+        <div class="section-title">Final Recommended Operating Model</div>
+        <div class="section-subtitle">Lean. Fast. Reusable. Low-maintenance. High-productivity.</div>
+      </div>
+    </div>
+
+    <h3>Daily Workflow</h3>
+    <div class="daily-workflow">
+      <div class="dw-phase dw-morning">
+        <div class="dw-phase-label">Morning<br><span style="color:var(--text-muted);font-size:0.6rem;">≤ 5 min</span></div>
+        <div class="dw-items">
+          Update <code>state.md</code> with today's focus<br>
+          Open <code>context.md</code> + <code>state.md</code> as pinned tabs
+        </div>
+      </div>
+      <div class="dw-phase dw-work">
+        <div class="dw-phase-label">Feature Work<br><span style="color:var(--text-muted);font-size:0.6rem;">Main session</span></div>
+        <div class="dw-items">
+          1. Run architecture prompt → validate before writing code<br>
+          2. Generate task list → work one task at a time<br>
+          3. Implement with scoped file-anchored prompts<br>
+          4. Review with rule-anchored review prompt
+        </div>
+      </div>
+      <div class="dw-phase dw-eod">
+        <div class="dw-phase-label">End of Day<br><span style="color:var(--text-muted);font-size:0.6rem;">≤ 5 min</span></div>
+        <div class="dw-items">
+          Update <code>state.md</code>: what changed, what's broken, decisions made
+        </div>
+      </div>
+    </div>
+
+    <h3>The Operating Contract</h3>
+    <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin: 16px 0 24px;">
+      <div class="op-rule" style="padding: 12px 18px;">
+        <div class="op-rule-rule">Never explain architecture inline</div>
+        <div class="op-rule-why">It lives in <code>context.md</code> — eliminates repeated tokens</div>
+      </div>
+      <div class="op-rule" style="padding: 12px 18px;">
+        <div class="op-rule-rule">Never implement before planning</div>
+        <div class="op-rule-why">Catches architectural mistakes before they compound into rework</div>
+      </div>
+      <div class="op-rule" style="padding: 12px 18px;">
+        <div class="op-rule-rule">One task per prompt</div>
+        <div class="op-rule-why">Better output quality every time. Never combine design + implement + review.</div>
+      </div>
+      <div class="op-rule" style="padding: 12px 18px;">
+        <div class="op-rule-rule">Attach files, don't describe them</div>
+        <div class="op-rule-why">AI hallucinates on descriptions. File attachments ground responses in reality.</div>
+      </div>
+      <div class="op-rule" style="padding: 12px 18px;">
+        <div class="op-rule-rule">Update <code>state.md</code> weekly minimum</div>
+        <div class="op-rule-why">Prevents AI drift from stale context — the #1 cause of inconsistent output</div>
+      </div>
+      <div class="op-rule" style="padding: 12px 18px;">
+        <div class="op-rule-rule">Negative constraints in every prompt</div>
+        <div class="op-rule-why">Stops the most common unwanted AI suggestions before they appear</div>
+      </div>
+      <div class="op-rule" style="padding: 12px 18px; border-bottom: none;">
+        <div class="op-rule-rule">Review with rules, not vibes</div>
+        <div class="op-rule-why">Consistent, actionable, reproducible feedback against concrete criteria</div>
+      </div>
+    </div>
+
+    <h3>Maintenance Overhead</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>File</th><th>Update Frequency</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td><code>context.md</code></td><td>When architecture changes</td><td>15 min, rarely</td></tr>
+          <tr><td><code>state.md</code></td><td>End of each session</td><td>5 min, daily</td></tr>
+          <tr><td><code>api.md</code></td><td>When integrations change</td><td>10 min, occasionally</td></tr>
+          <tr><td><code>prompts.md</code></td><td>When better patterns emerge</td><td>As needed</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-success" style="margin-top: 24px;">
+      <span class="callout-icon">✓</span>
+      <span><strong>Total: ~5 min/day.</strong> Everything else is eliminated repetition, token waste, and inconsistent AI output. This system does not scale by adding files — it scales by ruthlessly keeping only what's necessary.</span>
+    </div>
+
+    <h3>What This System Is Not</h3>
+    <p>Not a documentation system. Not a project management tool. Not a sprint planning framework. <code>context.md</code> is an AI instruction file. <code>state.md</code> is a volatile notepad. <code>prompts.md</code> is a macro library. None of these are for humans to read during development — they're machine-readable context that happens to be in plain text.</p>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">Lean AI Engineering Workflow — Principal Engineer Handbook v1.0</div>
+    <div class="footer-right">VS Code · GitHub Copilot · Claude · Codex · Node.js · TypeScript</div>
+  </div>
+
+</main>
+
+<script>
+  // ── COPY TO CLIPBOARD ──
+  function copyBlock(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    const text = pre.innerText || pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '⧉ Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // ── COLLAPSIBLE SECTIONS ──
+  function toggleCollapsible(header) {
+    const block = header.closest('.collapsible');
+    block.classList.toggle('open');
+  }
+
+  // ── ACTIVE NAV TRACKING ──
+  const navItems = document.querySelectorAll('.nav-item');
+  const sections = document.querySelectorAll('.doc-section, .hero');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navItems.forEach(item => {
+          item.classList.remove('active');
+          if (item.getAttribute('href') === '#' + id) {
+            item.classList.add('active');
+          }
+        });
+      }
+    });
+  }, {
+    rootMargin: '-20% 0px -70% 0px',
+    threshold: 0
+  });
+
+  sections.forEach(s => observer.observe(s));
+
+  // ── SMOOTH NAV CLICK ──
+  navItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      navItems.forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

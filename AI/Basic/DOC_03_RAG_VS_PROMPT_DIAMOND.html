@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 3 — RAG vs Prompt-only | 💎 Diamond Edition</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D1117;--bg2:#161B22;--bg3:#1F2937;--border:#30363D;
+  --text:#E6EDF3;--muted:#8B949E;--subtle:#C9D1D9;
+  --lc:#79C0FF;--lg:#D2A8FF;--li:#56D364;--hf:#E3B341;
+  --red:#F85149;--emerald:#3FB950;--orange:#F97316;
+  --radius:10px;--font:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Code','Fira Code','Consolas',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.75;display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--bg2);border-right:1px solid var(--border);padding:1.25rem .875rem;display:flex;flex-direction:column;gap:2px}
+.sidebar-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:.5rem .5rem .75rem;border-bottom:1px solid var(--border);margin-bottom:.5rem}
+.nav-link{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;font-size:12.5px;color:var(--muted);text-decoration:none;transition:all .15s}
+.nav-link:hover,.nav-link.active{background:var(--bg3);color:var(--text)}
+.ndot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding-top:1rem;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center}
+.main{flex:1;max-width:920px;padding:2.5rem 3rem 6rem;overflow-x:hidden}
+.hero{margin-bottom:3rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);border-radius:99px;padding:3px 12px;font-size:11.5px;color:#58A6FF;margin-bottom:1.25rem}
+.hero h1{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:.5rem}
+.hero h1 em{font-style:normal;color:var(--lc)}
+.hero-sub{color:var(--muted);font-size:16px;margin-bottom:1.25rem}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:4px 13px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid;letter-spacing:.01em}
+.lc{color:var(--lc);background:rgba(121,192,255,.1);border-color:rgba(121,192,255,.35)}
+.lg{color:var(--lg);background:rgba(210,168,255,.1);border-color:rgba(210,168,255,.35)}
+.li{color:var(--li);background:rgba(86,211,100,.1);border-color:rgba(86,211,100,.35)}
+.hf{color:var(--hf);background:rgba(227,179,65,.1);border-color:rgba(227,179,65,.35)}
+.meta-row{display:flex;gap:2rem;margin-top:1.25rem;flex-wrap:wrap}
+.meta-item{font-size:13px;color:var(--muted)}
+.meta-item strong{color:var(--text);display:block;font-size:15px}
+.section{margin-bottom:4rem;scroll-margin-top:1rem}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+.section-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.section-header h2{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.section-tagline{font-size:14px;color:var(--muted);margin-top:2px}
+p{color:var(--subtle);margin-bottom:.95rem}
+h3{font-size:18px;font-weight:600;margin:2.25rem 0 .75rem;color:var(--text)}
+h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:1.75rem 0 .5rem}
+.callout{border-radius:var(--radius);padding:1rem 1.25rem;margin:1.25rem 0;border-left:3px solid;font-size:14px;line-height:1.65}
+.callout-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.c-brain{background:rgba(121,192,255,.07);border-color:var(--lc)}.c-brain .callout-label{color:var(--lc)}
+.c-gotcha{background:rgba(248,81,73,.07);border-color:var(--red)}.c-gotcha .callout-label{color:var(--red)}
+.c-tip{background:rgba(227,179,65,.07);border-color:var(--hf)}.c-tip .callout-label{color:var(--hf)}
+.diagram{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin:1.75rem 0;overflow-x:auto}
+.diagram-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+.diagram svg{display:block;max-width:100%}
+.code-wrap{position:relative;margin:1rem 0}
+.code-lang{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-family:var(--font);margin-bottom:6px}
+pre{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;font-family:var(--mono);font-size:12.5px;line-height:1.65;overflow-x:auto;tab-size:4}
+.comp-table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0}
+.comp-table th{background:var(--bg3);padding:9px 14px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);font-weight:700}
+.comp-table td{padding:9px 14px;border-bottom:1px solid rgba(48,54,61,.6);color:var(--subtle)}
+.comp-table tr:hover td{background:rgba(255,255,255,.02)}
+.checklist{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.75rem;margin:2rem 0}
+.check-group{margin-bottom:1.25rem}
+.check-group-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:.625rem;font-weight:700}
+.ci{display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;font-size:13.5px;color:var(--subtle);border-bottom:1px solid rgba(48,54,61,.35)}
+.ci:last-child{border-bottom:none}
+.cbox{width:20px;height:20px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-title">Module 3 · RAG vs Prompt</div>
+  <a href="#big-picture" class="nav-link active"><span class="ndot" style="background:#58A6FF"></span>Big Picture</a>
+  <a href="#comparison" class="nav-link"><span class="ndot" style="background:var(--lg)"></span>Comparison</a>
+  <a href="#when-to-use" class="nav-link"><span class="ndot" style="background:var(--li)"></span>When to Use</a>
+  <a href="#developer" class="nav-link"><span class="ndot" style="background:var(--hf)"></span>Developer Advice</a>
+  <a href="#examples" class="nav-link"><span class="ndot" style="background:#E879F9"></span>Examples</a>
+  <a href="#checklist" class="nav-link"><span class="ndot" style="background:var(--emerald)"></span>Checklist</a>
+  <div class="sidebar-footer">Diamond Edition · Compare</div>
+</nav>
+<main class="main">
+  <div class="hero">
+    <div class="badge">💎 Diamond Edition &nbsp;·&nbsp; Module 3</div>
+    <h1>RAG vs Prompt-only</h1>
+    <p class="hero-sub">A software developer’s comparison of retrieval-augmented generation and direct prompt engineering.</p>
+    <div class="pills">
+      <span class="pill lc">RAG</span>
+      <span class="pill lg">Prompt-only</span>
+      <span class="pill li">Accuracy</span>
+      <span class="pill hf">Maintainability</span>
+    </div>
+    <div class="meta-row">
+      <div class="meta-item"><strong>Audience</strong>Software developers</div>
+      <div class="meta-item"><strong>Goal</strong>Architecture decision</div>
+      <div class="meta-item"><strong>Outcome</strong>Choose the right pattern</div>
+    </div>
+  </div>
+
+  <section class="section" id="big-picture">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(88,166,255,.15)">🗺️</div>
+      <div>
+        <h2 style="color:#58A6FF">The Big Picture</h2>
+        <div class="section-tagline">Why RAG is usually the safer production path for knowledge-driven apps</div>
+      </div>
+    </div>
+    <p>Direct prompt-only systems rely on the model’s internal knowledge and reasoning. RAG adds a retrieval step so answers are grounded in external, up-to-date documents.</p>
+    <div class="callout c-brain">
+      <div class="callout-label">Core difference</div>
+      <p>Prompt-only = model answers from its weights. RAG = model answers with evidence retrieved at runtime.</p>
+    </div>
+  </section>
+
+  <section class="section" id="comparison">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(210,168,255,.15)">🧪</div>
+      <div>
+        <h2 style="color:var(--lg)">Comparison</h2>
+        <div class="section-tagline">Side-by-side benefits and tradeoffs</div>
+      </div>
+    </div>
+    <table class="comp-table">
+      <thead>
+        <tr><th>Pattern</th><th>Strengths</th><th>Weaknesses</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Prompt-only</strong></td><td>Simple to build; lower system complexity; fewer components.</td><td>Hallucinations, stale knowledge, poor source attribution.</td></tr>
+        <tr><td><strong>RAG</strong></td><td>Grounded answers, current knowledge, citability, safer for enterprise.</td><td>More moving parts, retrieval tuning, additional infra cost.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout c-tip">
+      <div class="callout-label">Developer observation</div>
+      <p>Prompt-only can work for general knowledge or creative tasks, but RAG is the better default for domain-specific or internal knowledge work.</p>
+    </div>
+  </section>
+
+  <section class="section" id="when-to-use">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(86,211,100,.15)">⚙️</div>
+      <div>
+        <h2 style="color:var(--li)">When to Use Each</h2>
+        <div class="section-tagline">Choose based on data freshness, accuracy, and complexity needs</div>
+      </div>
+    </div>
+    <h3>Prompt-only is a good fit when:</h3>
+    <ul>
+      <li>The task is creative or conversational rather than factual.</li>
+      <li>You need rapid prototyping and low infrastructure overhead.</li>
+      <li>Knowledge does not change often and hallucination risk is acceptable.</li>
+    </ul>
+    <h3>RAG is a good fit when:</h3>
+    <ul>
+      <li>Answers must be grounded in company docs, policies, or product specs.</li>
+      <li>Data changes frequently and must stay current.</li>
+      <li>Source citation and explainability are important.</li>
+      <li>You need better control over hallucinations and model drift.</li>
+    </ul>
+    <div class="callout c-gotcha">
+      <div class="callout-label">Rule of thumb</div>
+      <p>If the app answers questions about your own systems, use RAG. If it is a generic chat assistant, prompt-only may be enough.</p>
+    </div>
+  </section>
+
+  <section class="section" id="developer">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(227,179,65,.15)">👨‍💻</div>
+      <div>
+        <h2 style="color:var(--hf)">Developer Advice</h2>
+        <div class="section-tagline">Practical implementation guidance for engineers</div>
+      </div>
+    </div>
+    <h3>Design for testability</h3>
+    <p>Implement the retrieval layer and prompt layer separately. Test retrieval quality without invoking the model, and validate prompt outputs independently.</p>
+    <h3>Monitor hallucination risk</h3>
+    <p>Prompt-only systems should be monitored for incorrect answers. For RAG, monitor retrieval relevance, prompt truncation, and answer coherence.</p>
+    <h3>Fallback strategy</h3>
+    <p>If retrieval returns no strong evidence, either ask for clarification or return a safe fallback instead of guessing.</p>
+    <div class="callout c-tip">
+      <div class="callout-label">Implementation tip</div>
+      <p>Use similarity thresholds and metadata filters when querying the vector store to avoid injecting noisy or irrelevant text into prompts.</p>
+    </div>
+  </section>
+
+  <section class="section" id="examples">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(248,81,73,.15)">💡</div>
+      <div>
+        <h2 style="color:var(--red)">Examples</h2>
+        <div class="section-tagline">Concrete use cases for each pattern</div>
+      </div>
+    </div>
+    <div class="callout c-brain">
+      <div class="callout-label">Prompt-only example</div>
+      <p>Building a casual brainstorming assistant or a coding buddy where exact accuracy is not critical.</p>
+    </div>
+    <div class="callout c-tip">
+      <div class="callout-label">RAG example</div>
+      <p>Building an internal policy assistant that answers questions using HR policy documents, engineering runbooks, and regulatory requirements.</p>
+    </div>
+    <div class="code-wrap">
+      <div class="code-lang">TypeScript</div>
+      <pre><code>// Prompt-only
+const prompt = `You are an assistant. Answer this question:
+${question}`;
+const response = await llm.generate(prompt);
+
+// RAG
+const queryEmbedding = await embed(query);
+const chunks = await vectorStore.search(queryEmbedding, 5);
+const context = chunks.map(c => c.text).join("\n\n");
+const ragPrompt = `Use the context below to answer the question.\n\nContext:\n${context}\n\nQuestion:\n${question}`;
+const ragResponse = await llm.generate(ragPrompt);</code></pre>
+    </div>
+  </section>
+
+  <section class="section" id="checklist">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(63,185,80,.15)">✅</div>
+      <div>
+        <h2 style="color:var(--emerald)">Decision Checklist</h2>
+        <div class="section-tagline">Use this before you choose a pattern</div>
+      </div>
+    </div>
+    <ul>
+      <li>Is the knowledge domain internal or external?</li>
+      <li>Does the content need to stay current?</li>
+      <li>Are citations and source references required?</li>
+      <li>Can the user tolerate occasional hallucinations?</li>
+      <li>Do you have the infrastructure for a vector store?</li>
+    </ul>
+    <div class="checklist">
+      <div class="check-group">
+        <div class="check-group-title">Choose RAG when</div>
+        <div class="ci"><span class="cbox"></span><span>Your app answers questions about internal content</span></div>
+        <div class="ci"><span class="cbox"></span><span>Accuracy and grounding matter</span></div>
+        <div class="ci"><span class="cbox"></span><span>Sources and explainability are required</span></div>
+      </div>
+      <div class="check-group">
+        <div class="check-group-title">Choose Prompt-only when</div>
+        <div class="ci"><span class="cbox"></span><span>The task is conversational/creative</span></div>
+        <div class="ci"><span class="cbox"></span><span>You need speed and low infra complexity</span></div>
+        <div class="ci"><span class="cbox"></span><span>Stale knowledge is acceptable</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
