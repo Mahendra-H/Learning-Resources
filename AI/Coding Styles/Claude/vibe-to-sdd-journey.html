@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Chaos to Craft — A Vibe Coder's Journey to SDD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b11;
+    --bg-1: #0d1320;
+    --bg-2: #111827;
+    --bg-3: #182030;
+    --border: #1e2d42;
+    --border-lit: #2a3f5c;
+    --text-1: #e4ecf8;
+    --text-2: #8a9fc0;
+    --text-3: #4a607e;
+    --amber: #f59e0b;
+    --amber-dim: #92600a;
+    --amber-bg: #1a1100;
+    --amber-bg-2: #261800;
+    --teal: #00c9a7;
+    --teal-dim: #007a67;
+    --teal-bg: #001a16;
+    --teal-bg-2: #002920;
+    --blue: #4a9eff;
+    --blue-bg: #061428;
+    --red: #f87171;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Lora', serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --max-w: 860px;
+    --progress-h: 3px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.8;
+    overflow-x: hidden;
+  }
+
+  /* PROGRESS BAR */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: var(--progress-h);
+    width: 0%;
+    background: linear-gradient(90deg, var(--teal), var(--blue));
+    z-index: 1000;
+    transition: width 0.1s;
+  }
+
+  /* SIDE NAV */
+  #side-nav {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 900;
+  }
+  .nav-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border-lit);
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .nav-dot::after {
+    content: attr(data-label);
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-2);
+    color: var(--text-2);
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .nav-dot:hover::after { opacity: 1; }
+  .nav-dot.active { background: var(--teal); transform: scale(1.4); }
+
+  /* LAYOUT */
+  .container {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  section {
+    padding: 100px 0;
+    border-bottom: 1px solid var(--border);
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+  section.visible { opacity: 1; transform: translateY(0); }
+
+  /* HERO */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 0 80px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    opacity: 1;
+    transform: none;
+  }
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.25;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%);
+  }
+  .hero-content { position: relative; }
+  .hero-eyebrow {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--teal);
+  }
+  h1.hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(40px, 7vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--text-1);
+    margin-bottom: 28px;
+  }
+  h1.hero-title span.amber { color: var(--amber); }
+  h1.hero-title span.teal { color: var(--teal); }
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text-2);
+    max-width: 540px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+    font-style: italic;
+  }
+  .hero-chapters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chapter-pill {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 6px 14px;
+    border-radius: 30px;
+    border: 1px solid var(--border-lit);
+    color: var(--text-3);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .chapter-pill:hover {
+    border-color: var(--teal-dim);
+    color: var(--teal);
+    background: var(--teal-bg);
+  }
+
+  /* SECTION LABELS */
+  .section-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label .num {
+    color: var(--teal);
+    font-size: 13px;
+  }
+  h2.section-title {
+    font-family: var(--font-display);
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-1);
+    line-height: 1.15;
+    margin-bottom: 20px;
+  }
+  .section-intro {
+    font-size: 17px;
+    color: var(--text-2);
+    max-width: 620px;
+    margin-bottom: 56px;
+    line-height: 1.8;
+  }
+
+  /* PROSE */
+  .prose {
+    color: var(--text-2);
+    font-size: 17px;
+    line-height: 1.85;
+  }
+  .prose p { margin-bottom: 20px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose strong { color: var(--text-1); font-weight: 500; }
+  .prose em { color: var(--amber); font-style: italic; }
+
+  /* CALLOUT BOXES */
+  .callout {
+    border-left: 3px solid;
+    padding: 20px 24px;
+    border-radius: 0 8px 8px 0;
+    margin: 32px 0;
+    font-size: 16px;
+    line-height: 1.75;
+  }
+  .callout.amber {
+    border-color: var(--amber);
+    background: var(--amber-bg);
+    color: #c8a76a;
+  }
+  .callout.teal {
+    border-color: var(--teal);
+    background: var(--teal-bg);
+    color: #5abfad;
+  }
+  .callout.blue {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+    color: #7ab8f5;
+  }
+  .callout-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  /* MONOLOGUE COMPARISON */
+  .monologue-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 40px 0;
+    border: 1px solid var(--border);
+  }
+  .mono-side {
+    padding: 28px 28px 24px;
+    position: relative;
+  }
+  .mono-side.old { background: #0e0900; }
+  .mono-side.new { background: var(--teal-bg); }
+  .mono-tag {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mono-tag .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .mono-side.old .mono-tag { color: var(--amber-dim); }
+  .mono-side.old .mono-tag .dot { background: var(--amber); }
+  .mono-side.new .mono-tag { color: var(--teal-dim); }
+  .mono-side.new .mono-tag .dot { background: var(--teal); }
+  .mono-text {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+  .mono-side.old .mono-text { color: #8a7050; }
+  .mono-side.new .mono-text { color: #4aa898; }
+  .mono-divider {
+    width: 2px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--text-3);
+    writing-mode: vertical-rl;
+    letter-spacing: 0.15em;
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+
+  /* HABIT CARDS */
+  .habits-grid { display: flex; flex-direction: column; gap: 24px; margin-top: 16px; }
+  .habit-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .habit-card:hover { border-color: var(--border-lit); }
+  .habit-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    cursor: pointer;
+    background: var(--bg-1);
+    user-select: none;
+  }
+  .habit-num {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    min-width: 28px;
+  }
+  .habit-title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-1);
+    flex: 1;
+  }
+  .habit-toggle {
+    font-size: 13px;
+    color: var(--text-3);
+    transition: transform 0.3s;
+    font-family: var(--font-display);
+  }
+  .habit-card.open .habit-toggle { transform: rotate(180deg); }
+  .habit-body {
+    display: none;
+    padding: 0 24px 24px;
+    background: var(--bg-1);
+  }
+  .habit-card.open .habit-body { display: block; }
+  .habit-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .hc-side {
+    padding: 16px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .hc-side.old {
+    background: var(--amber-bg-2);
+    border: 1px solid #2e1800;
+    color: #8a7050;
+  }
+  .hc-side.new {
+    background: var(--teal-bg-2);
+    border: 1px solid #003d2e;
+    color: #4a9e8e;
+  }
+  .hc-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .hc-side.old .hc-label { color: var(--amber-dim); }
+  .hc-side.new .hc-label { color: var(--teal-dim); }
+  .code-snippet {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    margin-top: 10px;
+    line-height: 1.6;
+    white-space: pre;
+  }
+  .hc-side.old .code-snippet { background: #1a0e00; color: #a07840; border: 1px solid #2e1800; }
+  .hc-side.new .code-snippet { background: #001a14; color: #40a090; border: 1px solid #003020; }
+
+  /* WORKFLOW PIPELINE */
+  .workflow { margin-top: 16px; }
+  .wf-step {
+    display: flex;
+    gap: 24px;
+    padding: 28px 0;
+    border-left: 1px solid var(--border);
+    margin-left: 20px;
+    padding-left: 32px;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .wf-step::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 36px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+    border: 2px solid var(--bg);
+  }
+  .wf-step:hover::before { background: var(--teal); }
+  .wf-step:last-child { border-left-color: transparent; }
+  .wf-step-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .wf-step-content { flex: 1; }
+  .wf-step-num {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .wf-step-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: 8px;
+  }
+  .wf-step-desc {
+    font-size: 15px;
+    color: var(--text-2);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  .wf-tag {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 30px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .wf-tag.prompt { background: var(--teal-bg); color: var(--teal-dim); border: 1px solid var(--teal-bg-2); }
+  .wf-tag.file { background: var(--bg-3); color: var(--text-3); border: 1px solid var(--border); }
+  .wf-tag.human { background: #1a0a28; color: #7a4aae; border: 1px solid #2a1040; }
+
+  /* STAGES */
+  .stages { display: flex; flex-direction: column; gap: 0; margin-top: 16px; }
+  .stage {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 24px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .stage:last-child { border-bottom: none; }
+  .stage-left { text-align: right; padding-top: 4px; }
+  .stage-num {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stage-timeframe {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .stage-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .stage-desc {
+    font-size: 15px;
+    color: var(--text-2);
+    line-height: 1.75;
+    margin-bottom: 16px;
+  }
+  .stage-feeling {
+    font-size: 14px;
+    font-style: italic;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border-left: 3px solid;
+    line-height: 1.65;
+  }
+  .stage-tells {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .stage-tell {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--bg-3);
+    color: var(--text-3);
+    border: 1px solid var(--border);
+  }
+
+  /* STAGE COLORS */
+  .stage[data-s="1"] .stage-num { color: #4a607e; }
+  .stage[data-s="1"] .stage-name { color: #6a80a0; }
+  .stage[data-s="1"] .stage-feeling { border-color: #2a3f5c; background: var(--bg-1); color: #5a7090; }
+
+  .stage[data-s="2"] .stage-num { color: #8a6030; }
+  .stage[data-s="2"] .stage-name { color: var(--amber); }
+  .stage[data-s="2"] .stage-feeling { border-color: var(--amber-dim); background: var(--amber-bg); color: #8a7050; }
+
+  .stage[data-s="3"] .stage-num { color: #a06030; }
+  .stage[data-s="3"] .stage-name { color: #e08040; }
+  .stage[data-s="3"] .stage-feeling { border-color: #a06030; background: #150900; color: #906040; }
+
+  .stage[data-s="4"] .stage-num { color: var(--teal-dim); }
+  .stage[data-s="4"] .stage-name { color: var(--teal); }
+  .stage[data-s="4"] .stage-feeling { border-color: var(--teal-dim); background: var(--teal-bg); color: #4a9e8e; }
+
+  .stage[data-s="5"] .stage-num { color: #5a8aff; }
+  .stage[data-s="5"] .stage-name { color: var(--blue); }
+  .stage[data-s="5"] .stage-feeling { border-color: #2a5aaa; background: var(--blue-bg); color: #5a90d0; }
+
+  /* RELAPSES */
+  .relapse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .relapse-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    background: var(--bg-1);
+    transition: border-color 0.2s;
+  }
+  .relapse-card:hover { border-color: var(--border-lit); }
+  .relapse-icon {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+  .relapse-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: 8px;
+  }
+  .relapse-scenario {
+    font-size: 13px;
+    font-style: italic;
+    color: #8a6040;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: var(--amber-bg);
+    border-radius: 6px;
+    line-height: 1.65;
+    border-left: 2px solid var(--amber-dim);
+  }
+  .relapse-fix {
+    font-size: 13px;
+    color: #4a9e8e;
+    line-height: 1.65;
+    padding: 10px 12px;
+    background: var(--teal-bg);
+    border-radius: 6px;
+    border-left: 2px solid var(--teal-dim);
+  }
+  .relapse-label {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    opacity: 0.6;
+  }
+
+  /* MINDSET SHIFTS */
+  .shifts-grid { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+  .shift-row {
+    display: grid;
+    grid-template-columns: 1fr 48px 1fr;
+    gap: 0;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .shift-old {
+    padding: 20px 22px;
+    background: #0e0900;
+  }
+  .shift-new {
+    padding: 20px 22px;
+    background: var(--teal-bg);
+  }
+  .shift-old-text {
+    font-size: 14px;
+    color: #7a6040;
+    line-height: 1.6;
+    font-style: italic;
+  }
+  .shift-new-text {
+    font-size: 14px;
+    color: #4a9e8e;
+    line-height: 1.6;
+    font-style: italic;
+  }
+  .shift-arrow {
+    text-align: center;
+    font-size: 18px;
+    color: var(--text-3);
+    background: var(--bg-1);
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  /* PAYOFF STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 40px 0;
+  }
+  .stat-card {
+    padding: 28px 24px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-1);
+    text-align: center;
+  }
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-3);
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+  }
+
+  /* CHEATSHEET */
+  #cheatsheet {
+    background: var(--bg-1);
+    border-top: 1px solid var(--border);
+    padding: 80px 0;
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+  #cheatsheet.visible { opacity: 1; transform: translateY(0); }
+  .cheat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+  .cheat-block {
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+  }
+  .cheat-title {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 14px;
+  }
+  .cheat-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cheat-list li {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .cheat-list li::before {
+    content: '→';
+    color: var(--teal-dim);
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    margin-top: 1px;
+  }
+  .cheat-list li strong {
+    color: var(--text-1);
+    font-weight: 500;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 48px 0;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-display);
+    font-size: 12px;
+    color: var(--text-3);
+    letter-spacing: 0.08em;
+  }
+
+  /* DIVIDER */
+  .section-divider {
+    width: 48px;
+    height: 3px;
+    background: var(--teal);
+    border-radius: 2px;
+    margin-bottom: 40px;
+  }
+
+  /* INLINE HIGHLIGHT */
+  .hl-amber { color: var(--amber); font-weight: 500; }
+  .hl-teal { color: var(--teal); font-weight: 500; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--bg-3);
+    color: var(--teal);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* QUOTE */
+  blockquote {
+    border-left: 3px solid var(--border-lit);
+    padding: 16px 24px;
+    margin: 32px 0;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--text-2);
+    line-height: 1.75;
+  }
+  blockquote cite {
+    display: block;
+    font-size: 13px;
+    font-style: normal;
+    font-family: var(--font-display);
+    color: var(--text-3);
+    margin-top: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 700px) {
+    .monologue-pair { grid-template-columns: 1fr; }
+    .mono-divider { display: none; }
+    .habit-compare { grid-template-columns: 1fr; }
+    .relapse-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr; }
+    .cheat-grid { grid-template-columns: 1fr; }
+    .shift-row { grid-template-columns: 1fr; }
+    .shift-arrow { display: none; }
+    .stage { grid-template-columns: 1fr; }
+    .stage-left { text-align: left; }
+    #side-nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<nav id="side-nav" aria-label="Page sections">
+  <div class="nav-dot active" data-label="Intro" onclick="scrollTo(0,0)"></div>
+  <div class="nav-dot" data-label="The Confession" data-target="confession"></div>
+  <div class="nav-dot" data-label="Wake-Up" data-target="wakeup"></div>
+  <div class="nav-dot" data-label="Mindset Shifts" data-target="mindset"></div>
+  <div class="nav-dot" data-label="Habits vs Disciplines" data-target="habits"></div>
+  <div class="nav-dot" data-label="SDD Workflow" data-target="workflow"></div>
+  <div class="nav-dot" data-label="Transition Stages" data-target="stages"></div>
+  <div class="nav-dot" data-label="Relapses" data-target="relapses"></div>
+  <div class="nav-dot" data-label="The Payoff" data-target="payoff"></div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="container hero-content">
+    <div class="hero-eyebrow">A Solo Developer's Honest Journey</div>
+    <h1 class="hero-title">
+      From <span class="amber">Chaos</span><br>to <span class="teal">Craft</span>
+    </h1>
+    <p class="hero-sub">
+      Everything I wish I'd known before I wasted months of tokens, countless midnight debugging sessions, and the quiet pride of shipping fast while quietly drowning in technical debt.
+    </p>
+    <div class="hero-chapters">
+      <a class="chapter-pill" href="#confession">The Confession</a>
+      <a class="chapter-pill" href="#wakeup">The Wake-Up</a>
+      <a class="chapter-pill" href="#mindset">Mindset Shifts</a>
+      <a class="chapter-pill" href="#habits">Old vs New</a>
+      <a class="chapter-pill" href="#workflow">SDD Workflow</a>
+      <a class="chapter-pill" href="#stages">The Journey</a>
+      <a class="chapter-pill" href="#relapses">Relapses</a>
+      <a class="chapter-pill" href="#payoff">The Payoff</a>
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 1: THE CONFESSION -->
+<section id="confession">
+  <div class="container">
+    <div class="section-label"><span class="num">01</span> The Confession</div>
+    <h2 class="section-title">Let me describe the old me — honestly.</h2>
+    <div class="section-divider"></div>
+
+    <div class="prose">
+      <p>I was fast. Frighteningly fast. I could open GitHub Copilot, fire off a prompt, and have a new feature running in twenty minutes. My colleagues — if I had any on the project — would have been impressed. I was definitely impressed with myself.</p>
+      <p>I called it <strong>intuitive development</strong>. What it actually was, I now understand, was <em>vibe coding</em>. I was navigating by feeling, not by structure. I was asking the AI to build things I hadn't fully thought through. And for a while, it worked.</p>
+      <p>Here's what my daily development looked like in those days:</p>
+    </div>
+
+    <div class="callout amber">
+      <div class="callout-label">The Old Morning Routine</div>
+      Open VS Code → Open Copilot Chat → Type a rough description of what I want → Accept what comes out → Run it → Tweak → Ship. Repeat tomorrow. Never write a spec. Never write tests first. Never ask "what does done actually look like?"
+    </div>
+
+    <div class="prose">
+      <p>The first sign that something was wrong wasn't a catastrophic failure. It was a quiet, growing frustration. Every new Copilot session felt like meeting a brilliant colleague who had amnesia. I'd have to re-explain the project. Every. Single. Time.</p>
+      <p><em>"So, this is a FastAPI project. We use PostgreSQL. Authentication is JWT-based. The user model has these fields..."</em></p>
+      <p>I was burning tokens just to re-establish context. Then burning more tokens because my vague prompts produced output that needed fixing. Then burning even more tokens in back-and-forth clarification. I wasn't saving time — I was laundering it into a form I didn't recognise as waste.</p>
+    </div>
+
+    <div class="monologue-pair" aria-label="Internal monologue comparison">
+      <div class="mono-side old">
+        <div class="mono-tag"><span class="dot"></span>Old Internal Voice</div>
+        <div class="mono-text">"I know this codebase inside out. I've been working on it for months. I don't need to write anything down. I'll just ask Copilot for the specific bit I need right now and it'll be fine."</div>
+      </div>
+      <div class="mono-side new">
+        <div class="mono-tag"><span class="dot"></span>New Internal Voice</div>
+        <div class="mono-text">"If I can't write it in a two-paragraph spec, I don't know it well enough to build it. The spec is not for Copilot — it's for me. It's how I discover the gaps in my own thinking before they become bugs."</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>The second sign came during a maintenance session. I had to fix a bug in a feature I'd written six weeks earlier. I looked at the code and thought — <strong>"who wrote this?"</strong> The answer was uncomfortable. I had. With Copilot. Without a spec. Without a clear plan. Just vibes.</p>
+      <p>It worked when I wrote it. Mostly. But it was untestable, undocumented, and written with a set of assumptions that I could no longer reconstruct six weeks later. I had shipped fast. But the cost was just deferred, not avoided.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 2: WAKE-UP MOMENT -->
+<section id="wakeup">
+  <div class="container">
+    <div class="section-label"><span class="num">02</span> The Wake-Up Moment</div>
+    <h2 class="section-title">The night vibe coding stopped working.</h2>
+    <div class="section-divider"></div>
+
+    <div class="prose">
+      <p>Every vibe coder has a specific moment when the method collapses under its own weight. Mine came at 11 PM on a Tuesday. A feature that "worked fine" in development was silently corrupting data in a specific edge case I had never specced out. No test had caught it because there were no tests. The spec didn't exist to tell me the edge case mattered.</p>
+      <p>I opened Copilot to fix it. And then spent 40 minutes re-explaining the architecture, the data model, the business rule, and the security constraint — before I could even describe the bug. By the time I had provided enough context, I had a new problem: the conversation was so long and polluted with my re-explanation that the model's quality had degraded. I was getting answers that would have broken three other things.</p>
+    </div>
+
+    <div class="callout amber">
+      <div class="callout-label">The Real Cost of Vibe Coding</div>
+      It's not the time you spend coding. It's the time you spend <strong>re-explaining, re-doing, debugging without context, and rewriting things you already wrote.</strong> Vibe coding is fast at the start and catastrophically slow at every subsequent step.
+    </div>
+
+    <div class="prose">
+      <p>That night I started writing things down — not for Copilot, but for myself. A description of the system. The rules it must follow. The edge cases that matter. And I discovered something unsettling: <em>I didn't know my own system as well as I thought I did.</em></p>
+      <p>Spec-Driven Development didn't start for me as a productivity technique. It started as a form of honesty. Writing a spec forces you to answer questions you've been avoiding. Questions like: what does this feature actually need to do? What happens when inputs are invalid? Who is allowed to do this? What does failure look like?</p>
+      <p>Vibe coding skips those questions. SDD demands them upfront. And that changes everything.</p>
+    </div>
+
+    <blockquote>
+      "Speed is not the enemy of quality. Vagueness is. And vibe coding is vagueness dressed up as velocity."
+      <cite>— Something I had to learn the hard way</cite>
+    </blockquote>
+  </div>
+</section>
+
+<!-- CHAPTER 3: MINDSET SHIFTS -->
+<section id="mindset">
+  <div class="container">
+    <div class="section-label"><span class="num">03</span> The Mindset Surgery</div>
+    <h2 class="section-title">Five beliefs I had to surgically remove.</h2>
+    <div class="section-divider"></div>
+
+    <p class="section-intro">These aren't just habit changes. They're belief changes. Each one felt like giving something up before I understood what I was gaining.</p>
+
+    <div class="shifts-grid">
+
+      <div class="shift-row">
+        <div class="shift-old">
+          <div class="hc-label" style="color:#7a5030; margin-bottom:6px;">Old Belief</div>
+          <div class="shift-old-text">"Speed is how I prove I'm productive. The faster I ship, the better I am at this."</div>
+        </div>
+        <div class="shift-arrow">→</div>
+        <div class="shift-new">
+          <div class="hc-label" style="color:#3a8070; margin-bottom:6px;">New Belief</div>
+          <div class="shift-new-text">"Predictability is how I prove I'm productive. If I can ship reliably without regressions, I'm engineering. If I'm just moving fast, I'm gambling."</div>
+        </div>
+      </div>
+
+      <div class="shift-row">
+        <div class="shift-old">
+          <div class="hc-label" style="color:#7a5030; margin-bottom:6px;">Old Belief</div>
+          <div class="shift-old-text">"AI is the developer. I describe what I want, it builds it."</div>
+        </div>
+        <div class="shift-arrow">→</div>
+        <div class="shift-new">
+          <div class="hc-label" style="color:#3a8070; margin-bottom:6px;">New Belief</div>
+          <div class="shift-new-text">"I am the architect and engineer. AI is an accelerator for execution. It should never define what I build — only help me build it faster once I've defined it."</div>
+        </div>
+      </div>
+
+      <div class="shift-row">
+        <div class="shift-old">
+          <div class="hc-label" style="color:#7a5030; margin-bottom:6px;">Old Belief</div>
+          <div class="shift-old-text">"Tests are for later. First make it work, then make it safe."</div>
+        </div>
+        <div class="shift-arrow">→</div>
+        <div class="shift-new">
+          <div class="hc-label" style="color:#3a8070; margin-bottom:6px;">New Belief</div>
+          <div class="shift-new-text">"Tests define what 'works' means. Without them, 'it works' is just 'it ran once without crashing in front of me'."</div>
+        </div>
+      </div>
+
+      <div class="shift-row">
+        <div class="shift-old">
+          <div class="hc-label" style="color:#7a5030; margin-bottom:6px;">Old Belief</div>
+          <div class="shift-old-text">"Docs and specs slow me down. They're overhead for big teams. I'm solo, I know what I'm building."</div>
+        </div>
+        <div class="shift-arrow">→</div>
+        <div class="shift-new">
+          <div class="hc-label" style="color:#3a8070; margin-bottom:6px;">New Belief</div>
+          <div class="shift-new-text">"Docs and specs save me from future me. The person debugging this at 11 PM in six weeks is also me. I owe that person a spec."</div>
+        </div>
+      </div>
+
+      <div class="shift-row">
+        <div class="shift-old">
+          <div class="hc-label" style="color:#7a5030; margin-bottom:6px;">Old Belief</div>
+          <div class="shift-old-text">"If it runs in prod, I did it right. Don't overthink it."</div>
+        </div>
+        <div class="shift-arrow">→</div>
+        <div class="shift-new">
+          <div class="hc-label" style="color:#3a8070; margin-bottom:6px;">New Belief</div>
+          <div class="shift-new-text">"Running in prod means it hasn't failed yet — not that it won't. Architecture, security, and tests are what separate luck from engineering."</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 4: HABITS vs DISCIPLINES -->
+<section id="habits">
+  <div class="container">
+    <div class="section-label"><span class="num">04</span> Old Habits vs New Disciplines</div>
+    <h2 class="section-title">The five battles you'll fight every day.</h2>
+    <div class="section-divider"></div>
+
+    <p class="section-intro">These are the exact moments where the transition from vibe coding to SDD is won or lost. Expand each one to see the before, the after, and the actual prompts involved.</p>
+
+    <div class="habits-grid">
+
+      <!-- HABIT 1 -->
+      <div class="habit-card">
+        <div class="habit-header" onclick="toggleHabit(this)">
+          <span class="habit-num">01</span>
+          <span class="habit-title">Opening Copilot before thinking</span>
+          <span class="habit-toggle">▾</span>
+        </div>
+        <div class="habit-body">
+          <div class="habit-compare">
+            <div class="hc-side old">
+              <div class="hc-label">The Old Way</div>
+              <p style="font-size:14px;color:#7a6040;line-height:1.65;margin-bottom:8px;">The impulse hits. The IDE is open. Copilot Chat is right there. So I start typing. No plan, no scope, no definition of done. Just energy and intent.</p>
+              <div class="code-snippet">Hey, I need to add a rate limiter
+to the API. Can you help me
+build that?</div>
+            </div>
+            <div class="hc-side new">
+              <div class="hc-label">The New Way</div>
+              <p style="font-size:14px;color:#4a9e8e;line-height:1.65;margin-bottom:8px;">Before Copilot opens, I answer three questions on paper: What exactly does this do? What does it not do? What does "done" mean? Then I write the spec. Then I open Copilot.</p>
+              <div class="code-snippet">Read .ai/project-context.md.
+Spec is at specs/rate-limiter/.
+Read requirements.md and
+edge-cases.md.
+Generate implementation plan only.
+Do not write code yet.</div>
+            </div>
+          </div>
+          <div class="callout teal" style="margin-top:20px;font-size:14px;">
+            <strong style="color:var(--teal);">Why this matters:</strong> Without a spec, Copilot is guessing at your requirements. It will build something — but it may not be what you needed. The spec is the contract that makes the output deterministic.
+          </div>
+        </div>
+      </div>
+
+      <!-- HABIT 2 -->
+      <div class="habit-card">
+        <div class="habit-header" onclick="toggleHabit(this)">
+          <span class="habit-num">02</span>
+          <span class="habit-title">Giant prompts that try to do everything</span>
+          <span class="habit-toggle">▾</span>
+        </div>
+        <div class="habit-body">
+          <div class="habit-compare">
+            <div class="hc-side old">
+              <div class="hc-label">The Old Way</div>
+              <p style="font-size:14px;color:#7a6040;line-height:1.65;margin-bottom:8px;">I describe the entire feature at once. The output is massive, unreviewed, touches dozens of files, and by the time I understand what was generated, half of it needs fixing.</p>
+              <div class="code-snippet">Build me a complete user auth
+system with JWT, refresh tokens,
+forgot password, remember me,
+email verification, rate limiting,
+audit logs, and SSO via Google.</div>
+            </div>
+            <div class="hc-side new">
+              <div class="hc-label">The New Way</div>
+              <p style="font-size:14px;color:#4a9e8e;line-height:1.65;margin-bottom:8px;">One scoped task per prompt. Each task is small enough to review completely. Each output is validated before the next task begins. Ten small prompts beat one giant prompt every time.</p>
+              <div class="code-snippet">Implement ONLY the JWT token
+validation function.
+Spec: specs/auth/requirements.md
+Scope: src/auth/token_validator.py
+Do not modify any other file.</div>
+            </div>
+          </div>
+          <div class="callout teal" style="margin-top:20px;font-size:14px;">
+            <strong style="color:var(--teal);">Why this matters:</strong> Reviewing 20 lines is easy. Reviewing 300 lines of AI-generated code across 8 files is how security bugs enter production. Small scope = reviewable scope.
+          </div>
+        </div>
+      </div>
+
+      <!-- HABIT 3 -->
+      <div class="habit-card">
+        <div class="habit-header" onclick="toggleHabit(this)">
+          <span class="habit-num">03</span>
+          <span class="habit-title">Accepting AI output without review</span>
+          <span class="habit-toggle">▾</span>
+        </div>
+        <div class="habit-body">
+          <div class="habit-compare">
+            <div class="hc-side old">
+              <div class="hc-label">The Old Way</div>
+              <p style="font-size:14px;color:#7a6040;line-height:1.65;margin-bottom:8px;">The code looks right. It runs. I accept it. I move on. I discover a month later that error messages were exposing stack traces in production, and an input wasn't being validated.</p>
+              <div class="code-snippet"># Looks good to me ✓
+# Ship it
+git add . && git commit -m "add auth"
+git push origin main</div>
+            </div>
+            <div class="hc-side new">
+              <div class="hc-label">The New Way</div>
+              <p style="font-size:14px;color:#4a9e8e;line-height:1.65;margin-bottom:8px;">Every implementation gets run through the code review prompt AND the security review prompt before committing. AI output is treated as untrusted by default — because it is.</p>
+              <div class="code-snippet"># After implementation:
+# 1. Run: .ai/prompts/06-code-reviewer.md
+# 2. Run: .ai/prompts/05-security-reviewer.md
+# 3. Fix all Critical + High findings
+# 4. Then commit</div>
+            </div>
+          </div>
+          <div class="callout teal" style="margin-top:20px;font-size:14px;">
+            <strong style="color:var(--teal);">Why this matters:</strong> AI does not know your security rules unless you tell it. And even then, it may miss edge cases. You are the last line of defence. Act like it.
+          </div>
+        </div>
+      </div>
+
+      <!-- HABIT 4 -->
+      <div class="habit-card">
+        <div class="habit-header" onclick="toggleHabit(this)">
+          <span class="habit-num">04</span>
+          <span class="habit-title">Re-explaining context every single session</span>
+          <span class="habit-toggle">▾</span>
+        </div>
+        <div class="habit-body">
+          <div class="habit-compare">
+            <div class="hc-side old">
+              <div class="hc-label">The Old Way</div>
+              <p style="font-size:14px;color:#7a6040;line-height:1.65;margin-bottom:8px;">Every session starts the same way. A wall of context. Tech stack, conventions, what we've already built, what we can't change. Burning tokens before a single line of productive work.</p>
+              <div class="code-snippet">This is a FastAPI app using Python
+3.11. We use PostgreSQL, async 
+SQLAlchemy, Pydantic v2. JWT auth
+via python-jose. Logging with
+structlog. PEP8 strictly enforced.
+No bare excepts. All models use
+dataclasses. Now, I need to...</div>
+            </div>
+            <div class="hc-side new">
+              <div class="hc-label">The New Way</div>
+              <p style="font-size:14px;color:#4a9e8e;line-height:1.65;margin-bottom:8px;"><code style="font-size:12px;">.github/copilot-instructions.md</code> loads automatically. Context is always pre-loaded. Every session starts with the task — not with re-explanation. Token savings from day one.</p>
+              <div class="code-snippet"># New session startup — all I say:
+Task: Feature
+Spec: specs/payment-webhook/
+Scope: src/webhooks/processor.py
+# Copilot already knows everything else.</div>
+            </div>
+          </div>
+          <div class="callout teal" style="margin-top:20px;font-size:14px;">
+            <strong style="color:var(--teal);">Why this matters:</strong> Context re-explanation is the single biggest source of wasted tokens. The <code>.ai/</code> folder eliminates it permanently. Invest one hour setting it up — save hours every week.
+          </div>
+        </div>
+      </div>
+
+      <!-- HABIT 5 -->
+      <div class="habit-card">
+        <div class="habit-header" onclick="toggleHabit(this)">
+          <span class="habit-num">05</span>
+          <span class="habit-title">Writing tests after (or never)</span>
+          <span class="habit-toggle">▾</span>
+        </div>
+        <div class="habit-body">
+          <div class="habit-compare">
+            <div class="hc-side old">
+              <div class="hc-label">The Old Way</div>
+              <p style="font-size:14px;color:#7a6040;line-height:1.65;margin-bottom:8px;">Tests are a future problem. Right now, the feature works — I can see it working. I'll add tests "later." Later never comes. Three months later, I change something related and break this silently.</p>
+              <div class="code-snippet"># TODO: add tests for this
+# (never happens)
+def process_payment(data):
+    # 200 lines of untested logic</div>
+            </div>
+            <div class="hc-side new">
+              <div class="hc-label">The New Way</div>
+              <p style="font-size:14px;color:#4a9e8e;line-height:1.65;margin-bottom:8px;">Tests are written before implementation using the test-writer prompt. The spec's acceptance criteria become the test cases directly. Implementation exists to make the tests pass — not the other way around.</p>
+              <div class="code-snippet"># Workflow order:
+# 1. Write spec (acceptance-tests.md)
+# 2. Run: .ai/prompts/03-test-writer.md
+# 3. Tests exist → NOW write implementation
+# 4. Implementation makes tests pass</div>
+            </div>
+          </div>
+          <div class="callout teal" style="margin-top:20px;font-size:14px;">
+            <strong style="color:var(--teal);">Why this matters:</strong> Tests written before implementation define what the feature must do. Tests written after verify what the feature accidentally does. These are not the same thing.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 5: SDD WORKFLOW -->
+<section id="workflow">
+  <div class="container">
+    <div class="section-label"><span class="num">05</span> The SDD Workflow</div>
+    <h2 class="section-title">Every step earns the next one.</h2>
+    <div class="section-divider"></div>
+
+    <p class="section-intro">This is the workflow I now follow for every feature, bug fix, or enhancement. No step can be skipped. Each one funds the quality of what comes after it.</p>
+
+    <div class="workflow">
+
+      <div class="wf-step">
+        <div class="wf-step-icon" style="background:var(--amber-bg);color:var(--amber);">📋</div>
+        <div class="wf-step-content">
+          <div class="wf-step-num">STEP 01</div>
+          <div class="wf-step-title">Write the Requirements</div>
+          <div class="wf-step-desc">Before anything else, write what the feature must do in plain language. Business requirement. Functional requirements (numbered). Non-functional requirements. Out of scope. Acceptance criteria. This is the contract — with yourself, with the AI, and with future you.</div>
+          <span class="wf-tag file">specs/feature-name/requirements.md</span>
+          <span class="wf-tag human">Human owned</span>
+        </div>
+      </div>
+
+      <div class="wf-step">
+        <div class="wf-step-icon" style="background:var(--amber-bg);color:var(--amber);">🗺️</div>
+        <div class="wf-step-content">
+          <div class="wf-step-num">STEP 02</div>
+          <div class="wf-step-title">Define the Edge Cases</div>
+          <div class="wf-step-desc">What happens when the input is null? When the network is down? When the user doesn't have permission? When the database returns an unexpected row count? Edge cases written before implementation become test cases. Discovered after implementation become bugs.</div>
+          <span class="wf-tag file">specs/feature-name/edge-cases.md</span>
+          <span class="wf-tag prompt">02-spec-writer.md</span>
+        </div>
+      </div>
+
+      <div class="wf-step">
+        <div class="wf-step-icon" style="background:#0a0f1a;color:var(--blue);">📐</div>
+        <div class="wf-step-content">
+          <div class="wf-step-num">STEP 03</div>
+          <div class="wf-step-title">Get the Architecture Plan</div>
+          <div class="wf-step-desc">Ask Copilot to plan, not to code. What files need to be created? What patterns will be used? What are the data models? What is the sequence of operations? The plan is reviewed and corrected before a single line of implementation is written. This is the cheapest moment to fix a mistake.</div>
+          <span class="wf-tag prompt">01-architect-plan.md</span>
+          <span class="wf-tag human">Review the plan</span>
+        </div>
+      </div>
+
+      <div class="wf-step">
+        <div class="wf-step-icon" style="background:#0a0f1a;color:var(--blue);">🧪</div>
+        <div class="wf-step-content">
+          <div class="wf-step-num">STEP 04</div>
+          <div class="wf-step-title">Generate Tests First</div>
+          <div class="wf-step-desc">Using the acceptance criteria and edge cases from the spec, generate the test suite before writing any implementation. The tests become the definition of done. They are the executable version of the requirements document.</div>
+          <span class="wf-tag prompt">03-test-writer.md</span>
+          <span class="wf-tag file">tests/feature-name/</span>
+        </div>
+      </div>
+
+      <div class="wf-step">
+        <div class="wf-step-icon" style="background:var(--teal-bg);color:var(--teal);">⚙️</div>
+        <div class="wf-step-content">
+          <div class="wf-step-num">STEP 05</div>
+          <div class="wf-step-title">Implement in Scoped Increments</div>
+          <div class="wf-step-desc">One function, one service, one endpoint at a time. Each implementation prompt is tightly scoped with an explicit file boundary. No prompt modifies more than it declares. The golden examples in <code>src/examples/</code> are the style reference for everything generated.</div>
+          <span class="wf-tag prompt">04-implementer.md</span>
+          <span class="wf-tag file">src/examples/ ← style ref</span>
+        </div>
+      </div>
+
+      <div class="wf-step">
+        <div class="wf-step-icon" style="background:var(--teal-bg);color:var(--teal);">🔍</div>
+        <div class="wf-step-content">
+          <div class="wf-step-num">STEP 06</div>
+          <div class="wf-step-title">Code Review + Security Review</div>
+          <div class="wf-step-desc">Every implementation goes through two review passes before commit: a code quality review checking standards, architecture alignment, and test coverage — and a security review checking for OWASP API risks, missing validation, credential exposure, and fail-open patterns. Non-negotiable.</div>
+          <span class="wf-tag prompt">06-code-reviewer.md</span>
+          <span class="wf-tag prompt">05-security-reviewer.md</span>
+        </div>
+      </div>
+
+      <div class="wf-step">
+        <div class="wf-step-icon" style="background:var(--bg-3);color:#7a5aae;">📝</div>
+        <div class="wf-step-content">
+          <div class="wf-step-num">STEP 07</div>
+          <div class="wf-step-title">Document + Record Decisions</div>
+          <div class="wf-step-desc">Any significant architectural decision made during the feature gets an ADR — a short record of what was decided, why, and what was rejected. The documentation generator prompt creates module docs, sequence diagrams, and runbooks. Future you reads this in six months and actually understands the code.</div>
+          <span class="wf-tag prompt">07-adr-writer.md</span>
+          <span class="wf-tag prompt">08-doc-generator.md</span>
+          <span class="wf-tag file">docs/adr/</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 6: TRANSITION STAGES -->
+<section id="stages">
+  <div class="container">
+    <div class="section-label"><span class="num">06</span> The Transition Stages</div>
+    <h2 class="section-title">This is a journey, not a switch.</h2>
+    <div class="section-divider"></div>
+
+    <p class="section-intro">Nobody becomes an SDD practitioner overnight. Here is exactly what each stage feels like, what it looks like from the outside, and how you know you've moved past it.</p>
+
+    <div class="stages">
+
+      <div class="stage" data-s="1">
+        <div class="stage-left">
+          <div class="stage-num">01</div>
+          <div class="stage-timeframe">Week 1–2</div>
+        </div>
+        <div>
+          <div class="stage-name">The Skeptic</div>
+          <div class="stage-desc">You've set up the workspace — the <code>.ai/</code> folder, the spec templates, the prompt files. And now your first instinct is: this feels like more work, not less. You're right, in the short term. The first spec takes an hour. The old way would have had code in twenty minutes. This friction is real and it's uncomfortable.</div>
+          <div class="stage-feeling">"Why am I writing a requirements document for a three-line change? This is overkill. I'll just do this one quickly the old way and set up the process properly next time."</div>
+          <div class="stage-tells">
+            <span class="stage-tell">You skip specs for "small" tasks</span>
+            <span class="stage-tell">You use prompts inconsistently</span>
+            <span class="stage-tell">You still accept output without review</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage" data-s="2">
+        <div class="stage-left">
+          <div class="stage-num">02</div>
+          <div class="stage-timeframe">Week 2–4</div>
+        </div>
+        <div>
+          <div class="stage-name">The Experimenter</div>
+          <div class="stage-desc">Something clicks. You use the context files and notice that Copilot's first-response quality has improved noticeably. You don't have to re-explain the tech stack. The architect plan prompt saves you from a bad design decision you wouldn't have caught until much later. You're starting to see what the structure buys you.</div>
+          <div class="stage-feeling">"OK, that worked better than I expected. The spec actually caught a gap in my thinking before I started coding. But I still feel slow. This takes deliberate effort every single time."</div>
+          <div class="stage-tells">
+            <span class="stage-tell">Specs are written for medium+ tasks</span>
+            <span class="stage-tell">Context files are actively maintained</span>
+            <span class="stage-tell">You run at least the code review prompt</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage" data-s="3">
+        <div class="stage-left">
+          <div class="stage-num">03</div>
+          <div class="stage-timeframe">Month 1–2</div>
+        </div>
+        <div>
+          <div class="stage-name">The Frustrated Practitioner</div>
+          <div class="stage-desc">You're following the workflow but your specs are still not detailed enough. Copilot is generating implementations that miss edge cases you didn't write down. You're discovering that the bottleneck has shifted — it's no longer "did I describe the feature?" but "did I describe the constraints?" Your spec writing skills are the limiting factor now, not your coding skills. This is progress — even though it feels like a new type of failure.</div>
+          <div class="stage-feeling">"I wrote a spec. Copilot still got it wrong. Maybe this doesn't work. Or maybe my spec was too vague. The edge-cases file was almost empty. That's probably where the gaps are."</div>
+          <div class="stage-tells">
+            <span class="stage-tell">Specs exist but lack edge cases</span>
+            <span class="stage-tell">You're learning to write better acceptance criteria</span>
+            <span class="stage-tell">You start writing ADRs reactively after decisions</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage" data-s="4">
+        <div class="stage-left">
+          <div class="stage-num">04</div>
+          <div class="stage-timeframe">Month 2–3</div>
+        </div>
+        <div>
+          <div class="stage-name">The Believer</div>
+          <div class="stage-desc">The breakthrough moment. You implement a feature from spec to tested implementation, and you look at the output and think — "this is exactly what I designed." No surprises. No off-target generation. No security review findings. And most significantly: it took less total time than comparable vibe-coded features, even including the spec time. The investment has started paying back.</div>
+          <div class="stage-feeling">"That was clean. The spec was tight, the architect plan was reviewed, the tests existed before the code, and the implementation basically fell out of the plan. I can see this now. I actually believe it works."</div>
+          <div class="stage-tells">
+            <span class="stage-tell">Full workflow on all features</span>
+            <span class="stage-tell">Regressions are rare and caught by tests</span>
+            <span class="stage-tell">New sessions start with task, not context re-explanation</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage" data-s="5">
+        <div class="stage-left">
+          <div class="stage-num">05</div>
+          <div class="stage-timeframe">Month 3+</div>
+        </div>
+        <div>
+          <div class="stage-name">The Architect</div>
+          <div class="stage-desc">The workflow is internalized. You think in specs before you think in code. When a new feature request comes in — from a stakeholder, from a bug report, from your own roadmap — your first instinct is to write the requirements, not to open the IDE. You've started extending the workflow for your specific patterns. You're building your own prompt templates. Your <code>.ai/</code> folder is a living document of real knowledge. The AI feels like a capable junior engineer following your design — exactly as it should be.</div>
+          <div class="stage-feeling">"I notice when I'm about to vibe code now. I catch myself before I open Copilot without a spec. The old way genuinely feels uncomfortable — it feels like building on sand. The structure isn't overhead anymore. It's how I think."</div>
+          <div class="stage-tells">
+            <span class="stage-tell">Specs written before IDE is opened</span>
+            <span class="stage-tell">Custom prompts for your patterns</span>
+            <span class="stage-tell">Context files are always accurate</span>
+            <span class="stage-tell">You write ADRs proactively</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 7: RELAPSES -->
+<section id="relapses">
+  <div class="container">
+    <div class="section-label"><span class="num">07</span> The Honest Relapses</div>
+    <h2 class="section-title">You will slide back. Here's how to recover.</h2>
+    <div class="section-divider"></div>
+
+    <p class="section-intro">Every practitioner relapses. These are the five moments where the old habits will reassert themselves — and exactly what to do when they do.</p>
+
+    <div class="relapse-grid">
+
+      <div class="relapse-card">
+        <div class="relapse-icon">🪤</div>
+        <div class="relapse-title">The "Quick Fix" Trap</div>
+        <div class="relapse-scenario">
+          <div class="relapse-label">The moment</div>
+          "It's just one small bug. I don't need a spec for this. Let me just fix the null check and move on." The fix expands. There are three related issues. An hour later you've touched six files without a plan and introduced a regression.
+        </div>
+        <div class="relapse-fix">
+          <div class="relapse-label">Recovery</div>
+          If the fix touches more than one function, write a micro-spec. Three sentences. What's broken, what the fix is, what must not change. It takes two minutes and saves an hour.
+        </div>
+      </div>
+
+      <div class="relapse-card">
+        <div class="relapse-icon">⏰</div>
+        <div class="relapse-title">The Deadline Override</div>
+        <div class="relapse-scenario">
+          <div class="relapse-label">The moment</div>
+          Pressure is high. The feature is needed now. "There's no time for process — I'll do it properly next sprint." You vibe-code the feature under pressure and ship it. The weekend debugging session costs three times what the spec would have taken.
+        </div>
+        <div class="relapse-fix">
+          <div class="relapse-label">Recovery</div>
+          The spec is not the overhead — the rework is the overhead. A ten-minute spec prevents a three-hour debug. When deadlines compress, compress the spec, not the absence of one.
+        </div>
+      </div>
+
+      <div class="relapse-card">
+        <div class="relapse-icon">🕸️</div>
+        <div class="relapse-title">The Stale Context File</div>
+        <div class="relapse-scenario">
+          <div class="relapse-label">The moment</div>
+          You added a new library three weeks ago. Changed the auth pattern. Renamed the module structure. But <code>project-context.md</code> still describes the old architecture. Copilot is now generating code that follows patterns you've already deprecated.
+        </div>
+        <div class="relapse-fix">
+          <div class="relapse-label">Recovery</div>
+          After every significant change, spend five minutes reviewing <code>.ai/project-context.md</code> for accuracy. Add it to your definition of "done" for any architecture-touching task. A stale context file is worse than no context file.
+        </div>
+      </div>
+
+      <div class="relapse-card">
+        <div class="relapse-icon">📢</div>
+        <div class="relapse-title">The Giant Prompt Relapse</div>
+        <div class="relapse-scenario">
+          <div class="relapse-label">The moment</div>
+          "I know exactly what I want. Let me just describe the whole thing." The familiar comfort of the old way. The giant prompt. The massive output. The hours spent trying to understand what was generated and why half of it is wrong.
+        </div>
+        <div class="relapse-fix">
+          <div class="relapse-label">Recovery</div>
+          Catch yourself when your prompt is more than five sentences. That's a sign you're trying to get Copilot to plan AND implement at the same time. Stop. Use the architect plan prompt first. Plan then implement.
+        </div>
+      </div>
+
+      <div class="relapse-card">
+        <div class="relapse-icon">🎭</div>
+        <div class="relapse-title">The Solo Dev Overconfidence</div>
+        <div class="relapse-scenario">
+          <div class="relapse-label">The moment</div>
+          "I know this codebase. I built the whole thing. I don't need to document my decisions." Then you onboard nothing — not even your future self — and six months later you can't reconstruct why a critical architectural choice was made the way it was.
+        </div>
+        <div class="relapse-fix">
+          <div class="relapse-label">Recovery</div>
+          The audience for your ADRs and specs is not other engineers. It's you, in six months, with full amnesia about this decision. Write it for that person. They will thank you at 11 PM on a Tuesday.
+        </div>
+      </div>
+
+      <div class="relapse-card">
+        <div class="relapse-icon">🔄</div>
+        <div class="relapse-title">The "New Project Energy" Skip</div>
+        <div class="relapse-scenario">
+          <div class="relapse-label">The moment</div>
+          New project. Clean slate. The energy is high and the context is all in your head right now. "I'll set up the SDD workspace once I have something working." You never do. Three months later it's a second project without structure.
+        </div>
+        <div class="relapse-fix">
+          <div class="relapse-label">Recovery</div>
+          Run the COSTAR setup prompt before writing the first line of code. The one hour you invest in setup returns fifty times over the project lifetime. A new project is the best moment for structure — not the worst.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 8: THE PAYOFF -->
+<section id="payoff">
+  <div class="container">
+    <div class="section-label"><span class="num">08</span> The Payoff</div>
+    <h2 class="section-title">What engineering actually feels like.</h2>
+    <div class="section-divider"></div>
+
+    <div class="prose">
+      <p>Three months in, the workflow is internalized. And the change is not just in the output — it's in the feeling of the work itself. I no longer dread opening a project I haven't touched in a month. I open the <code>.ai/</code> folder, re-read the architecture doc and recent ADRs, and I'm back in context within minutes.</p>
+      <p>When a new feature arrives, my first instinct is to open a spec file and start writing. Not to open Copilot. The spec is the first tool. Copilot is the second. This ordering is everything.</p>
+      <p>I no longer have the midnight debugging sessions that used to define my worst weeks. Not because my code is perfect — but because tests catch regressions before they reach production, security reviews catch vulnerabilities before they become incidents, and scoped implementations mean that when something breaks, I know exactly what changed and why.</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num">~60%</div>
+        <div class="stat-label">Reduction in tokens spent on context re-explanation per session</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">~3×</div>
+        <div class="stat-label">Fewer implementation retries when spec-driven vs vibe coded</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">Zero</div>
+        <div class="stat-label">Security issues shipped to prod in the months after adopting review prompts</div>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>The version of me that thought speed was the goal would look at my workflow now and say: <em>"that's so much overhead."</em> The version of me that has worked this way for months knows that what looks like overhead is actually the work. The real work. The planning, the spec, the review — these are not delays before development. They are development.</p>
+      <p><strong>Vibe coding gives you the feeling of moving fast. Spec-Driven Development gives you the reality of actually arriving.</strong></p>
+    </div>
+
+    <div class="callout teal">
+      <div class="callout-label">The North Star</div>
+      Mastery of SDD doesn't mean you stop using AI or that you slow down. It means you've made the structured workflow so natural that the overhead disappears — and what remains is genuinely fast, high-quality, reviewable, secure engineering. The craft and the speed become the same thing.
+    </div>
+
+    <div class="monologue-pair" style="margin-top:40px;" aria-label="Before and after internal voice comparison">
+      <div class="mono-side old">
+        <div class="mono-tag"><span class="dot"></span>Before SDD — The Vibe Coder</div>
+        <div class="mono-text">"I have a new feature. Let me open Copilot and describe what I want and see what comes out. It'll probably work. If it doesn't I'll fix it. How long could it take?"</div>
+      </div>
+      <div class="mono-side new">
+        <div class="mono-tag"><span class="dot"></span>After SDD — The Architect</div>
+        <div class="mono-text">"I have a new feature. Before I open anything, I need to know: what exactly does it do, what are the edge cases, what does done look like, and what must not change? Give me twenty minutes to write that down. Then we build."</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CHEAT SHEET -->
+<section id="cheatsheet">
+  <div class="container">
+    <div class="section-label" style="margin-bottom:8px;"><span class="num" style="color:var(--amber);">⚡</span> Quick Reference</div>
+    <h2 class="section-title">Your SDD cheat sheet.</h2>
+    <div class="section-divider" style="background:var(--amber);"></div>
+
+    <div class="cheat-grid">
+
+      <div class="cheat-block">
+        <div class="cheat-title">New Feature</div>
+        <ul class="cheat-list">
+          <li><span>Copy <strong>specs/_template/</strong> → <strong>specs/feature-name/</strong></span></li>
+          <li><span>Prompt: <strong>02-spec-writer.md</strong> to generate spec files</span></li>
+          <li><span>Prompt: <strong>01-architect-plan.md</strong> — plan only, no code yet</span></li>
+          <li><span>Prompt: <strong>03-test-writer.md</strong> — tests before code</span></li>
+          <li><span>Prompt: <strong>04-implementer.md</strong> — one scoped task at a time</span></li>
+          <li><span>Prompt: <strong>06-code-reviewer.md</strong> → fix findings</span></li>
+          <li><span>Prompt: <strong>05-security-reviewer.md</strong> → fix Critical/High</span></li>
+          <li><span>Prompt: <strong>08-doc-generator.md</strong> → document it</span></li>
+        </ul>
+      </div>
+
+      <div class="cheat-block">
+        <div class="cheat-title">Bug Fix</div>
+        <ul class="cheat-list">
+          <li><span>Open <strong>bug-fix-skill.md</strong> — read pre-conditions</span></li>
+          <li><span>Describe symptom to Copilot — ask for diagnosis only</span></li>
+          <li><span>Review diagnosis, correct if wrong</span></li>
+          <li><span>If fix is in 1 function: use <strong>04-implementer.md</strong></span></li>
+          <li><span>If fix touches architecture: write micro-spec first</span></li>
+          <li><span>Always run <strong>05-security-reviewer.md</strong> after auth/input fixes</span></li>
+        </ul>
+      </div>
+
+      <div class="cheat-block">
+        <div class="cheat-title">Session Startup</div>
+        <ul class="cheat-list">
+          <li><span><code>.github/copilot-instructions.md</code> auto-loads — no context pasting</span></li>
+          <li><span>State: Task type (Feature / Bug / Enhancement)</span></li>
+          <li><span>State: Spec path <code>specs/feature-name/</code></span></li>
+          <li><span>State: Scope (exact files in play)</span></li>
+          <li><span>Nothing else needed. Proceed to work.</span></li>
+        </ul>
+      </div>
+
+      <div class="cheat-block">
+        <div class="cheat-title">Architecture Decision</div>
+        <ul class="cheat-list">
+          <li><span>Prompt: <strong>07-adr-writer.md</strong> with decision title</span></li>
+          <li><span>Review Context and Consequences sections carefully</span></li>
+          <li><span>Save to <strong>docs/adr/ADR-XXX-title.md</strong></span></li>
+          <li><span>Update <strong>docs/adr/ADR-000-index.md</strong></span></li>
+          <li><span>Update <code>.ai/architecture.md</code> if boundaries changed</span></li>
+        </ul>
+      </div>
+
+      <div class="cheat-block">
+        <div class="cheat-title">Non-Negotiables (Never Skip)</div>
+        <ul class="cheat-list">
+          <li><span>No implementation without a spec</span></li>
+          <li><span>No commit without code review prompt</span></li>
+          <li><span>No commit without security review on auth/input/data changes</span></li>
+          <li><span>No hardcoded credentials or config values</span></li>
+          <li><span>No secrets or PII in logs</span></li>
+          <li><span>No production code without structured logging</span></li>
+        </ul>
+      </div>
+
+      <div class="cheat-block">
+        <div class="cheat-title">Keep Your Context Alive</div>
+        <ul class="cheat-list">
+          <li><span>New library added → update <code>project-context.md</code></span></li>
+          <li><span>Architecture changed → write ADR + update <code>architecture.md</code></span></li>
+          <li><span>New naming convention → update <code>coding-standards.md</code></span></li>
+          <li><span>New security rule → update <code>security-rules.md</code></span></li>
+          <li><span>Monthly: review all <code>.ai/</code> files for staleness</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    From Chaos to Craft — A Vibe Coder's Journey to Spec-Driven Development &nbsp;·&nbsp; Built for GitHub Copilot + VS Code
+  </div>
+</footer>
+
+<script>
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const total = document.body.scrollHeight - window.innerHeight;
+    const progress = (window.scrollY / total) * 100;
+    document.getElementById('progress-bar').style.width = progress + '%';
+  });
+
+  // Section reveal with IntersectionObserver
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('section').forEach(s => observer.observe(s));
+
+  // Side nav active state
+  const sections = document.querySelectorAll('section[id]');
+  const navDots = document.querySelectorAll('.nav-dot[data-target]');
+  const heroDot = document.querySelector('.nav-dot:not([data-target])');
+
+  const navObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navDots.forEach(d => d.classList.remove('active'));
+        heroDot.classList.remove('active');
+        const active = document.querySelector(`.nav-dot[data-target="${id}"]`);
+        if (active) active.classList.add('active');
+        else if (id === 'hero') heroDot.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3, rootMargin: '-10% 0px -60% 0px' });
+
+  sections.forEach(s => navObserver.observe(s));
+
+  navDots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const target = document.getElementById(dot.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Habit card accordion
+  function toggleHabit(header) {
+    const card = header.closest('.habit-card');
+    const wasOpen = card.classList.contains('open');
+    document.querySelectorAll('.habit-card.open').forEach(c => c.classList.remove('open'));
+    if (!wasOpen) card.classList.add('open');
+  }
+
+  // Staggered animation for hero
+  document.querySelector('#hero').classList.add('visible');
+
+  // Scroll-triggered count animation for stats
+  const statNums = document.querySelectorAll('.stat-num');
+  const statObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '0';
+        setTimeout(() => {
+          entry.target.style.transition = 'opacity 0.6s ease';
+          entry.target.style.opacity = '1';
+        }, 200);
+        statObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  statNums.forEach(n => statObserver.observe(n));
+</script>
+</body>
+</html>
