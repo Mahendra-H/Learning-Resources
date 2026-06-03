@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICP — Architecture Diagram</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --black:#000;--s1:#0d0d0d;--s2:#111;--s3:#171717;--s4:#1e1e1e;--s5:#252525;
+  --border:#2a2a2a;--b2:#333;--b3:#444;
+  --t1:#fff;--t2:#d4d4d4;--t3:#999;--t4:#666;
+  --teal:#20D97F;--teal2:#14a85e;--tealg:rgba(32,217,127,.15);
+  --purple:#B060FF;--purpleg:rgba(176,96,255,.15);
+  --pink:#FF318C;--pinkg:rgba(255,49,140,.12);
+  --amber:#FFB020;--amberg:rgba(255,176,32,.12);
+  --blue:#40A0FF;--blueg:rgba(64,160,255,.12);
+  --red:#FF4444;--redg:rgba(255,68,68,.12);
+  --orange:#FF6430;--orangeg:rgba(255,100,48,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--t1);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--teal)}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(0,0,0,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 2rem;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+nav::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--teal),var(--purple),var(--pink))}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--teal),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.nav-title{font-size:14px;font-weight:700;letter-spacing:.02em}
+.nav-title span{background:linear-gradient(90deg,var(--teal),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{font-size:12px;font-weight:500;padding:0 14px;height:52px;color:#999;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:.15s;font-family:'Inter',sans-serif}
+.nav-tab:hover{color:#ccc}
+.nav-tab.on{color:var(--teal);border-bottom-color:var(--teal)}
+.nav-badge{font-size:10px;background:var(--tealg);color:var(--teal);border:1px solid rgba(32,217,127,.3);border-radius:20px;padding:2px 8px;font-family:'JetBrains Mono',monospace}
+
+/* HERO */
+.hero{
+  text-align:center;
+  padding:5rem 2rem 3rem;
+  position:relative;
+  overflow:hidden;
+}
+.hero-glow-l{position:absolute;top:-100px;left:-150px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(32,217,127,.07),transparent 70%);pointer-events:none}
+.hero-glow-r{position:absolute;top:-80px;right:-120px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(176,96,255,.07),transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--tealg);border:1px solid rgba(32,217,127,.25);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:600;color:var(--teal);font-family:'JetBrains Mono',monospace;margin-bottom:1.5rem}
+.hero h1{font-size:52px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:.8rem}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--teal),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:17px;color:#c8c8c8;max-width:620px;margin:0 auto 2rem;line-height:1.7}
+.hero-meta{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap}
+.hmeta{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;font-family:'JetBrains Mono',monospace}
+.hmeta-dot{width:6px;height:6px;border-radius:50%}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;justify-content:center;gap:0;margin:1rem auto 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;display:inline-flex}
+.vt-btn{font-size:12px;font-weight:500;padding:8px 20px;cursor:pointer;border:none;background:transparent;color:#aaa;font-family:'Inter',sans-serif;transition:.15s}
+.vt-btn.on{background:var(--s3);color:var(--t1)}
+
+/* DIAGRAM WRAPPER */
+.diagram-wrap{padding:2rem 2rem 4rem;max-width:1400px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+
+/* ─── OVERVIEW DIAGRAM ─── */
+.ov-wrap{position:relative;min-height:700px}
+
+/* OUTER ENTERPRISE BORDER */
+.enterprise-border{
+  border:1.5px dashed var(--b3);
+  border-radius:16px;
+  padding:2rem;
+  position:relative;
+  margin:0 auto;
+}
+.enterprise-label{
+  position:absolute;top:-13px;left:24px;
+  background:var(--black);
+  padding:0 10px;
+  font-size:11px;font-weight:600;color:#777;letter-spacing:.08em;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* LAYER ROW */
+.layer-row{
+  display:grid;
+  gap:12px;
+  margin-bottom:0;
+  position:relative;
+}
+.layer-divider{
+  display:flex;align-items:center;justify-content:center;
+  margin:10px 0;position:relative;
+}
+.ld-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+.ld-arrows{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:0 16px;
+}
+.ld-arrow-down,.ld-arrow-up{
+  font-size:14px;
+  animation:pulse-arrow 2s infinite;
+}
+.ld-arrow-down{font-size:13px;color:var(--teal);animation-delay:0s}
+.ld-arrow-up{font-size:13px;color:var(--purple);animation-delay:.5s}
+@keyframes pulse-arrow{0%,100%{opacity:.4;transform:translateY(0)}50%{opacity:1;transform:translateY(2px)}}
+
+/* LAYER HEADER */
+.layer-hdr{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+}
+.lhdr-badge{
+  font-size:10px;font-weight:700;padding:3px 10px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.06em;
+}
+.lhdr-name{font-size:13px;font-weight:600;color:#fff}
+.lhdr-desc{font-size:11px;color:#999;margin-left:auto;font-family:'JetBrains Mono',monospace}
+
+/* BOXES */
+.box-grid{display:grid;gap:10px}
+.box{
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:.9rem 1rem;
+  position:relative;
+  cursor:pointer;
+  transition:border-color .2s,background .2s,transform .2s,box-shadow .2s;
+  overflow:hidden;
+}
+.box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s}
+.box:hover{transform:translateY(-2px);background:var(--s3)}
+.box:hover::before{opacity:1}
+.box.active-box{border-color:var(--teal)!important;box-shadow:0 0 20px rgba(32,217,127,.12)}
+.box-icon{font-size:18px;margin-bottom:6px}
+.box-name{font-size:12.5px;font-weight:600;color:var(--t1);margin-bottom:3px}
+.box-desc{font-size:11px;color:#aaa;line-height:1.5}
+.box-tag{
+  display:inline-block;margin-top:6px;
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;
+}
+.box-pulse{
+  position:absolute;top:8px;right:8px;
+  width:6px;height:6px;border-radius:50%;
+}
+.box-pulse::after{
+  content:'';position:absolute;top:-3px;left:-3px;
+  width:12px;height:12px;border-radius:50%;
+  animation:ripple 2s infinite;
+}
+@keyframes ripple{0%{transform:scale(.8);opacity:1}100%{transform:scale(2.2);opacity:0}}
+
+/* LAYER COLORS */
+/* L1 agents - purple */
+.l1 .box{border-color:rgba(176,96,255,.2)}
+.l1 .box:hover{border-color:rgba(176,96,255,.5);box-shadow:0 4px 20px var(--purpleg)}
+.l1 .box::before{background:linear-gradient(90deg,var(--purple),transparent)}
+.l1 .lhdr-badge{background:var(--purpleg);color:var(--purple);border:1px solid rgba(176,96,255,.25)}
+.l1 .box-tag{background:var(--purpleg);color:var(--purple)}
+.l1 .box-pulse{background:var(--purple)}
+.l1 .box-pulse::after{border:1.5px solid var(--purple)}
+
+/* L2 ICP - teal STAR */
+.l2-wrap{
+  background:linear-gradient(135deg,rgba(32,217,127,.04),rgba(176,96,255,.04));
+  border:1.5px solid rgba(32,217,127,.3)!important;
+  border-radius:14px!important;
+  padding:1.2rem!important;
+  position:relative;
+}
+.l2-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--purple));border-radius:14px 14px 0 0}
+.l2-star-badge{
+  position:absolute;top:-13px;right:20px;
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+  color:#000;font-size:10px;font-weight:700;padding:2px 12px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;
+}
+.l2 .box{border-color:rgba(32,217,127,.2)}
+.l2 .box:hover{border-color:rgba(32,217,127,.5);box-shadow:0 4px 24px var(--tealg)}
+.l2 .box::before{background:linear-gradient(90deg,var(--teal),transparent)}
+.l2 .lhdr-badge{background:var(--tealg);color:var(--teal);border:1px solid rgba(32,217,127,.3)}
+.l2 .box-tag{background:var(--tealg);color:var(--teal)}
+.l2 .box-pulse{background:var(--teal)}
+.l2 .box-pulse::after{border:1.5px solid var(--teal)}
+
+/* L3 connectors - blue */
+.l3 .box{border-color:rgba(64,160,255,.2)}
+.l3 .box:hover{border-color:rgba(64,160,255,.5);box-shadow:0 4px 20px var(--blueg)}
+.l3 .box::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.l3 .lhdr-badge{background:var(--blueg);color:var(--blue);border:1px solid rgba(64,160,255,.25)}
+.l3 .box-tag{background:var(--blueg);color:var(--blue)}
+.l3 .box-pulse{background:var(--blue)}
+.l3 .box-pulse::after{border:1.5px solid var(--blue)}
+
+/* L4 IdPs - amber */
+.l4 .box{border-color:rgba(255,176,32,.2)}
+.l4 .box:hover{border-color:rgba(255,176,32,.5);box-shadow:0 4px 20px var(--amberg)}
+.l4 .box::before{background:linear-gradient(90deg,var(--amber),transparent)}
+.l4 .lhdr-badge{background:var(--amberg);color:var(--amber);border:1px solid rgba(255,176,32,.25)}
+.l4 .box-tag{background:var(--amberg);color:var(--amber)}
+.l4 .box-pulse{background:var(--amber)}
+.l4 .box-pulse::after{border:1.5px solid var(--amber)}
+
+/* DETAIL PANEL */
+.detail-panel{
+  position:fixed;right:-380px;top:52px;bottom:0;
+  width:370px;
+  background:var(--s1);
+  border-left:1px solid var(--border);
+  overflow-y:auto;
+  transition:right .3s ease;
+  z-index:150;
+  padding:1.5rem;
+}
+.detail-panel.open{right:0}
+.dp-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:6px;background:var(--s3);border:1px solid var(--border);color:#aaa;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.dp-close:hover{color:var(--t1);border-color:var(--b2)}
+.dp-icon{font-size:32px;margin-bottom:.6rem}
+.dp-name{font-size:18px;font-weight:700;margin-bottom:.3rem}
+.dp-subtitle{font-size:12px;color:#888;font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
+.dp-divider{height:1px;background:var(--border);margin:1rem 0}
+.dp-label{font-size:10px;font-weight:700;color:#777;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:.5rem}
+.dp-body{font-size:13px;color:#ccc;line-height:1.7;margin-bottom:1rem}
+.dp-props{display:flex;flex-direction:column;gap:6px;margin-bottom:1rem}
+.dp-prop{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--s3);border-radius:6px;border:1px solid var(--border)}
+.dp-prop-k{font-size:11px;color:#888;font-family:'JetBrains Mono',monospace}
+.dp-prop-v{font-size:11px;color:#fff;font-family:'JetBrains Mono',monospace;font-weight:600}
+.dp-code{background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:.8rem 1rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:#99c794;line-height:1.6;position:relative;margin-bottom:1rem}
+.dp-code::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--purple));border-radius:8px 8px 0 0}
+.dp-pill{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;margin:2px}
+
+/* FLOW DIAGRAM */
+.flow-wrap{padding:1rem 0}
+.flow-row{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:2rem}
+.flow-step{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:.9rem 1.1rem;min-width:160px;max-width:200px;text-align:center;
+  position:relative;transition:.2s;cursor:pointer;
+}
+.flow-step:hover{border-color:var(--teal);background:var(--s3);transform:translateY(-2px)}
+.flow-step-num{
+  position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+  width:20px;height:20px;border-radius:50%;
+  font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+}
+.flow-step-icon{font-size:20px;margin-bottom:4px}
+.flow-step-name{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.flow-step-desc{font-size:11.5px;color:#bbb;line-height:1.4}
+.flow-arrow{
+  font-size:18px;color:#777;padding:0 6px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.flow-arrow-label{font-size:9px;color:#888;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.flow-arrow.anim{animation:flow-blink 1.5s infinite}
+@keyframes flow-blink{0%,100%{color:#777}50%{color:var(--teal)}}
+
+/* POSTURE SWIMLANE */
+.swimlane-wrap{
+  border:1px solid var(--border);border-radius:12px;overflow:hidden;
+}
+.swimlane-row{
+  display:grid;grid-template-columns:100px 1fr 1fr 1fr;
+  border-bottom:1px solid var(--border);
+  min-height:80px;
+}
+.swimlane-row:last-child{border-bottom:none}
+.sl-lane-hdr{
+  padding:.6rem .8rem;
+  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:#777;font-family:'JetBrains Mono',monospace;
+  background:var(--s2);border-right:1px solid var(--border);
+  display:flex;align-items:center;
+}
+.sl-head-row{background:var(--s3)}
+.sl-col-hdr{
+  padding:.5rem .8rem;
+  font-size:11px;font-weight:700;color:#ccc;
+  border-right:1px solid var(--border);
+  display:flex;align-items:center;
+  background:var(--s3);
+}
+.sl-col-hdr:last-child{border-right:none}
+.sl-cell{
+  padding:.6rem .8rem;
+  border-right:1px solid var(--border);
+  font-size:11.5px;color:#ccc;
+  line-height:1.5;
+}
+.sl-cell:last-child{border-right:none}
+.sl-cell-inner{display:flex;flex-direction:column;justify-content:center;height:100%;gap:4px}
+.sl-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;white-space:nowrap;width:fit-content}
+.sl-text{font-size:11px;color:#999;line-height:1.4}
+
+/* RISK GAUGE */
+.gauge-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:1.5rem}
+.gauge-card{
+  flex:1;min-width:200px;
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:1.1rem;transition:.2s;
+}
+.gauge-card:hover{border-color:var(--b2)}
+.gc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem}
+.gc-name{font-size:12.5px;font-weight:600;color:#eee}
+.gc-weight{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.gc-src{font-size:10px;color:#777;font-family:'JetBrains Mono',monospace;margin-bottom:.5rem}
+.gc-bar-wrap{height:6px;background:var(--s4);border-radius:3px;overflow:hidden;margin-bottom:.4rem}
+.gc-bar{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.gc-desc{font-size:11px;color:#aaa;line-height:1.4}
+
+/* CONNECTOR GRID */
+.connector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:1.5rem}
+.connector-card{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:1rem;cursor:pointer;transition:.2s;
+  position:relative;overflow:hidden;
+}
+.connector-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s}
+.connector-card:hover{background:var(--s3);transform:translateY(-2px)}
+.connector-card:hover::before{opacity:1}
+.cc-top{display:flex;align-items:center;gap:10px;margin-bottom:.5rem}
+.cc-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.cc-name{font-size:13px;font-weight:600;color:var(--t1)}
+.cc-type{font-size:10px;color:#888;font-family:'JetBrains Mono',monospace}
+.cc-desc{font-size:11.5px;color:#c8c8c8;line-height:1.5;margin-bottom:.5rem}
+.cc-status{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#999;font-family:'JetBrains Mono',monospace}
+.cc-dot{width:6px;height:6px;border-radius:50%}
+/* connector phases */
+.cc-p1::before{background:linear-gradient(90deg,var(--teal),transparent)}
+.cc-p2::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.cc-p3::before{background:linear-gradient(90deg,var(--purple),transparent)}
+
+/* LEGEND */
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:1rem 1.5rem;background:var(--s2);border:1px solid var(--border);border-radius:10px;margin-bottom:1.5rem}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#ccc}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+.legend-line{width:24px;height:2px;border-radius:1px}
+
+/* SECTION HEADER */
+.sec-hdr{display:flex;align-items:center;gap:12px;margin:2rem 0 1rem}
+.sec-hdr h2{font-size:16px;font-weight:700;color:#fff}
+.sec-hdr::after{content:'';flex:1;height:1px;background:var(--b2)}
+.sec-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace}
+
+/* ANIMATED CONNECTION LINES */
+.conn-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:5}
+.conn-path{fill:none;stroke-width:1.5;stroke-dasharray:6 4;opacity:.35;animation:dash 3s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-20}}
+
+/* TOOLTIP */
+.tooltip{
+  position:fixed;background:var(--s3);border:1px solid var(--border);
+  border-radius:8px;padding:.5rem .8rem;font-size:11.5px;color:#ccc;
+  pointer-events:none;z-index:300;opacity:0;transition:opacity .15s;
+  max-width:220px;font-family:'JetBrains Mono',monospace;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+.tooltip.show{opacity:1}
+
+/* LATENCY DIAGRAM */
+.latency-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.lb-label{font-size:11.5px;color:#ccc;min-width:160px;font-family:'JetBrains Mono',monospace}
+.lb-wrap{flex:1;height:22px;background:var(--s3);border-radius:4px;overflow:hidden;position:relative;border:1px solid var(--border)}
+.lb-fill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.lb-val{font-size:10px;font-weight:700;color:#000;font-family:'JetBrains Mono',monospace;mix-blend-mode:normal}
+.lb-marker{position:absolute;top:0;bottom:0;width:2px;background:var(--red);opacity:.6}
+
+/* FOOTER */
+footer{
+  text-align:center;padding:2.5rem;color:#777;
+  font-size:11px;border-top:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.04em;margin-top:2rem;
+}
+footer span{color:var(--teal)}
+
+@media(max-width:900px){
+  .hero h1{font-size:34px}
+  .nav-tabs{display:none}
+  .swimlane-row{grid-template-columns:80px 1fr 1fr}
+  .sl-cell:nth-child(4),.sl-col-hdr:nth-child(4){display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">ICP</div>
+    <div class="nav-title"><span>Identity Context Protocol</span></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab on" data-v="overview">Overview</button>
+    <button class="nav-tab" data-v="flow">Request Flow</button>
+    <button class="nav-tab" data-v="posture">Posture Engine</button>
+    <button class="nav-tab" data-v="connectors">Connectors</button>
+    <button class="nav-tab" data-v="risk">Risk Model</button>
+    <button class="nav-tab" data-v="latency">Latency</button>
+  </div>
+  <div class="nav-badge">v1.0 · MVP-1</div>
+</nav>
+
+<div class="hero">
+  <div class="hero-glow-l"></div>
+  <div class="hero-glow-r"></div>
+  <div class="hero-badge">⚡ Interactive Architecture Diagram</div>
+  <h1>Identity Context Protocol<br><em>System Architecture</em></h1>
+  <p>The cross-IdP identity nervous system for enterprise AI agents — plug-and-play, config-driven, MCP-native.</p>
+  <div class="hero-meta">
+    <div class="hmeta"><div class="hmeta-dot" style="background:var(--teal)"></div><span style="color:#bbb">4 architecture layers</span></div>
+    <div class="hmeta"><div class="hmeta-dot" style="background:var(--purple)"></div><span style="color:#bbb">9-step request flow</span></div>
+    <div class="hmeta"><div class="hmeta-dot" style="background:var(--amber)"></div><span style="color:#bbb">Pluggable IdP connectors</span></div>
+    <div class="hmeta"><div class="hmeta-dot" style="background:var(--pink)"></div><span style="color:#bbb">&lt;150ms p95 target</span></div>
+  </div>
+</div>
+
+<div class="diagram-wrap">
+
+<!-- ══════════════════ OVERVIEW VIEW ══════════════════ -->
+<div class="view on" id="view-overview">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>AI Agent Tier (L1)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>ICP Core — what you build (L2)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>IdP Connectors (L3)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Identity Infrastructure (L4)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--t4)"></div>Click any component for details</div>
+  </div>
+
+  <div class="enterprise-border">
+    <span class="enterprise-label">Enterprise boundary</span>
+
+    <!-- L1: AGENTS -->
+    <div class="l1">
+      <div class="layer-hdr">
+        <span class="lhdr-badge">L1</span>
+        <span class="lhdr-name">AI Agent Tier</span>
+        <span class="lhdr-desc">CrewAI · Python · Ollama</span>
+      </div>
+      <div class="box-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="box" onclick="showDetail('orchestrator')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🎯</div>
+          <div class="box-name">Orchestrator</div>
+          <div class="box-desc">CrewAI main agent. Spawns sub-agents. Triggers ICP before every action.</div>
+          <div class="box-tag">crew-orchestrator</div>
+        </div>
+        <div class="box" onclick="showDetail('data-agent')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">📊</div>
+          <div class="box-name">Data Agent</div>
+          <div class="box-desc">Reads reports, summaries, SharePoint docs. Always queries ICP first.</div>
+          <div class="box-tag">crew-data-agent</div>
+        </div>
+        <div class="box" onclick="showDetail('ops-agent')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">⚙️</div>
+          <div class="box-name">Ops Agent</div>
+          <div class="box-desc">Infra and deployment actions. Highest posture scrutiny applied.</div>
+          <div class="box-tag">crew-ops-agent</div>
+        </div>
+        <div class="box" onclick="showDetail('hr-agent')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">👥</div>
+          <div class="box-name">HR Agent</div>
+          <div class="box-desc">Accesses employee records. Finance-Admin-Temp signals monitored.</div>
+          <div class="box-tag">crew-hr-agent</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIVIDER L1→L2 -->
+    <div class="layer-divider">
+      <div class="ld-line"></div>
+      <div class="ld-arrows">
+        <div class="ld-arrow-down" style="font-size:12px;color:var(--teal);font-weight:500">↓ get_identity_context()</div>
+        <div class="ld-arrow-up" style="font-size:12px;color:var(--purple);font-weight:500">↑ ICPContextPayload</div>
+      </div>
+      <div class="ld-line"></div>
+    </div>
+
+    <!-- L2: ICP CORE -->
+    <div class="l2-wrap l2" style="border:1.5px solid rgba(32,217,127,.3);border-radius:14px;padding:1.2rem;position:relative;margin-bottom:0">
+      <span class="l2-star-badge">⭐ THE ONLY NEW COMPONENT YOU BUILD</span>
+      <div class="layer-hdr">
+        <span class="lhdr-badge">L2</span>
+        <span class="lhdr-name">ICP MCP Server</span>
+        <span class="lhdr-desc">Node.js · TypeScript · MCP 1.0 · stdio</span>
+      </div>
+      <div class="box-grid" style="grid-template-columns:repeat(5,1fr)">
+        <div class="box" onclick="showDetail('mcp-tool')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🔌</div>
+          <div class="box-name">MCP Tool</div>
+          <div class="box-desc">Exposes get_identity_context. JSON-RPC 2.0 over stdio. 3s timeout.</div>
+          <div class="box-tag">mcp-server.ts</div>
+        </div>
+        <div class="box" onclick="showDetail('aggregator')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🔀</div>
+          <div class="box-name">Aggregator</div>
+          <div class="box-desc">Parallel fan-out. Conflict resolution. Most-restrictive-permanent logic.</div>
+          <div class="box-tag">aggregator.ts</div>
+        </div>
+        <div class="box" onclick="showDetail('risk-scorer')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">📈</div>
+          <div class="box-name">Risk Scorer</div>
+          <div class="box-desc">7 weighted signals → 0–100 score → posture. Config-driven weights.</div>
+          <div class="box-tag">scorer.ts</div>
+        </div>
+        <div class="box" onclick="showDetail('chain-tracker')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🔗</div>
+          <div class="box-name">Chain Tracker</div>
+          <div class="box-desc">Delegation log. Depth ≥ 3 raises score. Append-only store.</div>
+          <div class="box-tag">chain-tracker.ts</div>
+        </div>
+        <div class="box" onclick="showDetail('audit')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">📋</div>
+          <div class="box-name">Audit Emitter</div>
+          <div class="box-desc">Structured JSON events. Every action. Configurable sink.</div>
+          <div class="box-tag">audit-emitter.ts</div>
+        </div>
+      </div>
+      <!-- Sub-row: cache + config -->
+      <div class="box-grid" style="grid-template-columns:1fr 1fr;margin-top:10px">
+        <div class="box" onclick="showDetail('cache')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">⚡</div>
+          <div class="box-name">Cache Manager</div>
+          <div class="box-desc">Redis adapter. Risk-proportional TTL. Ping webhooks for invalidation. Deny posture = never cached.</div>
+          <div class="box-tag">cache/index.ts</div>
+        </div>
+        <div class="box" onclick="showDetail('config')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">⚙️</div>
+          <div class="box-name">Config Engine</div>
+          <div class="box-desc">icp.config.json — Zod-validated on startup. Hot-reload risk weights without restart. Dev posture overrides.</div>
+          <div class="box-tag">icp.config.json</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIVIDER L2→L3 -->
+    <div class="layer-divider">
+      <div class="ld-line"></div>
+      <div class="ld-arrows">
+        <div class="ld-arrow-down" style="font-size:12px;color:var(--teal);font-weight:500">↓ IdpConnector.getIdentity() / getRiskSignals()</div>
+        <div class="ld-arrow-up" style="font-size:12px;color:var(--purple);font-weight:500">↑ Identity · RiskSignals · Entitlements · SessionHealth</div>
+      </div>
+      <div class="ld-line"></div>
+    </div>
+
+    <!-- L3: CONNECTORS -->
+    <div class="l3">
+      <div class="layer-hdr">
+        <span class="lhdr-badge">L3</span>
+        <span class="lhdr-name">IdP Connectors</span>
+        <span class="lhdr-desc">Pluggable · Read-only · One interface for any IdP</span>
+      </div>
+      <div class="box-grid" style="grid-template-columns:repeat(5,1fr)">
+        <div class="box" onclick="showDetail('conn-keycloak')" style="border-color:rgba(32,217,127,.3)">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🔑</div>
+          <div class="box-name">Keycloak</div>
+          <div class="box-desc">Phase 1. Local Entra replacement. Admin REST API. Free, Docker.</div>
+          <div class="box-tag" style="background:rgba(32,217,127,.1);color:var(--teal);border:1px solid rgba(32,217,127,.2)">Phase 1 · local</div>
+        </div>
+        <div class="box" onclick="showDetail('conn-authentik')" style="border-color:rgba(32,217,127,.3)">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🛡️</div>
+          <div class="box-name">Authentik</div>
+          <div class="box-desc">Phase 1. Local Ping replacement. MFA flows. Policy engine.</div>
+          <div class="box-tag" style="background:rgba(32,217,127,.1);color:var(--teal);border:1px solid rgba(32,217,127,.2)">Phase 1 · local</div>
+        </div>
+        <div class="box" onclick="showDetail('conn-entra')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🏢</div>
+          <div class="box-name">Entra ID</div>
+          <div class="box-desc">Phase 2. MS Graph API. Groups, CA signals, Intune device compliance.</div>
+          <div class="box-tag">Phase 2 · prod</div>
+        </div>
+        <div class="box" onclick="showDetail('conn-ping')">
+          <div class="box-pulse"></div>
+          <div class="box-icon">🔐</div>
+          <div class="box-name">Ping Identity</div>
+          <div class="box-desc">Phase 2. PingOne API. Risk scores, MFA state, webhooks.</div>
+          <div class="box-tag">Phase 2 · prod</div>
+        </div>
+        <div class="box" onclick="showDetail('conn-mock')" style="border-style:dashed">
+          <div class="box-icon">🎭</div>
+          <div class="box-name">Mock Connector</div>
+          <div class="box-desc">Built-in. Zero dependencies. Configurable scenarios for tests and demos.</div>
+          <div class="box-tag">testing · demo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIVIDER L3→L4 -->
+    <div class="layer-divider">
+      <div class="ld-line"></div>
+      <div class="ld-arrows">
+        <div class="ld-arrow-down" style="font-size:12px;color:var(--teal);font-weight:500">↓ read-only queries (Admin REST / Graph API / PingOne)</div>
+        <div class="ld-arrow-up" style="font-size:12px;color:var(--purple);font-weight:500">↑ identity data · risk signals · session state</div>
+      </div>
+      <div class="ld-line"></div>
+    </div>
+
+    <!-- L4: INFRASTRUCTURE -->
+    <div class="l4">
+      <div class="layer-hdr">
+        <span class="lhdr-badge">L4</span>
+        <span class="lhdr-name">Identity Infrastructure</span>
+        <span class="lhdr-desc">Your existing stack — ICP never modifies, only reads</span>
+      </div>
+      <div class="box-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="box" onclick="showDetail('infra-keycloak')">
+          <div class="box-icon">🔑</div>
+          <div class="box-name">Keycloak / Entra</div>
+          <div class="box-desc">Primary auth. User directory. Groups. Conditional Access. Phase 1: Keycloak. Phase 2: Entra.</div>
+          <div class="box-tag">enterprise IAM</div>
+        </div>
+        <div class="box" onclick="showDetail('infra-ping')">
+          <div class="box-icon">🛡️</div>
+          <div class="box-name">Authentik / Ping</div>
+          <div class="box-desc">MFA. Risk scores. Session data. JIT privilege grants. Phase 1: Authentik. Phase 2: Ping.</div>
+          <div class="box-tag">MFA · risk</div>
+        </div>
+        <div class="box" onclick="showDetail('infra-redis')">
+          <div class="box-icon">⚡</div>
+          <div class="box-name">Redis</div>
+          <div class="box-desc">Session cache. Risk-proportional TTL. Shared in centralised mode. Local in sidecar mode.</div>
+          <div class="box-tag">cache</div>
+        </div>
+        <div class="box" onclick="showDetail('infra-siem')">
+          <div class="box-icon">📡</div>
+          <div class="box-name">SIEM / Audit Sink</div>
+          <div class="box-desc">stdout → file → http → Splunk / Azure Monitor. Append-only. Immutable in prod.</div>
+          <div class="box-tag">audit · compliance</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ FLOW VIEW ══════════════════ -->
+<div class="view" id="view-flow">
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--tealg);color:var(--teal)">9 steps</div><h2>Request Flow — Agent Call → &lt;150ms → Posture Decision</h2></div>
+
+  <div style="display:flex;flex-direction:column;gap:0;margin-bottom:2rem">
+    <!-- Row 1: steps 1-5 -->
+    <div class="flow-row" style="justify-content:flex-start;gap:0">
+      <div class="flow-step" style="border-color:rgba(176,96,255,.3)" onclick="showDetail('flow-1')">
+        <div class="flow-step-num" style="background:var(--purpleg);color:var(--purple);border:1px solid rgba(176,96,255,.3)">1</div>
+        <div class="flow-step-icon">🤖</div>
+        <div class="flow-step-name">Agent triggers task</div>
+        <div class="flow-step-desc">Calls get_identity_context (upn, agent_id, action, parent_agent_id)</div>
+      </div>
+      <div class="flow-arrow anim"><div>→</div><div class="flow-arrow-label">MCP stdio</div></div>
+      <div class="flow-step" style="border-color:rgba(32,217,127,.3)" onclick="showDetail('flow-2')">
+        <div class="flow-step-num" style="background:var(--tealg);color:var(--teal);border:1px solid rgba(32,217,127,.3)">2</div>
+        <div class="flow-step-icon">⚡</div>
+        <div class="flow-step-name">Redis cache check</div>
+        <div class="flow-step-desc">Hit? Return in &lt;10ms. Miss? Proceed to step 3.</div>
+      </div>
+      <div class="flow-arrow anim"><div>→</div><div class="flow-arrow-label">cache miss</div></div>
+      <div class="flow-step" style="border-color:rgba(64,160,255,.3)" onclick="showDetail('flow-3')">
+        <div class="flow-step-num" style="background:var(--blueg);color:var(--blue);border:1px solid rgba(64,160,255,.3)">3</div>
+        <div class="flow-step-icon">⚡</div>
+        <div class="flow-step-name">Parallel fan-out</div>
+        <div class="flow-step-desc">Promise.all() → all connectors simultaneously. Target: both &lt;100ms.</div>
+      </div>
+      <div class="flow-arrow anim"><div>→</div><div class="flow-arrow-label">merge</div></div>
+      <div class="flow-step" style="border-color:rgba(64,160,255,.3)" onclick="showDetail('flow-4')">
+        <div class="flow-step-num" style="background:var(--blueg);color:var(--blue);border:1px solid rgba(64,160,255,.3)">4</div>
+        <div class="flow-step-icon">🔀</div>
+        <div class="flow-step-name">Aggregate + resolve</div>
+        <div class="flow-step-desc">Merge IdP results. Conflict resolution: most-restrictive-permanent + most-recent-temp.</div>
+      </div>
+      <div class="flow-arrow anim"><div>→</div><div class="flow-arrow-label">score</div></div>
+      <div class="flow-step" style="border-color:rgba(255,176,32,.3)" onclick="showDetail('flow-5')">
+        <div class="flow-step-num" style="background:var(--amberg);color:var(--amber);border:1px solid rgba(255,176,32,.3)">5</div>
+        <div class="flow-step-icon">📈</div>
+        <div class="flow-step-name">Risk scoring</div>
+        <div class="flow-step-desc">7 weighted signals fused → composite 0–100 score. Weights from config.</div>
+      </div>
+    </div>
+
+    <!-- connector row -->
+    <div style="display:flex;justify-content:flex-start;margin-left:350px;margin-top:-4px;margin-bottom:0">
+      <div style="width:2px;height:30px;background:linear-gradient(180deg,var(--amber),var(--amber));margin-left:79px"></div>
+    </div>
+
+    <!-- Row 2: steps 6-9 reversed -->
+    <div class="flow-row" style="justify-content:flex-start;gap:0;flex-direction:row-reverse;padding-right:0">
+      <div class="flow-step" style="border-color:rgba(32,217,127,.4);box-shadow:0 0 20px rgba(32,217,127,.08)" onclick="showDetail('flow-9')">
+        <div class="flow-step-num" style="background:var(--tealg);color:var(--teal);border:1px solid rgba(32,217,127,.3)">9</div>
+        <div class="flow-step-icon">✅</div>
+        <div class="flow-step-name">Payload returned</div>
+        <div class="flow-step-desc">Unified context payload → agent. Cache stored with risk-proportional TTL.</div>
+      </div>
+      <div class="flow-arrow anim" style="flex-direction:row-reverse"><div>←</div><div class="flow-arrow-label">cache &amp; return</div></div>
+      <div class="flow-step" style="border-color:rgba(32,217,127,.3)" onclick="showDetail('flow-8')">
+        <div class="flow-step-num" style="background:var(--tealg);color:var(--teal);border:1px solid rgba(32,217,127,.3)">8</div>
+        <div class="flow-step-icon">📋</div>
+        <div class="flow-step-name">Audit emitted</div>
+        <div class="flow-step-desc">Structured JSON event written: user, agent, posture, outcome, risk_score, chain_depth.</div>
+      </div>
+      <div class="flow-arrow anim" style="flex-direction:row-reverse"><div>←</div><div class="flow-arrow-label">logged</div></div>
+      <div class="flow-step" style="border-color:rgba(32,217,127,.3)" onclick="showDetail('flow-7')">
+        <div class="flow-step-num" style="background:var(--tealg);color:var(--teal);border:1px solid rgba(32,217,127,.3)">7</div>
+        <div class="flow-step-icon">🔗</div>
+        <div class="flow-step-name">Chain logged</div>
+        <div class="flow-step-desc">Delegation entry appended: agent_id, parent_id, timestamp, posture, action.</div>
+      </div>
+      <div class="flow-arrow anim" style="flex-direction:row-reverse"><div>←</div><div class="flow-arrow-label">mapped</div></div>
+      <div class="flow-step" style="border-color:rgba(255,176,32,.3)" onclick="showDetail('flow-6')">
+        <div class="flow-step-num" style="background:var(--amberg);color:var(--amber);border:1px solid rgba(255,176,32,.3)">6</div>
+        <div class="flow-step-icon">🚦</div>
+        <div class="flow-step-name">Posture mapped</div>
+        <div class="flow-step-desc">0–25: allow · 26–55: caution · 56–80: approve · 81–100: deny</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timing bar -->
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--amberg);color:var(--amber)">timing</div><h2>Latency Breakdown (typical)</h2></div>
+  <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:1.5rem">
+    <div class="latency-bar-row">
+      <div class="lb-label">Total p95 target</div>
+      <div class="lb-wrap"><div class="lb-fill" style="width:100%;background:linear-gradient(90deg,var(--teal),var(--purple))"><span class="lb-val">&lt;150ms</span></div><div class="lb-marker" style="left:100%"></div></div>
+    </div>
+    <div class="latency-bar-row">
+      <div class="lb-label">Redis cache hit</div>
+      <div class="lb-wrap"><div class="lb-fill" style="width:7%;background:var(--teal)"><span class="lb-val" style="color:var(--t1);margin-right:-40px">&lt;10ms</span></div></div>
+    </div>
+    <div class="latency-bar-row">
+      <div class="lb-label">Keycloak / Entra</div>
+      <div class="lb-wrap"><div class="lb-fill" style="width:53%;background:var(--blue)"><span class="lb-val">~80ms</span></div></div>
+    </div>
+    <div class="latency-bar-row">
+      <div class="lb-label">Authentik / Ping</div>
+      <div class="lb-wrap"><div class="lb-fill" style="width:63%;background:var(--purple)"><span class="lb-val">~95ms</span></div></div>
+    </div>
+    <div class="latency-bar-row">
+      <div class="lb-label">Aggregation + scoring</div>
+      <div class="lb-wrap"><div class="lb-fill" style="width:10%;background:var(--amber)"><span class="lb-val" style="color:var(--t1);margin-right:-40px">~15ms</span></div></div>
+    </div>
+    <div class="latency-bar-row">
+      <div class="lb-label">Chain + audit write</div>
+      <div class="lb-wrap"><div class="lb-fill" style="width:6%;background:var(--t4)"><span class="lb-val" style="color:var(--t1);margin-right:-40px">~8ms</span></div></div>
+    </div>
+    <div style="font-size:11.5px;color:#bbb;margin-top:.5rem;font-family:'JetBrains Mono',monospace">* Steps 3+4 run in parallel — total is max(Keycloak, Ping) + 23ms, not sum</div>
+  </div>
+</div>
+
+<!-- ══════════════════ POSTURE VIEW ══════════════════ -->
+<div class="view" id="view-posture">
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--amberg);color:var(--amber)">engine</div><h2>Posture Engine — Four Decision Branches</h2></div>
+  <div class="swimlane-wrap">
+    <!-- header -->
+    <div class="swimlane-row sl-head-row" style="min-height:44px">
+      <div class="sl-lane-hdr" style="background:var(--s4)">Posture</div>
+      <div class="sl-col-hdr">Agent Behaviour</div>
+      <div class="sl-col-hdr">ICP Outcome</div>
+      <div class="sl-col-hdr">Audit Event</div>
+    </div>
+    <!-- allow -->
+    <div class="swimlane-row">
+      <div class="sl-lane-hdr"><span class="sl-badge" style="background:rgba(32,217,127,.12);color:var(--teal);border:1px solid rgba(32,217,127,.25)">ALLOW<br>0–25</span></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div>Proceeds with scoped entitlements</div><div class="sl-text">No modifications to agent prompt or execution flow</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-badge" style="background:rgba(32,217,127,.1);color:var(--teal)">completed</div><div class="sl-text">Cache TTL: 300s. Re-evaluate on next call.</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-text">outcome: "completed" · risk_score: 0–25 · chain_depth logged</div></div></div>
+    </div>
+    <!-- caution -->
+    <div class="swimlane-row" style="background:rgba(255,176,32,.02)">
+      <div class="sl-lane-hdr"><span class="sl-badge" style="background:rgba(255,176,32,.12);color:var(--amber);border:1px solid rgba(255,176,32,.25)">CAUTION<br>26–55</span></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div>Caution context injected into agent prompt</div><div class="sl-text">Prefers reads over writes. Declares "PENDING WRITE: X" before executing. Stays within scoped entitlements.</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-badge" style="background:rgba(255,176,32,.1);color:var(--amber)">completed-with-caution</div><div class="sl-text">Cache TTL: 120s. Posture reasons logged.</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-text">outcome: "completed-with-caution" · posture_reasons: ["location_anomaly", ...] · injected_context: true</div></div></div>
+    </div>
+    <!-- approve -->
+    <div class="swimlane-row" style="background:rgba(255,100,48,.02)">
+      <div class="sl-lane-hdr"><span class="sl-badge" style="background:rgba(255,100,48,.12);color:var(--orange);border:1px solid rgba(255,100,48,.25)">APPROVE<br>56–80</span></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div>Agent halts immediately</div><div class="sl-text">Notifies human supervisor via configured channel. Awaits explicit approval_fn() response. Resumes or aborts based on decision.</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-badge" style="background:rgba(255,100,48,.1);color:var(--orange)">approval-granted / denied</div><div class="sl-text">Cache TTL: 60s. Step-up auth may be triggered.</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-text">outcome: "approval-granted" or "approval-denied" · approver logged · wait_time_ms tracked</div></div></div>
+    </div>
+    <!-- deny -->
+    <div class="swimlane-row" style="background:rgba(255,68,68,.02)">
+      <div class="sl-lane-hdr"><span class="sl-badge" style="background:rgba(255,68,68,.12);color:var(--red);border:1px solid rgba(255,68,68,.25)">DENY<br>81–100</span></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div>TaskDeniedError raised immediately</div><div class="sl-text">Hard stop. No partial execution. Agent chain terminates. SIEM alert fires within 200ms.</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-badge" style="background:rgba(255,68,68,.1);color:var(--red)">blocked</div><div class="sl-text">Cache TTL: 0 (never cached). High-severity alert.</div></div></div>
+      <div class="sl-cell"><div class="sl-cell-inner"><div class="sl-text">outcome: "blocked" · severity: "high" · siem_alert: true · zero_data_extracted: true</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--purpleg);color:var(--purple)">code</div><h2>enforce_decision() — The Decision Code</h2></div>
+  <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.5rem;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--purple))"></div>
+    <pre style="margin:0;background:none;border:none;padding:0"><code><span style="color:#CC99CD">class</span> <span style="color:#FFD700">Posture</span>(str, Enum):
+    ALLOW = <span style="color:#99C794">"allow"</span>  |  CAUTION = <span style="color:#99C794">"proceed-with-caution"</span>
+    REQUIRE_APPROVAL = <span style="color:#99C794">"require-approval"</span>  |  DENY = <span style="color:#99C794">"deny"</span>
+
+<span style="color:#CC99CD">def</span> <span style="color:#6FB3D2">enforce_decision</span>(decision, approval_fn=None):
+    <span style="color:#CC99CD">match</span> decision.posture:
+        <span style="color:#CC99CD">case</span> Posture.DENY:
+            emit_audit(decision, outcome=<span style="color:#99C794">"blocked"</span>)  <span style="color:#7a8694"># always fires first</span>
+            alert_siem(decision)
+            <span style="color:#CC99CD">raise</span> <span style="color:#FFD700">TaskDeniedError</span>(decision.reasons)   <span style="color:#7a8694"># hard stop</span>
+
+        <span style="color:#CC99CD">case</span> Posture.REQUIRE_APPROVAL:
+            approved = approval_fn(<span style="color:#99C794">f"Approve: {decision.action}?"</span>) <span style="color:#CC99CD">if</span> approval_fn <span style="color:#CC99CD">else False</span>
+            <span style="color:#CC99CD">if not</span> approved:
+                <span style="color:#CC99CD">raise</span> <span style="color:#FFD700">TaskDeniedError</span>(<span style="color:#99C794">"Approval not granted"</span>)
+            emit_audit(decision, outcome=<span style="color:#99C794">"approval-granted"</span>)
+
+        <span style="color:#CC99CD">case</span> Posture.CAUTION:
+            inject_caution_to_prompt(decision)  <span style="color:#7a8694"># shifts LLM reasoning toward hedging</span>
+            emit_audit(decision, outcome=<span style="color:#99C794">"completed-with-caution"</span>)
+
+        <span style="color:#CC99CD">case</span> Posture.ALLOW:
+            emit_audit(decision, outcome=<span style="color:#99C794">"completed"</span>)  <span style="color:#7a8694"># green light</span></code></pre>
+  </div>
+</div>
+
+<!-- ══════════════════ CONNECTORS VIEW ══════════════════ -->
+<div class="view" id="view-connectors">
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--blueg);color:var(--blue)">pluggable</div><h2>IdP Connector Ecosystem — Any IdP, One Interface</h2></div>
+  <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.5rem;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--purple))"></div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:.5rem;font-family:'JetBrains Mono',monospace">IdpConnector interface — every IdP implements exactly 4 methods:</div>
+    <pre style="margin:0;background:none;border:none;padding:0"><code><span style="color:#CC99CD">interface</span> <span style="color:#FFD700">IdpConnector</span> {
+  name: string
+  <span style="color:#6FB3D2">getIdentity</span>(upn: string): <span style="color:#FFD700">Promise</span>&lt;<span style="color:#FFD700">Identity</span>&gt;          <span style="color:#7a8694">// who is this user</span>
+  <span style="color:#6FB3D2">getRiskSignals</span>(upn: string): <span style="color:#FFD700">Promise</span>&lt;<span style="color:#FFD700">RiskSignals</span>&gt;    <span style="color:#7a8694">// what risk signals exist right now</span>
+  <span style="color:#6FB3D2">getEntitlements</span>(upn: string): <span style="color:#FFD700">Promise</span>&lt;<span style="color:#FFD700">Entitlements</span>&gt;  <span style="color:#7a8694">// what are they allowed to do</span>
+  <span style="color:#6FB3D2">getSessionHealth</span>(token: string): <span style="color:#FFD700">Promise</span>&lt;<span style="color:#FFD700">SessionHealth</span>&gt; <span style="color:#7a8694">// how clean is the session</span>
+}</code></pre>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+    <span style="font-size:11.5px;color:#aaa;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal)"></span>Phase 1 — local dev (free, Docker)</span>
+    <span style="font-size:11.5px;color:#aaa;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue)"></span>Phase 2 — enterprise production</span>
+    <span style="font-size:11.5px;color:#aaa;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--purple)"></span>Phase 3 — ecosystem expansion</span>
+    <span style="font-size:11.5px;color:#aaa;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--t4)"></span>Built-in</span>
+  </div>
+
+  <div class="connector-grid">
+    <div class="connector-card cc-p1" onclick="showDetail('conn-keycloak')">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(32,217,127,.1)">🔑</div><div><div class="cc-name">Keycloak 24</div><div class="cc-type">connector-keycloak</div></div></div>
+      <div class="cc-desc">Open source. Full OIDC/SAML. User federation, groups, roles, sessions, admin REST API. Replaces Entra in Phase 1 local dev. Free Docker image.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--teal)"></div><span style="color:var(--teal)">Phase 1 · local</span><span style="color:#888;margin-left:auto">:8080 admin UI</span></div>
+    </div>
+    <div class="connector-card cc-p1" onclick="showDetail('conn-authentik')">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(32,217,127,.1)">🛡️</div><div><div class="cc-name">Authentik 2024</div><div class="cc-type">connector-authentik</div></div></div>
+      <div class="cc-desc">Open source. OIDC + SAML + LDAP. MFA flows, policy engine, risk-like signals. Replaces Ping MFA in Phase 1. Free Docker Compose.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--teal)"></div><span style="color:var(--teal)">Phase 1 · local</span><span style="color:#888;margin-left:auto">:9000 admin UI</span></div>
+    </div>
+    <div class="connector-card cc-p2" onclick="showDetail('conn-entra')">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(64,160,255,.1)">🏢</div><div><div class="cc-name">Microsoft Entra ID</div><div class="cc-type">connector-entra</div></div></div>
+      <div class="cc-desc">MS Graph API. Identity, AD groups, app roles, CA signals, Intune device compliance. App Registration with read-only permissions.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--blue)"></div><span style="color:var(--blue)">Phase 2 · enterprise</span></div>
+    </div>
+    <div class="connector-card cc-p2" onclick="showDetail('conn-ping')">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(64,160,255,.1)">🔐</div><div><div class="cc-name">Ping Identity</div><div class="cc-type">connector-ping</div></div></div>
+      <div class="cc-desc">PingOne API. User profile, risk evaluations, MFA state, session data. Webhook subscriptions for cache invalidation on auth events.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--blue)"></div><span style="color:var(--blue)">Phase 2 · enterprise</span></div>
+    </div>
+    <div class="connector-card cc-p3" onclick="showDetail('conn-okta')">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(176,96,255,.1)">🔷</div><div><div class="cc-name">Okta</div><div class="cc-type">connector-okta</div></div></div>
+      <div class="cc-desc">Okta Management API. Largest enterprise IdP market share. Targets Okta-native enterprises not using Ping or Entra.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--purple)"></div><span style="color:var(--purple)">Phase 3 · ecosystem</span></div>
+    </div>
+    <div class="connector-card cc-p3">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(176,96,255,.1)">🔶</div><div><div class="cc-name">Auth0</div><div class="cc-type">connector-auth0</div></div></div>
+      <div class="cc-desc">Auth0 Management API v2. Common in mid-market and developer-first companies. Okta CIC.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--purple)"></div><span style="color:var(--purple)">Phase 3 · ecosystem</span></div>
+    </div>
+    <div class="connector-card cc-p3">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(176,96,255,.1)">☁️</div><div><div class="cc-name">AWS Cognito</div><div class="cc-type">connector-cognito</div></div></div>
+      <div class="cc-desc">AWS SDK + Cognito API. Common in AWS-native enterprises and startups. User pools and identity pools.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--purple)"></div><span style="color:var(--purple)">Phase 3 · ecosystem</span></div>
+    </div>
+    <div class="connector-card" style="border-style:dashed">
+      <div class="cc-top"><div class="cc-icon" style="background:rgba(255,255,255,.05)">🎭</div><div><div class="cc-name">Mock Connector</div><div class="cc-type">built-in</div></div></div>
+      <div class="cc-desc">Zero dependencies. Configurable scenarios: allow, caution, deny, location anomaly, privilege escalation. ICP_DEV_POSTURE env override.</div>
+      <div class="cc-status"><div class="cc-dot" style="background:var(--t3)"></div><span style="color:#999">built-in · testing · demo</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ RISK VIEW ══════════════════ -->
+<div class="view" id="view-risk">
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--amberg);color:var(--amber)">signals</div><h2>Risk Scoring Model — 7 Weighted Signals → 0–100 Score</h2></div>
+  <div class="gauge-row">
+    <div class="gauge-card"><div class="gc-top"><div class="gc-name">Location anomaly</div><div class="gc-weight" style="color:var(--red)">+25</div></div><div class="gc-src">any IdP · session data</div><div class="gc-bar-wrap"><div class="gc-bar" style="width:100%;background:var(--red)"></div></div><div class="gc-desc">New city or country vs user baseline. Strongest single predictor of account compromise. Ex: Priya (Mumbai) logs in from Singapore.</div></div>
+    <div class="gauge-card"><div class="gc-top"><div class="gc-name">Privilege escalated recently</div><div class="gc-weight" style="color:var(--red)">+20</div></div><div class="gc-src">any IdP · role events</div><div class="gc-bar-wrap"><div class="gc-bar" style="width:80%;background:var(--red)"></div></div><div class="gc-desc">JIT elevation in last 60 min dramatically expands what agents can reach. Ex: Finance-Admin-Temp granted 22 min ago.</div></div>
+    <div class="gauge-card"><div class="gc-top"><div class="gc-name">MFA age &gt; 60 min</div><div class="gc-weight" style="color:var(--amber)">+15</div></div><div class="gc-src">any IdP · session</div><div class="gc-bar-wrap"><div class="gc-bar" style="width:60%;background:var(--amber)"></div></div><div class="gc-desc">Stale MFA means human may not be at keyboard. Long-lived sessions in automated agent workflows are high risk.</div></div>
+    <div class="gauge-card"><div class="gc-top"><div class="gc-name">Chain depth ≥ 3 hops</div><div class="gc-weight" style="color:var(--amber)">+15</div></div><div class="gc-src">ICP chain tracker</div><div class="gc-bar-wrap"><div class="gc-bar" style="width:60%;background:var(--amber)"></div></div><div class="gc-desc">3+ agent hops from human with no checkpoint = high accountability risk. Orchestrator → sub-agent → sub-sub-agent.</div></div>
+    <div class="gauge-card"><div class="gc-top"><div class="gc-name">Device non-compliant</div><div class="gc-weight" style="color:var(--purple)">+10</div></div><div class="gc-src">Entra / Keycloak</div><div class="gc-bar-wrap"><div class="gc-bar" style="width:40%;background:var(--purple)"></div></div><div class="gc-desc">Unmanaged or non-compliant device breaks zero-trust device posture assumption. Intune signal.</div></div>
+    <div class="gauge-card"><div class="gc-top"><div class="gc-name">CA policy non-compliant</div><div class="gc-weight" style="color:var(--purple)">+10</div></div><div class="gc-src">Entra / Keycloak</div><div class="gc-bar-wrap"><div class="gc-bar" style="width:40%;background:var(--purple)"></div></div><div class="gc-desc">Conditional Access policy violations override other signals. Forces re-evaluation even for low-score sessions.</div></div>
+    <div class="gauge-card"><div class="gc-top"><div class="gc-name">Concurrent sessions &gt; 5</div><div class="gc-weight" style="color:#999">+5</div></div><div class="gc-src">ICP session tracker</div><div class="gc-bar-wrap"><div class="gc-bar" style="width:20%;background:var(--t3)"></div></div><div class="gc-desc">Unusual parallelism may indicate automated credential misuse. 5+ simultaneous agent sessions under one UPN.</div></div>
+  </div>
+
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--redg);color:var(--red)">examples</div><h2>Scenario Score Calculations</h2></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:var(--s2);border:1px solid rgba(255,176,32,.25);border-radius:10px;padding:1.2rem;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber)"></div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:.8rem;color:var(--amber)">⚠ Raj — anomalous session (caution)</div>
+      <div style="font-size:12px;color:#ccc;font-family:'JetBrains Mono',monospace;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between"><span>location_anomaly (Chennai vs Bengaluru)</span><span style="color:var(--red)">+25</span></div>
+        <div style="display:flex;justify-content:space-between"><span>privilege_escalated (Finance-Admin-Temp)</span><span style="color:var(--red)">+20</span></div>
+        <div style="display:flex;justify-content:space-between"><span>mfa_satisfied = true, age 18min</span><span style="color:var(--teal)">+0</span></div>
+        <div style="display:flex;justify-content:space-between"><span>device_compliant = true</span><span style="color:var(--teal)">+0</span></div>
+        <div style="display:flex;justify-content:space-between"><span>chain_depth = 2</span><span style="color:var(--teal)">+0</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;font-weight:700;font-size:14px"><span>composite_score</span><span style="color:var(--amber)">62 → CAUTION</span></div>
+      </div>
+    </div>
+    <div style="background:var(--s2);border:1px solid rgba(255,68,68,.25);border-radius:10px;padding:1.2rem;position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--red)"></div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:.8rem;color:var(--red)">⛔ Priya — credential attack (deny)</div>
+      <div style="font-size:12px;color:#ccc;font-family:'JetBrains Mono',monospace;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between"><span>location_anomaly (Singapore vs Mumbai)</span><span style="color:var(--red)">+25</span></div>
+        <div style="display:flex;justify-content:space-between"><span>mfa_age &gt; 4 hours (stale)</span><span style="color:var(--red)">+15</span></div>
+        <div style="display:flex;justify-content:space-between"><span>device_non_compliant (unknown device)</span><span style="color:var(--red)">+10</span></div>
+        <div style="display:flex;justify-content:space-between"><span>chain_depth = 4 (&gt;= 3)</span><span style="color:var(--red)">+15</span></div>
+        <div style="display:flex;justify-content:space-between"><span>ca_policy_non_compliant</span><span style="color:var(--red)">+10</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;font-weight:700;font-size:14px"><span>composite_score</span><span style="color:var(--red)">75+ → DENY</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ LATENCY VIEW ══════════════════ -->
+<div class="view" id="view-latency">
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--tealg);color:var(--teal)">perf</div><h2>Performance Architecture — &lt;150ms p95 at 200 Concurrent Sessions</h2></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem">
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:1.2rem">
+      <div style="font-size:13px;font-weight:600;margin-bottom:1rem;color:var(--teal)">Key optimisations</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#ccc">
+        <div style="display:flex;gap:8px"><span style="color:var(--teal);font-weight:700;min-width:20px">1.</span><span><strong style="color:var(--t1)">Parallel fan-out</strong> — Promise.all() to all connectors simultaneously. Total = max(IdP latencies), not sum. Critical path optimisation.</span></div>
+        <div style="display:flex;gap:8px"><span style="color:var(--teal);font-weight:700;min-width:20px">2.</span><span><strong style="color:var(--t1)">Risk-proportional TTL</strong> — Low risk sessions cached 300s. High risk sessions re-evaluated every 60s. Deny never cached.</span></div>
+        <div style="display:flex;gap:8px"><span style="color:var(--teal);font-weight:700;min-width:20px">3.</span><span><strong style="color:var(--t1)">Webhook invalidation</strong> — Authentik/Ping push auth events. Cache evicted immediately on risk state change. No stale posture.</span></div>
+        <div style="display:flex;gap:8px"><span style="color:var(--teal);font-weight:700;min-width:20px">4.</span><span><strong style="color:var(--t1)">Circuit breaker</strong> — ICP unreachable after 500ms → deny-by-default or last cached posture. Never blocks the agent chain indefinitely.</span></div>
+        <div style="display:flex;gap:8px"><span style="color:var(--teal);font-weight:700;min-width:20px">5.</span><span><strong style="color:var(--t1)">Service account caching</strong> — Connector auth tokens cached with renewal headroom. Connector calls never blocked by token refresh.</span></div>
+      </div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:1.2rem">
+      <div style="font-size:13px;font-weight:600;margin-bottom:1rem;color:var(--purple)">Deployment footprint</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem">
+          <div style="font-size:11px;font-weight:700;color:var(--teal);font-family:'JetBrains Mono',monospace;margin-bottom:2px">SIDECAR MODE (Phase 1)</div>
+          <div style="font-size:12px;color:#ccc">1:1 with agent host pods. stdio MCP transport. 256MB RAM / 0.5 vCPU per instance. Scales automatically with agent pods.</div>
+        </div>
+        <div style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem">
+          <div style="font-size:11px;font-weight:700;color:var(--blue);font-family:'JetBrains Mono',monospace;margin-bottom:2px">CENTRALISED MODE (Phase 2)</div>
+          <div style="font-size:12px;color:#ccc">Shared service behind mTLS API gateway. Shared Redis cluster. HPA on CPU + p95 latency metric. &gt;50 concurrent agent sessions.</div>
+        </div>
+        <div style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem">
+          <div style="font-size:11px;font-weight:700;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-bottom:2px">YOUR PC (local dev)</div>
+          <div style="font-size:12px;color:#ccc">Intel Ultra 7 + 32GB RAM + RTX 500. Full stack: ~11GB RAM. Ollama Llama 3.1 8B with CUDA GPU offload. Comfortable headroom.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-hdr"><div class="sec-badge" style="background:var(--amberg);color:var(--amber)">metrics</div><h2>Key Monitoring Metrics</h2></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem">
+      <div style="font-size:10px;color:#777;font-family:'JetBrains Mono',monospace;margin-bottom:4px">icp.request.latency_p95</div>
+      <div style="font-size:20px;font-weight:700;color:var(--teal);margin-bottom:2px">&lt;150ms</div>
+      <div style="font-size:11.5px;color:#aaa">Alert if &gt;300ms for 2min</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem">
+      <div style="font-size:10px;color:#777;font-family:'JetBrains Mono',monospace;margin-bottom:4px">icp.cache.hit_rate</div>
+      <div style="font-size:20px;font-weight:700;color:var(--teal);margin-bottom:2px">&gt;70%</div>
+      <div style="font-size:11.5px;color:#aaa">Alert if &lt;50%</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem">
+      <div style="font-size:10px;color:#777;font-family:'JetBrains Mono',monospace;margin-bottom:4px">icp.posture.deny_rate</div>
+      <div style="font-size:20px;font-weight:700;color:var(--amber);margin-bottom:2px">&lt;2%</div>
+      <div style="font-size:11.5px;color:#aaa">Alert if &gt;5%</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem">
+      <div style="font-size:10px;color:#777;font-family:'JetBrains Mono',monospace;margin-bottom:4px">icp.entra.latency_p95</div>
+      <div style="font-size:20px;font-weight:700;color:var(--blue);margin-bottom:2px">&lt;80ms</div>
+      <div style="font-size:11.5px;color:#aaa">Alert if &gt;200ms</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem">
+      <div style="font-size:10px;color:#777;font-family:'JetBrains Mono',monospace;margin-bottom:4px">icp.chain.max_depth</div>
+      <div style="font-size:20px;font-weight:700;color:var(--purple);margin-bottom:2px">&lt;5</div>
+      <div style="font-size:11.5px;color:#aaa">Alert if any chain ≥5</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1rem">
+      <div style="font-size:10px;color:#777;font-family:'JetBrains Mono',monospace;margin-bottom:4px">icp.posture.approve_rate</div>
+      <div style="font-size:20px;font-weight:700;color:var(--orange);margin-bottom:2px">&lt;10%</div>
+      <div style="font-size:11.5px;color:#aaa">Alert if &gt;20%</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /diagram-wrap -->
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detailPanel">
+  <button class="dp-close" onclick="closeDetail()">✕</button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip"></div>
+
+<footer>
+  ICP — Identity Context Protocol &nbsp;·&nbsp; <span>Architecture Diagram</span> &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; May 2026<br>
+  Node.js · TypeScript · MCP · CrewAI · Keycloak · Authentik · Ollama · Pluggable by design
+</footer>
+
+<script>
+// ── NAVIGATION ──
+document.querySelectorAll('.nav-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('view-'+t.dataset.v).classList.add('on');
+    closeDetail();
+    window.scrollTo(0,0);
+  });
+});
+
+// ── DETAIL PANEL DATA ──
+const details = {
+  'orchestrator':{icon:'🎯',name:'CrewAI Orchestrator',sub:'crew-orchestrator-001 · L1 · Python',color:'var(--purple)',body:'The top-level agent in a CrewAI workflow. Receives the user task and spawns specialised sub-agents (data, ops, HR). Calls ICP before every task delegation and before executing any action itself.',props:[['Framework','CrewAI 0.80+'],['Language','Python 3.11'],['LLM','Ollama / Llama 3.1 8B'],['ICP call','Before every spawn'],['chain_depth','0 (root)']],code:'agent = Agent(\n  role="Orchestrator",\n  llm=LLM(model="ollama/llama3.1"),\n  tools=[ICPContextTool()]\n)'},
+  'data-agent':{icon:'📊',name:'Data Agent',sub:'crew-data-agent-007 · L1 · Python',color:'var(--purple)',body:'Specialised agent for reading reports, summaries, and SharePoint documents. Queries ICP before every data access. In caution mode, it flags intended writes as PENDING WRITE before executing.',props:[['Parent','Orchestrator'],['chain_depth','1'],['Typical posture','allow / caution'],['Risk trigger','Payroll folder access + elevated priv']],code:'# Caution prompt injection result:\n"PENDING WRITE: payroll_Q1_summary.csv\nReason: elevated risk session detected"'},
+  'ops-agent':{icon:'⚙️',name:'Ops Agent',sub:'crew-ops-agent · L1 · Python',color:'var(--purple)',body:'Handles infrastructure and deployment actions. Highest scrutiny applied — ops actions are typically irreversible. Chain depth tracking is critical here; ops agent 3 hops from human auto-triggers caution minimum.',props:[['Parent','Orchestrator'],['Posture floor','caution (ops actions)'],['chain_depth alert','≥ 2'],['Blast radius','tracked per session']],code:'# Ops agent auto-gets posture floor\n# even at score 10 for destructive actions'},
+  'hr-agent':{icon:'👥',name:'HR Agent',sub:'crew-hr-agent · L1 · Python',color:'var(--purple)',body:'Accesses employee records, org charts, and HR data. Finance-Admin-Temp signals are specifically monitored — privilege escalation in the last 60 minutes triggers caution even for normally low-risk HR queries.',props:[['Parent','Orchestrator'],['Sensitive scope','read:employee_records'],['Temp grant watch','Finance-Admin-Temp'],['Contractor access','always caution floor']],code:'# HR agent + privilege escalation:\n# composite_score += 20 regardless\n# of other signal values'},
+  'mcp-tool':{icon:'🔌',name:'MCP Tool — get_identity_context',sub:'mcp-server.ts · MCP 1.0 · JSON-RPC 2.0',color:'var(--teal)',body:'The single entry point exposed by the ICP server. Any MCP-compatible agent framework calls this tool with a user UPN, agent ID, parent agent ID, and the requested action. Returns the full unified context payload.',props:[['Protocol','MCP 1.0 / JSON-RPC 2.0'],['Transport','stdio (sidecar) / HTTP (centralised)'],['Timeout','3000ms hard limit'],['Auth','mTLS / API key header']],code:'// Tool schema\n{\n  name: "get_identity_context",\n  inputSchema: {\n    user_upn: string,\n    agent_id: string,\n    parent_agent_id: string | null,\n    requested_action: string\n  }\n}'},
+  'aggregator':{icon:'🔀',name:'Aggregator',sub:'aggregator.ts · conflict resolution · merge logic',color:'var(--teal)',body:'Receives IdpContext objects from all active connectors in parallel. Merges entitlements using most-restrictive-permanent + most-recent-temp logic. Risk signals use max() strategy — always assumes worst case.',props:[['Input','IdpContext[] from all connectors'],['Entitlement strategy','most-restrictive-permanent'],['Risk strategy','max() across all IdPs'],['Conflict log','recorded in payload metadata']],code:'const [kc, auth] = await Promise.all([\n  keycloakConnector.getIdentity(upn),\n  authentikConnector.getIdentity(upn)\n]);\nreturn merge([kc, auth], {\n  entitlements: "most-restrictive",\n  risk: "max"\n});'},
+  'risk-scorer':{icon:'📈',name:'Risk Scorer',sub:'scorer.ts · 7 signals · config-driven weights',color:'var(--teal)',body:'Computes a 0–100 composite risk score from weighted individual signals. All weights are configurable in icp.config.json and can be updated live via hot-reload without restarting the server.',props:[['Signals','7 (configurable)'],['Score range','0–100'],['Weight source','icp.config.json (hot-reload)'],['Default max','location_anomaly = 25']],code:'const score = [\n  s.location_anomaly    ? cfg.location_anomaly    : 0,  // 25\n  s.privilege_escalated ? cfg.privilege_escalated : 0,  // 20\n  s.mfa_stale           ? cfg.mfa_stale           : 0,  // 15\n  chainDepth >= 3       ? cfg.chain_depth_3plus   : 0,  // 15\n  !s.device_compliant   ? cfg.device_non_compliant: 0,  // 10\n].reduce((a,b)=>a+b,0);'},
+  'chain-tracker':{icon:'🔗',name:'Chain Tracker',sub:'chain-tracker.ts · delegation log · append-only',color:'var(--teal)',body:'Maintains an append-only delegation chain log for every active agent session. Records each agent hop with timestamp, agent_id, parent_agent_id, posture at time of call, and the action requested. Chain depth ≥ 3 automatically adds +15 to the risk score.',props:[['Store','Append-only (Redis list)'],['Chain depth auto-signal','depth ≥ 3 adds +15'],['Max depth policy','configurable (default: 4)'],['Human checkpoint','flagged when depth exceeds policy']],code:'interface ChainEntry {\n  agent_id: string\n  parent_agent_id: string | null\n  timestamp: string\n  posture: Posture\n  action: string\n  risk_score: number\n}'},
+  'audit':{icon:'📋',name:'Audit Emitter',sub:'audit-emitter.ts · structured JSON · configurable sink',color:'var(--teal)',body:'Emits a structured JSON audit event for every agent interaction with ICP, regardless of posture outcome. Events are written to the configured sink (stdout → file → HTTP → Splunk / Azure Monitor). Append-only, immutability policy in production.',props:[['Sink options','stdout, file, http, splunk, azure-monitor'],['Trigger','every ICP call — no exceptions'],['Format','structured JSON, each field typed'],['Retention','append-only, immutable in prod']],code:'{\n  "timestamp": "2026-05-18T10:00:07Z",\n  "user_upn": "raj@acme.com",\n  "agent_id": "crew-data-agent-007",\n  "parent_agent_id": "crew-orchestrator-001",\n  "action": "read_payroll_folder",\n  "posture": "proceed-with-caution",\n  "outcome": "completed-with-caution",\n  "risk_score": 62,\n  "chain_depth": 2,\n  "posture_reasons": ["location_anomaly","privilege_escalated_recently"]\n}'},
+  'cache':{icon:'⚡',name:'Cache Manager',sub:'cache/index.ts · Redis · risk-proportional TTL',color:'var(--teal)',body:'Redis-backed session cache with TTLs that are inversely proportional to risk score. High-risk sessions re-evaluated frequently. Deny posture is never cached. Webhook-driven invalidation from Authentik/Ping on auth state changes.',props:[['Backend','Redis 7.x'],['TTL allow','300 seconds'],['TTL caution','120 seconds'],['TTL approve','60 seconds'],['TTL deny','0 — never cached'],['Invalidation','Webhook-driven on auth events']],code:'// TTL from icp.config.json\ncacheTtlByPosture: {\n  allow: 300,\n  caution: 120,\n  require_approval: 60,\n  deny: 0\n}'},
+  'config':{icon:'⚙️',name:'Config Engine',sub:'icp.config.json · Zod validation · hot-reload',color:'var(--teal)',body:'Single JSON config file controls every environment difference — connectors, risk weights, posture thresholds, cache TTLs, policy rules, audit sink. Validated with Zod on startup. Watched with fs.watch() for live updates without restart.',props:[['Format','JSON with Zod schema'],['Validation','startup + hot-reload'],['Hot-reload','risk weights + thresholds'],['Dev override','ICP_DEV_POSTURE env var']],code:'{\n  "connectors": ["keycloak","authentik"],\n  "riskWeights": { "location_anomaly": 25 },\n  "postureThresholds": {\n    "allow": [0,25], "caution": [26,55]\n  },\n  "policy": {\n    "allowedHours": "09:00-20:00",\n    "contractorPostureFloor": "caution"\n  }\n}'},
+  'conn-keycloak':{icon:'🔑',name:'Keycloak Connector',sub:'connector-keycloak · Phase 1 · local dev',color:'var(--teal)',body:'Open-source IdP that replaces Microsoft Entra ID in local development. Provides full OIDC/SAML, user federation, groups, roles, sessions, and admin REST API. Free, runs in Docker, admin UI at localhost:8080.',props:[['Install','docker run -p 8080:8080 quay.io/keycloak/keycloak:24 start-dev'],['API','Keycloak Admin REST API'],['RAM','~512MB'],['Replaces','Microsoft Entra ID (Phase 1)']],code:'// keycloak-connector.ts\nasync getIdentity(upn: string) {\n  const user = await kcAdmin.users\n    .find({ email: upn });\n  return mapToIdentity(user[0]);\n}'},
+  'conn-authentik':{icon:'🛡️',name:'Authentik Connector',sub:'connector-authentik · Phase 1 · local dev',color:'var(--teal)',body:'Open-source IdP that replaces Ping Identity in local development. Provides OIDC + SAML + LDAP, MFA flows, policy engine, and risk-like signals via flows and attributes. Free Docker Compose setup, admin UI at localhost:9000.',props:[['Install','docker compose up (official compose)'],['API','Authentik REST API v3'],['RAM','~600MB'],['Replaces','Ping Identity (Phase 1)']],code:'// authentik-connector.ts\nasync getRiskSignals(upn: string) {\n  const session = await authentikAPI\n    .get(`/core/tokens/?user=${upn}`);\n  return mapToRiskSignals(session);\n}'},
+  'conn-entra':{icon:'🏢',name:'Entra ID Connector',sub:'connector-entra · Phase 2 · enterprise production',color:'var(--blue)',body:'Microsoft Entra ID (Azure AD) connector using MS Graph API. Fetches identity, AD group memberships, app role assignments, Conditional Access state, and Intune device compliance. App Registration with read-only permissions only.',props:[['API','MS Graph API v1.0'],['Auth','Client credentials (App Registration)'],['Permissions','User.Read.All, GroupMember.Read.All, IdentityRiskyUser.Read.All'],['Secrets','Azure Key Vault — never env vars in prod']],code:'// 5 Graph permissions required:\n// User.Read.All\n// GroupMember.Read.All\n// Directory.Read.All\n// IdentityRiskyUser.Read.All\n// DeviceManagementManagedDevices.Read.All'},
+  'conn-ping':{icon:'🔐',name:'Ping Identity Connector',sub:'connector-ping · Phase 2 · enterprise production',color:'var(--blue)',body:'PingOne API connector for Ping Identity suite. Fetches user profile, role assignments, active session data, MFA state, and Ping Protect risk evaluations. Configures webhook subscriptions for real-time cache invalidation.',props:[['API','PingOne Management API'],['Auth','Worker Application (client credentials)'],['Scopes','p1:read:user, p1:read:sessions, p1:read:riskEvaluations'],['Webhooks','AUTH_FAILED, RISK_EVAL_COMPLETED, SESSION_TERMINATED']],code:'// Ping webhook for cache invalidation\napp.post("/ping-webhook", (req,res) => {\n  if (req.body.event === "AUTHENTICATION_FAILED") {\n    cache.evict(req.body.userUpn);\n  }\n});'},
+  'conn-mock':{icon:'🎭',name:'Mock Connector',sub:'built-in · zero dependencies · configurable scenarios',color:'var(--t3)',body:'Built-in fake connector that returns fully typed IdpContext objects for configurable scenarios. Zero Docker, zero IdP setup. Use for unit tests, CI, and demos. ICP_DEV_POSTURE env var forces posture without running the scorer.',props:[['Setup','Zero — built-in'],['Scenarios','allow, caution, deny, location_anomaly, privilege_escalated'],['Dev override','ICP_DEV_POSTURE=deny'],['Demo use','icp simulate --scenario deny']],code:'// config: "connectors": ["mock"]\n// or: ICP_DEV_POSTURE=caution\n// Returns configurable payload:\n{\n  location_anomaly: true,\n  mfa_stale: false,\n  composite_score: 52,\n  posture: "proceed-with-caution"\n}'},
+  'conn-okta':{icon:'🔷',name:'Okta Connector',sub:'connector-okta · Phase 3 · ecosystem',color:'var(--purple)',body:'Okta Identity Cloud connector targeting the largest enterprise IdP market share segment. Uses Okta Management API with OAuth 2.0 service application. Provides user profile, group memberships, factors, and session data.',props:[['API','Okta Management API v2'],['Auth','OAuth 2.0 service app'],['Phase','3 — community ecosystem'],['Build time','~4 hours using connector-sdk README']],code:'// Install connector SDK first:\n// npm install @icp/connector-sdk\n// Then implement 4 methods:\n// getIdentity · getRiskSignals\n// getEntitlements · getSessionHealth'},
+  'infra-keycloak':{icon:'🔑',name:'Identity Infrastructure — Keycloak / Entra',sub:'L4 · read-only · existing enterprise stack',color:'var(--amber)',body:'The enterprise identity infrastructure ICP reads from. Phase 1: Keycloak (local). Phase 2: Microsoft Entra ID (production). ICP is read-only — it never modifies any data in the IdP. App Registration has zero write permissions.',props:[['ICP access','Read-only always'],['Phase 1','Keycloak Admin REST API'],['Phase 2','MS Graph API'],['Write permissions','None — architectural contract']],code:'// ICP App Registration permissions\n// ALL are application (not delegated)\n// ALL are read-only\n// ZERO write permissions ever'},
+  'infra-ping':{icon:'🛡️',name:'Identity Infrastructure — Authentik / Ping',sub:'L4 · read-only · MFA and risk signals',color:'var(--amber)',body:'The MFA and risk signal infrastructure. Phase 1: Authentik (local). Phase 2: Ping Identity suite (production). Provides session health, MFA state, risk evaluations, and JIT privilege grant data.',props:[['Phase 1','Authentik REST API'],['Phase 2','PingOne Management API'],['Key data','MFA state, risk score, JIT grants, session age'],['Webhooks','Auth events pushed to ICP for cache invalidation']],code:'// Webhook events ICP subscribes to:\nAUTHENTICATION_FAILED\nRISK_EVALUATION_COMPLETED\nUSER_SESSION_TERMINATED\nROLE_ASSIGNMENT_CREATED'},
+  'infra-redis':{icon:'⚡',name:'Redis Cache',sub:'L4 · session cache · risk-proportional TTL',color:'var(--amber)',body:'Session-scoped context cache. TTLs inversely proportional to risk score — clean sessions cached longer, risky sessions re-evaluated frequently. Deny posture never cached. Webhook-driven invalidation eliminates the need for aggressive polling.',props:[['Version','Redis 7.x'],['Local dev','docker run -p 6379:6379 redis:7-alpine'],['RAM','~50MB local, shared cluster in prod'],['Key format','session:{user_upn}:{agent_id}']],code:'// TTL strategy:\n// score 0-25  → 300s cache\n// score 26-55 → 120s cache\n// score 56-80 → 60s cache\n// score 81+   → 0s (no cache)'},
+  'infra-siem':{icon:'📡',name:'SIEM / Audit Sink',sub:'L4 · append-only · compliance artefact',color:'var(--amber)',body:'The audit event destination. Configurable via icp.config.json — stdout for local dev, file for testing, HTTP/Splunk/Azure Monitor for production. Every ICP call produces exactly one audit event regardless of posture outcome.',props:[['Local dev','stdout / file'],['Production','Splunk, Azure Monitor, or any HTTP sink'],['Format','Structured JSON, all fields typed'],['Immutability','Write-once policy in prod, immutable storage']],code:'// icp.config.json audit sink:\n{\n  "audit": {\n    "sink": "stdout",\n    // "stdout" | "file" | "http"\n    // | "splunk" | "azure-monitor"\n    "endpoint": "",\n    "batchSize": 10\n  }\n}'},
+  'flow-1':{icon:'🤖',name:'Step 1 — Agent triggers task',sub:'CrewAI BaseTool · icp_tool.py',color:'var(--purple)',body:'The ICPContextTool is always the first tool called by any ICP-aware agent. The tool description explicitly instructs the LLM to call ICP before any action touching data. Hard 3-second timeout ensures the agent chain is never blocked indefinitely.',props:[['File','icp_tool.py'],['Class','ICPContextTool(BaseTool)'],['Timeout','3000ms hard limit'],['Transport','HTTP to ICP server (sidecar: localhost)']],code:'class ICPContextTool(BaseTool):\n  name = "get_identity_context"\n  description = """\n    ALWAYS call before any action\n    touching data or resources.\n  """\n  def _run(self, user_upn, agent_id,\n      requested_action, ...):\n    return httpx.post(ICP_URL,\n      json={...}, timeout=3.0)'},
+  'flow-2':{icon:'⚡',name:'Step 2 — Redis cache check',sub:'cache/index.ts · &lt;10ms on hit',color:'var(--teal)',body:'Before querying any IdP, ICP checks the Redis session cache. A cache hit returns the stored context payload immediately — typically in under 10ms. Cache miss proceeds to parallel IdP fan-out.',props:[['Hit latency','<10ms'],['Miss action','proceed to Step 3'],['Key','session:{upn}:{agent_id}'],['TTL','risk-proportional (60s–300s)']],code:'const cached = await redis.get(\n  `session:${upn}:${agentId}`\n);\nif (cached) return JSON.parse(cached);\n// else proceed to fan-out'},
+  'flow-3':{icon:'⚡',name:'Step 3 — Parallel fan-out',sub:'Promise.all() · all connectors simultaneously',color:'var(--blue)',body:'The critical path optimisation. All active connectors are called simultaneously using Promise.all(). The total latency is the maximum of all connector latencies, not the sum. Typically 80–100ms for two connectors.',props:[['Implementation','Promise.all(connectors.map(c => c.getIdentity(upn)))'],['Typical total','max(~80ms, ~95ms) = ~95ms'],['vs sequential','80 + 95 = 175ms — 80ms saved'],['Connector timeout','individual 2500ms per connector']],code:'const [identity, risk, entitlements] =\n  await Promise.all([\n    Promise.all(connectors.map(\n      c => c.getIdentity(upn))),\n    Promise.all(connectors.map(\n      c => c.getRiskSignals(upn))),\n    Promise.all(connectors.map(\n      c => c.getEntitlements(upn)))\n  ]);'},
+};
+
+function showDetail(id) {
+  const d = details[id];
+  if (!d) return;
+  const panel = document.getElementById('detailPanel');
+  const content = document.getElementById('detailContent');
+
+  const colorVal = d.color.replace('var(--','').replace(')','');
+  const colors = {
+    'purple':'#B060FF','teal':'#20D97F','blue':'#40A0FF',
+    'amber':'#FFB020','red':'#FF4444','t3':'#666','t4':'#444',
+    'orange':'#FF6430','pink':'#FF318C'
+  };
+  const hex = colors[colorVal] || d.color;
+
+  let propsHtml = '';
+  if(d.props) {
+    propsHtml = '<div class="dp-label">Properties</div><div class="dp-props">' +
+      d.props.map(([k,v]) =>
+        `<div class="dp-prop"><span class="dp-prop-k">${k}</span><span class="dp-prop-v">${v}</span></div>`
+      ).join('') + '</div>';
+  }
+
+  let codeHtml = '';
+  if(d.code) {
+    codeHtml = `<div class="dp-label">Code reference</div><div class="dp-code">${d.code}</div>`;
+  }
+
+  content.innerHTML = `
+    <div class="dp-icon">${d.icon}</div>
+    <div class="dp-name" style="color:${hex}">${d.name}</div>
+    <div class="dp-subtitle">${d.sub}</div>
+    <div class="dp-divider"></div>
+    <div class="dp-label">Description</div>
+    <div class="dp-body">${d.body}</div>
+    ${propsHtml}
+    ${codeHtml}
+  `;
+
+  // mark active
+  document.querySelectorAll('.box').forEach(b => b.classList.remove('active-box'));
+  event && event.currentTarget && event.currentTarget.classList.add('active-box');
+
+  panel.classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.querySelectorAll('.box').forEach(b => b.classList.remove('active-box'));
+}
+
+// close on escape
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDetail(); });
+
+// animate latency bars on view switch
+function animateBars() {
+  document.querySelectorAll('.gc-bar').forEach(bar => {
+    const w = bar.style.width;
+    bar.style.width = '0';
+    setTimeout(() => { bar.style.width = w; }, 100);
+  });
+}
+document.querySelectorAll('[data-v="risk"]').forEach(t=>{
+  t.addEventListener('click', ()=>setTimeout(animateBars,200));
+});
+
+// Initial bar animation
+setTimeout(animateBars, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDD Playbook — Part 2: Execution Scenarios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   DESIGN TOKENS — high-contrast palette
+   t1 = #e8f2ff  very light (headings)
+   t2 = #a8c8f0  light blue  (body text)  ← KEY FIX
+   t3 = #6890c0  medium blue (muted/hints) ← KEY FIX
+   Background is dark navy — all text
+   colours chosen for WCAG AA contrast.
+───────────────────────────────────────── */
+:root{
+  --bg:        #07090e;
+  --s1:        #0c1220;
+  --s2:        #111828;
+  --s3:        #162032;
+  --s4:        #1c2840;
+  --b1:        #1e3050;
+  --b2:        #2a4068;
+  --t1:        #e8f2ff;
+  --t2:        #a8c8f0;
+  --t3:        #6890c0;
+  --cyan:      #00c8e0;
+  --cyan-d:    #007898;
+  --cyan-bg:   #001e28;
+  --cyan-b2:   #001420;
+  --orange:    #f09030;
+  --orange-d:  #885020;
+  --orange-bg: #1e1000;
+  --green:     #00d880;
+  --green-d:   #007848;
+  --green-bg:  #001c14;
+  --red:       #f05060;
+  --red-d:     #903040;
+  --red-bg:    #1e0810;
+  --purple:    #9880f0;
+  --purple-d:  #5040a8;
+  --purple-bg: #100c28;
+  --yellow:    #d0b828;
+  --yellow-bg: #1c1800;
+  --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --sw: 252px;
+  --hh: 56px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:15px}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);line-height:1.75;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── TOP BAR ── */
+.top-bar{position:fixed;top:0;left:0;right:0;height:var(--hh);background:rgba(7,9,14,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 24px;z-index:200;gap:16px}
+.tb-logo{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--cyan);letter-spacing:.04em}
+.tb-sep{width:1px;height:20px;background:var(--b2)}
+.tb-title{font-size:13px;font-weight:400;color:var(--t2)}
+.tb-part{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--t3);letter-spacing:.08em;padding:4px 12px;border:1px solid var(--b1);border-radius:20px}
+.tb-part span{color:var(--cyan)}
+.tb-back{font-family:var(--sans);font-size:12px;font-weight:500;color:var(--t3);padding:5px 12px;border:1px solid var(--b1);border-radius:5px;cursor:pointer;transition:all .2s;text-decoration:none;margin-left:12px}
+.tb-back:hover{color:var(--cyan);border-color:var(--cyan-d)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;padding-top:var(--hh);min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sw);flex-shrink:0;position:sticky;top:var(--hh);height:calc(100vh - var(--hh));overflow-y:auto;background:var(--s1);border-right:1px solid var(--b1);padding:24px 0 40px}
+.sb-lbl{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);padding:0 18px;margin:18px 0 6px}
+.sb-lbl:first-child{margin-top:0}
+.sb-a{display:flex;align-items:center;gap:10px;padding:6px 18px;font-size:12px;color:var(--t2);cursor:pointer;text-decoration:none;transition:all .18s;border-left:2px solid transparent;line-height:1.4}
+.sb-a:hover{color:var(--t1);background:var(--s2)}
+.sb-a.active{color:var(--cyan);border-left-color:var(--cyan);background:var(--cyan-b2);font-weight:500}
+.sb-a .n{font-family:var(--mono);font-size:10px;color:var(--t3);min-width:20px}
+.sb-a.active .n{color:var(--cyan-d)}
+.sb-a.sub{padding-left:32px;font-size:11px;color:var(--t3)}
+.sb-a.sub.active{color:var(--cyan);background:var(--cyan-b2)}
+.sb-a.sub:hover{color:var(--t2)}
+.sb-div{height:1px;background:var(--b1);margin:14px 18px}
+
+/* ── SCENARIO BADGES ── */
+.sb-s1{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-d);padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:9px;margin-left:auto}
+.sb-s2{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-d);padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:9px;margin-left:auto}
+.sb-s3{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-d);padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:9px;margin-left:auto}
+
+/* ── MAIN ── */
+.content{flex:1;min-width:0;max-width:920px;padding:52px 48px 80px}
+
+/* ── DOC HEADER ── */
+.dh{padding-bottom:48px;border-bottom:1px solid var(--b1);margin-bottom:56px}
+.dh-ey{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.dh-ey::before{content:'';width:28px;height:1px;background:var(--cyan)}
+.dh-h1{font-size:34px;font-weight:700;letter-spacing:-.02em;color:var(--t1);margin-bottom:10px;line-height:1.15}
+.dh-h1 span{color:var(--cyan)}
+.dh-sub{font-size:16px;color:var(--t2);max-width:560px;line-height:1.7;margin-bottom:28px}
+.dh-nav{display:flex;flex-wrap:wrap;gap:10px}
+.sc-btn{padding:10px 20px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid;transition:all .2s;font-family:var(--sans);text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.sc-btn.s1{background:var(--cyan-bg);border-color:var(--cyan-d);color:var(--cyan)}
+.sc-btn.s1:hover{background:var(--s3);border-color:var(--cyan)}
+.sc-btn.s2{background:var(--orange-bg);border-color:var(--orange-d);color:var(--orange)}
+.sc-btn.s2:hover{background:var(--s3);border-color:var(--orange)}
+.sc-btn.s3{background:var(--purple-bg);border-color:var(--purple-d);color:var(--purple)}
+.sc-btn.s3:hover{background:var(--s3);border-color:var(--purple)}
+
+/* ── SECTION ── */
+.sec{padding:64px 0;border-bottom:1px solid var(--b1);scroll-margin-top:76px}
+.sec:last-of-type{border-bottom:none}
+.sec-ey{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.sec-ey .en{color:var(--cyan);font-size:11px}
+.sec-h2{font-size:25px;font-weight:700;letter-spacing:-.015em;color:var(--t1);margin-bottom:8px;line-height:1.25}
+.sec-intro{font-size:15px;color:var(--t2);max-width:640px;line-height:1.78;margin-bottom:36px}
+.bar{width:36px;height:2px;border-radius:2px;margin-bottom:32px}
+.bar.c{background:var(--cyan)}
+.bar.o{background:var(--orange)}
+.bar.p{background:var(--purple)}
+h3.sh{font-size:16px;font-weight:600;color:var(--t1);margin:36px 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h3.sh .tag{font-family:var(--mono);font-size:10px;padding:2px 9px;border-radius:3px;font-weight:500}
+h3.sh .tc{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-d)}
+h3.sh .to{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-d)}
+h3.sh .tp{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-d)}
+h3.sh .tr{background:var(--red-bg);color:var(--red);border:1px solid var(--red-d)}
+h3.sh .tg{background:var(--green-bg);color:var(--green);border:1px solid var(--green-d)}
+p.p{font-size:15px;color:var(--t2);line-height:1.78;margin-bottom:16px}
+p.p strong{color:var(--t1);font-weight:600}
+p.p code,li code{font-family:var(--mono);font-size:12px;background:var(--s3);color:var(--cyan);padding:1px 6px;border-radius:3px;border:1px solid var(--b2)}
+
+/* ── STEP CARDS ── */
+.steps{display:flex;flex-direction:column;gap:0;margin:8px 0 28px}
+.sr{display:grid;grid-template-columns:52px 1fr;gap:0;position:relative}
+.sr:not(:last-child)::before{content:'';position:absolute;left:24px;top:54px;bottom:0;width:1px;background:var(--b2);z-index:0}
+.sd{width:48px;height:48px;border-radius:50%;border:2px solid var(--b2);background:var(--s2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:500;color:var(--t3);flex-shrink:0;z-index:1;position:relative;margin-top:4px;transition:all .2s}
+.sr:hover .sd{border-color:var(--cyan-d);color:var(--cyan)}
+.sd.gate{border-color:var(--yellow);color:var(--yellow);background:var(--yellow-bg)}
+.sd.done{border-color:var(--green-d);color:var(--green);background:var(--green-bg)}
+.sc{padding:4px 0 28px 20px}
+.st{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:5px;padding-top:8px}
+.sd2{font-size:14px;color:var(--t2);line-height:1.72}
+.sd2 code{font-family:var(--mono);font-size:12px;background:var(--s3);color:var(--cyan);padding:1px 6px;border-radius:3px}
+.sd2 strong{color:var(--t1);font-weight:600}
+.snote{margin-top:8px;padding:8px 14px;border-left:2px solid;border-radius:0 4px 4px 0;font-size:13px;font-weight:500;line-height:1.6}
+.snote.gate{background:var(--yellow-bg);border-color:var(--yellow);color:#b09820}
+.snote.ok{background:var(--green-bg);border-color:var(--green-d);color:var(--green-d)}
+.snote.warn{background:var(--orange-bg);border-color:var(--orange-d);color:var(--orange-d)}
+.snote.info{background:var(--cyan-bg);border-color:var(--cyan-d);color:var(--cyan-d)}
+
+/* ── PROMPT BLOCKS ── */
+.pw{margin:16px 0}
+.plr{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:0}
+.pft{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--t3);background:var(--s3);padding:4px 12px;border-radius:6px 6px 0 0;border:1px solid var(--b2);border-bottom:none;display:inline-flex;align-items:center;gap:6px}
+.pft .dot{width:5px;height:5px;border-radius:50%;background:var(--cyan)}
+.cpb{font-family:var(--mono);font-size:10px;padding:4px 12px;background:var(--s3);border:1px solid var(--b2);border-radius:6px 6px 0 0;color:var(--t3);cursor:pointer;transition:all .2s;letter-spacing:.06em;border-bottom:none}
+.cpb:hover{color:var(--cyan);border-color:var(--cyan-d)}
+.cpb.ok{color:var(--green)}
+.pb{background:var(--s2);border:1px solid var(--b2);border-radius:0 8px 8px 8px;padding:20px 22px;position:relative;overflow:hidden}
+.pb::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan)}
+.pb.o::before{background:var(--orange)}
+.pb.r::before{background:var(--red)}
+.pb.g::before{background:var(--green)}
+.pt{font-family:var(--mono);font-size:13px;color:#90bce0;line-height:1.72;white-space:pre;overflow-x:auto}
+.pt .kw{color:var(--cyan)}
+.pt .ph{color:var(--orange)}
+.pt .cm{color:var(--t3);font-style:italic}
+.pt .ok{color:var(--green)}
+.pt .rd{color:var(--red)}
+
+/* ── CALLOUTS ── */
+.cl{padding:15px 20px;border-radius:6px;margin:18px 0;font-size:14px;line-height:1.7;border-left:3px solid}
+.cl.info{background:var(--cyan-bg);border-color:var(--cyan);color:#80b8d8}
+.cl.warn{background:var(--orange-bg);border-color:var(--orange);color:#b07848}
+.cl.danger{background:var(--red-bg);border-color:var(--red);color:#c06878}
+.cl.ok{background:var(--green-bg);border-color:var(--green);color:#48a878}
+.cl.purple{background:var(--purple-bg);border-color:var(--purple);color:#8878c8}
+.cl-t{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;opacity:.75}
+.cl strong{color:var(--t1);font-weight:600}
+
+/* ── FOLDER TREE ── */
+.tree-wrap{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:20px 22px;margin:16px 0;overflow-x:auto}
+.tree-title{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:14px}
+.tree{font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--t2)}
+.tree .dir{color:var(--t1);font-weight:500}
+.tree .tnew{color:var(--cyan)}
+.tree .tmod{color:var(--orange)}
+.tree .tref{color:var(--t3)}
+.tree .tbadge{font-size:10px;padding:1px 7px;border-radius:2px;margin-left:8px;font-weight:500;vertical-align:middle}
+.tree .bnew{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-d)}
+.tree .bmod{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-d)}
+.tree-legend{display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--b1);flex-wrap:wrap}
+.tl-item{font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:6px}
+.tl-item.n{color:var(--cyan)}
+.tl-item.m{color:var(--orange)}
+.tl-item.r{color:var(--t3)}
+
+/* ── PHASE DIAGRAM ── */
+.phase-wrap{margin:28px 0;overflow-x:auto;padding-bottom:8px}
+.phases{display:flex;align-items:stretch;gap:0;min-width:600px}
+.phase{display:flex;flex-direction:column;flex:1;min-width:110px}
+.ph-box{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:14px 12px;flex:1;position:relative;overflow:hidden;transition:all .2s;cursor:default}
+.ph-box:hover{border-color:var(--b2);background:var(--s3)}
+.ph-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ph-box.p1::before{background:var(--cyan)}
+.ph-box.p2::before{background:var(--orange)}
+.ph-box.p3::before{background:var(--purple)}
+.ph-box.p4::before{background:var(--green)}
+.ph-box.p5::before{background:var(--red)}
+.ph-num{font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:4px}
+.ph-name{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:6px;line-height:1.3}
+.ph-items{list-style:none;display:flex;flex-direction:column;gap:3px}
+.ph-items li{font-size:11px;color:var(--t2);display:flex;gap:5px;align-items:flex-start;line-height:1.4}
+.ph-items li::before{content:'·';color:var(--t3);flex-shrink:0}
+.ph-connector{display:flex;align-items:center;padding:0 5px;padding-bottom:14px;flex-shrink:0;color:var(--b2);font-size:20px}
+
+/* ── GATE REVIEW BOX ── */
+.gate-box{background:var(--yellow-bg);border:1px solid rgba(208,184,40,.3);border-radius:8px;padding:16px 20px;margin:16px 0}
+.gate-title{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--yellow);margin-bottom:10px}
+.gate-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.gate-list li{font-size:14px;color:#c0a840;display:flex;gap:8px;line-height:1.5}
+.gate-list li::before{content:'⚑';font-size:12px;flex-shrink:0;margin-top:2px}
+
+/* ── COMPARISON ── */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 24px}
+.cmp-side{padding:16px 18px;border-radius:8px}
+.cmp-side.bad{background:rgba(30,8,16,.9);border:1px solid rgba(144,48,64,.5)}
+.cmp-side.good{background:rgba(0,28,20,.9);border:1px solid rgba(0,120,72,.5)}
+.cmp-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;font-weight:500;margin-bottom:10px}
+.cmp-side.bad .cmp-lbl{color:var(--red-d)}
+.cmp-side.good .cmp-lbl{color:var(--green-d)}
+.cmp-text{font-family:var(--mono);font-size:12px;line-height:1.68;white-space:pre-wrap}
+.cmp-side.bad .cmp-text{color:#c06878}
+.cmp-side.good .cmp-text{color:#40a878}
+
+/* ── REVIEW FINDINGS ── */
+.findings{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.finding{padding:13px 16px;border-radius:6px;border:1px solid;font-size:14px;line-height:1.6}
+.finding.crit{background:rgba(30,8,16,.8);border-color:rgba(240,80,96,.4);color:var(--t2)}
+.finding.high{background:rgba(30,16,0,.8);border-color:rgba(240,144,48,.4);color:var(--t2)}
+.finding.med{background:rgba(28,24,0,.8);border-color:rgba(208,184,40,.4);color:var(--t2)}
+.finding-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;margin-bottom:4px}
+.finding.crit .finding-label{color:var(--red)}
+.finding.high .finding-label{color:var(--orange)}
+.finding.med .finding-label{color:var(--yellow)}
+.finding strong{color:var(--t1);font-weight:600}
+
+/* ── QUICK REF TABLE ── */
+.rt{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+.rt th{text-align:left;padding:9px 13px;background:var(--s3);font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--b2)}
+.rt td{padding:10px 13px;border-bottom:1px solid var(--b1);color:var(--t2);vertical-align:top;line-height:1.55}
+.rt tr:hover td{background:var(--s2)}
+.rt td:first-child{font-family:var(--mono);font-size:12px;color:var(--cyan);white-space:nowrap}
+.rt td code{font-family:var(--mono);font-size:11px;background:var(--s3);color:var(--orange);padding:1px 5px;border-radius:3px}
+.rt td strong{color:var(--t1);font-weight:600}
+
+/* ── INLINE TAG ── */
+.tg{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;font-weight:500;margin:0 2px;vertical-align:middle}
+.tg.c{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-d)}
+.tg.o{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-d)}
+.tg.g{background:var(--green-bg);color:var(--green);border:1px solid var(--green-d)}
+.tg.r{background:var(--red-bg);color:var(--red);border:1px solid var(--red-d)}
+.tg.p{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-d)}
+.tg.y{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(208,184,40,.4)}
+
+/* ── INLINE RULES LIST ── */
+ul.rl{list-style:none;display:flex;flex-direction:column;gap:8px;margin:12px 0 24px}
+ul.rl li{font-size:14px;color:var(--t2);display:flex;gap:10px;align-items:flex-start;line-height:1.6;padding:10px 14px;background:var(--s2);border-radius:6px;border:1px solid var(--b1)}
+ul.rl li::before{content:'→';color:var(--cyan-d);font-family:var(--mono);font-weight:700;flex-shrink:0;margin-top:2px}
+ul.rl li strong{color:var(--t1);font-weight:600}
+
+/* ── CONTEXT OVERFLOW BOX ── */
+.ctx-box{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0 24px}
+.ctx-side{padding:16px 18px;border-radius:8px;border:1px solid var(--b1);background:var(--s2)}
+.ctx-side-title{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;font-weight:500}
+.ctx-side.prob .ctx-side-title{color:var(--red-d)}
+.ctx-side.sol .ctx-side-title{color:var(--green-d)}
+.ctx-item{font-size:13px;color:var(--t2);padding:6px 0;border-bottom:1px solid var(--b1);line-height:1.55;display:flex;gap:8px}
+.ctx-item:last-child{border-bottom:none}
+.ctx-item::before{flex-shrink:0;margin-top:2px}
+.ctx-side.prob .ctx-item::before{content:'✗';color:var(--red-d)}
+.ctx-side.sol .ctx-item::before{content:'✓';color:var(--green-d)}
+
+/* ── SCENARIO HEADER CARD ── */
+.sc-header{padding:24px 28px;border-radius:10px;margin-bottom:36px;border:1px solid}
+.sc-header.s1{background:rgba(0,30,40,.8);border-color:var(--cyan-d)}
+.sc-header.s2{background:rgba(30,16,0,.8);border-color:var(--orange-d)}
+.sc-header.s3{background:rgba(16,12,40,.8);border-color:var(--purple-d)}
+.sc-header-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.sc-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;padding:4px 12px;border-radius:4px}
+.sc-header.s1 .sc-badge{background:var(--cyan-bg);color:var(--cyan);border:1px solid var(--cyan-d)}
+.sc-header.s2 .sc-badge{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-d)}
+.sc-header.s3 .sc-badge{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-d)}
+.sc-header-title{font-size:20px;font-weight:700;color:var(--t1)}
+.sc-header-desc{font-size:14px;color:var(--t2);line-height:1.7;max-width:580px}
+.sc-header-meta{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
+.sc-meta-item{font-family:var(--mono);font-size:11px;color:var(--t3);display:flex;align-items:center;gap:5px}
+.sc-meta-item strong{color:var(--t1);font-weight:500}
+
+/* ── FOOTER ── */
+footer{padding:40px 0 20px;border-top:1px solid var(--b1);margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.ft-l{font-family:var(--mono);font-size:12px;color:var(--t3)}
+.ft-l span{color:var(--cyan)}
+.ft-btn{padding:10px 20px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--t2);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.ft-btn:hover{border-color:var(--cyan-d);color:var(--cyan)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px){
+  .sidebar{display:none}
+  .content{padding:36px 20px 56px}
+  .cmp,.ctx-box{grid-template-columns:1fr}
+  .phases{flex-direction:column}
+  .ph-connector{transform:rotate(90deg);justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <span class="tb-logo">// SDD PLAYBOOK</span>
+  <div class="tb-sep"></div>
+  <span class="tb-title">Part 2 — Execution Scenarios</span>
+  <a class="tb-back" href="sdd-playbook-part1.html">← Part 1</a>
+  <span class="tb-part">PART <span>2</span> OF 2 — EXECUTION</span>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sb">
+  <div class="sb-lbl">Scenarios</div>
+  <a class="sb-a active" href="#s1" data-s="s1"><span class="n">S1</span>JWT Middleware <span class="sb-s1">Feature</span></a>
+  <a class="sb-a sub" href="#s1-start">↳ Where to start</a>
+  <a class="sb-a sub" href="#s1-plan">↳ Architect plan</a>
+  <a class="sb-a sub" href="#s1-spec">↳ Write the spec</a>
+  <a class="sb-a sub" href="#s1-test">↳ Tests first</a>
+  <a class="sb-a sub" href="#s1-impl">↳ Implement</a>
+  <a class="sb-a sub" href="#s1-review">↳ Review</a>
+  <a class="sb-a sub" href="#s1-close">↳ ADR + close out</a>
+  <a class="sb-a" href="#s2" data-s="s2"><span class="n">S2</span>Refresh Token Bug <span class="sb-s2">Bug</span></a>
+  <a class="sb-a sub" href="#s2-capture">↳ Capture symptom</a>
+  <a class="sb-a sub" href="#s2-rca">↳ RCA diagnosis</a>
+  <a class="sb-a sub" href="#s2-fix">↳ Minimal fix</a>
+  <a class="sb-a sub" href="#s2-regress">↳ Regression tests</a>
+  <a class="sb-a sub" href="#s2-validate">↳ Validate + close</a>
+  <a class="sb-a" href="#s3" data-s="s3"><span class="n">S3</span>Auth Gateway <span class="sb-s3">Architecture</span></a>
+  <a class="sb-a sub" href="#s3-adr">↳ ADR first</a>
+  <a class="sb-a sub" href="#s3-phases">↳ Phase planning</a>
+  <a class="sb-a sub" href="#s3-contract">↳ Contract-first</a>
+  <a class="sb-a sub" href="#s3-p1">↳ Phase 1 execution</a>
+  <a class="sb-a sub" href="#s3-context">↳ Context management</a>
+  <a class="sb-a sub" href="#s3-migrate">↳ Migration plan</a>
+  <div class="sb-div"></div>
+  <div class="sb-lbl">Reference</div>
+  <a class="sb-a" href="#quickref" data-s="quickref"><span class="n">★</span>Quick Reference Card</a>
+  <div class="sb-div"></div>
+  <div style="padding:0 18px;font-size:11px;color:var(--t3);line-height:1.65">Part 1 covers the foundation: workspace files, prompt chaining, task breakdown.</div>
+</aside>
+
+<!-- MAIN -->
+<main class="content">
+
+<!-- DOC HEADER -->
+<div class="dh">
+  <div class="dh-ey">SDD Playbook · Part 2 of 2</div>
+  <h1 class="dh-h1">Execution <span>Scenarios</span></h1>
+  <p class="dh-sub">Three real walkthroughs with every prompt written out, every file named, every review gate shown. Follow these like a recipe the first time — then the workflow becomes instinct.</p>
+  <div class="dh-nav">
+    <a class="sc-btn s1" href="#s1">S1 — JWT Middleware</a>
+    <a class="sc-btn s2" href="#s2">S2 — Refresh Token Bug</a>
+    <a class="sc-btn s3" href="#s3">S3 — Auth Gateway Architecture</a>
+    <a class="sc-btn" href="#quickref" style="background:var(--s2);border-color:var(--b2);color:var(--t2)">★ Quick Reference</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCENARIO 1 — JWT MIDDLEWARE
+═══════════════════════════════════════════ -->
+<section class="sec" id="s1">
+  <div class="sec-ey"><span class="en">SCENARIO 01</span>Small New Feature</div>
+  <h2 class="sec-h2">Adding JWT Validation Middleware</h2>
+  <div class="bar c"></div>
+
+  <div class="sc-header s1">
+    <div class="sc-header-top">
+      <span class="sc-badge">FEATURE</span>
+      <span class="sc-header-title">JWT Validation Middleware</span>
+    </div>
+    <div class="sc-header-desc">A stakeholder requests that all protected API endpoints validate JWT tokens via a centralised middleware — rather than each handler doing it ad hoc. The token must be validated against a JWKS endpoint, support key rotation, fail closed, and produce an audit log entry on every validation attempt.</div>
+    <div class="sc-header-meta">
+      <div class="sc-meta-item">⏱ <strong>Effort:</strong> ~2 days</div>
+      <div class="sc-meta-item">🔗 <strong>Chain steps:</strong> All 6</div>
+      <div class="sc-meta-item">📁 <strong>Files created:</strong> 4 new</div>
+      <div class="sc-meta-item">📋 <strong>Prompt files used:</strong> 01, 02, 03, 04, 05, 06</div>
+    </div>
+  </div>
+
+  <!-- FOLDER TREE BEFORE/AFTER -->
+  <h3 class="sh" id="s1-start">Step 0 — Understand the Before State <span class="tag tc">START HERE</span></h3>
+  <p class="p">Before writing a single prompt, look at what exists and what you're going to create. This mental model prevents scope creep.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0 24px">
+    <div class="tree-wrap">
+      <div class="tree-title">BEFORE — Current State</div>
+      <div class="tree">
+<span class="dir">📁 project/</span>
+├── <span class="dir">📁 .ai/</span>
+│   ├── <span class="tref">project-context.md</span>
+│   ├── <span class="tref">architecture.md</span>
+│   ├── <span class="tref">security-rules.md</span>
+│   └── <span class="dir">📁 prompts/</span>
+├── <span class="dir">📁 specs/</span>       <span style="color:var(--t3);font-size:11px">← empty</span>
+├── <span class="dir">📁 src/</span>
+│   └── <span class="dir">📁 middleware/</span>  <span style="color:var(--t3);font-size:11px">← no jwt yet</span>
+├── <span class="dir">📁 tests/</span>
+│   └── <span class="dir">📁 middleware/</span>  <span style="color:var(--t3);font-size:11px">← no jwt tests</span>
+└── <span class="dir">📁 docs/adr/</span>
+      </div>
+    </div>
+    <div class="tree-wrap">
+      <div class="tree-title">AFTER — Target State</div>
+      <div class="tree">
+<span class="dir">📁 project/</span>
+├── <span class="dir">📁 specs/</span>
+│   └── <span class="tnew">📁 jwt-middleware/ <span class="tbadge bnew">NEW</span></span>
+│       ├── <span class="tnew">requirements.md</span>
+│       ├── <span class="tnew">edge-cases.md</span>
+│       ├── <span class="tnew">acceptance-tests.md</span>
+│       └── <span class="tnew">implementation-plan.md</span>
+├── <span class="dir">📁 src/middleware/</span>
+│   ├── <span class="tnew">jwt_validator.py <span class="tbadge bnew">NEW</span></span>
+│   └── <span class="tnew">auth_middleware.py <span class="tbadge bnew">NEW</span></span>
+├── <span class="dir">📁 tests/middleware/</span>
+│   └── <span class="tnew">test_jwt_validator.py <span class="tbadge bnew">NEW</span></span>
+└── <span class="dir">📁 docs/adr/</span>
+    └── <span class="tnew">ADR-001-jwt-validation.md <span class="tbadge bnew">NEW</span></span>
+      </div>
+      <div class="tree-legend">
+        <div class="tl-item n">● CREATE NEW</div>
+        <div class="tl-item m">● MODIFY</div>
+        <div class="tl-item r">● REFERENCE ONLY</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION 1 — PLAN -->
+  <h3 class="sh" id="s1-plan">Session 1 — Get the Architecture Plan <span class="tag tc">01-architect-plan.md</span></h3>
+  <p class="p">Open VS Code. Open Copilot Chat (<code>Ctrl+Shift+I</code>). Type the Session Opener first, then paste the architect plan prompt below it.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>SESSION 1 OPENER — type this first</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Task:</span>  Feature
+<span class="kw">Spec:</span>  specs/jwt-middleware/ <span class="cm">(does not exist yet — we create it this session)</span>
+<span class="kw">Scope:</span> Planning only — no implementation this session</pre>
+    </div>
+  </div>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>ARCHITECT PLAN PROMPT — paste after opener</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Read:</span> .ai/project-context.md
+<span class="kw">Read:</span> .ai/architecture.md
+<span class="kw">Read:</span> .ai/security-rules.md
+
+<span class="kw">Produce an implementation plan for JWT validation middleware.</span>
+
+The plan must cover:
+1. Files to create and files to modify (with the reason for each)
+2. JWT validation logic design — JWKS endpoint fetch, key caching, rotation handling
+3. Middleware integration pattern — where it hooks into the request pipeline
+4. Error response design — what to return on invalid token, expired token, missing token
+5. Audit logging design — what fields to log on success and failure
+6. Unit test approach — what to mock, what test cases to cover
+
+<span class="ok">Output format: numbered sections, no code.</span>
+<span class="rd">Do NOT generate any code. Architecture plan only.</span></pre>
+    </div>
+  </div>
+
+  <div class="gate-box">
+    <div class="gate-title">⚑ Gate — Review the Plan Before Proceeding</div>
+    <ul class="gate-list">
+      <li>Does the file list match your architecture boundaries (no unexpected modules touched)?</li>
+      <li>Is the error response design consistent with your existing error format?</li>
+      <li>Is the JWKS endpoint approach compatible with your auth provider?</li>
+      <li>Is the audit logging design capturing the right fields?</li>
+      <li>Are there any open questions? Answer them now — not mid-implementation.</li>
+    </ul>
+  </div>
+
+  <p class="p">Once approved: ask Copilot to <code>"Save this plan to specs/jwt-middleware/implementation-plan.md"</code>. Then close the session.</p>
+
+  <!-- SESSION 2 — SPEC -->
+  <h3 class="sh" id="s1-spec">Session 2 — Write the Spec <span class="tag tc">02-spec-writer.md</span></h3>
+  <p class="p">New Copilot Chat session. Use the continuation opener, then paste the spec writer prompt.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>SESSION 2 CONTINUATION OPENER</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Continuing:</span>  JWT middleware feature
+<span class="kw">Last done:</span>   Architecture plan — saved to specs/jwt-middleware/implementation-plan.md
+<span class="kw">Current step:</span>SPEC — generate all spec files
+<span class="kw">Spec:</span>        specs/jwt-middleware/</pre>
+    </div>
+  </div>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>SPEC WRITER PROMPT</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Read:</span> specs/jwt-middleware/implementation-plan.md
+<span class="kw">Read:</span> .ai/project-context.md
+<span class="kw">Read:</span> .ai/security-rules.md
+
+Generate the following spec files in specs/jwt-middleware/:
+
+<span class="kw">requirements.md</span> — include:
+  - Business requirement (one sentence)
+  - Functional requirements (numbered FR-01 to FR-N)
+  - Non-functional requirements (performance, security, reliability)
+  - Out of scope (explicit — what this does NOT do)
+  - Dependencies (JWKS endpoint, config values needed)
+
+<span class="kw">edge-cases.md</span> — include ALL of:
+  - Missing Authorization header
+  - Malformed token (not a valid JWT structure)
+  - Valid structure but invalid signature
+  - Expired token (exp claim in past)
+  - Token with wrong algorithm (algorithm confusion attack)
+  - JWKS endpoint unreachable (fail-closed behaviour)
+  - JWKS key rotation mid-request
+  - Token with missing required claims
+  - Concurrent requests during key rotation
+
+<span class="kw">acceptance-tests.md</span> — table with columns:
+  ID | Scenario | Input | Expected Behaviour | Expected HTTP Status
+
+<span class="rd">Do NOT generate code. Spec files only.</span></pre>
+    </div>
+  </div>
+
+  <div class="gate-box">
+    <div class="gate-title">⚑ Gate — Review All Spec Files Before Proceeding</div>
+    <ul class="gate-list">
+      <li><code>requirements.md</code> — are all FR items specific and testable? None vague?</li>
+      <li><code>edge-cases.md</code> — is the algorithm confusion attack case captured? Fail-closed on JWKS failure?</li>
+      <li><code>acceptance-tests.md</code> — can each row become a direct test case? No ambiguous "expected behaviours"?</li>
+      <li>Add any missing edge case now — before tests are written.</li>
+    </ul>
+  </div>
+
+  <!-- SESSION 3 — TEST -->
+  <h3 class="sh" id="s1-test">Session 3 — Generate Tests First <span class="tag tc">03-test-writer.md</span></h3>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>TEST WRITER PROMPT</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Continuing:</span>  JWT middleware
+<span class="kw">Current step:</span>TEST — write tests before any implementation
+<span class="kw">Read:</span>        specs/jwt-middleware/acceptance-tests.md
+<span class="kw">Read:</span>        specs/jwt-middleware/edge-cases.md
+<span class="kw">Read:</span>        .ai/coding-standards.md
+
+<span class="kw">Generate:</span> tests/middleware/test_jwt_validator.py
+
+The test file must:
+- Cover every row in acceptance-tests.md
+- Cover every scenario in edge-cases.md
+- Use fixtures for: valid_jwt, expired_jwt, tampered_jwt, wrong_alg_jwt, missing_claims_jwt
+- Mock the JWKS endpoint (do not make real HTTP calls in tests)
+- Follow test naming convention in coding-standards.md
+
+<span class="rd">Do NOT generate the implementation. Test file only.</span>
+<span class="rd">Do NOT create any file other than tests/middleware/test_jwt_validator.py</span></pre>
+    </div>
+  </div>
+
+  <div class="gate-box">
+    <div class="gate-title">⚑ Gate — Review the Tests</div>
+    <ul class="gate-list">
+      <li>Does each acceptance-tests.md row have a corresponding test function?</li>
+      <li>Is the algorithm confusion attack (alg:none, RS256→HS256) tested?</li>
+      <li>Is fail-closed behaviour tested — what happens when JWKS fetch fails?</li>
+      <li>Are the test names descriptive enough that a passing test proves the right thing?</li>
+    </ul>
+  </div>
+
+  <!-- SESSION 4 — IMPLEMENT -->
+  <h3 class="sh" id="s1-impl">Session 4 — Implement Unit 1: JWTValidator <span class="tag tc">04-implementer.md</span></h3>
+  <p class="p">Two separate implementation sessions. First the core validator class — then the middleware wrapper that uses it. Never combine them.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>IMPLEMENTER PROMPT — Unit 1: jwt_validator.py</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Continuing:</span>  JWT middleware
+<span class="kw">Current step:</span>IMPLEMENT — Unit 1 of 2
+<span class="kw">Read:</span>        specs/jwt-middleware/requirements.md
+<span class="kw">Read:</span>        specs/jwt-middleware/edge-cases.md
+<span class="kw">Read:</span>        .ai/coding-standards.md
+<span class="kw">Read:</span>        .ai/security-rules.md
+<span class="kw">Reference:</span>  src/examples/ <span class="cm">(for implementation style)</span>
+<span class="kw">Tests:</span>       tests/middleware/test_jwt_validator.py <span class="cm">(make these pass)</span>
+
+<span class="kw">Scope:</span>      ONLY src/middleware/jwt_validator.py <span class="cm">(create this file)</span>
+<span class="rd">Do NOT modify:</span> any other file — not __init__.py, not middleware, not tests
+
+Implement the JWTValidator class with:
+- validate_token(token: str) → dict method (returns claims or raises AuthenticationError)
+- JWKS fetch with in-memory cache + TTL
+- Key rotation handling (retry once on signature failure, re-fetch JWKS)
+- Structured audit logging on every call (no token values in logs)
+- All values from config — no hardcoded URLs or secrets
+
+<span class="ok">Goal: make all tests in test_jwt_validator.py pass.</span></pre>
+    </div>
+  </div>
+
+  <div class="snote info" style="margin:8px 0 20px">After this session: run <code>pytest tests/middleware/test_jwt_validator.py</code> — all tests must pass before opening Session 5.</div>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>IMPLEMENTER PROMPT — Unit 2: auth_middleware.py</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Continuing:</span>  JWT middleware
+<span class="kw">Current step:</span>IMPLEMENT — Unit 2 of 2
+<span class="kw">Read:</span>        specs/jwt-middleware/requirements.md
+<span class="kw">Read:</span>        .ai/coding-standards.md
+<span class="kw">Read:</span>        .ai/architecture.md
+
+<span class="kw">Scope:</span>      ONLY src/middleware/auth_middleware.py <span class="cm">(create this file)</span>
+<span class="rd">Do NOT modify:</span> jwt_validator.py, any test files, any existing middleware
+
+Implement AuthMiddleware class that:
+- Uses JWTValidator (import from jwt_validator.py)
+- Extracts Bearer token from Authorization header
+- Returns 401 with RFC 7807 error body on validation failure
+- Attaches validated claims to request context on success
+- Skips validation for paths listed in config UNPROTECTED_PATHS</pre>
+    </div>
+  </div>
+
+  <!-- SESSION 5 — REVIEW -->
+  <h3 class="sh" id="s1-review">Session 5 — Code Review + Security Review <span class="tag tr">MANDATORY</span></h3>
+  <p class="p">Two separate review prompts. Run code review first, fix findings, then run security review. Do not combine them — they catch different issues.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>CODE REVIEW PROMPT — paste generated jwt_validator.py content</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Read:</span> .ai/coding-standards.md
+<span class="kw">Read:</span> .ai/architecture.md
+
+<span class="kw">Code review of:</span> [paste content of src/middleware/jwt_validator.py]
+
+Review for:
+1. Standards compliance — does it follow coding-standards.md exactly?
+2. Architecture alignment — does it respect module boundaries?
+3. Test coverage gaps — are there behaviours not covered by tests?
+4. Error handling — all exceptions handled, nothing swallowed silently?
+5. Performance — any blocking calls, missing timeouts, unbounded caches?
+6. Naming and readability — is it clear without comments?
+
+<span class="ok">Output: numbered findings with severity (Critical/High/Medium/Low) and exact fix location.</span></pre>
+    </div>
+  </div>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>SECURITY REVIEW PROMPT — run after code review is clean</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt"><span class="kw">Read:</span> .ai/security-rules.md
+
+<span class="kw">Security review of:</span> [paste content of src/middleware/jwt_validator.py]
+
+Check specifically for:
+- <span class="rd">Algorithm confusion attack</span> — is the algorithm validated against an allowlist?
+- <span class="rd">Fail-open risk</span> — if JWKS fetch fails, does it deny or allow?
+- <span class="rd">Token value in logs</span> — is any part of the JWT string logged?
+- <span class="rd">Claims injection</span> — are claims validated beyond signature check?
+- <span class="rd">Timing attacks</span> — any string comparison of secrets without constant-time compare?
+- <span class="rd">Missing input validation</span> — is the token checked for format before parsing?
+- OWASP API Security Top 10 — any relevant violations?
+
+<span class="ok">Output: numbered findings, severity, exact line reference, recommended fix.</span></pre>
+    </div>
+  </div>
+
+  <p class="p"><strong>Example findings and how to handle them:</strong></p>
+  <div class="findings">
+    <div class="finding crit"><div class="finding-label">CRITICAL — FIX BEFORE COMMIT</div><strong>Algorithm not validated against allowlist.</strong> The validator accepts any algorithm declared in the token header. An attacker can set alg:none to bypass signature validation. Fix: add <code>ALLOWED_ALGORITHMS = ["RS256"]</code> config and reject all others.</div>
+    <div class="finding high"><div class="finding-label">HIGH — FIX BEFORE COMMIT</div><strong>Token string appears in error log.</strong> Line 47: <code>logger.error(f"Invalid token: {token}")</code>. Fix: log only token length and first 8 chars hash, never the raw token.</div>
+    <div class="finding med"><div class="finding-label">MEDIUM — REVIEW AND FIX</div><strong>JWKS cache has no maximum size.</strong> Under adversarial key IDs, cache could grow unbounded. Fix: cap cache at 20 entries with LRU eviction.</div>
+  </div>
+
+  <!-- SESSION 6 — ADR + DOCS -->
+  <h3 class="sh" id="s1-close">Session 6 — ADR + Documentation + Context Update <span class="tag tg">CLOSE OUT</span></h3>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>ADR WRITER PROMPT</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb">
+      <pre class="pt">Write an Architecture Decision Record.
+
+<span class="kw">Title:</span> Centralised JWT Validation via Middleware
+<span class="kw">Number:</span> ADR-001
+<span class="kw">Status:</span> Accepted
+
+<span class="kw">Context:</span> JWT validation was being done ad hoc in individual endpoint handlers.
+This led to inconsistent validation rules and missing security checks across some endpoints.
+
+<span class="kw">Decision:</span> Implement a single JWTValidator class and AuthMiddleware that all
+protected routes must use. Validation rules defined once, tested centrally.
+
+<span class="kw">Positive consequences:</span> Consistent validation, single point of update, full audit log
+<span class="kw">Negative consequences:</span> New dependency for all protected routes
+<span class="kw">Alternatives rejected:</span> Per-handler validation (inconsistent), shared decorator (harder to test)
+
+<span class="ok">Save to: docs/adr/ADR-001-jwt-validation-middleware.md</span></pre>
+    </div>
+  </div>
+
+  <div class="cl warn" style="margin-top:20px">
+    <div class="cl-t">Before Closing — Update Project Context</div>
+    Open <code>.ai/project-context.md</code> and update: (1) the middleware section to reference the new JWTValidator, (2) the security section to note all protected routes now use AuthMiddleware. This prevents the next session from generating code that bypasses the middleware.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SCENARIO 2 — DEFECT FIX
+═══════════════════════════════════════════ -->
+<section class="sec" id="s2">
+  <div class="sec-ey"><span class="en">SCENARIO 02</span>Defect Fix</div>
+  <h2 class="sec-h2">Refresh Token Failing Intermittently</h2>
+  <div class="bar o"></div>
+
+  <div class="sc-header s2">
+    <div class="sc-header-top">
+      <span class="sc-badge">BUG FIX</span>
+      <span class="sc-header-title">Intermittent 401 on Valid Refresh Token</span>
+    </div>
+    <div class="sc-header-desc">The refresh token endpoint occasionally returns HTTP 401 with "token invalid" even when the submitted token is valid and not yet expired. The issue appears under concurrent load (multiple simultaneous refresh requests). It does not reproduce reliably in development.</div>
+    <div class="sc-header-meta">
+      <div class="sc-meta-item">⚠️ <strong>Type:</strong> Intermittent / Race condition</div>
+      <div class="sc-meta-item">🔗 <strong>Chain steps:</strong> Diagnose → Fix → Regress → Review</div>
+      <div class="sc-meta-item">⚑ <strong>Risk:</strong> Auth-related — security review mandatory</div>
+    </div>
+  </div>
+
+  <div class="cl danger">
+    <div class="cl-t">Bug Fix Rule #1</div>
+    <strong>Never ask AI to fix a bug before diagnosing its root cause.</strong> AI will generate a plausible-looking fix for a guess. You'll ship it, the bug will recur, and you'll have no idea why. Diagnosis first. Always.
+  </div>
+
+  <!-- STEP 1 — CAPTURE -->
+  <h3 class="sh" id="s2-capture">Step 1 — Capture the Symptom Precisely</h3>
+  <p class="p">Before opening Copilot, write the symptom description. Not the cause — the symptom. What was observed? When? Under what conditions? This becomes the micro-spec.</p>
+
+  <p class="p">Create: <code>specs/bugfix-refresh-token/requirements.md</code></p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>MICRO-SPEC CONTENT — write this yourself before any prompt</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb o">
+      <pre class="pt"><span class="kw">Bug ID:</span>    BUG-042
+<span class="kw">Severity:</span>  High — impacts user authentication flow
+<span class="kw">Symptom:</span>   POST /auth/refresh returns HTTP 401 "token_invalid"
+           for tokens that are valid and not expired.
+<span class="kw">Frequency:</span> ~5-8% of requests under concurrent load (≥50 simultaneous)
+<span class="kw">Reproducible:</span> Only under load — not in single-request dev testing
+<span class="kw">Last known good:</span> v1.3.2 (before connection pool changes in v1.3.3)
+<span class="kw">Affected file (suspected):</span> src/auth/token_refresh.py
+<span class="kw">Logs show:</span> "Token not found in store" error — but token exists when checked immediately after
+
+<span class="kw">Fix constraints:</span>
+  - Do NOT change the public API signature of /auth/refresh
+  - Do NOT change the token format
+  - Do NOT refactor unrelated code
+  - Fix must be backward compatible with existing valid tokens</pre>
+    </div>
+  </div>
+
+  <!-- STEP 2 — RCA -->
+  <h3 class="sh" id="s2-rca">Step 2 — Root Cause Analysis <span class="tag to">Diagnose First</span></h3>
+  <p class="p">Now open Copilot. Ask for diagnosis only — not a fix.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>RCA DIAGNOSIS PROMPT — Session 1 of Bug Fix</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb o">
+      <pre class="pt"><span class="kw">Task:</span>  Bug
+<span class="kw">Spec:</span>  specs/bugfix-refresh-token/requirements.md
+<span class="kw">Read:</span>  .ai/project-context.md
+<span class="kw">Read:</span>  .ai/architecture.md
+
+<span class="kw">Bug symptom:</span> Refresh token returns 401 intermittently under concurrent load.
+Logs show "Token not found in store" — but token exists when checked afterward.
+Only occurs since v1.3.3 (connection pool changes).
+
+<span class="kw">Analyse likely root causes in src/auth/token_refresh.py.</span>
+
+For each hypothesis, provide:
+1. The suspected mechanism (what specifically could cause this)
+2. Which function or line range to inspect
+3. What evidence in the code would confirm this hypothesis
+4. Severity of this cause if confirmed
+
+<span class="kw">Hypotheses to evaluate:</span>
+- Race condition between token validation read and token invalidation write
+- Database connection pool exhaustion causing read failures that are misreported
+- Clock skew in expiry check (exp - issued_at boundary condition)
+- Concurrent refresh requests consuming and invalidating same token simultaneously
+- Cache inconsistency if token store has a caching layer
+
+<span class="rd">Do NOT write any fix. Diagnosis and hypotheses only.</span></pre>
+    </div>
+  </div>
+
+  <div class="gate-box">
+    <div class="gate-title">⚑ Gate — Review the RCA Before Fixing</div>
+    <ul class="gate-list">
+      <li>Does the most likely hypothesis match the symptom exactly (intermittent, concurrent, version-correlated)?</li>
+      <li>Go inspect the actual source file at the suspected line range — do you see the suspected pattern?</li>
+      <li>If you see it: confirm the hypothesis and proceed to fix. If you don't: ask Copilot for a second hypothesis.</li>
+      <li>Never skip this inspection step. The AI's diagnosis is a starting point, not a verdict.</li>
+    </ul>
+  </div>
+
+  <!-- STEP 3 — FIX -->
+  <h3 class="sh" id="s2-fix">Step 3 — Request the Minimal Safe Fix <span class="tag to">Scoped and Precise</span></h3>
+  <p class="p">Once you have confirmed the root cause, use this prompt. Notice it names the confirmed cause explicitly — this prevents Copilot from speculating and introducing unnecessary changes.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>MINIMAL FIX PROMPT</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb o">
+      <pre class="pt"><span class="kw">Task:</span>  Bug fix
+<span class="kw">Spec:</span>  specs/bugfix-refresh-token/requirements.md
+<span class="kw">Read:</span>  .ai/coding-standards.md
+<span class="kw">Read:</span>  .ai/security-rules.md
+
+<span class="kw">Confirmed root cause:</span> <span class="ph">[replace with your confirmed hypothesis, e.g.:]</span>
+Race condition — concurrent requests can read the same token as valid,
+then both proceed to the invalidation step, causing the second request
+to fail when the token has already been consumed by the first.
+
+<span class="kw">Scope:</span>      ONLY src/auth/token_refresh.py
+<span class="rd">Do NOT modify:</span> any other file, any test files, the public method signatures
+
+<span class="kw">Implement the minimal fix:</span>
+- Use atomic check-and-consume pattern on token retrieval
+- Ensure the fix works under concurrent load without introducing deadlocks
+- Add a comment explaining the race condition and why this pattern prevents it
+
+<span class="kw">Constraints (non-negotiable):</span>
+- Do NOT refactor unrelated code in this file
+- Do NOT change any public method signatures
+- Do NOT alter the error response format
+- Fix must be backward compatible with tokens issued before this change</pre>
+    </div>
+  </div>
+
+  <div class="cl warn">
+    <div class="cl-t">The Most Important Bug Fix Rule</div>
+    <strong>The fix must be smaller than the diagnosis.</strong> If the fix is larger than the root cause description — it's a refactor, not a fix. Stop and split it into two tasks: (1) the minimal fix, (2) a separate refactor spec.
+  </div>
+
+  <!-- STEP 4 — REGRESSION TESTS -->
+  <h3 class="sh" id="s2-regress">Step 4 — Write Regression Tests <span class="tag tg">Prevent Recurrence</span></h3>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>REGRESSION TEST PROMPT</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb o">
+      <pre class="pt"><span class="kw">Task:</span>  Regression tests for BUG-042
+<span class="kw">Read:</span>  specs/bugfix-refresh-token/requirements.md
+<span class="kw">Read:</span>  .ai/coding-standards.md
+
+<span class="kw">Generate:</span> tests/auth/test_token_refresh_regression.py
+
+Tests must specifically cover:
+1. <span class="ok">The exact failure scenario</span> — concurrent refresh of same token (simulate with threading or async)
+2. <span class="ok">Post-fix behaviour</span> — only the first request succeeds; subsequent concurrent requests receive 401
+3. <span class="ok">Single-request baseline</span> — normal refresh still works (non-regression)
+4. <span class="ok">Expired token boundary</span> — token 1 second past expiry returns 401
+5. <span class="ok">Already-consumed token</span> — token refreshed once then reused returns 401
+
+<span class="rd">Do NOT modify existing test files.</span>
+<span class="rd">Do NOT generate implementation code — tests only.</span></pre>
+    </div>
+  </div>
+
+  <!-- STEP 5 — VALIDATE + CLOSE -->
+  <h3 class="sh" id="s2-validate">Step 5 — Validate and Close Out</h3>
+
+  <div class="steps">
+    <div class="sr">
+      <div class="sd">R1</div>
+      <div class="sc">
+        <div class="st">Run all tests — existing + new regression tests</div>
+        <div class="sd2">Run: <code>pytest tests/auth/</code> — all existing tests must still pass. The new regression tests must also pass. If any existing test fails — you introduced a regression and must fix it before proceeding.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="sd">R2</div>
+      <div class="sc">
+        <div class="st">Security review — mandatory for all auth-related fixes</div>
+        <div class="sd2">Paste the modified <code>token_refresh.py</code> into the <code>05-security-reviewer.md</code> prompt. Auth code is high-risk — a race condition fix can introduce new vulnerabilities (e.g. double-consume, token oracle). Security review catches these before they ship.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="sd">R3</div>
+      <div class="sc">
+        <div class="st">Backward compatibility check</div>
+        <div class="sd2">Ask Copilot: <em>"Does this fix require any changes to tokens already issued and stored? Will tokens issued before this deployment continue to work after it?"</em> The answer must be yes — if not, you need a migration plan.</div>
+      </div>
+    </div>
+    <div class="sr">
+      <div class="sd done">✓</div>
+      <div class="sc">
+        <div class="st">Update spec and context</div>
+        <div class="sd2">Update <code>specs/bugfix-refresh-token/requirements.md</code> with the confirmed fix. If the fix introduced a new pattern (e.g. atomic operations on the token store), document it in <code>.ai/project-context.md</code> so future features follow the same pattern.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SCENARIO 3 — LARGE ARCHITECTURE CHANGE
+═══════════════════════════════════════════ -->
+<section class="sec" id="s3">
+  <div class="sec-ey"><span class="en">SCENARIO 03</span>Large Architecture Change</div>
+  <h2 class="sec-h2">Introducing a Centralized Authentication Gateway</h2>
+  <div class="bar p"></div>
+
+  <div class="sc-header s3">
+    <div class="sc-header-top">
+      <span class="sc-badge">ARCHITECTURE</span>
+      <span class="sc-header-title">Centralized Authentication Gateway</span>
+    </div>
+    <div class="sc-header-desc">Currently, JWT validation is scattered across three services — each with slightly different validation logic, different error formats, and separate audit logs. The goal is a single auth-gateway service that all requests pass through, producing consistent validation, a unified audit trail, and a single point for security policy updates.</div>
+    <div class="sc-header-meta">
+      <div class="sc-meta-item">⏱ <strong>Effort:</strong> 2–4 weeks</div>
+      <div class="sc-meta-item">🔗 <strong>Phases:</strong> 5</div>
+      <div class="sc-meta-item">📋 <strong>ADRs required:</strong> 1 main + sub-decisions</div>
+      <div class="sc-meta-item">⚑ <strong>Risk:</strong> Breaking change — migration plan required</div>
+    </div>
+  </div>
+
+  <div class="cl purple">
+    <div class="cl-t">Large Architecture Rule</div>
+    <strong>Architecture changes live in phases — not sessions.</strong> Each phase has its own spec folder, its own ADR (if applicable), its own prompt chain. You never mix phases. When Phase 1 is complete and reviewed, Phase 2 begins. This is how you avoid context overflow and maintain traceability.
+  </div>
+
+  <!-- ADR FIRST -->
+  <h3 class="sh" id="s3-adr">Step 1 — Architecture Decision Record First <span class="tag tp">Before Any Code</span></h3>
+  <p class="p">For any change that affects system boundaries, you write the ADR before anything else. The ADR forces you to articulate the problem, the decision, and the alternatives. It is your governance checkpoint.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>ARCHITECTURE ANALYSIS PROMPT — Session 1</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb" style="border-left-color:var(--purple)">
+      <pre class="pt"><span class="kw">Task:</span>  Architecture analysis
+<span class="kw">Read:</span>  .ai/project-context.md
+<span class="kw">Read:</span>  .ai/architecture.md
+
+<span class="kw">Current state:</span>
+JWT validation exists in three services: user-api, admin-api, reporting-api.
+Each has its own validation logic with minor inconsistencies.
+Audit logs are per-service with different schemas.
+
+<span class="kw">Target state:</span>
+A single auth-gateway service handles all token validation.
+Services delegate authentication to the gateway via a header or sidecar pattern.
+
+<span class="kw">Produce:</span>
+1. Current architecture pain points (specific, not generic)
+2. Target architecture design (how the gateway integrates with existing services)
+3. Three alternative approaches with trade-offs:
+   - Centralised gateway service (the proposed approach)
+   - Shared validation library
+   - API gateway plugin (e.g. Kong, AWS API Gateway)
+4. Migration risks and mitigation strategies
+5. Phase breakdown — what gets built and in what order
+6. Breaking changes to existing service APIs
+
+<span class="rd">Architecture analysis only. No code, no implementation, no specs yet.</span></pre>
+    </div>
+  </div>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>ADR WRITER PROMPT — after reviewing analysis</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb" style="border-left-color:var(--purple)">
+      <pre class="pt"><span class="kw">Read:</span> .ai/architecture.md
+
+Write Architecture Decision Record:
+
+<span class="kw">Title:</span>   Introduce Centralized Authentication Gateway
+<span class="kw">Number:</span>  ADR-002
+<span class="kw">Status:</span>  Accepted
+
+<span class="kw">Context:</span>
+JWT validation is distributed across three services with inconsistent rules.
+Security patches require changes in three codebases. Audit logs have different schemas.
+This creates compliance risk and operational overhead.
+
+<span class="kw">Decision:</span>
+Introduce a dedicated auth-gateway service. All inbound requests are validated
+at the gateway. Services receive pre-validated claims in a trusted header.
+
+<span class="kw">Positive consequences:</span>
+Single source of truth for auth rules · One security patch location ·
+Unified audit log · Easier compliance reporting
+
+<span class="kw">Negative consequences:</span>
+New service to deploy and operate · Single point of failure (mitigated by HA)
+
+<span class="kw">Alternatives rejected:</span>
+Shared library — still requires each service to update per release.
+API gateway plugin — creates vendor lock-in and limits custom audit logic.
+
+<span class="ok">Save to: docs/adr/ADR-002-centralized-auth-gateway.md</span></pre>
+    </div>
+  </div>
+
+  <!-- PHASE PLANNING -->
+  <h3 class="sh" id="s3-phases">Step 2 — Phase Planning</h3>
+  <p class="p">A large architecture change that isn't phased is a big-bang delivery with big-bang risk. Each phase must be independently deployable and independently reversible.</p>
+
+  <div class="phase-wrap">
+    <div class="phases">
+      <div class="phase">
+        <div class="ph-box p1">
+          <div class="ph-num">PHASE 1</div>
+          <div class="ph-name">Design & Contracts</div>
+          <ul class="ph-items">
+            <li>ADR-002 approved</li>
+            <li>OpenAPI spec for gateway</li>
+            <li>Auth header contract defined</li>
+            <li>Error response standard set</li>
+            <li>No code shipped</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ph-connector">→</div>
+      <div class="phase">
+        <div class="ph-box p2">
+          <div class="ph-num">PHASE 2</div>
+          <div class="ph-name">Gateway Service</div>
+          <ul class="ph-items">
+            <li>New auth-gateway repo</li>
+            <li>Implements JWT validation</li>
+            <li>Feature-flagged (shadow mode)</li>
+            <li>Audit log running</li>
+            <li>Not routing traffic yet</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ph-connector">→</div>
+      <div class="phase">
+        <div class="ph-box p3">
+          <div class="ph-num">PHASE 3</div>
+          <div class="ph-name">Service Migration</div>
+          <ul class="ph-items">
+            <li>user-api migrated first</li>
+            <li>Dual-run period: both paths</li>
+            <li>Validate audit parity</li>
+            <li>Roll back path stays open</li>
+            <li>admin-api next</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ph-connector">→</div>
+      <div class="phase">
+        <div class="ph-box p4">
+          <div class="ph-num">PHASE 4</div>
+          <div class="ph-name">Cutover</div>
+          <ul class="ph-items">
+            <li>All services migrated</li>
+            <li>Legacy paths disabled</li>
+            <li>Feature flag removed</li>
+            <li>Load test at scale</li>
+            <li>Full audit verified</li>
+          </ul>
+        </div>
+      </div>
+      <div class="ph-connector">→</div>
+      <div class="phase">
+        <div class="ph-box p5">
+          <div class="ph-num">PHASE 5</div>
+          <div class="ph-name">Cleanup</div>
+          <ul class="ph-items">
+            <li>Old JWT code deleted</li>
+            <li>Tests updated</li>
+            <li>Docs updated</li>
+            <li>project-context.md updated</li>
+            <li>architecture.md updated</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cl info">
+    <div class="cl-t">Phase Spec Structure</div>
+    Each phase gets its own spec folder: <code>specs/auth-gateway-phase-1/</code>, <code>specs/auth-gateway-phase-2/</code>, etc. Each has its own requirements.md and acceptance-tests.md. Each phase runs its own complete prompt chain. You never mix phases in a single spec or a single session.
+  </div>
+
+  <!-- CONTRACT FIRST -->
+  <h3 class="sh" id="s3-contract">Step 3 — Contract-First Design (Phase 1 execution) <span class="tag tp">API Before Code</span></h3>
+  <p class="p">Phase 1 produces contracts — not implementation. The contract defines what the gateway will do before anyone builds it. Every downstream service builds against this contract.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>CONTRACT DESIGN PROMPT — Phase 1</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb" style="border-left-color:var(--purple)">
+      <pre class="pt"><span class="kw">Task:</span>  Contract design — auth-gateway Phase 1
+<span class="kw">Read:</span>  docs/adr/ADR-002-centralized-auth-gateway.md
+<span class="kw">Read:</span>  .ai/api-guidelines.md
+<span class="kw">Read:</span>  specs/auth-gateway-phase-1/requirements.md
+
+<span class="kw">Generate:</span> specs/auth-gateway-phase-1/api-contract.yaml (OpenAPI 3.0)
+
+The contract must define:
+1. POST /auth/validate — request and response schema
+2. The X-Auth-Claims trusted header format (what claims are passed to services)
+3. Error response schema for: invalid token, expired token, service unreachable
+4. Health check endpoint: GET /health
+
+Also generate: specs/auth-gateway-phase-1/integration-contract.md
+  - How existing services consume the gateway
+  - What header changes are required in user-api, admin-api, reporting-api
+  - What services must NOT change (backward compat surface)
+
+<span class="rd">No implementation. Contracts and integration guide only.</span></pre>
+    </div>
+  </div>
+
+  <!-- PHASE 2 IMPLEMENTATION -->
+  <h3 class="sh" id="s3-p1">Step 4 — Phase 2 Implementation (Gateway Service) <span class="tag tc">Follow the Chain</span></h3>
+  <p class="p">Phase 2 is where the gateway service is built. This follows the exact same 6-link chain as Scenario 1 — but scoped to the gateway service only. The key difference is that you have more sub-tasks to decompose.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>PHASE 2 ARCHITECT PLAN PROMPT</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb" style="border-left-color:var(--purple)">
+      <pre class="pt"><span class="kw">Task:</span>  Feature — auth-gateway service (Phase 2)
+<span class="kw">Read:</span>  specs/auth-gateway-phase-1/api-contract.yaml
+<span class="kw">Read:</span>  specs/auth-gateway-phase-2/requirements.md
+<span class="kw">Read:</span>  docs/adr/ADR-002-centralized-auth-gateway.md
+<span class="kw">Read:</span>  .ai/project-context.md
+
+<span class="kw">Plan the auth-gateway service implementation.</span>
+
+Break the service into implementation units (each will become its own implementation prompt):
+- Unit 1: Service skeleton + config loading
+- Unit 2: JWT validation core (reuse from jwt-middleware if applicable)
+- Unit 3: POST /auth/validate endpoint
+- Unit 4: X-Auth-Claims header generation
+- Unit 5: Audit logging module
+- Unit 6: Health check endpoint
+
+For each unit: files to create, dependencies, test approach.
+<span class="rd">Architecture plan only. No code.</span></pre>
+    </div>
+  </div>
+
+  <!-- CONTEXT OVERFLOW PREVENTION -->
+  <h3 class="sh" id="s3-context">Step 5 — Preventing Context Overflow <span class="tag tp">Critical for Long Work</span></h3>
+  <p class="p">Multi-week architecture work is where context overflow destroys quality. As the project grows, sessions become polluted with stale assumptions. Here is how to prevent it systematically.</p>
+
+  <div class="ctx-box">
+    <div class="ctx-side prob">
+      <div class="ctx-side-title">Problems That Occur Without This</div>
+      <div class="ctx-item">Copilot generates code using Phase 1 architecture in a Phase 3 session — because project-context.md was never updated after Phase 2</div>
+      <div class="ctx-item">A security rule added in Phase 2 is not followed in Phase 3 because it was never added to security-rules.md</div>
+      <div class="ctx-item">Session grows to 40 messages — model quality degrades, early context deprioritised, output becomes inconsistent</div>
+      <div class="ctx-item">Two sessions contradict each other — no source of truth to arbitrate</div>
+    </div>
+    <div class="ctx-side sol">
+      <div class="ctx-side-title">How to Prevent It</div>
+      <div class="ctx-item">After every phase completion: update <code>.ai/architecture.md</code> to reflect new service boundaries</div>
+      <div class="ctx-item">After every ADR: update <code>.ai/project-context.md</code> with the new architectural fact</div>
+      <div class="ctx-item">Maximum 15 messages per session — then close and start fresh with Continuation Opener</div>
+      <div class="ctx-item">Each session's spec path is the single source of truth — not the chat history</div>
+    </div>
+  </div>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>PHASE HANDOFF PROMPT — use at start of each new phase</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb" style="border-left-color:var(--purple)">
+      <pre class="pt"><span class="kw">Continuing:</span>  Auth Gateway project — Phase <span class="ph">[N]</span>
+<span class="kw">Read:</span>        .ai/project-context.md <span class="cm">(updated after Phase N-1)</span>
+<span class="kw">Read:</span>        .ai/architecture.md    <span class="cm">(updated after Phase N-1)</span>
+<span class="kw">Read:</span>        docs/adr/ADR-002-centralized-auth-gateway.md
+<span class="kw">Spec:</span>        specs/auth-gateway-phase-<span class="ph">[N]</span>/
+
+<span class="kw">Phase <span class="ph">[N-1]</span> completed:</span> <span class="ph">[describe what was built and verified]</span>
+<span class="kw">Phase <span class="ph">[N]</span> goal:</span>      <span class="ph">[describe this phase's output]</span>
+<span class="kw">This session:</span>       <span class="ph">[which step of the chain: Plan/Spec/Test/Impl/Review]</span>
+
+<span class="cm"># This opener re-establishes full context without repeating history.</span>
+<span class="cm"># The .ai/ files carry the knowledge. The session carries only the task.</span></pre>
+    </div>
+  </div>
+
+  <!-- MIGRATION PLAN -->
+  <h3 class="sh" id="s3-migrate">Step 6 — Migration Planning (Phases 3–4) <span class="tag to">No Big Bang</span></h3>
+  <p class="p">The most dangerous moment in any architecture change is cutover. Here is how to use Copilot to plan a safe, incremental migration with rollback at every step.</p>
+
+  <div class="pw">
+    <div class="plr">
+      <span class="pft"><span class="dot"></span>MIGRATION PLAN PROMPT</span>
+      <button class="cpb" onclick="cp(this)">Copy</button>
+    </div>
+    <div class="pb" style="border-left-color:var(--purple)">
+      <pre class="pt"><span class="kw">Task:</span>  Migration planning — Phase 3
+<span class="kw">Read:</span>  docs/adr/ADR-002-centralized-auth-gateway.md
+<span class="kw">Read:</span>  specs/auth-gateway-phase-1/integration-contract.md
+<span class="kw">Read:</span>  .ai/architecture.md
+
+<span class="kw">Produce a migration plan for moving user-api to use the auth-gateway.</span>
+
+The plan must include:
+1. <span class="kw">Feature flag strategy</span> — how to dual-run old and new validation paths
+2. <span class="kw">Canary approach</span> — what % of traffic starts on gateway, how to increase
+3. <span class="kw">Validation parity checks</span> — how to confirm gateway produces same result as old validation
+4. <span class="kw">Rollback trigger</span> — what metric or error rate triggers an immediate rollback
+5. <span class="kw">Rollback steps</span> — exact sequence to revert to old path with zero downtime
+6. <span class="kw">Success criteria</span> — what must be true before removing the old path
+
+<span class="rd">Migration plan only. No implementation code.</span></pre>
+    </div>
+  </div>
+
+  <div class="cl warn">
+    <div class="cl-t">The Migration Non-Negotiables</div>
+    <strong>Every migration must have: (1) a feature flag to enable rollback without redeployment, (2) a defined rollback trigger — a specific metric that, if crossed, triggers immediate rollback, (3) a dual-run period where both paths produce auditable output you can compare.</strong> Without these three, you have a big-bang deployment dressed up as a migration.
+  </div>
+
+  <ul class="rl">
+    <li><strong>Never migrate all services in one deployment.</strong> Migrate one service, validate for 48 hours, then migrate the next. The rollback blast radius stays small.</li>
+    <li><strong>Validate audit log parity before cutting over.</strong> Run both paths in parallel for a period and compare their audit output line by line. Discrepancies mean a spec gap, not a code bug — fix the spec first.</li>
+    <li><strong>Update .ai/architecture.md after each service migration.</strong> The architecture diagram must always reflect current reality, not target state.</li>
+    <li><strong>Phase 5 cleanup is not optional.</strong> Old JWT validation code left in services after migration becomes "mystery code" — it will confuse future AI sessions and may be accidentally re-activated.</li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     QUICK REFERENCE CARD
+═══════════════════════════════════════════ -->
+<section class="sec" id="quickref">
+  <div class="sec-ey"><span class="en">★</span>Quick Reference</div>
+  <h2 class="sec-h2">Every prompt, every scenario, one table.</h2>
+  <div class="bar c"></div>
+  <p class="sec-intro">Keep this section open while you work. It tells you which prompt to reach for, what to feed it, and what it produces.</p>
+
+  <h3 class="sh">Prompt File Reference</h3>
+  <table class="rt">
+    <thead><tr><th>Prompt File</th><th>Chain Step</th><th>Give it</th><th>It produces</th><th>Gate: check before proceeding</th></tr></thead>
+    <tbody>
+      <tr><td>01-architect-plan.md</td><td><span class="tg c">PLAN</span></td><td>Task description + .ai/project-context.md + .ai/architecture.md</td><td>Implementation plan — numbered sections, no code</td><td>Plan covers all requirements · File list correct · No missing edge cases</td></tr>
+      <tr><td>02-spec-writer.md</td><td><span class="tg c">SPEC</span></td><td>Implementation plan + business requirement</td><td>specs/[feature]/ with requirements.md, edge-cases.md, acceptance-tests.md</td><td>Edge cases non-empty · Acceptance criteria are testable · Security requirements captured</td></tr>
+      <tr><td>03-test-writer.md</td><td><span class="tg c">TEST</span></td><td>acceptance-tests.md + edge-cases.md + .ai/coding-standards.md</td><td>Test file — all spec cases covered, no implementation</td><td>Every acceptance row has a test · Edge cases covered · Mocks correct</td></tr>
+      <tr><td>04-implementer.md</td><td><span class="tg c">IMPL</span></td><td>Spec path + scope declaration + test file path + src/examples/</td><td>Single scoped implementation unit (one file or one function)</td><td>All tests pass · No scope creep · No hardcoded values</td></tr>
+      <tr><td>06-code-reviewer.md</td><td><span class="tg r">REVIEW</span></td><td>Generated code file or diff</td><td>Numbered findings: Critical / High / Medium / Low</td><td>All Critical+High fixed before commit</td></tr>
+      <tr><td>05-security-reviewer.md</td><td><span class="tg r">REVIEW</span></td><td>Generated code file or diff + .ai/security-rules.md</td><td>Security findings with OWASP references</td><td>All Critical+High fixed · No fail-open · No token in logs</td></tr>
+      <tr><td>07-adr-writer.md</td><td><span class="tg p">DECIDE</span></td><td>Decision title + context + alternatives</td><td>docs/adr/ADR-NNN-title.md</td><td>Context is accurate · Consequences honest · Alternatives genuinely considered</td></tr>
+      <tr><td>08-doc-generator.md</td><td><span class="tg g">DOC</span></td><td>Module name + spec path</td><td>Module README + sequence diagram + runbook</td><td>Docs reflect actual implementation · Runbook is actionable</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sh">Scenario Quick Map</h3>
+  <table class="rt">
+    <thead><tr><th>Situation</th><th>First action</th><th>Prompt sequence</th><th>Special rules</th></tr></thead>
+    <tbody>
+      <tr><td>New feature, ≤2 days</td><td>Create <code>specs/feature-name/</code></td><td>01 → 02 → 03 → 04 → 06 → 05 → 08</td><td>One implementation prompt per function/file</td></tr>
+      <tr><td>Bug fix — any type</td><td>Write symptom description in <code>specs/bugfix-name/requirements.md</code></td><td>RCA prompt → 04 (minimal) → regression tests → 05</td><td>Confirm root cause before fixing · Minimal scope only</td></tr>
+      <tr><td>Large feature, >2 days</td><td>Architecture analysis prompt → ADR</td><td>ADR → phase specs → (01→02→03→04→06→05→08) per phase</td><td>One phase per spec folder · Update .ai/ files between phases</td></tr>
+      <tr><td>Refactor</td><td>Open <code>.ai/skills/refactor-skill.md</code></td><td>01 (scope plan) → 04 (no behaviour change) → 06 → test suite</td><td>No behaviour change · All existing tests must still pass</td></tr>
+      <tr><td>API endpoint</td><td>Write OpenAPI contract first</td><td>Contract design → 02 → 03 → 04 → 05 (security mandatory) → 06</td><td>Read .ai/api-guidelines.md in every session</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sh">Session Starter Formats</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0">
+    <div class="pw" style="margin:0">
+      <div class="plr">
+        <span class="pft"><span class="dot"></span>NEW TASK — Session 1</span>
+        <button class="cpb" onclick="cp(this)">Copy</button>
+      </div>
+      <div class="pb">
+        <pre class="pt"><span class="kw">Task:</span>  <span class="ph">[Feature|Bug|Enhancement|Refactor]</span>
+<span class="kw">Spec:</span>  <span class="ph">specs/[feature-folder]/</span>
+<span class="kw">Scope:</span> <span class="ph">[exact file(s) in scope]</span></pre>
+      </div>
+    </div>
+    <div class="pw" style="margin:0">
+      <div class="plr">
+        <span class="pft"><span class="dot"></span>CONTINUING — Next Session</span>
+        <button class="cpb" onclick="cp(this)">Copy</button>
+      </div>
+      <div class="pb">
+        <pre class="pt"><span class="kw">Continuing:</span>  <span class="ph">[feature name]</span>
+<span class="kw">Last done:</span>   <span class="ph">[what completed]</span>
+<span class="kw">Spec:</span>        <span class="ph">specs/[folder]/</span>
+<span class="kw">Current step:</span><span class="ph">[Plan|Spec|Test|Impl|Review|Doc]</span>
+<span class="kw">This session:</span><span class="ph">[what you need]</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="sh">The Non-Negotiables — Print This</h3>
+  <ul class="rl">
+    <li><strong>No implementation without a spec.</strong> A spec means requirements.md AND edge-cases.md AND acceptance-tests.md — all three, filled in.</li>
+    <li><strong>No commit without code review.</strong> Run 06-code-reviewer.md on every generated file before <code>git add</code>.</li>
+    <li><strong>Security review is mandatory</strong> for any code touching authentication, input handling, logging, or data access.</li>
+    <li><strong>One prompt = one unit of responsibility.</strong> One function, one endpoint, one test file — never two.</li>
+    <li><strong>Declare scope explicitly</strong> in every implementation prompt: <code>Scope: ONLY [file]</code> and <code>Do NOT modify: [list]</code>.</li>
+    <li><strong>Update .ai/ files</strong> the same day you make any change to tech stack, architecture, or security rules. A stale context file is worse than no context file.</li>
+    <li><strong>Large architecture changes live in phases.</strong> Each phase has its own spec, its own prompt chain, its own review. Never mix phases in one session.</li>
+  </ul>
+</section>
+
+<footer>
+  <div class="ft-l">
+    <div><span>SDD Playbook</span> — Part 2: Execution Scenarios</div>
+    <div style="margin-top:4px;font-size:10px">GitHub Copilot + VS Code · Claude + Codex</div>
+  </div>
+  <a class="ft-btn" href="sdd-playbook-part1.html">← Back to Part 1: Foundation</a>
+</footer>
+
+</main>
+</div>
+
+<script>
+// Sidebar scroll tracking
+const secs = document.querySelectorAll('.sec[id]');
+const links = document.querySelectorAll('.sb-a[data-s]');
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector(`.sb-a[data-s="${e.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, { rootMargin: '-12% 0px -72% 0px', threshold: 0 });
+secs.forEach(s => io.observe(s));
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+
+// Copy buttons
+function cp(btn) {
+  const wrap = btn.closest('.pw') || btn.closest('.pb');
+  const pre = wrap ? wrap.querySelector('.pt') : null;
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+// Section reveal
+const revIO = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+      revIO.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.04 });
+document.querySelectorAll('.sec').forEach(s => {
+  s.style.opacity = '0';
+  s.style.transform = 'translateY(18px)';
+  s.style.transition = 'opacity .55s ease, transform .55s ease';
+  revIO.observe(s);
+});
+document.querySelector('.dh').style.opacity = '1';
+</script>
+</body>
+</html>

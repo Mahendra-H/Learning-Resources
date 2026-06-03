@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICP — Live Demo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --black:#000;--s1:#0d0d0d;--s2:#111;--s3:#171717;--s4:#1e1e1e;--s5:#252525;
+  --border:#2a2a2a;--b2:#333;--b3:#3a3a3a;
+  --t1:#f0f0f0;--t2:#c8c8c8;--t3:#999;--t4:#666;
+  --teal:#20D97F;--tealg:rgba(32,217,127,.15);--teal-dim:#14a85e;
+  --purple:#B060FF;--purpleg:rgba(176,96,255,.15);
+  --pink:#FF318C;
+  --amber:#FFB020;--amberg:rgba(255,176,32,.12);
+  --blue:#40A0FF;--blueg:rgba(64,160,255,.12);
+  --red:#FF4444;--redg:rgba(255,68,68,.12);
+  --green:#20D97F;
+  --orange:#FF6430;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--black);
+  color:var(--t1);
+  min-height:100vh;
+  font-size:14px;
+  line-height:1.5;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--teal)}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(0,0,0,.95);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 2rem;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--teal),var(--purple),var(--pink));
+}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{
+  width:30px;height:30px;border-radius:7px;
+  background:linear-gradient(135deg,var(--teal),var(--purple));
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#000;
+  font-family:'JetBrains Mono',monospace;
+}
+.nav-title{font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--t1)}
+.nav-title span{
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.nav-right{display:flex;align-items:center;gap:8px}
+.status-pill{
+  font-size:11px;font-weight:600;padding:3px 11px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;transition:all .3s;
+}
+
+/* HERO */
+.hero{
+  text-align:center;padding:3.5rem 2rem 2rem;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+  width:600px;height:300px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(32,217,127,.06),transparent 70%);
+  pointer-events:none;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--tealg);border:1px solid rgba(32,217,127,.25);
+  border-radius:20px;padding:4px 14px;font-size:11px;font-weight:600;
+  color:var(--teal);font-family:'JetBrains Mono',monospace;margin-bottom:1.2rem;
+}
+.hero-badge::before{content:'●';animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{
+  font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1.15;
+  margin-bottom:.5rem;color:var(--t1);
+}
+.hero h1 em{
+  font-style:normal;
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero p{font-size:15px;color:var(--t3);max-width:560px;margin:0 auto}
+
+/* MAIN */
+.main{max-width:1300px;margin:0 auto;padding:1.5rem 2rem 4rem}
+
+/* SERVER BAR */
+.server-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.65rem 1.1rem;
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:1rem;position:relative;overflow:hidden;
+}
+.server-bar::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--teal);transition:background .3s;
+}
+.server-bar.running::before{background:var(--amber);animation:pulse-bar 1s infinite alternate}
+.server-bar.done-allow::before{background:var(--teal)}
+.server-bar.done-caution::before{background:var(--amber)}
+.server-bar.done-approve::before{background:var(--blue)}
+.server-bar.done-deny::before{background:var(--red)}
+@keyframes pulse-bar{from{opacity:.5}to{opacity:1}}
+.sb-left{display:flex;align-items:center;gap:10px}
+.sb-indicator{width:8px;height:8px;border-radius:50%;transition:background .3s}
+.sb-info h3{font-size:12px;font-weight:600;color:var(--t1);font-family:'JetBrains Mono',monospace}
+.sb-info p{font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace}
+.sb-right{display:flex;gap:8px;align-items:center}
+.chip{
+  font-size:10.5px;padding:3px 10px;border-radius:20px;
+  background:var(--s4);border:1px solid var(--border);
+  color:var(--t3);font-family:'JetBrains Mono',monospace;
+}
+
+/* GRID LAYOUTS */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.grid-sc{display:grid;grid-template-columns:320px 1fr;gap:12px;margin-bottom:12px}
+
+/* PANELS */
+.panel{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;
+}
+.panel-hdr{
+  display:flex;align-items:center;gap:8px;
+  padding:.5rem .85rem;border-bottom:1px solid var(--border);
+  background:var(--s3);
+}
+.panel-hdr-title{
+  font-size:10.5px;font-weight:700;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.07em;
+  font-family:'JetBrains Mono',monospace;
+}
+.panel-hdr-ico{font-size:13px;color:var(--t4)}
+.panel-body{padding:.8rem .9rem}
+
+/* SCENARIO BUTTONS */
+.scenario-btn{
+  display:flex;align-items:flex-start;gap:10px;width:100%;
+  padding:.7rem .85rem;border:1px solid var(--border);border-radius:8px;
+  background:transparent;cursor:pointer;text-align:left;
+  transition:border-color .15s,background .15s;margin-bottom:7px;
+}
+.scenario-btn:last-child{margin-bottom:0}
+.scenario-btn:hover{background:var(--s3);border-color:var(--b2)}
+.scenario-btn.active{background:rgba(32,217,127,.05);border-color:rgba(32,217,127,.35)}
+.sb-icon{font-size:18px;flex-shrink:0;margin-top:2px}
+.sb-name{font-size:12.5px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.sb-desc{font-size:11px;color:var(--t3);line-height:1.45;margin-bottom:5px}
+.sb-pill{
+  display:inline-block;font-size:10px;font-weight:700;
+  padding:2px 9px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* SCORE */
+.score-center{text-align:center;padding:1rem .5rem .6rem}
+.score-num{
+  font-size:60px;font-weight:800;line-height:1;
+  font-family:'JetBrains Mono',monospace;
+  transition:color .4s;
+  color:var(--t4);
+}
+.gauge-wrap{
+  height:6px;background:var(--s4);border-radius:3px;overflow:hidden;
+  margin:.7rem 0 .5rem;
+}
+.gauge-bar{height:100%;border-radius:3px;width:0%;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.posture-badge{
+  display:inline-block;font-size:13px;font-weight:700;
+  padding:5px 18px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;
+  transition:all .3s;
+  background:var(--s4);color:var(--t4);border:1px solid var(--border);
+}
+
+/* METRICS */
+.metric-card{
+  background:var(--s3);border:1px solid var(--border);border-radius:8px;
+  padding:.65rem .8rem;text-align:center;
+}
+.metric-val{
+  font-size:22px;font-weight:700;color:var(--t1);
+  font-family:'JetBrains Mono',monospace;
+}
+.metric-lbl{font-size:10px;color:var(--t4);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+
+/* RUN BUTTON */
+.run-btn{
+  width:100%;padding:.75rem;
+  background:linear-gradient(135deg,rgba(32,217,127,.12),rgba(176,96,255,.08));
+  border:1px solid rgba(32,217,127,.3);border-radius:8px;
+  color:var(--teal);cursor:pointer;font-size:13px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.03em;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.run-btn:hover:not(:disabled){
+  background:linear-gradient(135deg,rgba(32,217,127,.2),rgba(176,96,255,.15));
+  border-color:rgba(32,217,127,.5);
+  transform:translateY(-1px);
+}
+.run-btn:disabled{opacity:.4;cursor:default;transform:none}
+.run-btn-dot{width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.run-btn.running .run-btn-dot{animation:spin-dot .6s linear infinite}
+@keyframes spin-dot{to{transform:rotate(360deg)}}
+
+/* SIGNALS */
+.sig-row{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 0;border-bottom:1px solid var(--border);
+}
+.sig-row:last-child{border-bottom:none}
+.sig-name{font-size:12px;color:var(--t2);flex:1;min-width:0}
+.sig-src{font-size:10px;color:var(--t4);min-width:64px;font-family:'JetBrains Mono',monospace}
+.sig-bar-w{width:56px;height:4px;background:var(--s4);border-radius:2px;overflow:hidden}
+.sig-bar{height:100%;border-radius:2px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.sig-val{font-size:11.5px;font-weight:700;min-width:28px;text-align:right;font-family:'JetBrains Mono',monospace}
+
+/* CHAIN */
+.chain-flow{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:.3rem 0}
+.chain-node{
+  font-size:11px;font-weight:500;padding:.3rem .7rem;
+  border:1px solid var(--border);border-radius:6px;
+  background:var(--s3);color:var(--t2);
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;
+}
+.chain-node.caller{border-color:rgba(32,217,127,.4);color:var(--teal);background:rgba(32,217,127,.06)}
+.chain-node.icp{border-color:rgba(32,217,127,.5);color:var(--teal);background:rgba(32,217,127,.1);font-weight:700}
+.chain-arrow{font-size:11px;color:var(--t4)}
+.chain-depth{font-size:11px;color:var(--t3);margin-top:6px;font-family:'JetBrains Mono',monospace}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;max-height:320px;overflow-y:auto;gap:0}
+.tl-item{
+  display:flex;gap:10px;padding:6px 0;
+  border-bottom:1px solid var(--border);
+  animation:tlIn .25s ease;
+}
+.tl-item:last-child{border-bottom:none}
+@keyframes tlIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.tl-ms{font-size:10px;color:var(--t4);min-width:50px;padding-top:2px;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.tl-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.tl-body{flex:1}
+.tl-text{font-size:12px;color:var(--t2);line-height:1.45}
+.tl-text b{color:var(--t1)}
+.tl-tag{
+  display:inline-block;font-size:10px;font-weight:600;
+  padding:1px 7px;border-radius:4px;margin-top:3px;
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* PAYLOAD */
+.payload-box{
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;
+  line-height:1.75;color:var(--t2);
+  background:var(--s3);border:1px solid var(--border);border-radius:8px;
+  padding:.8rem 1rem;max-height:260px;overflow-y:auto;
+  position:relative;
+}
+.payload-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+  border-radius:8px 8px 0 0;
+}
+.pk{color:var(--t3)}
+.ps{color:#9ed67f}
+.pn{color:#f0a050}
+.pt{color:#ff6464}
+.pf{color:var(--t4)}
+.pp{font-weight:700}
+
+/* EMPTY */
+.empty{
+  padding:2rem 1rem;text-align:center;
+  font-size:12px;color:var(--t4);
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* AUDIT */
+.audit-item{
+  background:var(--s3);border:1px solid var(--border);border-radius:8px;
+  padding:.65rem .85rem;margin-bottom:7px;
+  display:flex;align-items:flex-start;gap:10px;
+  animation:tlIn .3s ease;
+}
+.audit-item:last-child{margin-bottom:0}
+.audit-ico{font-size:16px;flex-shrink:0;margin-top:1px}
+.audit-body{flex:1}
+.audit-title{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.audit-meta{font-size:10.5px;color:var(--t3);font-family:'JetBrains Mono',monospace;line-height:1.5}
+
+/* FOOTER */
+footer{
+  text-align:center;padding:2rem;border-top:1px solid var(--border);
+  font-size:11px;color:var(--t4);font-family:'JetBrains Mono',monospace;
+  letter-spacing:.04em;
+}
+footer span{color:var(--teal)}
+
+@media(max-width:900px){
+  .grid-sc{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .hero h1{font-size:28px}
+  .main{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo">ICP</div>
+    <div class="nav-title"><span>Identity Context Protocol</span></div>
+  </div>
+  <div class="nav-right">
+    <div class="status-pill" id="statusPill"
+      style="background:var(--s4);border:1px solid var(--border);color:var(--t4)">
+      idle
+    </div>
+    <div class="chip" id="connChip">keycloak + authentik</div>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">Interactive live demo</div>
+  <h1>Watch ICP in <em>action</em></h1>
+  <p>Select a scenario, fire a request, and watch every step unfold — risk signals, posture decision, delegation chain, and the exact JSON payload returned to the agent.</p>
+</div>
+
+<div class="main">
+
+  <!-- SERVER BAR -->
+  <div class="server-bar" id="serverBar">
+    <div class="sb-left">
+      <div class="sb-indicator" id="sbDot" style="background:var(--t4)"></div>
+      <div class="sb-info">
+        <h3 id="sbTitle">ICP MCP Server — ready</h3>
+        <p id="sbSub">localhost:3100 · stdio transport · get_identity_context()</p>
+      </div>
+    </div>
+    <div class="sb-right">
+      <div class="chip">Node.js 20 · TypeScript</div>
+      <div class="chip">Redis cache</div>
+      <div class="chip" id="latencyChip">p95 &lt;150ms</div>
+    </div>
+  </div>
+
+  <!-- SCENARIOS + SCORE -->
+  <div class="grid-sc">
+
+    <!-- LEFT: scenario picker -->
+    <div>
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-hdr-ico">▶</span>
+          <span class="panel-hdr-title">Select scenario &amp; run</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="scenario-btn active" id="sc0" onclick="selectScenario(0)">
+            <span class="sb-icon">✅</span>
+            <div>
+              <div class="sb-name">Normal session</div>
+              <div class="sb-desc">Priya · Mumbai login · clean MFA · compliant device · no anomalies · 1-hop chain</div>
+              <span class="sb-pill" style="background:rgba(32,217,127,.12);color:var(--teal);border:1px solid rgba(32,217,127,.25)">→ allow</span>
+            </div>
+          </div>
+
+          <div class="scenario-btn" id="sc1" onclick="selectScenario(1)">
+            <span class="sb-icon">⚠️</span>
+            <div>
+              <div class="sb-name">Anomalous session — Raj</div>
+              <div class="sb-desc">Chennai login (usual: Bengaluru) · Finance-Admin-Temp active via Authentik · 2-hop chain</div>
+              <span class="sb-pill" style="background:rgba(255,176,32,.12);color:var(--amber);border:1px solid rgba(255,176,32,.25)">→ proceed-with-caution</span>
+            </div>
+          </div>
+
+          <div class="scenario-btn" id="sc2" onclick="selectScenario(2)">
+            <span class="sb-icon">🔔</span>
+            <div>
+              <div class="sb-name">High-risk session — Arjun</div>
+              <div class="sb-desc">Contractor · stale MFA (95 min) · 3-hop chain · 6 concurrent sessions</div>
+              <span class="sb-pill" style="background:rgba(64,160,255,.12);color:var(--blue);border:1px solid rgba(64,160,255,.25)">→ require-approval</span>
+            </div>
+          </div>
+
+          <div class="scenario-btn" id="sc3" onclick="selectScenario(3)">
+            <span class="sb-icon">🚫</span>
+            <div>
+              <div class="sb-name">Credential attack — Priya</div>
+              <div class="sb-desc">Singapore at 3AM · unknown device · 4-hop automated chain · CA policy fail</div>
+              <span class="sb-pill" style="background:rgba(255,68,68,.12);color:var(--red);border:1px solid rgba(255,68,68,.25)">→ deny</span>
+            </div>
+          </div>
+
+          <button class="run-btn" id="runBtn" onclick="runDemo()" style="margin-top:4px">
+            <div class="run-btn-dot"></div>
+            Run get_identity_context() ↗
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: score + metrics -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <div class="panel">
+        <div class="panel-hdr">
+          <span class="panel-hdr-ico">◉</span>
+          <span class="panel-hdr-title">Composite risk score</span>
+        </div>
+        <div class="panel-body" style="padding:.5rem .9rem .8rem">
+          <div class="score-center">
+            <div class="score-num" id="scoreNum">—</div>
+            <div class="gauge-wrap"><div class="gauge-bar" id="gaugeBar"></div></div>
+            <div style="font-size:10.5px;color:var(--t4);font-family:'JetBrains Mono',monospace;margin-bottom:.5rem">out of 100 · 7 weighted signals</div>
+            <div><span class="posture-badge" id="postureBadge">waiting for request</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="metric-card"><div class="metric-val" id="mLatency">—</div><div class="metric-lbl">latency ms</div></div>
+        <div class="metric-card"><div class="metric-val" id="mChain">—</div><div class="metric-lbl">chain depth</div></div>
+        <div class="metric-card"><div class="metric-val" id="mTTL">—</div><div class="metric-lbl">cache TTL</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SIGNALS + CHAIN -->
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-hdr-ico">◈</span><span class="panel-hdr-title">Risk signals</span></div>
+      <div class="panel-body" id="signalsPanel"><div class="empty">Run a scenario to see signals</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-hdr-ico">⟳</span><span class="panel-hdr-title">Agent delegation chain</span></div>
+      <div class="panel-body" id="chainPanel"><div class="empty">Run a scenario to see the chain</div></div>
+    </div>
+  </div>
+
+  <!-- TIMELINE + PAYLOAD -->
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-hdr-ico">▷</span><span class="panel-hdr-title">Request timeline</span></div>
+      <div class="panel-body" style="padding:.5rem .75rem">
+        <div class="timeline" id="timeline"><div class="empty">Timeline will appear here</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-hdr-ico">{}</span><span class="panel-hdr-title">Context payload — returned to agent</span></div>
+      <div class="panel-body" style="padding:.5rem .75rem">
+        <div id="payloadBox"><div class="empty">JSON payload will appear here</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT LOG -->
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-hdr"><span class="panel-hdr-ico">≡</span><span class="panel-hdr-title">Audit log — all agent actions</span></div>
+    <div class="panel-body" id="auditLog"><div class="empty">Audit events will appear after each run</div></div>
+  </div>
+
+</div>
+
+<footer>
+  ICP — Identity Context Protocol &nbsp;·&nbsp; <span>Interactive Demo</span> &nbsp;·&nbsp; Node.js · TypeScript · MCP · CrewAI · Keycloak · Authentik · Ollama
+</footer>
+
+<script>
+const SCENARIOS = [
+  {
+    id:0, name:"Normal session", user:"priya.sharma@acme.com", dept:"Engineering",
+    action:"read_sprint_board", resource:"Jira · Engineering workspace",
+    chain:["orchestrator-001","data-agent-004"],
+    signals:[
+      {name:"Location anomaly",src:"Keycloak",weight:25,active:false},
+      {name:"Privilege escalated",src:"Authentik",weight:20,active:false},
+      {name:"MFA age > 60 min",src:"Authentik",weight:15,active:false},
+      {name:"Chain depth ≥ 3",src:"ICP",weight:15,active:false},
+      {name:"Device non-compliant",src:"Keycloak",weight:10,active:false},
+      {name:"CA policy non-compliant",src:"Keycloak",weight:10,active:false},
+      {name:"Concurrent sessions > 5",src:"ICP",weight:5,active:false},
+    ],
+    score:8, posture:"allow", ttl:300, latency:67,
+    groups:["Engineering-All","Sprint-ReadOnly"],
+    tempGrants:[], sessionAge:12, mfaAge:8, device:"compliant",
+    auditOutcome:"completed", siem:false,
+  },
+  {
+    id:1, name:"Anomalous session — Raj", user:"raj.kumar@acme.com", dept:"IAM-Developers",
+    action:"read_employee_records", resource:"SharePoint · Payroll folder",
+    chain:["orchestrator-001","data-agent-007"],
+    signals:[
+      {name:"Location anomaly",src:"Keycloak",weight:25,active:true},
+      {name:"Privilege escalated",src:"Authentik",weight:20,active:true},
+      {name:"MFA age > 60 min",src:"Authentik",weight:15,active:false},
+      {name:"Chain depth ≥ 3",src:"ICP",weight:15,active:false},
+      {name:"Device non-compliant",src:"Keycloak",weight:10,active:false},
+      {name:"CA policy non-compliant",src:"Keycloak",weight:10,active:false},
+      {name:"Concurrent sessions > 5",src:"ICP",weight:5,active:false},
+    ],
+    score:62, posture:"proceed-with-caution", ttl:120, latency:91,
+    groups:["Engineering-All","IAM-Developers","Finance-ReadOnly"],
+    tempGrants:["Finance-Admin-Temp (expires 38 min)"],
+    sessionAge:45, mfaAge:18, device:"compliant",
+    auditOutcome:"completed-with-caution", siem:false,
+  },
+  {
+    id:2, name:"High-risk — Arjun", user:"arjun.mehta@acme.com", dept:"Contractor",
+    action:"write_deployment_config", resource:"Kubernetes · prod namespace",
+    chain:["orchestrator-002","ops-agent-003","deploy-agent-001"],
+    signals:[
+      {name:"Location anomaly",src:"Keycloak",weight:25,active:false},
+      {name:"Privilege escalated",src:"Authentik",weight:20,active:false},
+      {name:"MFA age > 60 min",src:"Authentik",weight:15,active:true},
+      {name:"Chain depth ≥ 3",src:"ICP",weight:15,active:true},
+      {name:"Device non-compliant",src:"Keycloak",weight:10,active:false},
+      {name:"CA policy non-compliant",src:"Keycloak",weight:10,active:false},
+      {name:"Concurrent sessions > 5",src:"ICP",weight:5,active:true},
+    ],
+    score:72, posture:"require-approval", ttl:60, latency:108,
+    groups:["Contractor-Limited","Deploy-ReadOnly"],
+    tempGrants:[], sessionAge:240, mfaAge:95, device:"compliant",
+    auditOutcome:"approval-pending", siem:false,
+  },
+  {
+    id:3, name:"Credential attack — Priya", user:"priya.sharma@acme.com", dept:"Engineering",
+    action:"bulk_export_hr_records", resource:"Workday · all employee records",
+    chain:["auto-script","exfil-agent-1","exfil-agent-2","exfil-agent-3"],
+    signals:[
+      {name:"Location anomaly",src:"Keycloak",weight:25,active:true},
+      {name:"Privilege escalated",src:"Authentik",weight:20,active:false},
+      {name:"MFA age > 60 min",src:"Authentik",weight:15,active:true},
+      {name:"Chain depth ≥ 3",src:"ICP",weight:15,active:true},
+      {name:"Device non-compliant",src:"Keycloak",weight:10,active:true},
+      {name:"CA policy non-compliant",src:"Keycloak",weight:10,active:true},
+      {name:"Concurrent sessions > 5",src:"ICP",weight:5,active:false},
+    ],
+    score:91, posture:"deny", ttl:0, latency:74,
+    groups:["Engineering-All"],
+    tempGrants:[], sessionAge:8, mfaAge:280, device:"non-compliant",
+    auditOutcome:"blocked", siem:true,
+  }
+];
+
+const POSTURE_CFG = {
+  "allow":{
+    scoreColor:"var(--teal)", gaugeColor:"var(--teal)",
+    badgeBg:"rgba(32,217,127,.12)", badgeColor:"var(--teal)", badgeBorder:"rgba(32,217,127,.3)",
+    pillBg:"rgba(32,217,127,.12)", pillColor:"var(--teal)",
+    statusBg:"rgba(32,217,127,.12)", statusColor:"var(--teal)", statusBorder:"rgba(32,217,127,.3)",
+    tlDot:"var(--teal)", barClass:"teal", serverClass:"done-allow", sbDot:"var(--teal)",
+  },
+  "proceed-with-caution":{
+    scoreColor:"var(--amber)", gaugeColor:"var(--amber)",
+    badgeBg:"rgba(255,176,32,.12)", badgeColor:"var(--amber)", badgeBorder:"rgba(255,176,32,.3)",
+    pillBg:"rgba(255,176,32,.1)", pillColor:"var(--amber)",
+    statusBg:"rgba(255,176,32,.12)", statusColor:"var(--amber)", statusBorder:"rgba(255,176,32,.3)",
+    tlDot:"var(--amber)", barClass:"amber", serverClass:"done-caution", sbDot:"var(--amber)",
+  },
+  "require-approval":{
+    scoreColor:"var(--blue)", gaugeColor:"var(--blue)",
+    badgeBg:"rgba(64,160,255,.12)", badgeColor:"var(--blue)", badgeBorder:"rgba(64,160,255,.3)",
+    pillBg:"rgba(64,160,255,.1)", pillColor:"var(--blue)",
+    statusBg:"rgba(64,160,255,.12)", statusColor:"var(--blue)", statusBorder:"rgba(64,160,255,.3)",
+    tlDot:"var(--blue)", barClass:"blue", serverClass:"done-approve", sbDot:"var(--blue)",
+  },
+  "deny":{
+    scoreColor:"var(--red)", gaugeColor:"var(--red)",
+    badgeBg:"rgba(255,68,68,.12)", badgeColor:"var(--red)", badgeBorder:"rgba(255,68,68,.3)",
+    pillBg:"rgba(255,68,68,.1)", pillColor:"var(--red)",
+    statusBg:"rgba(255,68,68,.12)", statusColor:"var(--red)", statusBorder:"rgba(255,68,68,.3)",
+    tlDot:"var(--red)", barClass:"red", serverClass:"done-deny", sbDot:"var(--red)",
+  },
+};
+
+let currentScenario = 0;
+let running = false;
+let auditEvents = [];
+
+function selectScenario(i){
+  currentScenario = i;
+  document.querySelectorAll('.scenario-btn').forEach((b,idx)=>b.classList.toggle('active',idx===i));
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function addTL(ms, text, dotColor, tag, tagStyle){
+  const tl = document.getElementById('timeline');
+  if(tl.querySelector('.empty')) tl.innerHTML='';
+  const d = document.createElement('div');
+  d.className='tl-item';
+  d.innerHTML=`
+    <span class="tl-ms">${ms}</span>
+    <div class="tl-dot" style="background:${dotColor}"></div>
+    <div class="tl-body">
+      <div class="tl-text">${text}</div>
+      ${tag?`<span class="tl-tag" style="${tagStyle}">${tag}</span>`:''}
+    </div>`;
+  tl.appendChild(d);
+  tl.scrollTop=tl.scrollHeight;
+}
+
+async function runDemo(){
+  if(running) return;
+  running=true;
+  const sc = SCENARIOS[currentScenario];
+  const cfg = POSTURE_CFG[sc.posture];
+  const btn = document.getElementById('runBtn');
+  btn.disabled=true;
+  btn.classList.add('running');
+  btn.innerHTML='<div class="run-btn-dot"></div> Running...';
+
+  // reset
+  document.getElementById('timeline').innerHTML='';
+  document.getElementById('signalsPanel').innerHTML='<div class="empty" style="padding:1rem">Querying Keycloak + Authentik in parallel...</div>';
+  document.getElementById('chainPanel').innerHTML='<div class="empty" style="padding:1rem">Tracking delegation chain...</div>';
+  document.getElementById('payloadBox').innerHTML='<div class="empty">Processing...</div>';
+  document.getElementById('scoreNum').textContent='—';
+  document.getElementById('scoreNum').style.color='var(--t4)';
+  document.getElementById('gaugeBar').style.width='0%';
+  document.getElementById('gaugeBar').style.background='var(--border)';
+  document.getElementById('postureBadge').textContent='processing...';
+  document.getElementById('postureBadge').style.cssText='background:var(--s4);color:var(--t4);border:1px solid var(--border);';
+  document.getElementById('mLatency').textContent='—';
+  document.getElementById('mChain').textContent='—';
+  document.getElementById('mTTL').textContent='—';
+
+  const bar = document.getElementById('serverBar');
+  bar.className='server-bar running';
+  document.getElementById('sbDot').style.background='var(--amber)';
+  document.getElementById('sbTitle').textContent='ICP MCP Server — processing request';
+  document.getElementById('sbSub').textContent=sc.user+' · '+sc.action;
+  document.getElementById('statusPill').textContent='running';
+  document.getElementById('statusPill').style.cssText='background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.3);color:var(--amber);';
+
+  const t0 = Date.now();
+  function elapsed(){return '+'+(Date.now()-t0)+'ms'}
+
+  addTL('0ms',`<b>${sc.chain[sc.chain.length-1]}</b> called <code>get_identity_context()</code>`,'var(--t4)','MCP stdio · JSON-RPC 2.0','background:var(--s4);color:var(--t3)');
+  await sleep(100);
+
+  addTL(elapsed(),'Redis cache check','var(--blue)','cache miss → fan-out to IdPs','background:rgba(64,160,255,.1);color:var(--blue)');
+  await sleep(110);
+
+  addTL(elapsed(),'<b>Promise.all()</b> → Keycloak + Authentik queried simultaneously','var(--t3)');
+  await sleep(160);
+
+  addTL(elapsed(),`Keycloak responded · identity + groups + CA signals`,'var(--teal)',`${Math.round(sc.latency*.85)}ms`,'background:rgba(32,217,127,.1);color:var(--teal)');
+  await sleep(40);
+  addTL(elapsed(),`Authentik responded · MFA state + session health + risk signals`,'var(--teal)',`${sc.latency}ms`,'background:rgba(32,217,127,.1);color:var(--teal)');
+  await sleep(80);
+
+  addTL(elapsed(),'Aggregator merged results · conflict resolution: most-restrictive-permanent','var(--t4)');
+  await sleep(70);
+
+  // render signals
+  const sigHtml = sc.signals.map(s=>{
+    const pct = s.active ? Math.round((s.weight/25)*100) : 0;
+    const c = s.active ? (s.weight>=20?'var(--red)':s.weight>=15?'var(--amber)':'var(--blue)') : 'var(--border)';
+    return `<div class="sig-row">
+      <span class="sig-name">${s.name}</span>
+      <span class="sig-src">${s.src}</span>
+      <div class="sig-bar-w"><div class="sig-bar" style="width:${pct}%;background:${c}"></div></div>
+      <span class="sig-val" style="color:${s.active?c:'var(--t4)'}">${s.active?'+'+s.weight:'+0'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('signalsPanel').innerHTML = sigHtml;
+
+  const active = sc.signals.filter(s=>s.active);
+  addTL(elapsed(),`Risk scorer: <b>${active.length}</b> active signal${active.length!==1?'s':''} → composite score <b>${sc.score}</b>`,'var(--amber)');
+  await sleep(60);
+
+  // update score
+  document.getElementById('scoreNum').textContent=sc.score;
+  document.getElementById('scoreNum').style.color=cfg.scoreColor;
+  document.getElementById('gaugeBar').style.width=sc.score+'%';
+  document.getElementById('gaugeBar').style.background=cfg.gaugeColor;
+
+  addTL(elapsed(),`Posture engine: score ${sc.score} → <b>${sc.posture}</b>`,cfg.tlDot,sc.posture,`background:${cfg.pillBg};color:${cfg.pillColor}`);
+  await sleep(50);
+
+  document.getElementById('postureBadge').textContent=sc.posture;
+  document.getElementById('postureBadge').style.cssText=`background:${cfg.badgeBg};color:${cfg.badgeColor};border:1px solid ${cfg.badgeBorder};`;
+
+  // chain
+  const chainHtml = '<div class="chain-flow">'+
+    sc.chain.map((n,i)=>
+      `${i>0?'<span class="chain-arrow">→</span>':''}<div class="chain-node${i===sc.chain.length-1?' caller':''}">${n}</div>`
+    ).join('')+
+    `<span class="chain-arrow">→</span><div class="chain-node icp">ICP ✓</div>`+
+    '</div>'+
+    `<div class="chain-depth">depth: ${sc.chain.length} hop${sc.chain.length!==1?'s':''} from human${sc.chain.length>=3?' · <span style="color:var(--amber)">+15 risk applied</span>':''}</div>`;
+  document.getElementById('chainPanel').innerHTML=chainHtml;
+
+  addTL(elapsed(),'Delegation chain logged · depth '+sc.chain.length,'var(--t4)');
+  await sleep(50);
+
+  addTL(elapsed(),'Audit event emitted → stdout sink','var(--t4)');
+  await sleep(40);
+
+  const totalMs = Date.now()-t0;
+
+  let outcome='';
+  if(sc.posture==='deny') outcome=' · <span style="color:var(--red)">TaskDeniedError raised · SIEM alert fired</span>';
+  else if(sc.posture==='require-approval') outcome=' · <span style="color:var(--blue)">Agent halted · supervisor notified</span>';
+  else if(sc.posture==='proceed-with-caution') outcome=' · <span style="color:var(--amber)">Caution context injected into agent prompt</span>';
+  else outcome=' · <span style="color:var(--teal)">Agent proceeds normally</span>';
+
+  addTL(elapsed(),`<b>Request complete</b> · ${totalMs}ms total${outcome}`,cfg.tlDot,`TTL: ${sc.ttl}s`,`background:${cfg.pillBg};color:${cfg.pillColor}`);
+
+  document.getElementById('mLatency').textContent=totalMs;
+  document.getElementById('mChain').textContent=sc.chain.length;
+  document.getElementById('mTTL').textContent=sc.ttl>0?sc.ttl+'s':'none';
+
+  // payload
+  const sigLines = active.map(s=>`\n      <span class="pk">"${s.name.toLowerCase().replace(/ /g,'_').replace(/[^a-z0-9_]/g,'')}"</span>: <span class="pt">true</span>`).join(',');
+  const grants = sc.tempGrants.length>0
+    ? sc.tempGrants.map(g=>`<span class="ps">"${g}"</span>`).join(', ')
+    : '';
+  document.getElementById('payloadBox').innerHTML=`<div class="payload-box">{
+  <span class="pk">"user_upn"</span>: <span class="ps">"${sc.user}"</span>,
+  <span class="pk">"department"</span>: <span class="ps">"${sc.dept}"</span>,
+  <span class="pk">"recommended_posture"</span>: <span class="ps pp" style="color:${cfg.badgeColor}">"${sc.posture}"</span>,
+  <span class="pk">"risk_score"</span>: {
+    <span class="pk">"composite_score"</span>: <span class="pn">${sc.score}</span>,
+    <span class="pk">"signals"</span>: {${sigLines||'\n      (none active)'}
+    }
+  },
+  <span class="pk">"entitlements"</span>: {
+    <span class="pk">"groups"</span>: [<span class="ps">"${sc.groups.join('", "')}"</span>],
+    <span class="pk">"temp_grants"</span>: [${grants}],
+    <span class="pk">"scopes_for_action"</span>: [<span class="ps">"${sc.action}"</span>]
+  },
+  <span class="pk">"session"</span>: {
+    <span class="pk">"mfa_age_minutes"</span>: <span class="pn">${sc.mfaAge}</span>,
+    <span class="pk">"device_compliant"</span>: <span class="${sc.device==='compliant'?'pt':'pf'}">${sc.device==='compliant'?'true':'false'}</span>
+  },
+  <span class="pk">"delegation_chain"</span>: { <span class="pk">"chain_depth"</span>: <span class="pn">${sc.chain.length}</span> },
+  <span class="pk">"cache_ttl_seconds"</span>: <span class="pn">${sc.ttl}</span>,
+  <span class="pk">"source_latency_ms"</span>: {
+    <span class="pk">"keycloak"</span>: <span class="pn">${Math.round(sc.latency*.85)}</span>,
+    <span class="pk">"authentik"</span>: <span class="pn">${sc.latency}</span>,
+    <span class="pk">"total"</span>: <span class="pn">${totalMs}</span>
+  }
+}</div>`;
+
+  // audit log
+  const icons = {allow:'✅','proceed-with-caution':'⚠️','require-approval':'🔔',deny:'🚫'};
+  const now = new Date();
+  const ts = now.toISOString().replace('T',' ').split('.')[0];
+  auditEvents.unshift({
+    icon: icons[sc.posture],
+    title: `${sc.user} · ${sc.action} · ${sc.posture.toUpperCase()}`,
+    meta: `${ts} · agent: ${sc.chain[sc.chain.length-1]} · chain_depth: ${sc.chain.length} · risk: ${sc.score} · outcome: ${sc.auditOutcome}${sc.siem?' · 🚨 SIEM alert fired':''}`,
+    posture: sc.posture,
+  });
+  const auditHtml = auditEvents.slice(0,8).map(e=>`
+    <div class="audit-item">
+      <div class="audit-ico">${e.icon}</div>
+      <div class="audit-body">
+        <div class="audit-title">${e.title}</div>
+        <div class="audit-meta">${e.meta}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('auditLog').innerHTML = auditHtml;
+
+  // update server bar
+  bar.className='server-bar '+cfg.serverClass;
+  document.getElementById('sbDot').style.background=cfg.sbDot;
+  document.getElementById('sbTitle').textContent='ICP MCP Server — request complete';
+  document.getElementById('sbSub').textContent=sc.user+' · posture: '+sc.posture+' · '+totalMs+'ms';
+  document.getElementById('statusPill').textContent=sc.posture;
+  document.getElementById('statusPill').style.cssText=`background:${cfg.statusBg};border:1px solid ${cfg.statusBorder};color:${cfg.statusColor};`;
+  document.getElementById('latencyChip').textContent=totalMs+'ms total';
+
+  btn.disabled=false;
+  btn.classList.remove('running');
+  btn.innerHTML='<div class="run-btn-dot"></div> Run get_identity_context() ↗';
+  running=false;
+}
+</script>
+</body>
+</html>
