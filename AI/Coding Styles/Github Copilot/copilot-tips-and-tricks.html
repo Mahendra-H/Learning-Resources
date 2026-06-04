@@ -1,0 +1,2559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copilot Tips & Tricks — Staff Engineer Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --bg:          #070b12;
+  --bg-1:        #0c1017;
+  --bg-2:        #101520;
+  --bg-3:        #141b28;
+  --border:      #1a2236;
+  --border-2:    #243050;
+  --border-3:    #2e3d60;
+
+  --cyan:        #00d4ff;
+  --cyan-dim:    #003d4d;
+  --cyan-glow:   #00d4ff22;
+  --amber:       #f59e0b;
+  --amber-dim:   #3d2800;
+  --green:       #00e676;
+  --green-dim:   #003318;
+  --red:         #ff4757;
+  --red-dim:     #3d0a0f;
+  --purple:      #c084fc;
+  --purple-dim:  #2d1050;
+  --blue:        #60a5fa;
+
+  --text:        #c8d4e8;
+  --text-2:      #8899b8;
+  --text-3:      #4a5a78;
+  --text-hi:     #eef2fc;
+
+  --mono:        'IBM Plex Mono', monospace;
+  --head:        'Bricolage Grotesque', sans-serif;
+  --serif:       'Lora', serif;
+
+  --r-sm:        6px;
+  --r-md:        10px;
+  --r-lg:        16px;
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--head);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-1); }
+::-webkit-scrollbar-thumb { background: var(--border-3); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════════ */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--cyan), var(--purple));
+  z-index: 1000;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+/* ═══════════════════════════════════════════
+   STICKY NAV
+═══════════════════════════════════════════ */
+#sticky-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 999;
+  background: rgba(7, 11, 18, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  gap: 0;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+#sticky-nav.visible { transform: translateY(2px); }
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 0.1em;
+  margin-right: 24px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.nav-links {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.nav-link:hover { color: var(--text-hi); background: var(--bg-2); }
+.nav-link.active { color: var(--cyan); background: var(--cyan-dim); }
+.nav-credits {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+.nav-credits span { color: var(--amber); }
+
+/* ═══════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 40px 60px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 30%, transparent 80%);
+  opacity: 0.4;
+}
+.hero-glow {
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #00d4ff0d 0%, transparent 70%);
+  top: -100px; right: -100px;
+  pointer-events: none;
+}
+.hero-glow-2 {
+  position: absolute;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #c084fc08 0%, transparent 70%);
+  bottom: 0px; left: 0px;
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 24px; height: 1px;
+  background: var(--cyan);
+}
+.hero h1 {
+  font-family: var(--head);
+  font-size: clamp(32px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--text-hi);
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--cyan);
+  position: relative;
+}
+.hero h1 em::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 0; right: 0;
+  height: 2px;
+  background: var(--cyan);
+  opacity: 0.4;
+}
+.hero-sub {
+  font-size: 16px;
+  color: var(--text-2);
+  max-width: 560px;
+  margin-bottom: 40px;
+  line-height: 1.65;
+}
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 48px;
+}
+.pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 0.05em;
+}
+.pill-cyan  { color: var(--cyan);   border-color: var(--cyan-dim);   background: var(--cyan-dim); }
+.pill-amber { color: var(--amber);  border-color: var(--amber-dim);  background: var(--amber-dim); }
+.pill-green { color: var(--green);  border-color: var(--green-dim);  background: var(--green-dim); }
+.pill-red   { color: var(--red);    border-color: var(--red-dim);    background: var(--red-dim); }
+
+.hero-scroll {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  animation: bounce 2s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+.hero-scroll::before {
+  content: '↓';
+  font-size: 16px;
+  color: var(--cyan);
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.container { max-width: 980px; margin: 0 auto; padding: 0 32px; }
+.section { padding: 80px 0; border-top: 1px solid var(--border); }
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-2), transparent);
+}
+.section-title {
+  font-family: var(--head);
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 800;
+  color: var(--text-hi);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.section-desc {
+  color: var(--text-2);
+  font-size: 14px;
+  max-width: 580px;
+  margin-bottom: 36px;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 1: CREDIT BURN CALCULATOR
+═══════════════════════════════════════════ */
+.calc-wrapper {
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.calc-inputs {
+  padding: 32px;
+  border-right: 1px solid var(--border);
+}
+.calc-output {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.calc-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 20px;
+}
+.input-row {
+  margin-bottom: 18px;
+}
+.input-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+.input-label .val-display {
+  color: var(--cyan);
+  font-weight: 600;
+}
+.slider-wrap {
+  position: relative;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: var(--border-2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--cyan);
+  transition: transform 0.1s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+.model-select-row {
+  margin-bottom: 18px;
+}
+.model-select-row label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+.model-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.model-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-2);
+  background: var(--bg-2);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+}
+.model-btn:hover { border-color: var(--border-3); color: var(--text); }
+.model-btn.active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+.model-btn.amber.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+.model-btn.red.active   { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+.model-btn.green.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+/* Output panel */
+.gauge-container {
+  position: relative;
+  height: 10px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.gauge-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s cubic-bezier(.25,.8,.25,1), background 0.3s;
+  background: linear-gradient(90deg, var(--green), var(--cyan));
+}
+.gauge-fill.warn { background: linear-gradient(90deg, var(--amber), #ff8800); }
+.gauge-fill.danger { background: linear-gradient(90deg, var(--red), #ff2244); }
+.gauge-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  margin-bottom: 20px;
+}
+.big-number {
+  font-family: var(--head);
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-hi);
+  transition: color 0.3s;
+}
+.big-number.warn   { color: var(--amber); }
+.big-number.danger { color: var(--red); }
+.big-number sub {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-3);
+  font-family: var(--mono);
+  letter-spacing: 0;
+}
+.calc-stat {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+}
+.calc-stat-label { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-bottom: 4px; letter-spacing: 0.08em; }
+.calc-stat-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text-hi); }
+.calc-verdict {
+  background: var(--bg-2);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green);
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--text-2);
+  transition: border-color 0.3s;
+}
+.calc-verdict.warn   { border-left-color: var(--amber); }
+.calc-verdict.danger { border-left-color: var(--red); }
+.calc-verdict strong { color: var(--text-hi); }
+.calc-footer {
+  padding: 16px 32px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.calc-footer span { color: var(--amber); }
+
+/* ═══════════════════════════════════════════
+   SECTION 2: DECISION TREE
+═══════════════════════════════════════════ */
+.tree-wrapper {
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  padding: 36px;
+}
+.tree-question {
+  display: none;
+}
+.tree-question.active {
+  display: block;
+  animation: fadeIn 0.25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.tree-q-text {
+  font-family: var(--head);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin-bottom: 24px;
+  line-height: 1.3;
+}
+.tree-q-text .step-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  padding: 2px 8px;
+  border-radius: 3px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.tree-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tree-opt {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+.tree-opt:hover {
+  border-color: var(--cyan);
+  background: var(--bg-3);
+  transform: translateX(4px);
+}
+.tree-opt-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+.tree-opt-label { font-weight: 600; color: var(--text-hi); font-size: 14px; }
+.tree-opt-desc  { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+.tree-result {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.tree-result.active { display: block; }
+.result-card {
+  border-radius: var(--r-lg);
+  padding: 28px 32px;
+  border: 1px solid;
+}
+.result-card.free   { border-color: var(--green); background: linear-gradient(135deg, #001f0f, #001a0c); }
+.result-card.light  { border-color: #22c55e;      background: linear-gradient(135deg, #001a10, #00150d); }
+.result-card.mid    { border-color: var(--amber);  background: linear-gradient(135deg, #1f1000, #180d00); }
+.result-card.heavy  { border-color: var(--red);    background: linear-gradient(135deg, #200005, #180003); }
+.result-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 3px;
+  margin-bottom: 12px;
+}
+.result-card.free  .result-tag  { background: var(--green-dim); color: var(--green); }
+.result-card.light .result-tag  { background: #002010; color: #22c55e; }
+.result-card.mid   .result-tag  { background: var(--amber-dim); color: var(--amber); }
+.result-card.heavy .result-tag  { background: var(--red-dim);   color: var(--red); }
+.result-model {
+  font-family: var(--head);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-hi);
+  margin-bottom: 8px;
+}
+.result-why { font-size: 14px; color: var(--text-2); margin-bottom: 16px; }
+.result-cost {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-3);
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.3);
+  border-radius: var(--r-sm);
+  margin-bottom: 16px;
+}
+.result-cost strong { color: var(--text-hi); }
+.tree-back-btn {
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.tree-back-btn:hover { border-color: var(--border-3); color: var(--text-hi); }
+.tree-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.crumb {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  padding: 3px 8px;
+  background: var(--bg-2);
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+.crumb.current { color: var(--cyan); border-color: var(--cyan-dim); background: var(--cyan-dim); }
+.crumb-arrow { color: var(--text-3); font-size: 10px; }
+
+/* ═══════════════════════════════════════════
+   SECTION 3: PROMPT BEFORE/AFTER
+═══════════════════════════════════════════ */
+.ba-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 4px;
+  width: fit-content;
+}
+.ba-tab {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 16px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--text-3);
+  transition: all 0.15s;
+  border: none;
+  background: none;
+  letter-spacing: 0.05em;
+}
+.ba-tab.active { background: var(--bg-3); color: var(--cyan); }
+.ba-panel { display: none; }
+.ba-panel.active { display: block; animation: fadeIn 0.2s ease; }
+.ba-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.ba-side {
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid;
+}
+.ba-side.before { border-color: var(--red-dim); }
+.ba-side.after  { border-color: var(--green-dim); }
+.ba-side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ba-side.before .ba-side-header { background: var(--red-dim);   color: var(--red); }
+.ba-side.after  .ba-side-header { background: var(--green-dim); color: var(--green); }
+.ba-cost {
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.8;
+}
+.ba-body {
+  background: var(--bg-1);
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 160px;
+  position: relative;
+}
+.ba-body em { color: var(--red); font-style: normal; }
+.ba-body strong { color: var(--green); font-weight: 500; }
+.copy-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.copy-btn:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+.copy-btn.copied { color: var(--green); border-color: var(--green-dim); }
+.ba-savings {
+  margin-top: 12px;
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ba-savings::before { content: '↓'; font-size: 16px; }
+
+/* ═══════════════════════════════════════════
+   SECTION 4: DAILY CHECKLIST
+═══════════════════════════════════════════ */
+.checklist-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.checklist-header {
+  padding: 20px 28px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.checklist-header-title { font-family: var(--head); font-weight: 700; color: var(--text-hi); font-size: 15px; }
+.progress-pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  transition: all 0.3s;
+}
+.progress-pill.done { background: var(--green-dim); color: var(--green); }
+.check-groups {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.check-group-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+  border-radius: 4px;
+}
+.check-item:last-child { border-bottom: none; }
+.check-item:hover { background: var(--bg-2); padding-left: 8px; padding-right: 8px; }
+.check-box {
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border-3);
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.check-item.checked .check-box {
+  background: var(--green);
+  border-color: var(--green);
+}
+.check-item.checked .check-box::after {
+  content: '✓';
+  font-size: 11px;
+  color: #000;
+  font-weight: 700;
+}
+.check-item.checked .check-text { text-decoration: line-through; color: var(--text-3); }
+.check-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+.check-text strong { color: var(--text-hi); font-weight: 600; }
+.check-text code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--cyan);
+}
+.checklist-footer {
+  padding: 16px 28px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.reset-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+  background: none;
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.reset-btn:hover { color: var(--red); border-color: var(--red-dim); }
+.save-note { font-family: var(--mono); font-size: 10px; color: var(--text-3); }
+
+/* ═══════════════════════════════════════════
+   SECTION 5: WORST MISTAKES ACCORDION
+═══════════════════════════════════════════ */
+.mistake-item {
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.mistake-item:hover { border-color: var(--border-3); }
+.mistake-item.open  { border-color: var(--red-dim); }
+.mistake-trigger {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+}
+.mistake-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--red);
+  background: var(--red-dim);
+  padding: 3px 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  letter-spacing: 0.08em;
+}
+.mistake-title { font-weight: 700; color: var(--text-hi); font-size: 14px; flex: 1; }
+.mistake-impact {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.impact-critical { background: var(--red-dim);   color: var(--red); }
+.impact-high     { background: var(--amber-dim);  color: var(--amber); }
+.impact-medium   { background: var(--cyan-dim);   color: var(--cyan); }
+.mistake-chevron {
+  color: var(--text-3);
+  transition: transform 0.25s;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.mistake-item.open .mistake-chevron { transform: rotate(90deg); }
+.mistake-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0,1,0,1);
+}
+.mistake-item.open .mistake-body { max-height: 500px; transition: max-height 0.5s ease; }
+.mistake-inner {
+  padding: 0 20px 20px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 0;
+}
+.mistake-col-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.mistake-col-label.why { color: var(--red); }
+.mistake-col-label.fix { color: var(--green); }
+.mistake-text { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+.mistake-text code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--cyan);
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 6: CONTEXT WINDOW VISUALIZER
+═══════════════════════════════════════════ */
+.viz-wrapper {
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  padding: 32px;
+}
+.viz-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.viz-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 7px 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-2);
+  background: var(--bg-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.viz-btn:hover { border-color: var(--cyan-dim); color: var(--cyan); }
+.viz-btn.primary { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+.viz-btn.danger  { background: var(--red-dim);  border-color: var(--red);  color: var(--red); }
+
+.ctx-window {
+  background: var(--bg);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  padding: 16px;
+  min-height: 200px;
+  position: relative;
+  overflow: hidden;
+}
+.ctx-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.ctx-leg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+}
+.ctx-leg-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.turns-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ctx-turn {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.ctx-turn-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+  width: 48px;
+  flex-shrink: 0;
+}
+.ctx-bars {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  align-items: center;
+}
+.ctx-bar {
+  height: 18px;
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(.25,.8,.25,1);
+  position: relative;
+  min-width: 4px;
+}
+.ctx-bar:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 22px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 9px;
+  white-space: nowrap;
+  z-index: 10;
+  color: var(--text);
+}
+.ctx-cost {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  width: 70px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.ctx-cost.expensive { color: var(--red); }
+.ctx-total-bar {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.ctx-total-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-3);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+.ctx-total-label span { color: var(--red); }
+.ctx-full-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ctx-full-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
+  transition: width 0.6s ease;
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 7: IAM PROMPT LIBRARY
+═══════════════════════════════════════════ */
+.lib-filter {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.lib-filter-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-2);
+  background: var(--bg-1);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.lib-filter-btn:hover { border-color: var(--border-3); color: var(--text); }
+.lib-filter-btn.active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+.prompt-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.prompt-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.prompt-card:hover { border-color: var(--border-3); }
+.prompt-card[data-hidden="true"] { display: none; }
+.prompt-card-head {
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.prompt-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.prompt-tag.saml    { background: #0a1f3d; color: var(--blue); }
+.prompt-tag.oidc    { background: var(--cyan-dim); color: var(--cyan); }
+.prompt-tag.iam     { background: var(--purple-dim); color: var(--purple); }
+.prompt-tag.debug   { background: var(--red-dim); color: var(--red); }
+.prompt-tag.cyberark { background: var(--amber-dim); color: var(--amber); }
+.prompt-tag.test    { background: var(--green-dim); color: var(--green); }
+.prompt-cost-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+}
+.prompt-title { padding: 10px 14px 4px; font-weight: 700; font-size: 13px; color: var(--text-hi); }
+.prompt-body {
+  padding: 0 14px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.prompt-body .placeholder { color: var(--amber); font-style: italic; }
+.prompt-footer {
+  padding: 8px 14px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+.prompt-copy {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-2);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.prompt-copy:hover { color: var(--cyan); border-color: var(--cyan-dim); }
+.prompt-copy.copied { color: var(--green); border-color: var(--green-dim); }
+
+/* ═══════════════════════════════════════════
+   SECTION 8: AGENTIC GATE
+═══════════════════════════════════════════ */
+.gate-wrapper {
+  background: var(--bg-1);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.gate-header {
+  padding: 20px 28px;
+  background: linear-gradient(135deg, #1a0500, #0d0002);
+  border-bottom: 1px solid var(--red-dim);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.gate-icon { font-size: 28px; }
+.gate-header-text h3 { font-family: var(--head); font-weight: 800; color: var(--text-hi); font-size: 17px; }
+.gate-header-text p { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.gate-status {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid var(--red);
+  transition: all 0.3s;
+}
+.gate-status.pass { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+.gate-items { padding: 20px 28px; display: flex; flex-direction: column; gap: 8px; }
+.gate-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.gate-item:hover { border-color: var(--border-3); }
+.gate-item.checked { border-color: var(--green-dim); background: #001a0c; }
+.gate-check {
+  width: 20px; height: 20px;
+  border: 1.5px solid var(--border-3);
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.gate-item.checked .gate-check { background: var(--green); border-color: var(--green); }
+.gate-item.checked .gate-check::after { content: '✓'; font-size: 12px; color: #000; font-weight: 700; }
+.gate-item-content {}
+.gate-item-label { font-weight: 600; font-size: 13px; color: var(--text-hi); margin-bottom: 2px; }
+.gate-item.checked .gate-item-label { color: var(--text-3); text-decoration: line-through; }
+.gate-item-hint { font-size: 12px; color: var(--text-2); }
+.gate-footer {
+  padding: 20px 28px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gate-launch-btn {
+  font-family: var(--head);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 24px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--red);
+  background: var(--red-dim);
+  color: var(--red);
+  cursor: not-allowed;
+  transition: all 0.3s;
+  opacity: 0.5;
+}
+.gate-launch-btn.ready {
+  opacity: 1;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--green-dim), #001a0c);
+  border-color: var(--green);
+  color: var(--green);
+  animation: pulse-green 2s ease-in-out infinite;
+}
+@keyframes pulse-green {
+  0%,100% { box-shadow: 0 0 0 0 #00e67622; }
+  50%      { box-shadow: 0 0 0 8px #00e67600; }
+}
+.gate-progress-text { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+
+/* ═══════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════ */
+.page-footer {
+  padding: 48px 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.footer-logo {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.footer-logo span { color: var(--cyan); }
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════ */
+.mt-0 { margin-top: 0; }
+code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--cyan);
+}
+@media (max-width: 768px) {
+  .hero { padding: 80px 20px 40px; }
+  .container { padding: 0 16px; }
+  .calc-grid, .ba-compare, .prompt-cards, .mistake-inner { grid-template-columns: 1fr; }
+  .calc-inputs { border-right: none; border-bottom: 1px solid var(--border); }
+  #sticky-nav { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<div id="progress-bar"></div>
+
+<!-- STICKY NAV -->
+<nav id="sticky-nav">
+  <div class="nav-logo">⬡ COPILOT//TIPS</div>
+  <div class="nav-links">
+    <a class="nav-link" href="#calc">Credit Calc</a>
+    <a class="nav-link" href="#tree">Model Picker</a>
+    <a class="nav-link" href="#prompts-ba">Prompt Lab</a>
+    <a class="nav-link" href="#checklist">Daily Habits</a>
+    <a class="nav-link" href="#mistakes">Worst Mistakes</a>
+    <a class="nav-link" href="#ctx-viz">Context Viz</a>
+    <a class="nav-link" href="#iam-lib">IAM Library</a>
+    <a class="nav-link" href="#agent-gate">Agent Gate</a>
+  </div>
+  <div class="nav-credits">Budget: <span id="nav-budget-pct">—</span></div>
+</nav>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section class="hero" id="top">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Staff Engineer Edition · June 2026</div>
+    <h1>Copilot<br><em>Tips &amp; Tricks</em><br>That Actually Matter</h1>
+    <p class="hero-sub">Eight interactive tools to stop burning credits, pick the right model in seconds, and get more out of every session — built for IAM/SSO engineers on Enterprise plans.</p>
+    <div class="hero-pills">
+      <span class="pill pill-green">✓ Inline completions are FREE forever</span>
+      <span class="pill pill-cyan">3,900 credits/user/mo ($39 Enterprise)</span>
+      <span class="pill pill-amber">1 credit = $0.01 · Output costs 4–6× input</span>
+      <span class="pill pill-red">Agentic sessions can burn 150 credits in one go</span>
+    </div>
+    <div class="hero-scroll">SCROLL TO BEGIN</div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S1: CALC ═══════════════════ -->
+<section class="section" id="calc">
+  <div class="container">
+    <div class="section-label">01 — Interactive Tool</div>
+    <h2 class="section-title">Credit Burn Calculator</h2>
+    <p class="section-desc">Dial in your daily task mix and see your projected monthly credit burn vs. your 3,900 Enterprise budget in real time.</p>
+
+    <div class="calc-wrapper">
+      <div class="calc-grid">
+        <div class="calc-inputs">
+          <div class="calc-title">// Configure Your Typical Day</div>
+
+          <div class="input-row">
+            <div class="input-label">
+              <span>GPT-4.1 chat sessions / day</span>
+              <span class="val-display" id="v-gpt41">8</span>
+            </div>
+            <input type="range" min="0" max="30" value="8" id="r-gpt41" oninput="calc()">
+          </div>
+
+          <div class="input-row">
+            <div class="input-label">
+              <span>Claude Sonnet sessions / day</span>
+              <span class="val-display" id="v-sonnet">2</span>
+            </div>
+            <input type="range" min="0" max="15" value="2" id="r-sonnet" oninput="calc()">
+          </div>
+
+          <div class="input-row">
+            <div class="input-label">
+              <span>Gemini Flash sessions / day</span>
+              <span class="val-display" id="v-flash">1</span>
+            </div>
+            <input type="range" min="0" max="15" value="1" id="r-flash" oninput="calc()">
+          </div>
+
+          <div class="input-row">
+            <div class="input-label">
+              <span>Agentic task sessions / week</span>
+              <span class="val-display" id="v-agent">1</span>
+            </div>
+            <input type="range" min="0" max="10" value="1" id="r-agent" oninput="calc()">
+          </div>
+
+          <div class="input-row">
+            <div class="input-label">
+              <span>PR code reviews / week (main only)</span>
+              <span class="val-display" id="v-review">2</span>
+            </div>
+            <input type="range" min="0" max="20" value="2" id="r-review" oninput="calc()">
+          </div>
+
+          <div class="input-row">
+            <div class="input-label">
+              <span>Opus / GPT-5 deep sessions / month</span>
+              <span class="val-display" id="v-opus">2</span>
+            </div>
+            <input type="range" min="0" max="20" value="2" id="r-opus" oninput="calc()">
+          </div>
+
+          <div class="model-select-row">
+            <label>Context size assumption</label>
+            <div class="model-btns" id="ctx-size-btns">
+              <button class="model-btn green active" onclick="setCtx('small',this)">Tight (5K)</button>
+              <button class="model-btn" onclick="setCtx('medium',this)">Normal (15K)</button>
+              <button class="model-btn amber" onclick="setCtx('large',this)">Loose (40K)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-output">
+          <div class="calc-title">// Monthly Projection</div>
+          <div>
+            <div class="big-number" id="total-credits">—<sub> credits</sub></div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-3);margin-top:4px;">of 3,900 monthly budget</div>
+          </div>
+
+          <div>
+            <div class="gauge-container">
+              <div class="gauge-fill" id="gauge" style="width:0%"></div>
+            </div>
+            <div class="gauge-label">
+              <span id="gauge-pct">0% used</span>
+              <span id="gauge-remain">3,900 remaining</span>
+            </div>
+          </div>
+
+          <div class="calc-stat">
+            <div class="calc-stat-label">DAILY AVERAGE</div>
+            <div class="calc-stat-val" id="daily-avg">— credits/day</div>
+          </div>
+          <div class="calc-stat">
+            <div class="calc-stat-label">DAYS UNTIL BUDGET EXHAUSTED</div>
+            <div class="calc-stat-val" id="days-left">—</div>
+          </div>
+          <div class="calc-stat">
+            <div class="calc-stat-label">BIGGEST COST DRIVER</div>
+            <div class="calc-stat-val" id="cost-driver">—</div>
+          </div>
+
+          <div class="calc-verdict" id="calc-verdict">
+            Configure your task mix to see your personalized verdict.
+          </div>
+        </div>
+      </div>
+      <div class="calc-footer">
+        ⬡ Formula: <span>(input_tokens × rate + output_tokens × rate) / 1,000,000 → credits at $0.01 each</span> &nbsp;|&nbsp; GPT-4.1 = FREE &nbsp;|&nbsp; Sonnet ≈ $3/$15 per M tokens
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S2: DECISION TREE ═══════════════════ -->
+<section class="section" id="tree">
+  <div class="container">
+    <div class="section-label">02 — Interactive Tool</div>
+    <h2 class="section-title">Should I Use a Premium Model?</h2>
+    <p class="section-desc">Answer three quick questions and get a firm model recommendation — no tables to read, no second-guessing.</p>
+
+    <div class="tree-wrapper">
+      <div class="tree-breadcrumb" id="breadcrumb">
+        <span class="crumb current">Start</span>
+      </div>
+
+      <!-- Q1 -->
+      <div class="tree-question active" id="tq1">
+        <div class="tree-q-text"><span class="step-badge">Q1</span>What are you trying to do right now?</div>
+        <div class="tree-options">
+          <div class="tree-opt" onclick="treeGo('tq2a','What are you trying to do?','Write / generate code')">
+            <div class="tree-opt-icon">⌨️</div>
+            <div><div class="tree-opt-label">Write or generate code</div><div class="tree-opt-desc">New function, class, test, boilerplate, config</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeGo('tq2b','What are you trying to do?','Understand / debug')">
+            <div class="tree-opt-icon">🔍</div>
+            <div><div class="tree-opt-label">Understand, debug, or explain</div><div class="tree-opt-desc">Reading code, stack traces, error messages</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeGo('tq2c','What are you trying to do?','Design / architecture')">
+            <div class="tree-opt-icon">🏗️</div>
+            <div><div class="tree-opt-label">Design or architect a system</div><div class="tree-opt-desc">ADRs, system design, API contracts, integration patterns</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeGo('tq2d','What are you trying to do?','Security / IAM analysis')">
+            <div class="tree-opt-icon">🔐</div>
+            <div><div class="tree-opt-label">Security, IAM, or protocol analysis</div><div class="tree-opt-desc">SAML, OIDC, OAuth, threat modeling, token validation</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2a: Write code -->
+      <div class="tree-question" id="tq2a">
+        <div class="tree-q-text"><span class="step-badge">Q2</span>Does this code involve novel logic or is it mostly structural/mechanical?</div>
+        <div class="tree-options">
+          <div class="tree-opt" onclick="treeResult('res-free-code','Mechanical code','Use GPT-4.1 (FREE)')">
+            <div class="tree-opt-icon">🔩</div>
+            <div><div class="tree-opt-label">Mostly mechanical</div><div class="tree-opt-desc">CRUD, boilerplate, test scaffolding, config files, adapters</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeGo('tq3a','Novel logic?','Yes — novel algorithm')">
+            <div class="tree-opt-icon">🧠</div>
+            <div><div class="tree-opt-label">Novel or complex logic</div><div class="tree-opt-desc">New algorithms, complex state machines, multi-service orchestration</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q3a -->
+      <div class="tree-question" id="tq3a">
+        <div class="tree-q-text"><span class="step-badge">Q3</span>How large is the context you need to provide?</div>
+        <div class="tree-options">
+          <div class="tree-opt" onclick="treeResult('res-mid-code','Small context + complex logic','Use Gemini 3.5 Flash or GPT-5 mini')">
+            <div class="tree-opt-icon">📌</div>
+            <div><div class="tree-opt-label">Small — under 200 lines</div><div class="tree-opt-desc">A single function, class, or isolated module</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeResult('res-sonnet-code','Large context + complex logic','Use Claude Sonnet 4.6')">
+            <div class="tree-opt-icon">📁</div>
+            <div><div class="tree-opt-label">Large — multiple files or services</div><div class="tree-opt-desc">Cross-service logic requiring broad context</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2b: Debug -->
+      <div class="tree-question" id="tq2b">
+        <div class="tree-q-text"><span class="step-badge">Q2</span>Does solving this require deep protocol or domain knowledge?</div>
+        <div class="tree-options">
+          <div class="tree-opt" onclick="treeResult('res-free-debug','Generic debug','Use GPT-4.1 (FREE)')">
+            <div class="tree-opt-icon">🐛</div>
+            <div><div class="tree-opt-label">No — generic runtime error</div><div class="tree-opt-desc">NPE, null pointer, type mismatch, standard exceptions</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeResult('res-sonnet-debug','Protocol debug','Use Claude Sonnet 4.6')">
+            <div class="tree-opt-icon">🔐</div>
+            <div><div class="tree-opt-label">Yes — IAM, auth, or protocol-level</div><div class="tree-opt-desc">SAML assertion errors, OIDC token issues, JWT validation, OAuth flows</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2c: Design -->
+      <div class="tree-question" id="tq2c">
+        <div class="tree-q-text"><span class="step-badge">Q2</span>Is there an established pattern for this, or is this genuinely novel territory?</div>
+        <div class="tree-options">
+          <div class="tree-opt" onclick="treeResult('res-sonnet-arch','Known pattern','Use Claude Sonnet 4.6')">
+            <div class="tree-opt-icon">📋</div>
+            <div><div class="tree-opt-label">Established pattern exists</div><div class="tree-opt-desc">Standard microservice, RBAC model, REST API design, test architecture</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeResult('res-opus-arch','Novel architecture','Use Claude Opus 4.7 — once only')">
+            <div class="tree-opt-icon">🌌</div>
+            <div><div class="tree-opt-label">Genuinely novel, no prior art</div><div class="tree-opt-desc">M&amp;A identity merger strategy, cross-cloud IAM federation at scale</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2d: IAM -->
+      <div class="tree-question" id="tq2d">
+        <div class="tree-q-text"><span class="step-badge">Q2</span>Are you generating config/code, or analyzing an existing flow?</div>
+        <div class="tree-options">
+          <div class="tree-opt" onclick="treeResult('res-free-iam','IAM config generation','Use GPT-4.1 (FREE)')">
+            <div class="tree-opt-icon">⚙️</div>
+            <div><div class="tree-opt-label">Generating config or code</div><div class="tree-opt-desc">PingFederate SP config, Saviynt provisioning JSON, CyberArk CPM plugin</div></div>
+          </div>
+          <div class="tree-opt" onclick="treeResult('res-sonnet-iam','IAM security analysis','Use Claude Sonnet 4.6')">
+            <div class="tree-opt-icon">🛡️</div>
+            <div><div class="tree-opt-label">Analyzing or threat-modeling</div><div class="tree-opt-desc">Token security review, assertion validation logic, RBAC model correctness</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="tree-result" id="res-free-code">
+        <div class="result-card free">
+          <div class="result-tag">RECOMMENDED</div>
+          <div class="result-model">GPT-4.1 — FREE</div>
+          <div class="result-why">Mechanical code generation doesn't need premium reasoning. GPT-4.1 handles CRUD, boilerplate, test scaffolding, and adapters with zero credit cost. Save your credits for tasks that actually need them.</div>
+          <div class="result-cost"><strong>Cost:</strong> 0 credits. Unlimited. Use it freely.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-mid-code">
+        <div class="result-card light">
+          <div class="result-tag">LOW COST</div>
+          <div class="result-model">Gemini 3.5 Flash</div>
+          <div class="result-why">Complex logic in a small context is a good fit for Flash — it's significantly cheaper than Sonnet while still capable of non-trivial reasoning on bounded problems.</div>
+          <div class="result-cost"><strong>Estimated cost:</strong> ~1–3 credits per session. Budget: 15–30 sessions/month easily.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-sonnet-code">
+        <div class="result-card mid">
+          <div class="result-tag">MID COST — USE DELIBERATELY</div>
+          <div class="result-model">Claude Sonnet 4.6</div>
+          <div class="result-why">Multi-file complex logic genuinely benefits from Sonnet's extended context and reasoning. Worth the cost — but keep the context window tight, specify the files explicitly, and constrain the output format.</div>
+          <div class="result-cost"><strong>Estimated cost:</strong> 15–40 credits per session depending on context size. Budget 3–4 sessions/week max.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-free-debug">
+        <div class="result-card free">
+          <div class="result-tag">USE FREE MODEL</div>
+          <div class="result-model">GPT-4.1 — FREE</div>
+          <div class="result-why">Generic runtime errors don't need expensive models. Paste the stack trace (trimmed to 10–15 relevant lines) and the code block causing it. GPT-4.1 resolves the vast majority of standard exceptions perfectly.</div>
+          <div class="result-cost"><strong>Cost:</strong> 0 credits. No reason to spend credits on NullPointerException.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-sonnet-debug">
+        <div class="result-card mid">
+          <div class="result-tag">MID COST — JUSTIFIED</div>
+          <div class="result-model">Claude Sonnet 4.6</div>
+          <div class="result-why">Protocol-level debugging (SAML assertion failures, OIDC token mismatches, OAuth scope errors) genuinely benefits from Sonnet's deep knowledge of auth standards. GPT-4.1 gets these wrong too often to be reliable here.</div>
+          <div class="result-cost"><strong>Estimated cost:</strong> 10–25 credits. Keep the context to the specific flow, not the entire auth service.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-sonnet-arch">
+        <div class="result-card mid">
+          <div class="result-tag">MID COST — WORTH IT</div>
+          <div class="result-model">Claude Sonnet 4.6</div>
+          <div class="result-why">Architecture tasks with known patterns benefit from Sonnet's ability to apply those patterns coherently. Prepare your question fully before opening the chat — one good session beats five mediocre iterations.</div>
+          <div class="result-cost"><strong>Estimated cost:</strong> 30–60 credits. Budget once per week maximum.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-opus-arch">
+        <div class="result-card heavy">
+          <div class="result-tag">HIGH COST — USE SPARINGLY</div>
+          <div class="result-model">Claude Opus 4.7</div>
+          <div class="result-why">Novel system architecture with no prior art is the one case Opus earns its 5× premium over Sonnet. Use it once, make it count. Prepare the full context document before you start — treat this as a strategic session, not a chat.</div>
+          <div class="result-cost"><strong>Estimated cost:</strong> 60–120 credits. Maximum once per sprint. Never for debugging, never for refactoring.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-free-iam">
+        <div class="result-card free">
+          <div class="result-tag">USE FREE MODEL</div>
+          <div class="result-model">GPT-4.1 — FREE</div>
+          <div class="result-why">IAM config generation (PingFederate SP connections, Saviynt JSON rules, CyberArk policies) is structural and pattern-based. GPT-4.1 handles it perfectly. State the format requirements explicitly and it delivers.</div>
+          <div class="result-cost"><strong>Cost:</strong> 0 credits. Config generation should never cost money.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+      <div class="tree-result" id="res-sonnet-iam">
+        <div class="result-card mid">
+          <div class="result-tag">MID COST — HIGHLY JUSTIFIED</div>
+          <div class="result-model">Claude Sonnet 4.6</div>
+          <div class="result-why">IAM security analysis and threat modeling is exactly what Sonnet is worth the credits for. Its protocol depth on OIDC, SAML, and OAuth is significantly better than GPT-4.1 for nuanced security questions. Keep context to the specific flow.</div>
+          <div class="result-cost"><strong>Estimated cost:</strong> 15–35 credits per focused session.</div>
+          <button class="tree-back-btn" onclick="treeReset()">↺ Start over</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S3: PROMPT LAB ═══════════════════ -->
+<section class="section" id="prompts-ba">
+  <div class="container">
+    <div class="section-label">03 — Interactive Tool</div>
+    <h2 class="section-title">Prompt Before / After Lab</h2>
+    <p class="section-desc">Side-by-side comparison of wasteful vs. efficient prompts — with estimated credit costs and one-click copy on the optimized version.</p>
+
+    <div class="ba-tabs">
+      <button class="ba-tab active" onclick="switchTab('ba1',this)">IAM Debug</button>
+      <button class="ba-tab" onclick="switchTab('ba2',this)">Refactor</button>
+      <button class="ba-tab" onclick="switchTab('ba3',this)">Security Review</button>
+      <button class="ba-tab" onclick="switchTab('ba4',this)">Test Generation</button>
+      <button class="ba-tab" onclick="switchTab('ba5',this)">Architecture</button>
+    </div>
+
+    <!-- BA1 -->
+    <div class="ba-panel active" id="ba1">
+      <div class="ba-compare">
+        <div class="ba-side before">
+          <div class="ba-side-header">❌ WASTEFUL PROMPT <span class="ba-cost">~85 credits (Claude Sonnet)</span></div>
+          <div class="ba-body">
+<em>Here's my entire auth service [1,200 lines pasted]. My SAML SSO login is failing. Can you find what's wrong and also suggest improvements, rewrite the token validation, and add unit tests? Also explain how SAML works in general.</em>
+          </div>
+        </div>
+        <div class="ba-side after">
+          <div class="ba-side-header">✓ EFFICIENT PROMPT <span class="ba-cost">~12 credits (Claude Sonnet)</span></div>
+          <div class="ba-body" id="ba1-after">
+<strong>Context: SP-initiated SAML 2.0, PingFederate IdP, Java SP.
+Error: "Invalid InResponseTo attribute" on AuthnResponse.
+
+[PASTE: AuthnRequest builder, 25 lines]
+[PASTE: Response validator, 30 lines]
+
+Issue: InResponseTo validation failing. Identify the root cause only. Return: one-sentence diagnosis + the specific line to fix. No explanation of SAML basics needed.</strong>
+          </div>
+          <button class="copy-btn" onclick="copyPrompt('ba1-after',this)">Copy</button>
+        </div>
+      </div>
+      <div class="ba-savings">7× cheaper. Faster response. More accurate diagnosis. The extra context you cut was noise, not signal.</div>
+    </div>
+
+    <!-- BA2 -->
+    <div class="ba-panel" id="ba2">
+      <div class="ba-compare">
+        <div class="ba-side before">
+          <div class="ba-side-header">❌ WASTEFUL PROMPT <span class="ba-cost">~70 credits (Sonnet)</span></div>
+          <div class="ba-body">
+<em>Here's my UserProvisioningService [800 lines]. Please refactor it to be cleaner, add error handling, improve performance, follow SOLID principles, add logging, and write Javadoc for everything.</em>
+          </div>
+        </div>
+        <div class="ba-side after">
+          <div class="ba-side-header">✓ EFFICIENT PROMPT <span class="ba-cost">~8 credits (GPT-4.1 · FREE)</span></div>
+          <div class="ba-body" id="ba2-after">
+<strong>Refactor this single method to extract the retry logic into a separate private method. No other changes.
+
+[PASTE: provisionUser() method, 45 lines]
+
+Output: the refactored provisionUser() and the new retryWithBackoff() method only. No Javadoc, no other methods.</strong>
+          </div>
+          <button class="copy-btn" onclick="copyPrompt('ba2-after',this)">Copy</button>
+        </div>
+      </div>
+      <div class="ba-savings">Free vs. 70 credits. Decompose large refactors into focused method-level tasks on GPT-4.1. Same outcome, zero cost.</div>
+    </div>
+
+    <!-- BA3 -->
+    <div class="ba-panel" id="ba3">
+      <div class="ba-compare">
+        <div class="ba-side before">
+          <div class="ba-side-header">❌ WASTEFUL PROMPT <span class="ba-cost">~120 credits (Opus)</span></div>
+          <div class="ba-body">
+<em>Review all our authentication flows for security issues [pastes 5 files, 2,000 lines total including comments, test files, and config]. Give me a complete security audit report.</em>
+          </div>
+        </div>
+        <div class="ba-side after">
+          <div class="ba-side-header">✓ EFFICIENT PROMPT <span class="ba-cost">~18 credits (Sonnet)</span></div>
+          <div class="ba-body" id="ba3-after">
+<strong>Analyze this JWT validation method for security vulnerabilities.
+[PASTE: validateJwtClaims(), 40 lines]
+
+Focus on: algorithm confusion attacks, claim validation gaps, timing attacks.
+Output: bullet list of issues found, severity (CRITICAL/HIGH/MEDIUM), and the specific line number. No remediation code needed yet.</strong>
+          </div>
+          <button class="copy-btn" onclick="copyPrompt('ba3-after',this)">Copy</button>
+        </div>
+      </div>
+      <div class="ba-savings">Scope security review to one function at a time. You get deeper analysis, faster, at 85% lower cost. Repeat per function.</div>
+    </div>
+
+    <!-- BA4 -->
+    <div class="ba-panel" id="ba4">
+      <div class="ba-compare">
+        <div class="ba-side before">
+          <div class="ba-side-header">❌ WASTEFUL PROMPT <span class="ba-cost">~45 credits (Sonnet)</span></div>
+          <div class="ba-body">
+<em>Here's my OAuthTokenService [600 lines]. Write comprehensive unit tests for all methods including edge cases, error scenarios, and integration tests. Use JUnit 5 and Mockito.</em>
+          </div>
+        </div>
+        <div class="ba-side after">
+          <div class="ba-side-header">✓ EFFICIENT PROMPT <span class="ba-cost">~0 credits (GPT-4.1 · FREE)</span></div>
+          <div class="ba-body" id="ba4-after">
+<strong>Write JUnit 5 + Mockito tests for this method only:
+[PASTE: exchangeAuthCode(), 35 lines]
+
+Test cases needed:
+1. Happy path — valid code, returns access token
+2. Expired code — throws TokenExpiredException  
+3. Invalid client — throws UnauthorizedClientException
+4. Network timeout — retries once then throws
+
+No other methods. No integration tests. Return only the test class.</strong>
+          </div>
+          <button class="copy-btn" onclick="copyPrompt('ba4-after',this)">Copy</button>
+        </div>
+      </div>
+      <div class="ba-savings">Test generation is mechanical. GPT-4.1 handles it at zero cost when you specify the exact cases. Never use premium models for test scaffolding.</div>
+    </div>
+
+    <!-- BA5 -->
+    <div class="ba-panel" id="ba5">
+      <div class="ba-compare">
+        <div class="ba-side before">
+          <div class="ba-side-header">❌ WASTEFUL PROMPT <span class="ba-cost">~200+ credits (multi-turn Opus)</span></div>
+          <div class="ba-body">
+<em>[Starts conversation, asks "how should I design our SSO system?", then continues with 8 follow-up questions across the same session, pasting more files as it goes]</em>
+          </div>
+        </div>
+        <div class="ba-side after">
+          <div class="ba-side-header">✓ EFFICIENT PROMPT <span class="ba-cost">~55 credits (Sonnet · 1 session)</span></div>
+          <div class="ba-body" id="ba5-after">
+<strong>System: Multi-tenant SaaS. 3 IdPs (ADFS, Okta, PingFederate). Need SP-initiated SSO with per-tenant IdP routing.
+
+Constraints: Java 17, existing Spring Security setup, must support SAML 2.0 and OIDC.
+Problem: Route AuthnRequest to correct IdP based on email domain without leaking tenant data.
+
+Design the IdP discovery + routing layer only. Output: component diagram description (text), key interfaces (Java signatures only), and top 2 risks. No implementation code.</strong>
+          </div>
+          <button class="copy-btn" onclick="copyPrompt('ba5-after',this)">Copy</button>
+        </div>
+      </div>
+      <div class="ba-savings">One prepared, complete prompt beats 8 iterative turns every time. Pre-think the problem. Write it all out. One shot, one session.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S4: DAILY CHECKLIST ═══════════════════ -->
+<section class="section" id="checklist">
+  <div class="container">
+    <div class="section-label">04 — Interactive Tool</div>
+    <h2 class="section-title">Daily Habits Checklist</h2>
+    <p class="section-desc">Eight habits that separate engineers who never run out of credits from those who are always surprised. Check off as you go — progress is saved locally.</p>
+
+    <div class="checklist-card">
+      <div class="checklist-header">
+        <div class="checklist-header-title">⬡ Staff Engineer Daily Credit Discipline</div>
+        <div class="progress-pill" id="cl-progress">0 / 8 complete</div>
+      </div>
+      <div class="check-groups">
+        <div>
+          <div class="check-group-title">// Morning Startup</div>
+          <div class="check-item" id="ci1" onclick="toggleCheck(this,'ci1')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>Model selector set to GPT-4.1.</strong> Check your VS Code Copilot chat panel. If it's on anything else from yesterday, reset it now. Do this before writing a single prompt.</div>
+          </div>
+          <div class="check-item" id="ci2" onclick="toggleCheck(this,'ci2')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>Check the billing dashboard once.</strong> GitHub → Settings → Billing. Know where you stand. Takes 10 seconds. Prevents end-of-month surprises.</div>
+          </div>
+        </div>
+        <div>
+          <div class="check-group-title">// During Development</div>
+          <div class="check-item" id="ci3" onclick="toggleCheck(this,'ci3')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>Lean on autocomplete first.</strong> Before opening chat, let inline completions try. Next Edit Suggestions handle most mechanical edits. <code>Tab</code> before <code>Ctrl+I</code>.</div>
+          </div>
+          <div class="check-item" id="ci4" onclick="toggleCheck(this,'ci4')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>One task, one chat session.</strong> Open a new chat for every distinct question. Don't pile follow-up questions into one thread — context history is billed every turn on premium models.</div>
+          </div>
+          <div class="check-item" id="ci5" onclick="toggleCheck(this,'ci5')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>Before any premium chat: write the prompt first.</strong> Draft it in a text file. Specify context (minimal), output format (constrained), and model. Then open chat and send it once. No warm-up turns.</div>
+          </div>
+        </div>
+        <div>
+          <div class="check-group-title">// Agentic &amp; Review Work</div>
+          <div class="check-item" id="ci6" onclick="toggleCheck(this,'ci6')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>No agent sessions without a written scope.</strong> Three lines minimum: target files, goal, and acceptance criteria. If you can't write these in 3 minutes, you're not ready to run the agent.</div>
+          </div>
+          <div class="check-item" id="ci7" onclick="toggleCheck(this,'ci7')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>PR code review: main branch only, manually triggered.</strong> Never auto-review on every push. Trigger it once, deliberately, when you genuinely want a second opinion on complex logic.</div>
+          </div>
+        </div>
+        <div>
+          <div class="check-group-title">// End of Day</div>
+          <div class="check-item" id="ci8" onclick="toggleCheck(this,'ci8')">
+            <div class="check-box"></div>
+            <div class="check-text"><strong>Reset model to GPT-4.1 before closing VS Code.</strong> Your future self will thank you. Close all Copilot chat tabs. Tomorrow starts clean.</div>
+          </div>
+        </div>
+      </div>
+      <div class="checklist-footer">
+        <button class="reset-btn" onclick="resetChecklist()">Reset all</button>
+        <div class="save-note">✓ Progress saved in localStorage</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S5: WORST MISTAKES ═══════════════════ -->
+<section class="section" id="mistakes">
+  <div class="container">
+    <div class="section-label">05 — Accordion</div>
+    <h2 class="section-title">The 5 Worst Credit Mistakes</h2>
+    <p class="section-desc">Expand each one for the root cause and the exact fix. These five alone account for 80%+ of unexpected credit drain across enterprise teams.</p>
+
+    <div id="mistakes-list">
+
+      <div class="mistake-item" id="m1">
+        <button class="mistake-trigger" onclick="toggleMistake('m1')">
+          <span class="mistake-num">MISTAKE 01</span>
+          <span class="mistake-title">Leaving a Premium Model Selected After One Hard Task</span>
+          <span class="mistake-impact impact-critical">CRITICAL</span>
+          <span class="mistake-chevron">▶</span>
+        </button>
+        <div class="mistake-body">
+          <div class="mistake-inner">
+            <div>
+              <div class="mistake-col-label why">WHY IT DRAINS CREDITS</div>
+              <div class="mistake-text">You switched to Claude Sonnet for a real security review at 11am. You got your answer. But the model selector stayed on Sonnet. For the rest of the day — every "what does this variable do?", every quick test question, every boilerplate generation — Sonnet was billing you at $3/$15 per million tokens for work that GPT-4.1 handles for free. One forgotten model switch costs 50–150 credits per day of ambient use.</div>
+            </div>
+            <div>
+              <div class="mistake-col-label fix">THE EXACT FIX</div>
+              <div class="mistake-text">Make switching back a muscle memory ritual. The moment you get your premium model response, immediately click the model selector and switch to GPT-4.1. No exceptions. Some teams put a sticky note on their monitor: <code>SWITCH BACK AFTER EVERY PREMIUM TASK</code>. It sounds silly. It works.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mistake-item" id="m2">
+        <button class="mistake-trigger" onclick="toggleMistake('m2')">
+          <span class="mistake-num">MISTAKE 02</span>
+          <span class="mistake-title">Auto-Reviewing Every PR Push with Copilot Code Review</span>
+          <span class="mistake-impact impact-critical">CRITICAL</span>
+          <span class="mistake-chevron">▶</span>
+        </button>
+        <div class="mistake-body">
+          <div class="mistake-inner">
+            <div>
+              <div class="mistake-col-label why">WHY IT DRAINS CREDITS</div>
+              <div class="mistake-text">Copilot Code Review now has a dual billing model: it costs AI Credits for token usage AND GitHub Actions minutes simultaneously. Enabling it on every branch push means a developer who pushes 8 times per day on a feature branch triggers 8 reviews — each one burning credits + Actions minutes, even for trivial WIP commits. A busy team of 10 can drain 500+ credits per day from CI review alone, invisibly.</div>
+            </div>
+            <div>
+              <div class="mistake-col-label fix">THE EXACT FIX</div>
+              <div class="mistake-text">Enterprise admins: restrict the Code Review policy to <code>main</code> and <code>release/*</code> branches only. Disable it entirely on feature branches. Developers: trigger code review manually, once, on the final PR before merge — not on every push. The GitHub org policy <code>Allow Copilot code review on PR</code> should require explicit trigger, not auto-run on push.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mistake-item" id="m3">
+        <button class="mistake-trigger" onclick="toggleMistake('m3')">
+          <span class="mistake-num">MISTAKE 03</span>
+          <span class="mistake-title">Using @workspace on a Monorepo Without Scoping</span>
+          <span class="mistake-impact impact-critical">CRITICAL</span>
+          <span class="mistake-chevron">▶</span>
+        </button>
+        <div class="mistake-body">
+          <div class="mistake-inner">
+            <div>
+              <div class="mistake-col-label why">WHY IT DRAINS CREDITS</div>
+              <div class="mistake-text">Typing <code>@workspace why is the SAML flow failing?</code> in a monorepo with 400+ files instructs Copilot to semantically index and scan the entire repository to find relevant context before answering. This can push 50,000–100,000+ input tokens before you've received a single word of output. Input tokens on premium models at $3–$15/M add up fast. Many developers don't realize @workspace is a full-repo scan trigger.</div>
+            </div>
+            <div>
+              <div class="mistake-col-label fix">THE EXACT FIX</div>
+              <div class="mistake-text">Always scope your references explicitly. Use <code>@file AuthService.java</code> instead of <code>@workspace</code> when you know which file is relevant. For monorepos, always specify the module or file path: <code>"In the auth-service module, specifically AuthnRequestBuilder.java..."</code>. If you must use <code>@workspace</code>, add <code>.copilotignore</code> to exclude <code>vendor/</code>, <code>node_modules/</code>, <code>generated/</code>, and test fixtures.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mistake-item" id="m4">
+        <button class="mistake-trigger" onclick="toggleMistake('m4')">
+          <span class="mistake-num">MISTAKE 04</span>
+          <span class="mistake-title">Running Agentic Sessions with a Vague or Open-Ended Scope</span>
+          <span class="mistake-impact impact-high">HIGH</span>
+          <span class="mistake-chevron">▶</span>
+        </button>
+        <div class="mistake-body">
+          <div class="mistake-inner">
+            <div>
+              <div class="mistake-col-label why">WHY IT DRAINS CREDITS</div>
+              <div class="mistake-text">"Refactor the user management module" sent to Copilot Coding Agent causes the agent to first explore the repository to understand what's in the module, read every related file, plan its approach, then execute — all before changing a line of code. That exploration phase alone can consume 20,000–50,000 input tokens on a medium codebase. Then the multi-turn execution compounds on top. Reports of 150-credit single sessions are almost always from under-scoped agent tasks.</div>
+            </div>
+            <div>
+              <div class="mistake-col-label fix">THE EXACT FIX</div>
+              <div class="mistake-text">Before you launch any agent: write down 1) the exact list of files to touch, 2) the specific goal in one sentence, 3) the acceptance criteria in 2–3 bullet points. Paste this as the agent's first message. This eliminates the exploration phase entirely. If you can't fill in those three things in under 5 minutes, you don't have enough clarity to run the agent yet — do that thinking yourself first.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mistake-item" id="m5">
+        <button class="mistake-trigger" onclick="toggleMistake('m5')">
+          <span class="mistake-num">MISTAKE 05</span>
+          <span class="mistake-title">Multi-Turn Iteration on a Premium Model Instead of Fixing the Prompt</span>
+          <span class="mistake-impact impact-high">HIGH</span>
+          <span class="mistake-chevron">▶</span>
+        </button>
+        <div class="mistake-body">
+          <div class="mistake-inner">
+            <div>
+              <div class="mistake-col-label why">WHY IT DRAINS CREDITS</div>
+              <div class="mistake-text">You ask Claude Sonnet a question. The answer isn't quite right. You follow up: "Actually, also include X." It's still not right. "Can you make it more concise?" Then: "Wait, the format is wrong, can you redo it as..." Each turn re-sends the entire conversation history as input, plus generates new output. A 5-turn conversation on Sonnet costs 5× what a single well-scoped question costs — often more, since context grows with each turn.</div>
+            </div>
+            <div>
+              <div class="mistake-col-label fix">THE EXACT FIX</div>
+              <div class="mistake-text">If the first answer was wrong, close the chat and fix your prompt — don't follow up in the same thread. Ask yourself: did I specify the output format? Did I constrain the scope? Did I give enough (but not too much) context? Rewrite the prompt with those fixes and open a fresh chat. One improved prompt beats five follow-up turns every time, both for quality and for credit cost.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S6: CONTEXT VISUALIZER ═══════════════════ -->
+<section class="section" id="ctx-viz">
+  <div class="container">
+    <div class="section-label">06 — Interactive Tool</div>
+    <h2 class="section-title">Context Window Cost Visualizer</h2>
+    <p class="section-desc">See exactly how context window costs compound across a multi-turn chat session. Add turns to watch costs grow — this is the "invisible" multiplier most developers miss.</p>
+
+    <div class="viz-wrapper">
+      <div class="viz-controls">
+        <button class="viz-btn primary" onclick="addTurn()">+ Add Turn</button>
+        <button class="viz-btn" onclick="vizReset()">Reset</button>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-3);margin-left:auto;">Model: <strong style="color:var(--cyan)">Claude Sonnet 4.6</strong> &nbsp;|&nbsp; Input: $3/M · Output: $15/M</div>
+      </div>
+
+      <div class="ctx-window">
+        <div class="ctx-legend">
+          <div class="ctx-leg"><div class="ctx-leg-dot" style="background:#60a5fa"></div>System / history (input)</div>
+          <div class="ctx-leg"><div class="ctx-leg-dot" style="background:#f59e0b"></div>New user prompt (input)</div>
+          <div class="ctx-leg"><div class="ctx-leg-dot" style="background:#00e676"></div>New model output</div>
+        </div>
+        <div class="turns-container" id="turns-container">
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text-3);padding:20px 0;">Click "+ Add Turn" to simulate a conversation turn.</div>
+        </div>
+        <div class="ctx-total-bar">
+          <div class="ctx-total-label">
+            <span>Cumulative session cost</span>
+            <span id="ctx-total-cost">0.00 credits</span>
+          </div>
+          <div class="ctx-full-bar">
+            <div class="ctx-full-fill" id="ctx-full-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px 16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--r-sm);font-family:var(--mono);font-size:11px;color:var(--text-3);">
+        💡 Notice how the blue "history" bar grows with every turn — <strong style="color:var(--text)">you pay for past conversation every single time</strong>. Turn 5 sends everything from turns 1–4 as input again. This is why long sessions on premium models are so expensive, and why starting a new chat for each task matters.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S7: IAM PROMPT LIBRARY ═══════════════════ -->
+<section class="section" id="iam-lib">
+  <div class="container">
+    <div class="section-label">07 — Reference Library</div>
+    <h2 class="section-title">IAM / SSO Prompt Snippet Library</h2>
+    <p class="section-desc">Pre-written, token-efficient prompt templates for the most common IAM/SSO tasks. Click a tag to filter. Copy and fill in the <span style="color:var(--amber);font-family:var(--mono);font-size:12px;">[PLACEHOLDERS]</span>.</p>
+
+    <div class="lib-filter">
+      <button class="lib-filter-btn active" onclick="filterLib('all',this)">All</button>
+      <button class="lib-filter-btn" onclick="filterLib('saml',this)">SAML</button>
+      <button class="lib-filter-btn" onclick="filterLib('oidc',this)">OIDC</button>
+      <button class="lib-filter-btn" onclick="filterLib('iam',this)">IAM/IGA</button>
+      <button class="lib-filter-btn" onclick="filterLib('cyberark',this)">CyberArk/PAM</button>
+      <button class="lib-filter-btn" onclick="filterLib('debug',this)">Debug</button>
+      <button class="lib-filter-btn" onclick="filterLib('test',this)">Tests</button>
+    </div>
+
+    <div class="prompt-cards" id="prompt-cards">
+
+      <div class="prompt-card" data-tag="saml">
+        <div class="prompt-card-head"><span class="prompt-tag saml">SAML</span><span class="prompt-cost-tag">~10 credits · Sonnet</span></div>
+        <div class="prompt-title">SAML AuthnRequest Debug</div>
+        <div class="prompt-body">Context: SP-initiated SAML 2.0, [IDP_NAME] IdP, [LANGUAGE] SP.
+Error: "[PASTE_ERROR_MESSAGE]"
+
+[PASTE_AUTHNREQUEST_BUILDER_20-30_LINES]
+[PASTE_RESPONSE_VALIDATOR_20-30_LINES]
+
+Identify only: root cause + specific line.
+Output format: 2 lines max. No SAML tutorial needed.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+      <div class="prompt-card" data-tag="oidc">
+        <div class="prompt-card-head"><span class="prompt-tag oidc">OIDC</span><span class="prompt-cost-tag">~12 credits · Sonnet</span></div>
+        <div class="prompt-title">OIDC Token Validation Review</div>
+        <div class="prompt-body">Review this JWT validation method for security gaps.
+[PASTE_METHOD_MAX_50_LINES]
+
+Check only: algorithm confusion, claim validation,
+expiry handling, audience validation.
+Output: bullet list, severity label per issue,
+line number. No remediation code yet.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+      <div class="prompt-card" data-tag="saml">
+        <div class="prompt-card-head"><span class="prompt-tag saml">SAML</span><span class="prompt-cost-tag">~0 credits · GPT-4.1 FREE</span></div>
+        <div class="prompt-title">PingFederate SP Connection Config</div>
+        <div class="prompt-body">Generate a PingFederate SP connection config snippet for:
+- SP Entity ID: [ENTITY_ID]
+- ACS URL: [ACS_URL]  
+- NameID format: [NAMEID_FORMAT]
+- Attribute: [ATTR_NAME] → [SAML_ATTR]
+- Signing: [YES/NO]
+
+Output: XML block only, no explanation.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+      <div class="prompt-card" data-tag="iam">
+        <div class="prompt-card-head"><span class="prompt-tag iam">IAM/IGA</span><span class="prompt-cost-tag">~0 credits · GPT-4.1 FREE</span></div>
+        <div class="prompt-title">Saviynt Provisioning Rule JSON</div>
+        <div class="prompt-body">Generate a Saviynt provisioning rule JSON for:
+- Trigger: [TRIGGER_EVENT]
+- Target system: [SYSTEM_NAME]
+- Action: [PROVISION/DEPROVISION/MODIFY]
+- Condition: [CONDITION_LOGIC]
+- Attributes to set: [ATTR_LIST]
+
+Output: JSON object only. No explanation.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+      <div class="prompt-card" data-tag="cyberark">
+        <div class="prompt-card-head"><span class="prompt-tag cyberark">CyberArk/PAM</span><span class="prompt-cost-tag">~0 credits · GPT-4.1 FREE</span></div>
+        <div class="prompt-title">CyberArk Safe Creation Script</div>
+        <div class="prompt-body">Write a CyberArk PACLI/REST script to create a safe:
+- Safe name: [SAFE_NAME]
+- Owner: [OWNER_USER_OR_GROUP]
+- CPM policy: [POLICY_NAME]
+- Retention days: [DAYS]
+- Description: [DESC]
+
+Language: [Java/Python/PowerShell]
+Output: function only, no main method.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+      <div class="prompt-card" data-tag="oidc">
+        <div class="prompt-card-head"><span class="prompt-tag oidc">OIDC</span><span class="prompt-cost-tag">~8 credits · GPT-4.1 FREE</span></div>
+        <div class="prompt-title">OAuth 2.0 PKCE Flow Implementation</div>
+        <div class="prompt-body">Implement PKCE code verifier/challenge generation:
+- Language: [Java/TypeScript/Node.js]
+- Code verifier: 43-128 chars, URL-safe base64
+- Challenge method: S256
+
+Output: 2 static methods only —
+generateVerifier() and generateChallenge(verifier).
+No imports, no class wrapper.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+      <div class="prompt-card" data-tag="debug">
+        <div class="prompt-card-head"><span class="prompt-tag debug">DEBUG</span><span class="prompt-cost-tag">~8 credits · Sonnet</span></div>
+        <div class="prompt-title">IdP Routing / Tenant Discovery Debug</div>
+        <div class="prompt-body">Debug this email-domain-to-IdP routing logic.
+[PASTE_ROUTING_METHOD_MAX_40_LINES]
+
+Input: user@[DOMAIN], expected IdP: [EXPECTED_IDP]
+Actual result: [ACTUAL_RESULT]
+
+Find only: the logic error causing wrong routing.
+Output: one sentence + the specific condition to fix.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+      <div class="prompt-card" data-tag="test">
+        <div class="prompt-card-head"><span class="prompt-tag test">TESTS</span><span class="prompt-cost-tag">~0 credits · GPT-4.1 FREE</span></div>
+        <div class="prompt-title">SSO Integration Test Scaffold</div>
+        <div class="prompt-body">Write [JUnit5/Jest/pytest] tests for this method:
+[PASTE_METHOD_MAX_40_LINES]
+
+Test cases (specify exactly):
+1. [HAPPY_PATH_DESCRIPTION]
+2. [ERROR_CASE_1]
+3. [ERROR_CASE_2]
+4. [EDGE_CASE]
+
+Framework: [MOCKITO/JEST_MOCK/PYTEST_MOCK]
+Output: test class only. No implementation code.</div>
+        <div class="prompt-footer"><button class="prompt-copy" onclick="copyCard(this)">Copy template</button></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ S8: AGENT GATE ═══════════════════ -->
+<section class="section" id="agent-gate">
+  <div class="container">
+    <div class="section-label">08 — Interactive Gate</div>
+    <h2 class="section-title">Agentic Task Launch Gate</h2>
+    <p class="section-desc">Before you run any Copilot Coding Agent session, you must pass this gate. Every unchecked box is a reason your session will over-consume credits.</p>
+
+    <div class="gate-wrapper">
+      <div class="gate-header">
+        <div class="gate-icon">🚨</div>
+        <div class="gate-header-text">
+          <h3>Agentic Task Pre-Flight Checklist</h3>
+          <p>Complete all items before launching any Copilot Coding Agent, cloud agent, or agentic CLI session.</p>
+        </div>
+        <div class="gate-status" id="gate-status">NOT READY</div>
+      </div>
+
+      <div class="gate-items">
+        <div class="gate-item" id="gi1" onclick="toggleGate('gi1')">
+          <div class="gate-check"></div>
+          <div class="gate-item-content">
+            <div class="gate-item-label">I have written down the exact list of files the agent should touch</div>
+            <div class="gate-item-hint">Not "the auth module" — the actual file paths. e.g. src/auth/AuthService.java, src/auth/TokenValidator.java</div>
+          </div>
+        </div>
+        <div class="gate-item" id="gi2" onclick="toggleGate('gi2')">
+          <div class="gate-check"></div>
+          <div class="gate-item-content">
+            <div class="gate-item-label">I have written the goal in a single, concrete sentence</div>
+            <div class="gate-item-hint">Not "improve the code" — e.g. "Extract the retry logic from provisionUser() into a private retryWithBackoff() method."</div>
+          </div>
+        </div>
+        <div class="gate-item" id="gi3" onclick="toggleGate('gi3')">
+          <div class="gate-check"></div>
+          <div class="gate-item-content">
+            <div class="gate-item-label">I have defined 2–3 bullet acceptance criteria</div>
+            <div class="gate-item-hint">What does "done" look like? e.g. "existing tests still pass", "no new public methods", "retry delay is configurable"</div>
+          </div>
+        </div>
+        <div class="gate-item" id="gi4" onclick="toggleGate('gi4')">
+          <div class="gate-check"></div>
+          <div class="gate-item-content">
+            <div class="gate-item-label">I have set a credit budget limit in the agent UI</div>
+            <div class="gate-item-hint">GitHub Copilot Coding Agent supports budget caps. Set it to 2× your estimate. If it hits the cap, the session stops — not your credit card.</div>
+          </div>
+        </div>
+        <div class="gate-item" id="gi5" onclick="toggleGate('gi5')">
+          <div class="gate-check"></div>
+          <div class="gate-item-content">
+            <div class="gate-item-label">The model is set to Sonnet 4.6, NOT Opus</div>
+            <div class="gate-item-hint">Opus costs 5× Sonnet per token. Agentic tasks involve many tokens across many turns. Opus for agents is almost never justified — Sonnet handles the vast majority of coding tasks.</div>
+          </div>
+        </div>
+        <div class="gate-item" id="gi6" onclick="toggleGate('gi6')">
+          <div class="gate-check"></div>
+          <div class="gate-item-content">
+            <div class="gate-item-label">I have added a .copilotignore or scoped the repo context</div>
+            <div class="gate-item-hint">Exclude vendor/, node_modules/, generated/, build/, and test fixtures from agent context. Smaller context = less input billing on every agent turn.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gate-footer">
+        <div class="gate-progress-text" id="gate-progress-text">0 of 6 requirements met</div>
+        <button class="gate-launch-btn" id="gate-launch-btn" disabled>🚀 Launch Agent Session</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="page-footer">
+  <div class="container">
+    <div class="footer-logo">⬡ <span>COPILOT TIPS & TRICKS</span> · Staff Engineer Edition · June 2026</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:4px;">Companion to the Enterprise AI Credits Playbook · 1 credit = $0.01 · Enterprise: 3,900 credits/user/mo</div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+   JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+/* ─── PROGRESS BAR + NAV ─── */
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const pct = (doc.scrollTop / (doc.scrollHeight - doc.clientHeight)) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  const nav = document.getElementById('sticky-nav');
+  if (doc.scrollTop > 300) nav.classList.add('visible');
+  else nav.classList.remove('visible');
+
+  // Active nav link
+  const sections = document.querySelectorAll('.section[id], .hero[id]');
+  let current = '';
+  sections.forEach(s => {
+    if (doc.scrollTop + 80 >= s.offsetTop) current = s.id;
+  });
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+  });
+});
+
+/* ─── CALCULATOR ─── */
+let ctxMultiplier = 1;
+function setCtx(size, btn) {
+  document.querySelectorAll('#ctx-size-btns .model-btn').forEach(b => b.classList.remove('active','amber','green'));
+  btn.classList.add('active');
+  ctxMultiplier = size === 'small' ? 0.4 : size === 'medium' ? 1 : 2.8;
+  if (size === 'large') btn.classList.add('amber');
+  if (size === 'small') btn.classList.add('green');
+  calc();
+}
+function calc() {
+  const gpt41   = +document.getElementById('r-gpt41').value;
+  const sonnet  = +document.getElementById('r-sonnet').value;
+  const flash   = +document.getElementById('r-flash').value;
+  const agent   = +document.getElementById('r-agent').value;
+  const review  = +document.getElementById('r-review').value;
+  const opus    = +document.getElementById('r-opus').value;
+
+  document.getElementById('v-gpt41').textContent  = gpt41;
+  document.getElementById('v-sonnet').textContent = sonnet;
+  document.getElementById('v-flash').textContent  = flash;
+  document.getElementById('v-agent').textContent  = agent;
+  document.getElementById('v-review').textContent = review;
+  document.getElementById('v-opus').textContent   = opus;
+
+  // Credits per session estimates × context multiplier
+  const days = 20;
+  const gpt41Credits   = 0; // always free
+  const sonnetPerSess  = 12 * ctxMultiplier;
+  const flashPerSess   = 1.5 * ctxMultiplier;
+  const agentPerSess   = 75 * ctxMultiplier;
+  const reviewPerSess  = 18;
+  const opusPerSess    = 80 * ctxMultiplier;
+
+  const sonnetTotal  = sonnet * sonnetPerSess * days;
+  const flashTotal   = flash  * flashPerSess  * days;
+  const agentTotal   = agent  * agentPerSess  * 4; // per month
+  const reviewTotal  = review * reviewPerSess * 4;
+  const opusTotal    = opus   * opusPerSess;
+
+  const total = Math.round(sonnetTotal + flashTotal + agentTotal + reviewTotal + opusTotal);
+  const budget = 3900;
+  const pct = Math.min((total / budget) * 100, 100);
+  const remain = Math.max(budget - total, 0);
+  const dailyAvg = Math.round(total / days);
+
+  document.getElementById('total-credits').innerHTML = `${total.toLocaleString()}<sub> credits</sub>`;
+  document.getElementById('daily-avg').textContent = `${dailyAvg} credits/day`;
+  document.getElementById('days-left').textContent = dailyAvg > 0 ? `~${Math.floor(budget / dailyAvg)} days` : '∞ (no premium usage)';
+
+  const gauge = document.getElementById('gauge');
+  gauge.style.width = pct + '%';
+  gauge.className = 'gauge-fill' + (pct > 90 ? ' danger' : pct > 65 ? ' warn' : '');
+
+  const bigNum = document.getElementById('total-credits');
+  bigNum.className = 'big-number' + (pct > 90 ? ' danger' : pct > 65 ? ' warn' : '');
+
+  document.getElementById('gauge-pct').textContent = Math.round(pct) + '% used';
+  document.getElementById('gauge-remain').textContent = remain.toLocaleString() + ' remaining';
+
+  // Biggest driver
+  const drivers = [
+    ['Claude Sonnet chat', sonnetTotal],
+    ['Agentic sessions', agentTotal],
+    ['PR Code Review', reviewTotal],
+    ['Opus/GPT-5 sessions', opusTotal],
+    ['Gemini Flash', flashTotal],
+  ];
+  drivers.sort((a,b)=>b[1]-a[1]);
+  document.getElementById('cost-driver').textContent = drivers[0][1] > 0 ? `${drivers[0][0]} (~${Math.round(drivers[0][1])} credits)` : 'None — great discipline!';
+
+  const verdict = document.getElementById('calc-verdict');
+  verdict.className = 'calc-verdict' + (pct > 90 ? ' danger' : pct > 65 ? ' warn' : '');
+  if (total === 0) {
+    verdict.innerHTML = '<strong>No premium usage detected.</strong> You are using Copilot cost-free. Consider adding a few targeted Sonnet sessions for security and IAM work.';
+  } else if (pct <= 50) {
+    verdict.innerHTML = `<strong>Excellent.</strong> Your projected ${total} credits/month is ${Math.round(pct)}% of budget. You have ${remain.toLocaleString()} credits of headroom for agentic or architecture work.`;
+  } else if (pct <= 75) {
+    verdict.innerHTML = `<strong>Healthy.</strong> ${total} credits is ${Math.round(pct)}% of budget. Watch your biggest driver: <strong>${drivers[0][0]}</strong>. Small reductions there recover significant headroom.`;
+  } else if (pct <= 95) {
+    verdict.innerHTML = `<strong>⚠️ Warning.</strong> ${total} credits is ${Math.round(pct)}% of budget. At this rate you will exhaust your allowance mid-month. Cut ${drivers[0][0]} by 30-40% first.`;
+  } else {
+    verdict.innerHTML = `<strong>🚨 Over budget.</strong> ${total} credits exceeds your 3,900 limit by ${(total-budget).toLocaleString()} credits. Overages are billed at $0.01/credit. You need to make significant cuts to ${drivers[0][0]}.`;
+  }
+
+  // Nav display
+  document.getElementById('nav-budget-pct').textContent = Math.round(pct) + '%';
+}
+calc();
+
+/* ─── DECISION TREE ─── */
+let treeHistory = [];
+function treeGo(nextId, qText, answerText) {
+  treeHistory.push({ show: nextId, q: qText, a: answerText });
+  updateTree(nextId, qText, answerText);
+}
+function treeResult(resultId, qText, answerText) {
+  treeHistory.push({ show: resultId, q: qText, a: answerText, result: true });
+  document.querySelectorAll('.tree-question, .tree-result').forEach(el => el.classList.remove('active'));
+  document.getElementById(resultId).classList.add('active');
+  updateBreadcrumb(qText, answerText, true);
+}
+function updateTree(nextId, qText, answerText) {
+  document.querySelectorAll('.tree-question, .tree-result').forEach(el => el.classList.remove('active'));
+  document.getElementById(nextId).classList.add('active');
+  updateBreadcrumb(qText, answerText, false);
+}
+function updateBreadcrumb(qText, answerText, isResult) {
+  const bc = document.getElementById('breadcrumb');
+  // Remove 'current' from last crumb
+  bc.querySelectorAll('.crumb.current').forEach(c => c.classList.remove('current'));
+  bc.innerHTML += `<span class="crumb-arrow">›</span><span class="crumb">${answerText}</span>`;
+  if (!isResult) {
+    const crumbs = bc.querySelectorAll('.crumb');
+    crumbs[crumbs.length-1].classList.add('current');
+  }
+}
+function treeReset() {
+  treeHistory = [];
+  document.querySelectorAll('.tree-question, .tree-result').forEach(el => el.classList.remove('active'));
+  document.getElementById('tq1').classList.add('active');
+  document.getElementById('breadcrumb').innerHTML = '<span class="crumb current">Start</span>';
+}
+
+/* ─── PROMPT TABS ─── */
+function switchTab(id, btn) {
+  document.querySelectorAll('.ba-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ba-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ─── COPY BUTTONS ─── */
+function copyPrompt(id, btn) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+function copyCard(btn) {
+  const body = btn.closest('.prompt-card').querySelector('.prompt-body');
+  navigator.clipboard.writeText(body.innerText).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy template'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+/* ─── CHECKLIST ─── */
+function loadChecklist() {
+  for (let i = 1; i <= 8; i++) {
+    const el = document.getElementById('ci'+i);
+    if (el && localStorage.getItem('ci'+i) === '1') el.classList.add('checked');
+  }
+  updateCheckProgress();
+}
+function toggleCheck(el, id) {
+  el.classList.toggle('checked');
+  localStorage.setItem(id, el.classList.contains('checked') ? '1' : '0');
+  updateCheckProgress();
+}
+function updateCheckProgress() {
+  let done = 0;
+  for (let i = 1; i <= 8; i++) {
+    if (document.getElementById('ci'+i)?.classList.contains('checked')) done++;
+  }
+  const pill = document.getElementById('cl-progress');
+  pill.textContent = `${done} / 8 complete`;
+  pill.className = 'progress-pill' + (done === 8 ? ' done' : '');
+}
+function resetChecklist() {
+  for (let i = 1; i <= 8; i++) {
+    const el = document.getElementById('ci'+i);
+    if (el) { el.classList.remove('checked'); localStorage.removeItem('ci'+i); }
+  }
+  updateCheckProgress();
+}
+loadChecklist();
+
+/* ─── MISTAKES ACCORDION ─── */
+function toggleMistake(id) {
+  const el = document.getElementById(id);
+  const wasOpen = el.classList.contains('open');
+  document.querySelectorAll('.mistake-item').forEach(m => m.classList.remove('open'));
+  if (!wasOpen) el.classList.add('open');
+}
+
+/* ─── CONTEXT VISUALIZER ─── */
+let ctxTurns = [];
+const colors = { history: '#60a5fa', prompt: '#f59e0b', output: '#00e676' };
+const SONNET_INPUT_RATE  = 3.0;   // $ per M tokens
+const SONNET_OUTPUT_RATE = 15.0;  // $ per M tokens
+
+function addTurn() {
+  const turnNum = ctxTurns.length + 1;
+  // Simulated token sizes per turn
+  const histTokens   = ctxTurns.reduce((sum, t) => sum + t.prompt + t.output, 0);
+  const promptTokens = 300 + Math.floor(Math.random() * 400);
+  const outputTokens = 400 + Math.floor(Math.random() * 800);
+  const turnCost = ((histTokens + promptTokens) * SONNET_INPUT_RATE + outputTokens * SONNET_OUTPUT_RATE) / 1_000_000 * 100;
+
+  ctxTurns.push({ hist: histTokens, prompt: promptTokens, output: outputTokens, cost: turnCost });
+  renderViz();
+}
+
+function renderViz() {
+  const container = document.getElementById('turns-container');
+  container.innerHTML = '';
+  let cumCost = 0;
+
+  const maxTokens = ctxTurns.reduce((max, t) => Math.max(max, t.hist + t.prompt + t.output), 1);
+
+  ctxTurns.forEach((t, i) => {
+    cumCost += t.cost;
+    const totalTokns = t.hist + t.prompt + t.output;
+    const pctHist   = (t.hist   / maxTokens) * 100;
+    const pctPrompt = (t.prompt / maxTokens) * 100;
+    const pctOutput = (t.output / maxTokens) * 100;
+    const isExpensive = t.cost > 3;
+
+    const row = document.createElement('div');
+    row.className = 'ctx-turn';
+    row.innerHTML = `
+      <div class="ctx-turn-label">Turn ${i+1}</div>
+      <div class="ctx-bars">
+        <div class="ctx-bar" style="width:${pctHist}%;background:${colors.history};opacity:${0.5 + i*0.08}" data-tip="${t.hist.toLocaleString()} history tokens"></div>
+        <div class="ctx-bar" style="width:${pctPrompt}%;background:${colors.prompt}" data-tip="${t.prompt.toLocaleString()} prompt tokens"></div>
+        <div class="ctx-bar" style="width:${pctOutput}%;background:${colors.output}" data-tip="${t.output.toLocaleString()} output tokens"></div>
+      </div>
+      <div class="ctx-cost ${isExpensive?'expensive':''}">${t.cost.toFixed(2)} cr</div>
+    `;
+    container.appendChild(row);
+  });
+
+  const totalCost = ctxTurns.reduce((s,t) => s+t.cost, 0);
+  document.getElementById('ctx-total-cost').textContent = totalCost.toFixed(2) + ' credits';
+  const pct = Math.min((totalCost / 30) * 100, 100); // 30 credits = "expensive session"
+  document.getElementById('ctx-full-fill').style.width = pct + '%';
+}
+
+function vizReset() {
+  ctxTurns = [];
+  document.getElementById('turns-container').innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:var(--text-3);padding:20px 0;">Click "+ Add Turn" to simulate a conversation turn.</div>';
+  document.getElementById('ctx-total-cost').textContent = '0.00 credits';
+  document.getElementById('ctx-full-fill').style.width = '0%';
+}
+
+/* ─── LIBRARY FILTER ─── */
+function filterLib(tag, btn) {
+  document.querySelectorAll('.lib-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.prompt-card').forEach(card => {
+    const match = tag === 'all' || card.dataset.tag === tag;
+    card.setAttribute('data-hidden', match ? 'false' : 'true');
+    card.style.display = match ? '' : 'none';
+  });
+}
+
+/* ─── AGENT GATE ─── */
+function toggleGate(id) {
+  document.getElementById(id).classList.toggle('checked');
+  updateGate();
+}
+function updateGate() {
+  const items = document.querySelectorAll('.gate-item');
+  const checked = document.querySelectorAll('.gate-item.checked').length;
+  const total = items.length;
+  const allDone = checked === total;
+
+  document.getElementById('gate-progress-text').textContent = `${checked} of ${total} requirements met`;
+  const status = document.getElementById('gate-status');
+  status.textContent = allDone ? '✓ READY TO LAUNCH' : 'NOT READY';
+  status.className = 'gate-status' + (allDone ? ' pass' : '');
+
+  const btn = document.getElementById('gate-launch-btn');
+  btn.disabled = !allDone;
+  btn.className = 'gate-launch-btn' + (allDone ? ' ready' : '');
+}
+
+// Gate launch click
+document.getElementById('gate-launch-btn').addEventListener('click', function() {
+  if (!this.disabled) {
+    this.textContent = '✓ Session Started — Monitor Your Credits';
+    this.style.cursor = 'default';
+    this.classList.remove('ready');
+    this.style.background = 'var(--green-dim)';
+    this.style.color = 'var(--green)';
+    this.style.borderColor = 'var(--green)';
+    this.style.animation = 'none';
+  }
+});
+</script>
+
+</body>
+</html>
