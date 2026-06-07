@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft Graph — Architecture, Auth &amp; Core Queries</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0A0E16;
+  --bg1:      #0F1420;
+  --bg2:      #141B2D;
+  --bgc:      #19223A;
+  --bgh:      #1E2A44;
+  --teal:     #2DD4BF;
+  --teal-d:   rgba(45,212,191,0.10);
+  --teal-g:   rgba(45,212,191,0.30);
+  --coral:    #FB7185;
+  --coral-d:  rgba(251,113,133,0.10);
+  --lime:     #A3E635;
+  --lime-d:   rgba(163,230,53,0.10);
+  --amber:    #FBBF24;
+  --amber-d:  rgba(251,191,36,0.10);
+  --slate:    #94A3B8;
+  --border:   rgba(45,212,191,0.10);
+  --border2:  rgba(45,212,191,0.18);
+  --t1:       #F0F4FA;
+  --t2:       #7E95B5;
+  --t3:       #374560;
+  --fd:       'Playfair Display', serif;
+  --fb:       'Plus Jakarta Sans', sans-serif;
+  --fm:       'Fira Code', monospace;
+  --nw:       268px;
+  --r:        8px;
+  --rl:       16px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--t1);
+  font-family:var(--fb);
+  font-size:16px;
+  line-height:1.85;
+  overflow-x:hidden;
+}
+/* diagonal stripe texture */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 40px,
+    rgba(45,212,191,0.012) 40px,
+    rgba(45,212,191,0.012) 41px
+  );
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ──────── SIDEBAR ──────── */
+.nav{
+  position:fixed;left:0;top:0;bottom:0;
+  width:var(--nw);
+  background:var(--bg1);
+  border-right:1px solid var(--border);
+  overflow-y:auto;z-index:100;
+  display:flex;flex-direction:column;
+}
+.nav::-webkit-scrollbar{width:3px}
+.nav::-webkit-scrollbar-thumb{background:var(--border2)}
+
+.nlogo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.nseries{font-family:var(--fm);font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--teal);margin-bottom:5px}
+.ntitle{font-family:var(--fb);font-size:12px;font-weight:700;color:var(--t1);line-height:1.4}
+.nbadge{display:inline-block;margin-top:7px;background:var(--teal-d);border:1px solid var(--border);color:var(--teal);font-family:var(--fm);font-size:8.5px;padding:2px 7px;border-radius:3px}
+
+.nlbl{font-family:var(--fm);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--t3);padding:13px 16px 4px}
+
+.na{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:7px 16px;border-left:2px solid transparent;
+  text-decoration:none;transition:all .16s;
+}
+.na:hover,.na.on{background:var(--teal-d);border-left-color:var(--teal)}
+.nn{font-family:var(--fm);font-size:9px;color:var(--teal);opacity:.5;min-width:16px;padding-top:2px}
+.nt{font-family:var(--fb);font-size:11.5px;font-weight:600;color:var(--t2);line-height:1.4}
+.na:hover .nt,.na.on .nt{color:var(--t1)}
+
+.nfoot{margin-top:auto;padding:13px 16px;border-top:1px solid var(--border)}
+.plbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.pbar{height:2px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden}
+.pfill{height:100%;border-radius:2px;width:0%;background:linear-gradient(90deg,var(--teal),var(--lime));transition:width .3s}
+
+/* ──────── MAIN ──────── */
+.main{margin-left:var(--nw);min-height:100vh;position:relative;z-index:1}
+
+/* ──────── HERO ──────── */
+.hero{
+  padding:68px 56px 52px;
+  border-bottom:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';
+  position:absolute;top:-80px;left:-40px;
+  width:500px;height:500px;
+  background:radial-gradient(circle,rgba(45,212,191,.05) 0%,transparent 65%);
+  pointer-events:none;
+}
+.hero::after{
+  content:'';
+  position:absolute;bottom:-60px;right:80px;
+  width:320px;height:320px;
+  background:radial-gradient(circle,rgba(163,230,53,.04) 0%,transparent 65%);
+  pointer-events:none;
+}
+.htag{
+  font-family:var(--fm);font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--teal);
+  margin-bottom:14px;display:flex;align-items:center;gap:9px;
+}
+.htag::before{content:'';width:24px;height:1px;background:var(--teal)}
+.hero h1{
+  font-family:var(--fd);
+  font-size:clamp(28px,3.5vw,50px);
+  line-height:1.1;color:var(--t1);margin-bottom:12px;
+}
+.hero h1 i{font-style:italic;color:var(--teal)}
+.hsub{font-size:16.5px;color:var(--t2);max-width:560px;margin-bottom:26px;font-weight:300;line-height:1.65}
+.hpills{display:flex;gap:9px;flex-wrap:wrap}
+.hpill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--bgc);border:1px solid var(--border);
+  border-radius:var(--r);padding:6px 12px;
+  font-family:var(--fm);font-size:9.5px;color:var(--t2);
+}
+.hdot{width:5px;height:5px;border-radius:50%}
+
+/* ──────── CONTENT ──────── */
+.cnt{padding:0 56px 80px}
+
+.ch{padding-top:64px;border-top:1px solid var(--border);margin-top:64px}
+.ch:first-child{border-top:none;margin-top:0}
+
+.chd{display:flex;align-items:flex-start;gap:14px;margin-bottom:32px}
+.cnum{
+  font-family:var(--fm);font-size:9.5px;color:var(--teal);
+  background:var(--teal-d);border:1px solid var(--border);
+  padding:3px 8px;border-radius:3px;margin-top:4px;
+  white-space:nowrap;letter-spacing:.1em;
+}
+.ch h2{font-family:var(--fd);font-size:clamp(22px,2.6vw,38px);color:var(--t1);line-height:1.15}
+.ch h2 .a{color:var(--teal);font-style:italic}
+
+.intro{
+  font-size:17px;color:var(--t2);font-style:italic;font-weight:300;
+  border-left:3px solid var(--teal);padding-left:16px;
+  margin-bottom:28px;line-height:1.75;
+}
+.ch h3{
+  font-family:var(--fb);font-size:18px;font-weight:700;
+  color:var(--t1);margin:36px 0 13px;
+  display:flex;align-items:center;gap:8px;
+}
+.ch h3::before{
+  content:'';width:3px;height:17px;
+  background:linear-gradient(180deg,var(--teal),var(--lime));
+  border-radius:2px;flex-shrink:0;
+}
+.ch h4{font-family:var(--fb);font-size:14.5px;font-weight:700;color:var(--teal);margin:22px 0 9px}
+p{margin-bottom:14px}
+strong{color:var(--teal);font-weight:600}
+code{font-family:var(--fm);font-size:12px;color:var(--amber);background:var(--amber-d);padding:1px 5px;border-radius:3px}
+
+/* ──────── CALLOUTS ──────── */
+.bx{border-radius:var(--r);padding:17px 20px;margin:20px 0;font-size:15px}
+.bx::before{display:block;font-family:var(--fm);font-size:8px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:7px}
+.bx-a{background:var(--amber-d);border:1px solid rgba(251,191,36,.18);border-left:3px solid var(--amber)}
+.bx-a::before{content:'💡 REAL-WORLD ANALOGY';color:var(--amber)}
+.bx-p{background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.14);border-left:3px solid #38BDF8}
+.bx-p::before{content:'🔄 PINGFEDERATE / LDAP PERSPECTIVE';color:#38BDF8}
+.bx-j{background:var(--lime-d);border:1px solid rgba(163,230,53,.14);border-left:3px solid var(--lime)}
+.bx-j::before{content:'🏗️ REAL PROJECT SCENARIO';color:var(--lime)}
+.bx-w{background:var(--coral-d);border:1px solid rgba(251,113,133,.14);border-left:3px solid var(--coral)}
+.bx-w::before{content:'⚠️ GOTCHA / WATCH OUT';color:var(--coral)}
+.bx-t{background:var(--teal-d);border:1px solid var(--border2);border-left:3px solid var(--teal)}
+.bx-t::before{content:'🎯 IAM ENGINEER TIP';color:var(--teal)}
+
+/* ──────── TABLES ──────── */
+.tbl{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.tbl th{padding:9px 13px;font-family:var(--fm);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;text-align:left;border-bottom:2px solid}
+.tbl th.te{color:var(--teal);border-color:var(--teal);background:var(--teal-d)}
+.tbl th.ta{color:var(--amber);border-color:var(--amber);background:var(--amber-d)}
+.tbl th.tn{color:var(--t2);border-color:var(--border)}
+.tbl td{padding:9px 13px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+.tbl tr:hover td{background:rgba(255,255,255,.012)}
+.cteal{color:#5FD5C8}
+.camber{color:#C89A30}
+
+/* ──────── DIAGRAM BOX ──────── */
+.dbox{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);padding:26px;margin:26px 0;overflow-x:auto}
+.dtitle{font-family:var(--fm);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--teal);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.dtitle::before{content:'';width:16px;height:1px;background:var(--teal)}
+
+/* ──────── CODE ──────── */
+.code{
+  background:#050810;border:1px solid var(--border);
+  border-radius:var(--r);padding:15px 17px;
+  font-family:var(--fm);font-size:12px;
+  color:#8BB8D8;overflow-x:auto;margin:13px 0;line-height:1.7;
+}
+.cc{color:var(--t3);font-style:italic}
+.ck{color:var(--teal)}
+.cv{color:var(--amber)}
+.cs{color:var(--lime)}
+.cr{color:var(--coral)}
+
+/* ──────── EXPANDABLE ──────── */
+details.dd{background:var(--bgc);border:1px solid var(--border);border-radius:var(--r);margin:16px 0;overflow:hidden}
+details.dd summary{
+  padding:13px 17px;cursor:pointer;
+  font-family:var(--fb);font-size:13px;font-weight:700;
+  color:var(--teal);display:flex;align-items:center;gap:8px;
+  list-style:none;user-select:none;transition:background .16s;
+}
+details.dd summary:hover{background:var(--teal-d)}
+details.dd summary::before{content:'▶';font-size:9px;transition:transform .2s}
+details.dd[open] summary::before{transform:rotate(90deg)}
+details.dd summary::-webkit-details-marker{display:none}
+.ddb{padding:17px 20px;border-top:1px solid var(--border);font-size:14.5px}
+
+/* ──────── GRID CARDS ──────── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:13px;margin:20px 0}
+.card{background:var(--bgc);border:1px solid var(--border);border-radius:var(--r);padding:17px;transition:all .18s}
+.card:hover{border-color:var(--teal);background:var(--bgh);transform:translateY(-2px);box-shadow:0 5px 18px rgba(45,212,191,.06)}
+.ci{font-size:20px;margin-bottom:7px}
+.ct{font-family:var(--fb);font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.cd{font-size:12px;color:var(--t2);line-height:1.5}
+
+/* ──────── ANATOMY ──────── */
+.anat{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin:20px 0}
+.anath{padding:12px 18px;background:var(--teal-d);border-bottom:1px solid var(--border);font-family:var(--fm);font-size:10.5px;color:var(--teal);display:flex;align-items:center;gap:7px}
+.anatg{display:grid;grid-template-columns:1fr 1fr}
+.af{padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:9px;font-size:12px}
+.af:nth-child(odd){border-right:1px solid var(--border)}
+.ak{font-family:var(--fm);color:var(--teal);font-size:11px;min-width:140px;flex-shrink:0}
+.av{font-family:var(--fm);color:var(--amber);font-size:11px}
+.ad{color:var(--t2);font-size:12px}
+
+/* ──────── TAGS ──────── */
+.tag{display:inline-block;font-family:var(--fm);font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:.06em;margin:2px}
+.tt{background:var(--teal-d);color:var(--teal);border:1px solid var(--border)}
+.ta{background:var(--amber-d);color:var(--amber);border:1px solid rgba(251,191,36,.2)}
+.tl{background:var(--lime-d);color:var(--lime);border:1px solid rgba(163,230,53,.2)}
+.tc{background:var(--coral-d);color:var(--coral);border:1px solid rgba(251,113,133,.2)}
+
+/* ──────── URL ANATOMY ──────── */
+.url-box{
+  background:#050810;border:1px solid var(--border);
+  border-radius:var(--r);padding:18px 20px;margin:16px 0;
+  font-family:var(--fm);font-size:13px;overflow-x:auto;
+}
+.url-seg{display:inline-block;padding:3px 8px;border-radius:4px;margin:1px}
+.url-base{background:rgba(45,212,191,.12);color:var(--teal)}
+.url-ver{background:rgba(163,230,53,.12);color:var(--lime)}
+.url-res{background:rgba(251,191,36,.12);color:var(--amber)}
+.url-nav{background:rgba(251,113,133,.12);color:var(--coral)}
+.url-qp{background:rgba(148,163,184,.08);color:var(--slate)}
+.url-legend{
+  display:flex;flex-wrap:wrap;gap:10px;
+  margin-top:12px;padding-top:12px;border-top:1px solid var(--border);
+}
+.url-leg-item{display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:9.5px;color:var(--t2)}
+
+/* ──────── QUERY BUILDER ──────── */
+.qbuilder{
+  background:var(--bgc);border:1px solid var(--border);
+  border-radius:var(--rl);overflow:hidden;margin:22px 0;
+}
+.qbhd{
+  padding:12px 18px;background:var(--bg2);border-bottom:1px solid var(--border);
+  font-family:var(--fm);font-size:9.5px;color:var(--teal);letter-spacing:.15em;text-transform:uppercase;
+}
+.qrow{
+  display:grid;grid-template-columns:130px 1fr 1fr;
+  border-bottom:1px solid var(--border);
+  font-size:12.5px;
+}
+.qrow:last-child{border-bottom:none}
+.qcell{
+  padding:10px 14px;border-right:1px solid var(--border);
+}
+.qcell:last-child{border-right:none}
+.qparam{font-family:var(--fm);color:var(--teal);font-size:11.5px}
+.qex{font-family:var(--fm);color:var(--amber);font-size:11px;line-height:1.6}
+.qdesc{color:var(--t2);font-size:12px;line-height:1.5}
+
+@media(max-width:840px){
+  .nav{transform:translateX(-100%)}
+  .main{margin-left:0}
+  .hero,.cnt{padding-left:18px;padding-right:18px}
+  .anatg{grid-template-columns:1fr}
+  .qrow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ──────────── SIDEBAR ──────────── -->
+<aside class="nav" id="nav">
+  <div class="nlogo">
+    <div class="nseries">Microsoft Graph Series</div>
+    <div class="ntitle">Architecture, Auth &amp; Core Queries</div>
+    <span class="nbadge">DOC 3 OF 4</span>
+  </div>
+
+  <div class="nlbl">Chapters</div>
+  <a class="na on" href="#ch1"><span class="nn">01</span><span class="nt">What is Microsoft Graph?</span></a>
+  <a class="na" href="#ch2"><span class="nn">02</span><span class="nt">Graph API Fundamentals</span></a>
+  <a class="na" href="#ch3"><span class="nn">03</span><span class="nt">Resource &amp; Entity Model</span></a>
+  <a class="na" href="#ch4"><span class="nn">04</span><span class="nt">Auth &amp; Permissions for Graph</span></a>
+  <a class="na" href="#ch5"><span class="nn">05</span><span class="nt">Token Deep Dive</span></a>
+  <a class="na" href="#ch6"><span class="nn">06</span><span class="nt">OData Query Patterns</span></a>
+  <a class="na" href="#ch7"><span class="nn">07</span><span class="nt">Core Identity Queries</span></a>
+  <a class="na" href="#ch8"><span class="nn">08</span><span class="nt">Batch, Delta &amp; Advanced</span></a>
+
+  <div class="nlbl">Key References</div>
+  <a class="na" href="#ch2"><span class="nn">◈</span><span class="nt">URL Anatomy Diagram</span></a>
+  <a class="na" href="#ch4"><span class="nn">◈</span><span class="nt">Permission Flow Diagram</span></a>
+  <a class="na" href="#ch6"><span class="nn">◈</span><span class="nt">OData Quick-Reference</span></a>
+
+  <div class="nfoot">
+    <div class="plbl">Reading Progress</div>
+    <div class="pbar"><div class="pfill" id="pf"></div></div>
+  </div>
+</aside>
+
+<!-- ──────────── MAIN ──────────── -->
+<main class="main">
+
+<section class="hero">
+  <div class="htag">Doc 3 of 4 &nbsp;·&nbsp; Microsoft Entra ID Learning Series</div>
+  <h1>Microsoft <i>Graph</i><br>Architecture, Auth &amp; Core Queries</h1>
+  <p class="hsub">The unified API fabric for the entire Microsoft cloud — demystified for IAM engineers who know REST, OAuth, and why directory queries matter at enterprise scale.</p>
+  <div class="hpills">
+    <div class="hpill"><span class="hdot" style="background:var(--teal);box-shadow:0 0 5px var(--teal)"></span>8 Chapters</div>
+    <div class="hpill"><span class="hdot" style="background:var(--lime);box-shadow:0 0 5px var(--lime)"></span>6 Diagrams + Query Ref</div>
+    <div class="hpill"><span class="hdot" style="background:var(--amber);box-shadow:0 0 5px var(--amber)"></span>Builds on Docs 1 &amp; 2</div>
+    <div class="hpill"><span class="hdot" style="background:var(--coral);box-shadow:0 0 5px var(--coral)"></span>LDAP↔Graph Comparisons</div>
+  </div>
+</section>
+
+<div class="cnt">
+
+<!-- ════════════════════════════════════════
+     CH 1 — WHAT IS MICROSOFT GRAPH
+════════════════════════════════════════ -->
+<section class="ch" id="ch1">
+  <div class="chd"><span class="cnum">CH 01</span>
+    <h2>What is <span class="a">Microsoft Graph?</span></h2>
+  </div>
+  <p class="intro">Before writing a single API call, you need the right mental model. Microsoft Graph is not "just the Entra ID API." It's something significantly larger — and understanding its scope is what separates engineers who use it from engineers who architect with it.</p>
+
+  <h3>The Pre-Graph World — Why Graph Was Necessary</h3>
+  <div class="bx bx-a">
+    Imagine a large hospital where every department — radiology, pharmacy, cardiology, oncology — maintained its own patient records system. A doctor treating a patient had to log into five different systems to get a complete picture. In 2015, Microsoft's cloud was that hospital. Exchange had its own API. SharePoint had its own API. Azure AD had its own API. Teams didn't exist yet, but when it did, it got its own API too. Every Microsoft product spoke a different dialect. <strong>Microsoft Graph is the unified patient records system</strong> — one API, one authentication model, one endpoint, covering every Microsoft cloud service.
+  </div>
+
+  <p>Before Graph, a developer integrating with Microsoft 365 had to deal with:</p>
+  <div class="grid">
+    <div class="card"><div class="ci">📧</div><div class="ct">Exchange REST API</div><div class="cd">Email, calendar, contacts — separate auth, separate endpoint, separate SDK.</div></div>
+    <div class="card"><div class="ci">📁</div><div class="ct">SharePoint REST API</div><div class="cd">Files, sites, lists — completely different URL patterns and auth scopes.</div></div>
+    <div class="card"><div class="ci">👤</div><div class="ct">Azure AD Graph API</div><div class="cd">Directory data — users, groups — deprecated in 2023. Microsoft Graph replaced it.</div></div>
+    <div class="card"><div class="ci">🔔</div><div class="ct">Outlook REST API</div><div class="cd">Another email/calendar API — yes, different from Exchange REST. Both deprecated.</div></div>
+  </div>
+
+  <h3>What Graph Covers Today</h3>
+  <div class="dbox">
+    <div class="dtitle">Microsoft Graph — Unified API Surface</div>
+    <svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:800px;">
+      <defs>
+        <marker id="ga" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#2DD4BF" opacity=".7"/></marker>
+      </defs>
+      <rect width="800" height="420" fill="#0A0E16" rx="8"/>
+
+      <!-- Central Graph node -->
+      <ellipse cx="400" cy="210" rx="90" ry="50" fill="#141B2D" stroke="#2DD4BF" stroke-width="2"/>
+      <text x="400" y="203" font-family="Playfair Display,serif" font-size="16" font-weight="700" fill="#2DD4BF" text-anchor="middle">Microsoft</text>
+      <text x="400" y="223" font-family="Playfair Display,serif" font-size="16" font-weight="700" fill="#2DD4BF" text-anchor="middle">Graph</text>
+      <text x="400" y="240" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">graph.microsoft.com</text>
+
+      <!-- Spoke: Identity -->
+      <line x1="312" y1="182" x2="184" y2="96" stroke="#2DD4BF" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="60" y="58" width="128" height="56" rx="6" fill="#19223A" stroke="#2DD4BF" stroke-width="1.2"/>
+      <text x="124" y="81" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Identity</text>
+      <text x="124" y="96" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">Users · Groups</text>
+      <text x="124" y="109" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Devices · Roles</text>
+
+      <!-- Spoke: Email/Calendar -->
+      <line x1="340" y1="164" x2="232" y2="62" stroke="#FBBF24" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="132" y="24" width="130" height="56" rx="6" fill="#19223A" stroke="#FBBF24" stroke-width="1.2"/>
+      <text x="197" y="47" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Mail &amp; Calendar</text>
+      <text x="197" y="62" font-family="Fira Code,monospace" font-size="9" fill="#FBBF24" text-anchor="middle">Exchange Online</text>
+      <text x="197" y="75" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Outlook · Events</text>
+
+      <!-- Spoke: Files -->
+      <line x1="400" y1="160" x2="400" y2="50" stroke="#A3E635" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="316" y="14" width="168" height="44" rx="6" fill="#19223A" stroke="#A3E635" stroke-width="1.2"/>
+      <text x="400" y="34" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Files &amp; Sites</text>
+      <text x="400" y="50" font-family="Fira Code,monospace" font-size="9" fill="#A3E635" text-anchor="middle">OneDrive · SharePoint</text>
+
+      <!-- Spoke: Teams -->
+      <line x1="460" y1="164" x2="568" y2="62" stroke="#FB7185" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="518" y="24" width="128" height="56" rx="6" fill="#19223A" stroke="#FB7185" stroke-width="1.2"/>
+      <text x="582" y="47" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Teams</text>
+      <text x="582" y="62" font-family="Fira Code,monospace" font-size="9" fill="#FB7185" text-anchor="middle">Chats · Channels</text>
+      <text x="582" y="75" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Meetings · Apps</text>
+
+      <!-- Spoke: Security -->
+      <line x1="488" y1="182" x2="616" y2="96" stroke="#2DD4BF" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="612" y="58" width="138" height="56" rx="6" fill="#19223A" stroke="#2DD4BF" stroke-width="1.2"/>
+      <text x="681" y="81" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Security</text>
+      <text x="681" y="96" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">Alerts · Incidents</text>
+      <text x="681" y="109" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Secure Score</text>
+
+      <!-- Spoke: DevOps/Reports -->
+      <line x1="488" y1="238" x2="616" y2="314" stroke="#FBBF24" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="612" y="306" width="148" height="56" rx="6" fill="#19223A" stroke="#FBBF24" stroke-width="1.2"/>
+      <text x="686" y="329" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Reports &amp; Audit</text>
+      <text x="686" y="344" font-family="Fira Code,monospace" font-size="9" fill="#FBBF24" text-anchor="middle">Sign-in logs</text>
+      <text x="686" y="357" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Directory Audits</text>
+
+      <!-- Spoke: Compliance -->
+      <line x1="460" y1="256" x2="568" y2="352" stroke="#A3E635" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="518" y="344" width="148" height="56" rx="6" fill="#19223A" stroke="#A3E635" stroke-width="1.2"/>
+      <text x="592" y="367" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Compliance</text>
+      <text x="592" y="382" font-family="Fira Code,monospace" font-size="9" fill="#A3E635" text-anchor="middle">Intune · eDiscovery</text>
+      <text x="592" y="395" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">DLP · Purview</text>
+
+      <!-- Spoke: Auth Methods -->
+      <line x1="400" y1="260" x2="400" y2="360" stroke="#2DD4BF" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="316" y="362" width="168" height="44" rx="6" fill="#19223A" stroke="#2DD4BF" stroke-width="1.2"/>
+      <text x="400" y="382" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Auth Methods</text>
+      <text x="400" y="398" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">MFA · FIDO2 · TAP (Doc 4)</text>
+
+      <!-- Spoke: Apps -->
+      <line x1="340" y1="256" x2="232" y2="348" stroke="#FB7185" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="132" y="340" width="148" height="56" rx="6" fill="#19223A" stroke="#FB7185" stroke-width="1.2"/>
+      <text x="206" y="363" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">App Management</text>
+      <text x="206" y="378" font-family="Fira Code,monospace" font-size="9" fill="#FB7185" text-anchor="middle">App Regs · SPs</text>
+      <text x="206" y="391" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Permissions · Consent</text>
+
+      <!-- Spoke: Device -->
+      <line x1="312" y1="238" x2="184" y2="314" stroke="#A3E635" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#ga)"/>
+      <rect x="40" y="306" width="148" height="56" rx="6" fill="#19223A" stroke="#A3E635" stroke-width="1.2"/>
+      <text x="114" y="329" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Devices</text>
+      <text x="114" y="344" font-family="Fira Code,monospace" font-size="9" fill="#A3E635" text-anchor="middle">Intune · Enrolled</text>
+      <text x="114" y="357" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Compliance · Mgmt</text>
+
+      <!-- Single endpoint label -->
+      <text x="400" y="412" font-family="Fira Code,monospace" font-size="9" fill="#374560" text-anchor="middle">All workloads reachable via a single base URL: https://graph.microsoft.com · One auth model · One SDK</text>
+    </svg>
+  </div>
+
+  <div class="bx bx-p">
+    In your PingFederate world, the closest concept is PingFederate acting as a central federation hub — one endpoint that federates to many downstream systems. But PingFederate is an authentication broker. Microsoft Graph is a <em>data and operations API</em>. It doesn't just authenticate — it lets you read and write data across every Microsoft service: list all users who have MFA registered, read a user's emails, create a Teams channel, query device compliance state, pull sign-in logs. Think of it as the REST API equivalent of having admin shells open to Exchange, SharePoint, Azure AD, Teams, and Intune simultaneously — in one unified call format.
+  </div>
+
+  <h3>Graph vs. Azure AD Graph — The Migration That Already Happened</h3>
+  <div class="bx bx-w">
+    <strong>Azure AD Graph API (<code>graph.windows.net</code>) was retired on March 30, 2025.</strong> If you encounter code in your organization still using <code>https://graph.windows.net/{tenant}/users</code> — that code is broken. The modern endpoint is <code>https://graph.microsoft.com/v1.0/users</code>. Any existing integrations using the old Azure AD Graph SDK (ADAL/ADAL.NET) need migration to MSAL + Microsoft Graph SDK. This is a live audit item for many enterprise tenants.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CH 2 — GRAPH API FUNDAMENTALS
+════════════════════════════════════════ -->
+<section class="ch" id="ch2">
+  <div class="chd"><span class="cnum">CH 02</span>
+    <h2>Graph API <span class="a">Fundamentals</span></h2>
+  </div>
+  <p class="intro">Microsoft Graph is a REST API that follows OData conventions. If you know REST and you know how Microsoft layers OData on top, you know 80% of what you need. The remaining 20% is Microsoft-specific behavior that this chapter covers precisely.</p>
+
+  <h3>URL Anatomy — Every Segment Has Meaning</h3>
+
+  <div class="url-box">
+    <div>
+      <span class="url-seg url-base">https://graph.microsoft.com</span><span style="color:#374560">/</span><span class="url-seg url-ver">v1.0</span><span style="color:#374560">/</span><span class="url-seg url-res">users</span><span style="color:#374560">/</span><span class="url-seg url-nav">john@contoso.com</span><span style="color:#374560">/</span><span class="url-seg url-nav">memberOf</span><span class="url-seg url-qp">?$select=displayName,id&amp;$top=50</span>
+    </div>
+    <div class="url-legend">
+      <div class="url-leg-item"><span class="url-seg url-base" style="font-size:9px;padding:1px 5px">Base URL</span>Always graph.microsoft.com</div>
+      <div class="url-leg-item"><span class="url-seg url-ver" style="font-size:9px;padding:1px 5px">Version</span>v1.0 (stable) or beta</div>
+      <div class="url-leg-item"><span class="url-seg url-res" style="font-size:9px;padding:1px 5px">Resource</span>Entity collection</div>
+      <div class="url-leg-item"><span class="url-seg url-nav" style="font-size:9px;padding:1px 5px">Navigation</span>ID + navigation property</div>
+      <div class="url-leg-item"><span class="url-seg url-qp" style="font-size:9px;padding:1px 5px">Query Params</span>OData query options</div>
+    </div>
+  </div>
+
+  <h3>v1.0 vs. Beta — The Stability Contract</h3>
+  <table class="tbl">
+    <thead><tr><th class="te">v1.0</th><th class="ta">beta</th></tr></thead>
+    <tbody>
+      <tr><td class="cteal">Stable API — Microsoft won't break this without notice and migration path.</td><td class="camber">Preview — can change or disappear without warning. Do not use in production.</td></tr>
+      <tr><td class="cteal">Feature set may lag behind beta by weeks or months.</td><td class="camber">Has features that haven't graduated to v1.0 yet. Some authentication method APIs started in beta.</td></tr>
+      <tr><td class="cteal">Use for all production integrations, automation, monitoring scripts.</td><td class="camber">Use for exploration in Graph Explorer, proof-of-concept, or when a feature you need is beta-only (with a documented migration plan).</td></tr>
+      <tr><td class="cteal">Response schema is locked for the version lifetime.</td><td class="camber">Schema can change; fields can be renamed, moved, or removed.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="bx bx-w">
+    <strong>Real incident pattern:</strong> A team builds an automation script using the beta endpoint because a needed property only existed in beta at the time. Six months later Microsoft changes the beta schema — the property moves or is renamed. The script breaks silently or throws errors. Always check the v1.0 roadmap and plan migration when building on beta endpoints. Subscribe to the <a href="https://techcommunity.microsoft.com/t5/microsoft-entra-blog/bg-p/Identity" style="color:var(--teal)">Microsoft Entra Blog</a> for deprecation notices.
+  </div>
+
+  <h3>HTTP Methods and Their Semantics</h3>
+  <table class="tbl">
+    <thead><tr><th class="tn">Method</th><th class="tn">Operation</th><th class="tn">Example</th><th class="tn">Notes</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tt">GET</span></td><td>Read resource(s)</td><td><code>GET /users</code></td><td>Idempotent. Use $select to limit properties returned.</td></tr>
+      <tr><td><span class="tag tl">POST</span></td><td>Create resource or invoke action</td><td><code>POST /users</code></td><td>Body contains new resource properties in JSON.</td></tr>
+      <tr><td><span class="tag ta">PATCH</span></td><td>Partial update</td><td><code>PATCH /users/{id}</code></td><td>Only send properties you want to change. Do not send full object.</td></tr>
+      <tr><td><span class="tag tc">DELETE</span></td><td>Delete resource</td><td><code>DELETE /users/{id}</code></td><td>Soft-delete for users — goes to deletedItems, recoverable for 30 days.</td></tr>
+      <tr><td><span class="tag tt">PUT</span></td><td>Replace resource (rare)</td><td><code>PUT /groups/{id}/members/$ref</code></td><td>Used for relationship management (add member to group).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Response Structure — What You Always Get Back</h3>
+  <div class="code">
+<span class="cc">// Standard collection response</span>
+{
+  <span class="ck">"@odata.context"</span>: <span class="cv">"https://graph.microsoft.com/v1.0/$metadata#users"</span>,
+  <span class="ck">"@odata.count"</span>:   <span class="cs">1500</span>,           <span class="cc">// only if ?$count=true was requested</span>
+  <span class="ck">"@odata.nextLink"</span>: <span class="cv">"https://graph.microsoft.com/v1.0/users?$skiptoken=..."</span>,
+  <span class="cc">                                  // ↑ present when more pages exist — ALWAYS follow this</span>
+  <span class="ck">"value"</span>: [
+    {
+      <span class="ck">"id"</span>:                  <span class="cv">"87a3f21c-4b9d-4e8f-a1b2-c3d4e5f60000"</span>,
+      <span class="ck">"displayName"</span>:         <span class="cv">"John Smith"</span>,
+      <span class="ck">"userPrincipalName"</span>:  <span class="cv">"john@contoso.com"</span>
+    }
+    <span class="cc">// ... more items</span>
+  ]
+}
+  </div>
+
+  <div class="bx bx-t">
+    <strong>Always handle pagination.</strong> Graph returns a maximum of 100 items per page by default for most resources (you can request up to 999 with <code>$top=999</code>, but Graph may return fewer). If there are more results, the response includes <code>@odata.nextLink</code>. Your code MUST follow this link until it's absent to get all results. Forgetting to handle pagination is the #1 cause of "why are we only seeing 100 users?" bugs in Graph integrations.
+  </div>
+
+  <h3>Graph Explorer — Your Lab Environment</h3>
+  <p>Before writing any production code, use <strong>Graph Explorer</strong> (<a href="https://developer.microsoft.com/graph/graph-explorer" style="color:var(--teal)">developer.microsoft.com/graph/graph-explorer</a>). It's a browser-based tool where you can:</p>
+  <ul style="margin:10px 0 10px 24px;line-height:2.1;color:var(--t1);">
+    <li>Sign in with your account and run real queries against your actual tenant</li>
+    <li>Inspect full request/response headers and bodies</li>
+li>Consent to permissions on the fly</li>
+    <li>Use sample queries for common operations</li>
+    <li>Decode tokens and explore the permission model</li>
+  </ul>
+  <div class="bx bx-p">
+    Graph Explorer is your equivalent of ldapsearch or PingFederate's OAuth Playground. Every time you encounter a new Graph API endpoint, run it in Graph Explorer first. See the exact response shape. Understand which permissions it requires. Then build your production integration. Time spent in Graph Explorer prevents hours of debugging later.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CH 3 — RESOURCE & ENTITY MODEL
+════════════════════════════════════════ -->
+<section class="ch" id="ch3">
+  <div class="chd"><span class="cnum">CH 03</span>
+    <h2>Resource &amp; <span class="a">Entity Model</span></h2>
+  </div>
+  <p class="intro">Graph represents the Microsoft cloud as a graph of entities connected by relationships. Understanding the entity types, their properties, and the navigation paths between them is the foundation of writing correct and efficient queries.</p>
+
+  <h3>Everything is a DirectoryObject</h3>
+  <p>As covered in Doc 1, all identity objects in Entra ID inherit from <code>directoryObject</code>. This has practical implications for Graph queries:</p>
+
+  <div class="code">
+<span class="cc">// Query any object type using the directoryObjects endpoint</span>
+<span class="ck">GET</span> <span class="cs">/directoryObjects/{id}</span>           <span class="cc">// Returns the object regardless of type</span>
+
+<span class="cc">// Check type via @odata.type in response:</span>
+{
+  <span class="ck">"@odata.type"</span>: <span class="cv">"#microsoft.graph.user"</span>,    <span class="cc">// or group, device, servicePrincipal...</span>
+  <span class="ck">"id"</span>:           <span class="cv">"87a3f21c-..."</span>,
+  <span class="ck">"displayName"</span>:  <span class="cv">"John Smith"</span>
+}
+
+<span class="cc">// Useful when you have an objectId but don't know the type</span>
+<span class="cc">// (e.g., group member could be a user OR a nested group OR a service principal)</span>
+  </div>
+
+  <h3>Key Entity Types — IAM Engineer's Reference</h3>
+  <div class="anat">
+    <div class="anath">🗂 Core Graph Entity Types — Identity Focus</div>
+    <div class="anatg">
+      <div class="af"><span class="ak">/users</span><span class="ad">User accounts. Cloud-only and synced. Access via id or userPrincipalName.</span></div>
+      <div class="af"><span class="ak">/groups</span><span class="ad">Security groups, M365 groups, dynamic groups. Members, owners, memberOf.</span></div>
+      <div class="af"><span class="ak">/devices</span><span class="ad">Registered, joined, hybrid-joined devices. Compliance state, trustType.</span></div>
+      <div class="af"><span class="ak">/servicePrincipals</span><span class="ad">Enterprise app instances in the tenant. App role assignments, consent grants.</span></div>
+      <div class="af"><span class="ak">/applications</span><span class="ad">App Registration objects. Only in the owning tenant. API permissions definition.</span></div>
+      <div class="af"><span class="ak">/directoryRoles</span><span class="ad">Activated Entra ID directory roles. Members are the role holders.</span></div>
+      <div class="af"><span class="ak">/roleManagement</span><span class="ad">Unified RBAC — Entra ID roles, Azure RBAC, Exchange RBAC. PIM assignments here.</span></div>
+      <div class="af"><span class="ak">/auditLogs/signIns</span><span class="ad">Sign-in log entries. Rich auth context, risk info, CA results per sign-in.</span></div>
+      <div class="af"><span class="ak">/auditLogs/directoryAudits</span><span class="ad">Directory change events — who changed what object when.</span></div>
+      <div class="af"><span class="ak">/identityGovernance</span><span class="ad">Access reviews, entitlement management, lifecycle workflows. Full IGA API.</span></div>
+      <div class="af"><span class="ak">/policies</span><span class="ad">Auth methods policy, conditional access policies, token lifetime policies.</span></div>
+      <div class="af"><span class="ak">/reports</span><span class="ad">Pre-built usage reports, auth registration stats, credential activity.</span></div>
+    </div>
+  </div>
+
+  <h3>Navigation Properties — The Graph in Graph API</h3>
+  <p>Navigation properties are relationships between entities. They're what makes Graph a <em>graph</em> — you traverse from one entity to related entities in a single URL path:</p>
+
+  <div class="code">
+<span class="cc">// User → their group memberships</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/memberOf</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/transitiveMemberOf</span>    <span class="cc">// includes nested group membership</span>
+
+<span class="cc">// User → their registered authentication methods</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/authentication/methods</span>
+
+<span class="cc">// User → their owned devices</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/ownedDevices</span>
+
+<span class="cc">// Group → its members (users AND nested groups AND service principals)</span>
+<span class="ck">GET</span> <span class="cs">/groups/{id}/members</span>
+<span class="ck">GET</span> <span class="cs">/groups/{id}/transitiveMembers</span>    <span class="cc">// flattens nested groups</span>
+
+<span class="cc">// Service Principal → its app role assignments (who has been granted what)</span>
+<span class="ck">GET</span> <span class="cs">/servicePrincipals/{id}/appRoleAssignedTo</span>
+
+<span class="cc">// Application → its service principal in this tenant</span>
+<span class="ck">GET</span> <span class="cs">/servicePrincipals?$filter=appId eq '{appId}'</span>
+  </div>
+
+  <h3>LDAP vs. Graph — The Query Model Translation</h3>
+  <table class="tbl">
+    <thead><tr><th class="tn">What You Want</th><th class="ta">LDAP / PingDirectory</th><th class="te">Microsoft Graph</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Find user by email</td>
+        <td class="camber"><code style="font-size:11px">(mail=john@contoso.com)</code></td>
+        <td class="cteal"><code style="font-size:11px">GET /users?$filter=mail eq 'john@contoso.com'</code></td>
+      </tr>
+      <tr>
+        <td>List all users in "Engineering" dept</td>
+        <td class="camber"><code style="font-size:11px">(department=Engineering)</code></td>
+        <td class="cteal"><code style="font-size:11px">GET /users?$filter=department eq 'Engineering'</code></td>
+      </tr>
+      <tr>
+        <td>Get user's group memberships</td>
+        <td class="camber"><code style="font-size:11px">(member=uid=john,...)</code> on group</td>
+        <td class="cteal"><code style="font-size:11px">GET /users/{id}/transitiveMemberOf</code></td>
+      </tr>
+      <tr>
+        <td>Check if user is in specific group</td>
+        <td class="camber">Search for member DN in group</td>
+        <td class="cteal"><code style="font-size:11px">POST /users/{id}/checkMemberGroups</code> with group IDs</td>
+      </tr>
+      <tr>
+        <td>Find disabled accounts</td>
+        <td class="camber"><code style="font-size:11px">(pwdAccountLockedTime=*)</code> or custom attr</td>
+        <td class="cteal"><code style="font-size:11px">GET /users?$filter=accountEnabled eq false</code></td>
+      </tr>
+      <tr>
+        <td>Get all members of a group (flat)</td>
+        <td class="camber">LDAP search with member attribute</td>
+        <td class="cteal"><code style="font-size:11px">GET /groups/{id}/transitiveMembers</code></td>
+      </tr>
+      <tr>
+        <td>Find stale accounts (not signed in)</td>
+        <td class="camber">Custom lastLoginTime attribute search</td>
+        <td class="cteal"><code style="font-size:11px">GET /users?$filter=signInActivity/lastSignInDateTime le 2024-01-01T00:00:00Z</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="bx bx-w">
+    <strong>$expand has limits.</strong> You can expand navigation properties inline (e.g., <code>GET /groups?$expand=members</code>), but Graph limits expansion depth and the number of expanded items. For large groups (>100 members), don't use $expand — fetch the members collection separately with pagination. Combining $expand on multiple properties in one call is also restricted. Test your $expand queries in Graph Explorer before relying on them in production code.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CH 4 — AUTH & PERMISSIONS FOR GRAPH
+════════════════════════════════════════ -->
+<section class="ch" id="ch4">
+  <div class="chd"><span class="cnum">CH 04</span>
+    <h2>Auth &amp; Permissions<br><span class="a">for Graph</span></h2>
+  </div>
+  <p class="intro">Every Graph API call requires a valid Entra ID access token. The permissions in that token determine what the call can read or write. Understanding delegated vs. application permissions is the most important design decision in any Graph integration.</p>
+
+  <h3>The Two Permission Models</h3>
+
+  <div class="dbox">
+    <div class="dtitle">Delegated vs. Application Permissions — Flow Diagram</div>
+    <svg viewBox="0 0 820 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;">
+      <defs>
+        <marker id="da" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2DD4BF" opacity=".7"/></marker>
+        <marker id="db" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#FBBF24" opacity=".7"/></marker>
+        <marker id="dc" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#A3E635" opacity=".7"/></marker>
+      </defs>
+      <rect width="820" height="460" fill="#0A0E16" rx="8"/>
+
+      <!-- LEFT SIDE: Delegated -->
+      <text x="200" y="28" font-family="Fira Code,monospace" font-size="10" fill="#2DD4BF" text-anchor="middle" letter-spacing="2">DELEGATED PERMISSIONS</text>
+      <text x="200" y="44" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#7E95B5" text-anchor="middle">"App acts as the signed-in user"</text>
+
+      <!-- User -->
+      <ellipse cx="100" cy="110" rx="50" ry="28" fill="#19223A" stroke="#2DD4BF" stroke-width="1.5"/>
+      <text x="100" y="107" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">User</text>
+      <text x="100" y="123" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">signed in</text>
+
+      <!-- App -->
+      <ellipse cx="300" cy="110" rx="50" ry="28" fill="#19223A" stroke="#2DD4BF" stroke-width="1.5"/>
+      <text x="300" y="107" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">App</text>
+      <text x="300" y="123" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">client</text>
+
+      <!-- User → App -->
+      <line x1="150" y1="110" x2="242" y2="110" stroke="#2DD4BF" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#da)"/>
+      <text x="196" y="103" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">auth + consent</text>
+
+      <!-- Token box -->
+      <rect x="130" y="162" width="140" height="50" rx="6" fill="#141B2D" stroke="#2DD4BF" stroke-width="1"/>
+      <text x="200" y="183" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">Access Token</text>
+      <text x="200" y="199" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">scp: "User.Read Mail.Read"</text>
+      <text x="200" y="211" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">oid: {user_object_id}</text>
+
+      <!-- Entra ID → Token -->
+      <line x1="300" y1="138" x2="270" y2="162" stroke="#2DD4BF" stroke-width="1" stroke-opacity=".4" marker-end="url(#da)"/>
+
+      <!-- Graph -->
+      <rect x="100" y="242" width="200" height="50" rx="6" fill="#141B2D" stroke="#A3E635" stroke-width="1"/>
+      <text x="200" y="263" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Microsoft Graph</text>
+      <text x="200" y="280" font-family="Fira Code,monospace" font-size="9" fill="#A3E635" text-anchor="middle">GET /me  (returns THIS user's data)</text>
+
+      <line x1="200" y1="212" x2="200" y2="242" stroke="#2DD4BF" stroke-width="1.5" stroke-opacity=".4" marker-end="url(#da)"/>
+
+      <!-- Result box -->
+      <rect x="100" y="320" width="200" height="60" rx="6" fill="#0F1420" stroke="#2DD4BF" stroke-width="1" stroke-opacity=".4"/>
+      <text x="200" y="342" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">✅ Returns only the signed-in</text>
+      <text x="200" y="356" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">user's data</text>
+      <text x="200" y="372" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Scope = intersection of app</text>
+      <text x="200" y="384" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">permissions + user's own permissions</text>
+
+      <line x1="200" y1="292" x2="200" y2="320" stroke="#2DD4BF" stroke-width="1" stroke-opacity=".4" marker-end="url(#da)"/>
+
+      <!-- Key note delegated -->
+      <rect x="60" y="410" width="280" height="40" rx="4" fill="#141B2D" stroke="#2DD4BF" stroke-width="1" stroke-opacity=".3"/>
+      <text x="200" y="428" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Token claim: scp (not roles)</text>
+      <text x="200" y="444" font-family="Fira Code,monospace" font-size="9" fill="#2DD4BF" text-anchor="middle">User must be signed in</text>
+
+      <!-- DIVIDER -->
+      <line x1="410" y1="20" x2="410" y2="450" stroke="#374560" stroke-width="1" stroke-dasharray="4,4"/>
+
+      <!-- RIGHT SIDE: Application -->
+      <text x="615" y="28" font-family="Fira Code,monospace" font-size="10" fill="#FBBF24" text-anchor="middle" letter-spacing="2">APPLICATION PERMISSIONS</text>
+      <text x="615" y="44" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="#7E95B5" text-anchor="middle">"App acts as itself — no user"</text>
+
+      <!-- Service / Daemon -->
+      <ellipse cx="520" cy="110" rx="60" ry="28" fill="#19223A" stroke="#FBBF24" stroke-width="1.5"/>
+      <text x="520" y="107" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Service / Daemon</text>
+      <text x="520" y="123" font-family="Fira Code,monospace" font-size="9" fill="#FBBF24" text-anchor="middle">no user present</text>
+
+      <!-- Entra ID -->
+      <ellipse cx="715" cy="110" rx="55" ry="28" fill="#19223A" stroke="#FBBF24" stroke-width="1.5"/>
+      <text x="715" y="107" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Entra ID</text>
+      <text x="715" y="123" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">/token endpoint</text>
+
+      <!-- Service → Entra ID -->
+      <line x1="580" y1="110" x2="652" y2="110" stroke="#FBBF24" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#db)"/>
+      <text x="616" y="102" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">client_credentials</text>
+
+      <!-- Token box -->
+      <rect x="540" y="162" width="150" height="50" rx="6" fill="#141B2D" stroke="#FBBF24" stroke-width="1"/>
+      <text x="615" y="183" font-family="Fira Code,monospace" font-size="9" fill="#FBBF24" text-anchor="middle">Access Token</text>
+      <text x="615" y="199" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">roles: ["User.Read.All"]</text>
+      <text x="615" y="211" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">NO oid (no user)</text>
+
+      <line x1="715" y1="138" x2="690" y2="162" stroke="#FBBF24" stroke-width="1" stroke-opacity=".4" marker-end="url(#db)"/>
+
+      <!-- Graph -->
+      <rect x="515" y="242" width="200" height="50" rx="6" fill="#141B2D" stroke="#A3E635" stroke-width="1"/>
+      <text x="615" y="263" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="#F0F4FA" text-anchor="middle">Microsoft Graph</text>
+      <text x="615" y="280" font-family="Fira Code,monospace" font-size="9" fill="#A3E635" text-anchor="middle">GET /users  (returns ALL users)</text>
+
+      <line x1="615" y1="212" x2="615" y2="242" stroke="#FBBF24" stroke-width="1.5" stroke-opacity=".4" marker-end="url(#db)"/>
+
+      <!-- Result -->
+      <rect x="515" y="320" width="200" height="60" rx="6" fill="#0F1420" stroke="#FBBF24" stroke-width="1" stroke-opacity=".4"/>
+      <text x="615" y="342" font-family="Fira Code,monospace" font-size="9" fill="#FBBF24" text-anchor="middle">✅ Full tenant data access</text>
+      <text x="615" y="358" font-family="Fira Code,monospace" font-size="9" fill="#FBBF24" text-anchor="middle">for the granted permission</text>
+      <text x="615" y="374" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">All users, all devices — not</text>
+      <text x="615" y="388" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">scoped to a single user</text>
+
+      <line x1="615" y1="292" x2="615" y2="320" stroke="#FBBF24" stroke-width="1" stroke-opacity=".4" marker-end="url(#db)"/>
+
+      <!-- Key note app -->
+      <rect x="475" y="410" width="280" height="40" rx="4" fill="#141B2D" stroke="#FBBF24" stroke-width="1" stroke-opacity=".3"/>
+      <text x="615" y="428" font-family="Fira Code,monospace" font-size="9" fill="#7E95B5" text-anchor="middle">Token claim: roles (not scp)</text>
+      <text x="615" y="444" font-family="Fira Code,monospace" font-size="9" fill="#FBBF24" text-anchor="middle">Requires admin consent</text>
+    </svg>
+  </div>
+
+  <h3>When to Use Each</h3>
+  <table class="tbl">
+    <thead><tr><th class="tn">Scenario</th><th class="te">Delegated</th><th class="ta">Application</th></tr></thead>
+    <tbody>
+      <tr><td>User-facing web app calling Graph for current user's data</td><td class="cteal">✅ Correct</td><td class="camber">❌ Overpowered</td></tr>
+      <tr><td>Background service doing nightly user audit across all users</td><td class="cteal">❌ No user context</td><td class="camber">✅ Correct</td></tr>
+      <tr><td>Admin tool that a human runs to read their own profile</td><td class="cteal">✅ Correct</td><td class="camber">Works but wrong</td></tr>
+      <tr><td>SIEM integration pulling all sign-in logs every hour</td><td class="cteal">❌ Not suitable</td><td class="camber">✅ Correct</td></tr>
+      <tr><td>CLI tool a user runs to query their own group membership</td><td class="cteal">✅ Device Code flow</td><td class="camber">Possible but less appropriate</td></tr>
+      <tr><td>MFA inventory report for all 10,000 users in the tenant</td><td class="cteal">❌ Not suitable</td><td class="camber">✅ UserAuthenticationMethod.Read.All</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The Consent Model</h3>
+  <div class="bx bx-a">
+    Think of permission consent like a job offer. When a new employee (app) is hired, HR (the user or admin) signs off on what access the employee needs. <strong>User consent</strong> is the employee asking each individual manager (user) for access. <strong>Admin consent</strong> is getting blanket sign-off from the CEO (Global Admin) so the employee has the access without asking each person. Application permissions can ONLY be admin-consented — there's no concept of a user consenting to "read all users in the tenant" because the user doesn't own that data.
+  </div>
+
+  <h4>Permission Scope Format</h4>
+  <div class="code">
+<span class="cc">// Microsoft Graph permission scope format: Resource.Operation.Scope</span>
+<span class="ck">User.Read</span>                     <span class="cc">// Delegated — read signed-in user's profile</span>
+<span class="ck">User.Read.All</span>                 <span class="cc">// Application OR Delegated — read ALL users</span>
+<span class="ck">User.ReadWrite.All</span>            <span class="cc">// Application OR Delegated — read + write ALL users</span>
+<span class="ck">UserAuthenticationMethod.Read.All</span>  <span class="cc">// Read auth methods for all users</span>
+<span class="ck">Mail.Read</span>                     <span class="cc">// Delegated only — read signed-in user's email</span>
+<span class="ck">Mail.ReadBasic.All</span>            <span class="cc">// Application — read basic mail data for all</span>
+
+<span class="cc">// Always request minimum necessary scopes</span>
+<span class="cc">// "User.Read.All" is not needed if you only read the signed-in user — use "User.Read"</span>
+  </div>
+
+  <div class="bx bx-j">
+    <strong>IAM Automation Scenario (CIPHER-style agent):</strong> Your CIPHER IAM automation agent needs to provision users, add them to groups, and query their authentication methods. Required permissions: <code>User.ReadWrite.All</code> (create/update users), <code>GroupMember.ReadWrite.All</code> (add to groups), <code>UserAuthenticationMethod.ReadWrite.All</code> (register TAP for new users). All application permissions. Requires admin consent. Store credentials as a certificate in Key Vault — never a client secret. Use a dedicated App Registration for automation agents — never reuse an app registration across automation tools. One app registration per logical service = clean audit trail and minimal blast radius.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CH 5 — TOKEN DEEP DIVE
+════════════════════════════════════════ -->
+<section class="ch" id="ch5">
+  <div class="chd"><span class="cnum">CH 05</span>
+    <h2>Token <span class="a">Deep Dive</span></h2>
+  </div>
+  <p class="intro">Getting a token is easy. Understanding what's inside it, validating it correctly, and knowing what each claim means — that's what makes the difference between a secure integration and a vulnerable one.</p>
+
+  <h3>Acquiring a Token for Graph — The Client Credentials Flow</h3>
+  <div class="code">
+<span class="cc"># Step 1: Request token using client credentials (application permission flow)</span>
+<span class="ck">POST</span> <span class="cs">https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token</span>
+
+Content-Type: application/x-www-form-urlencoded
+
+<span class="ck">grant_type</span>    = <span class="cv">client_credentials</span>
+<span class="ck">client_id</span>     = <span class="cv">{your_app_registration_appId}</span>
+<span class="ck">client_secret</span> = <span class="cv">{your_client_secret}</span>            <span class="cc">← use certificate in production</span>
+<span class="ck">scope</span>         = <span class="cv">https://graph.microsoft.com/.default</span>
+<span class="cc">                 ↑ .default means "all admin-consented application permissions"</span>
+
+<span class="cc"># Response:</span>
+{
+  <span class="ck">"token_type"</span>:   <span class="cv">"Bearer"</span>,
+  <span class="ck">"expires_in"</span>:   <span class="cs">3599</span>,
+  <span class="ck">"access_token"</span>: <span class="cv">"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6..."</span>
+}
+
+<span class="cc"># Step 2: Call Graph with the token</span>
+<span class="ck">GET</span> <span class="cs">https://graph.microsoft.com/v1.0/users</span>
+Authorization: Bearer <span class="cv">{access_token}</span>
+  </div>
+
+  <h3>Decoding the Token — What You'll Actually See</h3>
+  <div class="code">
+<span class="cc"># Decoded access token payload (application permission — client credentials)</span>
+{
+  <span class="ck">"iss"</span>:  <span class="cv">"https://login.microsoftonline.com/f47ac10b-58cc-4372.../v2.0"</span>,
+  <span class="ck">"aud"</span>:  <span class="cv">"https://graph.microsoft.com"</span>,     <span class="cc">← must validate this is your resource</span>
+  <span class="ck">"tid"</span>:  <span class="cv">"f47ac10b-58cc-4372-a567-0e02b2c3d479"</span>,  <span class="cc">← tenant that issued it</span>
+  <span class="ck">"oid"</span>:  <span class="cv">"c1a2b3d4-0000-0000-0000-service-principal-id"</span>, <span class="cc">← SP object ID</span>
+  <span class="ck">"azp"</span>:  <span class="cv">"your-app-id"</span>,                  <span class="cc">← the app that requested this token</span>
+  <span class="ck">"roles"</span>: [<span class="cv">"User.Read.All"</span>, <span class="cv">"GroupMember.Read.All"</span>], <span class="cc">← granted app permissions</span>
+  <span class="ck">"scp"</span>:  <span class="cr">NOT PRESENT</span>,                  <span class="cc">← scp only in delegated tokens</span>
+  <span class="ck">"iat"</span>:  <span class="cs">1704067200</span>,
+  <span class="ck">"exp"</span>:  <span class="cs">1704070800</span>,                  <span class="cc">← ~1 hour from issuance</span>
+  <span class="ck">"appidacr"</span>: <span class="cv">"1"</span>                     <span class="cc">← "1"=secret, "2"=cert, "0"=none</span>
+}
+
+<span class="cc"># Decoded access token payload (delegated — auth code flow)</span>
+{
+  <span class="ck">"scp"</span>:  <span class="cv">"User.Read openid profile email"</span>, <span class="cc">← granted delegated scopes</span>
+  <span class="ck">"roles"</span>: <span class="cr">NOT PRESENT (unless user has app roles)</span>,
+  <span class="ck">"oid"</span>:  <span class="cv">"87a3f21c-4b9d-..."</span>,            <span class="cc">← the USER's object ID</span>
+  <span class="ck">"upn"</span>:  <span class="cv">"john@contoso.com"</span>,            <span class="cc">← only if optional claim configured</span>
+  <span class="ck">"amr"</span>:  [<span class="cv">"mfa"</span>, <span class="cv">"pwd"</span>]                <span class="cc">← how the user authenticated</span>
+}
+  </div>
+
+  <h3>Token Validation — What You Must Check</h3>
+  <div class="bx bx-w">
+    <strong>If you are building an API that accepts Graph access tokens (i.e., your app IS the resource), you must validate:</strong>
+    <ul style="margin:10px 0 0 18px;line-height:2.1;">
+      <li><strong>Signature</strong> — verify using public keys from JWKS endpoint. Use a library.</li>
+      <li><strong><code>aud</code></strong> — must equal your app's Application ID URI. If this doesn't match, reject the token. This prevents token reuse across different APIs.</li>
+      <li><strong><code>iss</code></strong> — for single-tenant apps, must be your tenant's issuer URL. For multi-tenant, validate against trusted issuers list.</li>
+      <li><strong><code>tid</code></strong> — for single-tenant apps, must match your tenant ID.</li>
+      <li><strong><code>exp</code></strong> — token must not be expired. Allow a small clock skew (2–5 minutes).</li>
+      <li><strong><code>scp</code> or <code>roles</code></strong> — after authentication, check if the token has the required scope/role for the specific operation being requested (authorization).</li>
+    </ul>
+  </div>
+
+  <h3>The .default Scope — What It Really Means</h3>
+  <div class="bx bx-t">
+    <code>https://graph.microsoft.com/.default</code> does NOT mean "request all possible Graph permissions." It means "request a token with all the permissions that have already been admin-consented for this app registration." If your app has been consented for <code>User.Read.All</code> and <code>GroupMember.Read.All</code>, using .default gives you a token with exactly those two permissions. It's a shorthand for "give me what's already been approved." Use .default in client credentials flows. Use explicit scopes in delegated flows where you want to request the minimum needed for the current operation.
+  </div>
+
+  <h3>Token Caching — Don't Fetch a New Token Every Call</h3>
+  <div class="bx bx-j">
+    <strong>Performance and throttling pattern:</strong> Access tokens are valid for ~1 hour. Every Graph API call you make should reuse the cached token until it's within 5 minutes of expiry, then refresh. MSAL (Microsoft Authentication Library) handles this automatically with its token cache. If you're building custom token acquisition (Node.js, Python, etc.), implement a simple cache: store the token + <code>expires_at</code> timestamp, check before each call, re-acquire only when needed. Fetching a new token on every Graph API call (a common beginner mistake) adds ~200ms latency per call and can trigger token endpoint throttling in high-volume scenarios.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CH 6 — ODATA QUERY PATTERNS
+════════════════════════════════════════ -->
+<section class="ch" id="ch6">
+  <div class="chd"><span class="cnum">CH 06</span>
+    <h2>OData Query <span class="a">Patterns</span></h2>
+  </div>
+  <p class="intro">OData query parameters are the power tools of Graph API. They transform simple GET requests into precise, efficient, server-side queries — filtering, sorting, shaping, and paginating results without client-side processing.</p>
+
+  <h3>OData Parameters Quick Reference</h3>
+  <div class="qbuilder">
+    <div class="qbhd">OData Query Parameter Reference — Microsoft Graph</div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$select</span></div>
+      <div class="qcell"><span class="qex">$select=id,displayName,<br>userPrincipalName,<br>accountEnabled</span></div>
+      <div class="qcell"><span class="qdesc">Return only specified properties. Always use $select — Graph returns 30+ properties by default, most of which you don't need. Reduces payload size, improves performance.</span></div>
+    </div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$filter</span></div>
+      <div class="qcell"><span class="qex">$filter=department eq 'Engineering'<br>$filter=accountEnabled eq false<br>$filter=startsWith(displayName,'Jo')</span></div>
+      <div class="qcell"><span class="qdesc">Server-side filtering. Not all properties are filterable — check the docs for each resource. Filterable properties are indexed; filtering on non-indexed properties requires ConsistencyLevel: eventual header.</span></div>
+    </div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$orderby</span></div>
+      <div class="qcell"><span class="qex">$orderby=displayName asc<br>$orderby=createdDateTime desc</span></div>
+      <div class="qcell"><span class="qdesc">Sort results. Limited property support — not all properties support ordering. Often combined with $filter.</span></div>
+    </div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$top</span></div>
+      <div class="qcell"><span class="qex">$top=50<br>$top=999</span></div>
+      <div class="qcell"><span class="qdesc">Maximum items per page (server may return fewer). Default varies by resource. Max 999 for users. Always follow @odata.nextLink for subsequent pages regardless of $top value.</span></div>
+    </div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$count</span></div>
+      <div class="qcell"><span class="qex">$count=true<br>(+ header: ConsistencyLevel: eventual)</span></div>
+      <div class="qcell"><span class="qdesc">Return total count of matching items in @odata.count. Requires ConsistencyLevel: eventual header for most resources. Count may be slightly stale but is accurate for large directories.</span></div>
+    </div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$expand</span></div>
+      <div class="qcell"><span class="qex">$expand=memberOf<br>$expand=members($select=id,displayName)</span></div>
+      <div class="qcell"><span class="qdesc">Inline-expand navigation properties. Eliminates a separate API call for related resources. Limited depth and item count. Don't use for large collections.</span></div>
+    </div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$search</span></div>
+      <div class="qcell"><span class="qex">$search="displayName:John"<br>(+ ConsistencyLevel: eventual)</span></div>
+      <div class="qcell"><span class="qdesc">Full-text search on supported properties. Different from $filter — searches partial matches. Requires ConsistencyLevel: eventual. Use for user search UIs, not for exact-match queries.</span></div>
+    </div>
+    <div class="qrow">
+      <div class="qcell"><span class="qparam">$skip</span></div>
+      <div class="qcell"><span class="qex">$skip=100</span></div>
+      <div class="qcell"><span class="qdesc">Skip N items. Use for simple pagination in small datasets. For large datasets, always follow @odata.nextLink instead — $skip is inefficient on large collections.</span></div>
+    </div>
+  </div>
+
+  <h3>ConsistencyLevel: eventual — The Advanced Query Header</h3>
+  <div class="bx bx-a">
+    Entra ID's directory is a globally distributed system. Strong consistency (every read reflects the latest write) is expensive at global scale. For most operations, Entra ID gives you strongly consistent reads. But for advanced queries — counting records across a large tenant, $search, complex filters on non-indexed properties — Graph uses an eventually consistent index that's slightly behind the authoritative store. You signal "I accept this" by adding <code>ConsistencyLevel: eventual</code> as a request header. This unlocks $count and $search. It's safe for reporting and analytics; don't use it where you need guaranteed real-time data (like a just-provisioned user's membership).
+  </div>
+
+  <h3>Real-World Query Patterns</h3>
+
+  <h4>Pattern 1: Efficient User Inventory</h4>
+  <div class="code">
+<span class="cc"># Get all users with only the fields you need — fast and cheap</span>
+<span class="ck">GET</span> <span class="cs">/users?$select=id,displayName,userPrincipalName,accountEnabled,department,jobTitle,onPremisesSyncEnabled,lastSignInDateTime&$top=999</span>
+
+<span class="cc"># Then follow @odata.nextLink until absent (pagination)</span>
+<span class="cc"># lastSignInDateTime requires signInActivity resource — needs AuditLog.Read.All permission</span>
+  </div>
+
+  <h4>Pattern 2: Find All Guest Users</h4>
+  <div class="code">
+<span class="ck">GET</span> <span class="cs">/users?$filter=userType eq 'Guest'&$select=id,displayName,mail,createdDateTime,signInActivity</span>
+  </div>
+
+  <h4>Pattern 3: Count Users by Department</h4>
+  <div class="code">
+<span class="cc"># Count users in Engineering (requires ConsistencyLevel header)</span>
+<span class="ck">GET</span> <span class="cs">/users/$count?$filter=department eq 'Engineering'</span>
+<span class="ck">ConsistencyLevel:</span> <span class="cv">eventual</span>
+
+<span class="cc"># Returns: plain integer (e.g., 847) — not a JSON object</span>
+  </div>
+
+  <h4>Pattern 4: Find Stale Accounts (Last Sign-in > 90 days)</h4>
+  <div class="code">
+<span class="ck">GET</span> <span class="cs">/users?$filter=signInActivity/lastSignInDateTime le {90-days-ago-ISO-date}
+  &$select=id,displayName,userPrincipalName,signInActivity,accountEnabled
+  &$orderby=signInActivity/lastSignInDateTime asc</span>
+<span class="ck">ConsistencyLevel:</span> <span class="cv">eventual</span>
+
+<span class="cc"># Note: signInActivity requires beta or v1.0 with AuditLog.Read.All</span>
+<span class="cc"># Replace {90-days-ago-ISO-date} with actual date: e.g., 2024-03-01T00:00:00Z</span>
+  </div>
+
+  <h4>Pattern 5: Transitive Group Members (Flat List)</h4>
+  <div class="code">
+<span class="cc"># Get ALL members of a group, including members of nested groups (flattened)</span>
+<span class="ck">GET</span> <span class="cs">/groups/{groupId}/transitiveMembers?$select=id,displayName,userPrincipalName,@odata.type&$top=999</span>
+
+<span class="cc"># Filter to only users (exclude nested groups and service principals)</span>
+<span class="ck">GET</span> <span class="cs">/groups/{groupId}/transitiveMembers/microsoft.graph.user?$select=id,displayName,userPrincipalName</span>
+  </div>
+
+  <h4>Pattern 6: Check Specific Group Memberships for a User (Bulk)</h4>
+  <div class="code">
+<span class="cc"># More efficient than querying memberOf and filtering — check multiple groups at once</span>
+<span class="ck">POST</span> <span class="cs">/users/{userId}/checkMemberGroups</span>
+{
+  <span class="ck">"groupIds"</span>: [
+    <span class="cv">"group-id-1"</span>,
+    <span class="cv">"group-id-2"</span>,
+    <span class="cv">"group-id-3"</span>
+  ]
+}
+<span class="cc"># Returns: array of group IDs the user IS a member of (from the provided list)</span>
+<span class="cc"># This is transitive — checks nested group membership too</span>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CH 7 — CORE IDENTITY QUERIES
+════════════════════════════════════════ -->
+<section class="ch" id="ch7">
+  <div class="chd"><span class="cnum">CH 07</span>
+    <h2>Core Identity <span class="a">Queries</span></h2>
+  </div>
+  <p class="intro">As an IAM engineer, these are the queries you'll run constantly — user lookups, group inventories, role assignments, app permission audits. Mastering these patterns means you're productive on day one with any Graph-based integration.</p>
+
+  <h3>User Queries — The Full Toolkit</h3>
+  <div class="code">
+<span class="cc">─────── BASIC USER LOOKUPS ───────</span>
+
+<span class="cc"># Get user by UPN</span>
+<span class="ck">GET</span> <span class="cs">/users/john@contoso.com</span>
+
+<span class="cc"># Get user by objectId</span>
+<span class="ck">GET</span> <span class="cs">/users/87a3f21c-4b9d-4e8f-a1b2-c3d4e5f60000</span>
+
+<span class="cc"># Get signed-in user (delegated permission)</span>
+<span class="ck">GET</span> <span class="cs">/me</span>
+
+<span class="cc">─────── SEARCH & FILTER ───────</span>
+
+<span class="cc"># Find users by display name (prefix search)</span>
+<span class="ck">GET</span> <span class="cs">/users?$filter=startsWith(displayName,'Mahi')&$select=id,displayName,userPrincipalName</span>
+
+<span class="cc"># Find all synced users (from on-prem AD)</span>
+<span class="ck">GET</span> <span class="cs">/users?$filter=onPremisesSyncEnabled eq true&$select=id,userPrincipalName,onPremisesSamAccountName</span>
+
+<span class="cc"># Find cloud-only users</span>
+<span class="ck">GET</span> <span class="cs">/users?$filter=onPremisesSyncEnabled eq null&$select=id,userPrincipalName,createdDateTime</span>
+
+<span class="cc"># All disabled users</span>
+<span class="ck">GET</span> <span class="cs">/users?$filter=accountEnabled eq false&$select=id,displayName,userPrincipalName,accountEnabled</span>
+
+<span class="cc">─────── RELATIONSHIP QUERIES ───────</span>
+
+<span class="cc"># Get user's direct group memberships</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/memberOf?$select=id,displayName,groupTypes</span>
+
+<span class="cc"># Get user's transitive group memberships (includes nested)</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/transitiveMemberOf/microsoft.graph.group?$select=id,displayName</span>
+
+<span class="cc"># Get user's app role assignments (what apps they're assigned to)</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/appRoleAssignments</span>
+
+<span class="cc"># Get user's owned objects (apps, groups they own)</span>
+<span class="ck">GET</span> <span class="cs">/users/{id}/ownedObjects</span>
+  </div>
+
+  <h3>Group Queries</h3>
+  <div class="code">
+<span class="cc"># Get all security groups</span>
+<span class="ck">GET</span> <span class="cs">/groups?$filter=securityEnabled eq true and mailEnabled eq false&$select=id,displayName,description</span>
+
+<span class="cc"># Get all dynamic groups</span>
+<span class="ck">GET</span> <span class="cs">/groups?$filter=groupTypes/any(c:c eq 'DynamicMembership')&$select=id,displayName,membershipRule</span>
+
+<span class="cc"># Get group members (direct) — paginate for large groups</span>
+<span class="ck">GET</span> <span class="cs">/groups/{id}/members?$select=id,displayName,userPrincipalName,@odata.type&$top=999</span>
+
+<span class="cc"># Get group owners</span>
+<span class="ck">GET</span> <span class="cs">/groups/{id}/owners?$select=id,displayName,userPrincipalName</span>
+
+<span class="cc"># Add a member to a group</span>
+<span class="ck">POST</span> <span class="cs">/groups/{id}/members/$ref</span>
+{
+  <span class="ck">"@odata.id"</span>: <span class="cv">"https://graph.microsoft.com/v1.0/directoryObjects/{userId}"</span>
+}
+
+<span class="cc"># Remove a member from a group</span>
+<span class="ck">DELETE</span> <span class="cs">/groups/{groupId}/members/{userId}/$ref</span>
+  </div>
+
+  <h3>Directory Role Queries</h3>
+  <div class="code">
+<span class="cc"># List all active directory roles (roles with at least one member)</span>
+<span class="ck">GET</span> <span class="cs">/directoryRoles?$select=id,displayName,roleTemplateId</span>
+
+<span class="cc"># Get members of a specific role (e.g., Global Administrators)</span>
+<span class="ck">GET</span> <span class="cs">/directoryRoles?$filter=roleTemplateId eq '62e90394-69f5-4237-9190-012177145e10'</span>
+<span class="cc"># Then:</span>
+<span class="ck">GET</span> <span class="cs">/directoryRoles/{roleId}/members?$select=id,displayName,userPrincipalName</span>
+
+<span class="cc"># List all role assignments (unified RBAC - includes PIM eligible)</span>
+<span class="ck">GET</span> <span class="cs">/roleManagement/directory/roleAssignments?$filter=principalId eq '{userId}'&$expand=roleDefinition</span>
+
+<span class="cc"># List PIM eligible assignments for a user</span>
+<span class="ck">GET</span> <span class="cs">/roleManagement/directory/roleEligibilitySchedules?$filter=principalId eq '{userId}'&$expand=roleDefinition</span>
+  </div>
+
+  <h3>Application &amp; Service Principal Queries</h3>
+  <div class="code">
+<span class="cc"># Find a service principal by app ID (client_id)</span>
+<span class="ck">GET</span> <span class="cs">/servicePrincipals?$filter=appId eq '{appId}'&$select=id,displayName,appId,servicePrincipalType</span>
+
+<span class="cc"># List all enterprise apps with SAML SSO configured</span>
+<span class="ck">GET</span> <span class="cs">/servicePrincipals?$filter=preferredSingleSignOnMode eq 'saml'&$select=id,displayName,appId,loginUrl</span>
+
+<span class="cc"># Get all permissions granted to a service principal (admin consent grants)</span>
+<span class="ck">GET</span> <span class="cs">/servicePrincipals/{id}/appRoleAssignments</span>     <span class="cc">← app role assignments</span>
+<span class="ck">GET</span> <span class="cs">/oauth2PermissionGrants?$filter=clientId eq '{servicePrincipalId}'</span>  <span class="cc">← delegated consent grants</span>
+
+<span class="cc"># Audit: All users assigned to a specific app</span>
+<span class="ck">GET</span> <span class="cs">/servicePrincipals/{id}/appRoleAssignedTo?$select=principalId,principalDisplayName,principalType,appRoleId</span>
+  </div>
+
+  <div class="bx bx-j">
+    <strong>SSO App Onboarding Audit Script Pattern:</strong> Before onboarding a new SaaS app, run a permission hygiene check on your tenant: query all service principals, expand their <code>appRoleAssignments</code>, and identify any apps with <code>User.Read.All</code> or broader permissions that were added without documented justification. This is the Graph API equivalent of the "what does this LDAP service account have access to?" audit — but covering your entire cloud application estate. Run this monthly as part of your access governance cycle alongside Saviynt reviews.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     CH 8 — BATCH, DELTA & ADVANCED
+════════════════════════════════════════ -->
+<section class="ch" id="ch8">
+  <div class="chd"><span class="cnum">CH 08</span>
+    <h2>Batch, Delta &amp;<span class="a"> Advanced Patterns</span></h2>
+  </div>
+  <p class="intro">High-volume Graph integrations — SIEM feeds, identity synchronization, large-scale audits — need batch requests, change tracking, and throttling-aware design. This chapter covers the patterns that separate production-grade Graph integrations from quick scripts.</p>
+
+  <h3>Batch Requests — 20 Calls in One HTTP Round-Trip</h3>
+  <div class="bx bx-a">
+    Normally each Graph call is a separate HTTP request. For a script that needs to look up 500 users' authentication methods, that's 500 HTTP requests — each with latency, token overhead, and throttling risk. The batch endpoint (<code>/$batch</code>) lets you pack up to 20 independent requests into a single HTTP call and get all 20 responses back together. This is a 20x reduction in HTTP overhead and connection count.
+  </div>
+
+  <div class="code">
+<span class="ck">POST</span> <span class="cs">https://graph.microsoft.com/v1.0/$batch</span>
+Authorization: Bearer <span class="cv">{token}</span>
+Content-Type: application/json
+
+{
+  <span class="ck">"requests"</span>: [
+    {
+      <span class="ck">"id"</span>: <span class="cv">"1"</span>,
+      <span class="ck">"method"</span>: <span class="cv">"GET"</span>,
+      <span class="ck">"url"</span>: <span class="cv">"/users/user1@contoso.com/authentication/methods"</span>
+    },
+    {
+      <span class="ck">"id"</span>: <span class="cv">"2"</span>,
+      <span class="ck">"method"</span>: <span class="cv">"GET"</span>,
+      <span class="ck">"url"</span>: <span class="cv">"/users/user2@contoso.com/authentication/methods"</span>
+    }
+    <span class="cc">// ... up to 20 requests</span>
+  ]
+}
+
+<span class="cc"># Response: array of individual responses, each with their own status code</span>
+{
+  <span class="ck">"responses"</span>: [
+    { <span class="ck">"id"</span>: <span class="cv">"1"</span>, <span class="ck">"status"</span>: <span class="cs">200</span>, <span class="ck">"body"</span>: { <span class="cc">/* auth methods for user1 */</span> } },
+    { <span class="ck">"id"</span>: <span class="cv">"2"</span>, <span class="ck">"status"</span>: <span class="cs">200</span>, <span class="ck">"body"</span>: { <span class="cc">/* auth methods for user2 */</span> } }
+  ]
+}
+<span class="cc"># Each response has its own status — a 404 for one user doesn't fail the whole batch</span>
+  </div>
+
+  <h3>Delta Queries — Tracking Changes Efficiently</h3>
+  <div class="bx bx-a">
+    Imagine you need to keep a local database in sync with Entra ID user objects. The naive approach: fetch all users every hour, compare with your local copy, find differences. For a 50,000-user tenant, that's 50 pages of API calls every hour. Delta queries are the smart approach. You do one full sync to establish baseline, get a <strong>deltaLink</strong>, and then every subsequent call returns only what changed since the last deltaLink. 10 user changes in an hour = 10 objects returned, not 50,000.
+  </div>
+
+  <div class="code">
+<span class="cc">─────── INITIAL FULL SYNC ───────</span>
+<span class="ck">GET</span> <span class="cs">/users/delta?$select=id,displayName,userPrincipalName,accountEnabled,department</span>
+
+<span class="cc"># Follow @odata.nextLink pages until you get @odata.deltaLink:</span>
+{
+  <span class="ck">"@odata.deltaLink"</span>: <span class="cv">"https://graph.microsoft.com/v1.0/users/delta?$deltatoken=abc123xyz"</span>
+}
+<span class="cc"># Store this deltaLink. This is your "current state" bookmark.</span>
+
+<span class="cc">─────── SUBSEQUENT INCREMENTAL SYNCS ───────</span>
+<span class="cc"># 1 hour later, call the deltaLink directly:</span>
+<span class="ck">GET</span> <span class="cs">https://graph.microsoft.com/v1.0/users/delta?$deltatoken=abc123xyz</span>
+
+<span class="cc"># Response contains only changed users:</span>
+{
+  <span class="ck">"value"</span>: [
+    { <span class="ck">"id"</span>: <span class="cv">"..."</span>, <span class="ck">"displayName"</span>: <span class="cv">"Updated Name"</span> },   <span class="cc">// modified</span>
+    { <span class="ck">"id"</span>: <span class="cv">"..."</span>, <span class="ck">"@removed"</span>: { <span class="ck">"reason"</span>: <span class="cv">"deleted"</span> } }   <span class="cc">// deleted</span>
+  ],
+  <span class="ck">"@odata.deltaLink"</span>: <span class="cv">"https://graph.microsoft.com/v1.0/users/delta?$deltatoken=def456uvw"</span>
+  <span class="cc">// Store this new deltaLink for the next sync</span>
+}
+  </div>
+
+  <h3>Throttling — Understanding and Handling Graph Limits</h3>
+  <table class="tbl">
+    <thead><tr><th class="tn">Limit Type</th><th class="tn">Threshold</th><th class="tn">Response</th><th class="tn">Handling Strategy</th></tr></thead>
+    <tbody>
+      <tr><td>Tenant-level throttle</td><td>~10,000 req/10 min per app+tenant</td><td>HTTP 429</td><td>Exponential backoff using Retry-After header value</td></tr>
+      <tr><td>Per-resource throttle</td><td>Varies by resource type</td><td>HTTP 429</td><td>Respect Retry-After. Never retry immediately.</td></tr>
+      <tr><td>Service-level limits</td><td>Varies (SharePoint, Exchange have separate limits)</td><td>HTTP 503</td><td>Same as 429 — backoff and retry</td></tr>
+    </tbody>
+  </table>
+
+  <div class="code">
+<span class="cc"># Correct throttling handler pattern (pseudo-code)</span>
+async function callGraphWithRetry(url, maxRetries = 3) {
+  <span class="ck">for</span> (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await fetch(url, { headers: authHeaders });
+
+    <span class="ck">if</span> (response.status === 429 || response.status === 503) {
+      const retryAfter = parseInt(response.headers.get(<span class="cv">'Retry-After'</span>) || <span class="cv">'60'</span>);
+      <span class="cc">// Wait for the server-specified delay — do NOT use fixed backoff</span>
+      await sleep(retryAfter * 1000);
+      <span class="ck">continue</span>;
+    }
+
+    <span class="ck">return</span> response;
+  }
+  <span class="ck">throw new</span> Error(<span class="cv">'Max retries exceeded'</span>);
+}
+  </div>
+
+  <div class="bx bx-t">
+    <strong>Design principle for bulk operations:</strong> Use batch requests (pack 20 calls) + delta queries (only get changes) + Retry-After throttle handling. This combination lets you process a 100,000-user tenant's full identity inventory in minutes rather than hours, without triggering throttle limits. For recurring sync jobs, run them during off-peak hours (late night in the tenant's primary timezone) when throttle headroom is higher.
+  </div>
+
+  <h3>Webhook Subscriptions — Push Instead of Poll</h3>
+  <p>Instead of polling Graph every minute for new sign-in events or user changes, Graph supports <strong>change notifications</strong> via webhooks. You register a subscription, and Graph calls your endpoint when matching changes occur.</p>
+
+  <div class="code">
+<span class="cc"># Register a subscription for user change notifications</span>
+<span class="ck">POST</span> <span class="cs">/subscriptions</span>
+{
+  <span class="ck">"changeType"</span>:       <span class="cv">"created,updated,deleted"</span>,
+  <span class="ck">"notificationUrl"</span>:  <span class="cv">"https://your-api.contoso.com/graph-notifications"</span>,
+  <span class="ck">"resource"</span>:         <span class="cv">"/users"</span>,
+  <span class="ck">"expirationDateTime"</span>: <span class="cv">"2024-12-31T00:00:00Z"</span>,   <span class="cc">// max varies by resource</span>
+  <span class="ck">"clientState"</span>:      <span class="cv">"your-secret-for-validation"</span>   <span class="cc">// verify notifications are from Graph</span>
+}
+
+<span class="cc"># Graph will POST to your notificationUrl when users change</span>
+<span class="cc"># Subscription must be renewed before expiration (periodic renewal required)</span>
+<span class="cc"># For sensitive resources (users, groups), max subscription lifetime is 4320 minutes (3 days)</span>
+  </div>
+
+</section>
+
+<!-- FOOTER -->
+<div style="margin-top:68px;padding:34px;background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);text-align:center;">
+  <div style="font-family:var(--fm);font-size:9px;color:var(--teal);letter-spacing:.2em;text-transform:uppercase;margin-bottom:13px;">Final Doc — Doc 4 of 4</div>
+  <h2 style="font-family:var(--fd);font-size:30px;color:var(--t1);margin-bottom:10px;font-style:italic;">Microsoft Graph — MFA API, Device Management &amp; Advanced Patterns</h2>
+  <p style="color:var(--t2);max-width:520px;margin:0 auto 20px;font-weight:300">The deep dive into Authentication Methods API, Device inventory via Graph, audit logs, reporting, security best practices, and production governance patterns.</p>
+  <div style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap;">
+    <span class="tag tt">Authentication Methods API</span>
+    <span class="tag tl">Device Inventory</span>
+    <span class="tag ta">Audit &amp; Sign-in Logs</span>
+    <span class="tag tc">Production Best Practices</span>
+  </div>
+</div>
+
+</div><!-- /cnt -->
+</main>
+
+<script>
+function upP(){
+  const s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('pf').style.width=Math.min((s/h)*100,100)+'%';
+}
+window.addEventListener('scroll',upP,{passive:true});
+
+const chs=document.querySelectorAll('.ch');
+const navs=document.querySelectorAll('.na');
+const ob=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id=e.target.id;
+      navs.forEach(n=>n.classList.toggle('on',n.getAttribute('href')==='#'+id));
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+chs.forEach(c=>ob.observe(c));
+
+const cards=document.querySelectorAll('.card');
+const co=new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{
+    if(e.isIntersecting){
+      setTimeout(()=>{e.target.style.opacity='1';e.target.style.transform='translateY(0)'},i*65);
+    }
+  });
+},{threshold:.1});
+cards.forEach(c=>{
+  c.style.opacity='0';c.style.transform='translateY(12px)';
+  c.style.transition='all .32s ease';co.observe(c);
+});
+</script>
+</body>
+</html>

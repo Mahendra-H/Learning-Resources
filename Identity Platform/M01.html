@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M01 · Enterprise IAM Ecosystem & Architecture Thinking — IAM Architect Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+:root{
+  --bg-void:#0B0E14;--bg-s1:#111520;--bg-s2:#181D2A;--bg-s3:#1F2535;--bg-s4:#252D40;
+  --border:#1E2636;--border-b:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);--teal-glow-md:rgba(0,229,195,0.20);
+  --copper:#E8873A;--copper-glow:rgba(232,135,58,0.15);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.12);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.12);
+  --jade:#3ECFA0;--violet:#9B7FFF;
+  --text-p:#E8EDF5;--text-s:#8A95A8;--text-t:#6B7A8F;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --r-sm:4px;--r-md:8px;--r-lg:12px;--r-xl:16px;--r-pill:999px;
+  --sh-card:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  --phase:#9B7FFF;--phase-glow:rgba(155,127,255,0.15);--phase-dim:#7A5FE0;
+}
+body{background:var(--bg-void);color:var(--text-p);font-family:var(--fb);line-height:1.7;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:var(--r-pill)}
+::selection{background:rgba(155,127,255,.2);color:var(--violet)}
+a{color:var(--sapphire);text-decoration:none;transition:color .15s}a:hover{color:var(--phase)}
+code{font-family:var(--fm);font-size:.85em;background:var(--bg-s3);border:1px solid var(--border);color:var(--teal);padding:1px 5px;border-radius:var(--r-sm)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.95);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--border);padding:0 40px}
+.nav-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:20px}
+.nav-logo{font-family:var(--fd);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.nav-logo span{color:var(--text-t);font-weight:400}
+.nav-div{width:1px;height:18px;background:var(--border-b);flex-shrink:0}
+.nav-progress{flex:1;display:flex;align-items:center;gap:10px}
+.progress-track{flex:1;height:2px;background:var(--border);border-radius:var(--r-pill);overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--phase),var(--teal));border-radius:var(--r-pill);width:5%}
+.progress-label{font-family:var(--fm);font-size:12px;color:var(--text-s);white-space:nowrap}
+.nav-badge{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--r-pill);background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase);white-space:nowrap}
+.nav-home{font-family:var(--fm);font-size:12px;color:var(--text-s);padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border-b);transition:all .15s;text-decoration:none}
+.nav-home:hover{color:var(--text-p);border-color:var(--phase);background:var(--phase-glow)}
+
+/* SHELL */
+.shell{max-width:1100px;margin:0 auto;padding:0 40px}
+
+/* HERO */
+.hero{position:relative;padding:72px 0 56px;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--phase-glow) 0%,transparent 55%),radial-gradient(ellipse 60% 40% at 80% 20%,rgba(74,158,255,.05) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 60% at 20% 50%,black 0%,transparent 70%);opacity:.35;pointer-events:none}
+.hero-content{position:relative;z-index:1}
+.hero-phase{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--phase);margin-bottom:16px}
+.phase-dot{width:7px;height:7px;border-radius:50%;background:var(--phase);box-shadow:0 0 10px var(--phase);animation:pdot 2.2s ease-in-out infinite}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 10px var(--phase)}50%{opacity:.4;box-shadow:0 0 3px var(--phase)}}
+.hero-title{font-family:var(--fd);font-size:clamp(32px,4.5vw,56px);font-weight:800;line-height:1.07;letter-spacing:-.025em;color:var(--text-p);max-width:800px;margin-bottom:18px}
+.hero-title .ac{color:var(--phase)}
+.hero-sub{font-size:17px;font-weight:300;color:var(--text-s);max-width:620px;line-height:1.75;margin-bottom:28px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 11px;border-radius:var(--r-pill)}
+.badge-phase{background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase)}
+.badge-track{background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:var(--sapphire)}
+.badge-effort{background:var(--copper-glow);border:1px solid rgba(232,135,58,.35);color:var(--copper)}
+.badge-prereq{background:var(--bg-s2);border:1px solid var(--border-b);color:var(--text-s)}
+
+/* ORIENTATION */
+.orient{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:56px;position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--phase) 0%,transparent 100%)}
+.orient-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;margin-bottom:20px}
+.orient-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:5px}
+.orient-val{font-size:14px;font-weight:500;color:var(--text-p)}
+.orient-val.ac{color:var(--phase)}
+.journey-row{display:flex;gap:5px;flex-wrap:wrap;padding-top:18px;border-top:1px solid var(--border)}
+.jdot{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;font-weight:500;transition:all .2s;cursor:default}
+.jdot-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.jdot-cur{background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase);box-shadow:0 0 14px var(--phase-glow)}
+.jdot-future{background:var(--bg-s2);border:1px solid var(--border);color:var(--text-s)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:48px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.sidebar{position:sticky;top:72px}
+
+/* SECTIONS */
+.section{margin-bottom:60px}
+.sec-label{display:flex;align-items:center;gap:10px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--phase);margin-bottom:18px}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border-b) 0%,transparent 100%)}
+.sec-title{font-family:var(--fd);font-size:26px;font-weight:700;color:var(--text-p);margin-bottom:14px;line-height:1.2}
+.sec-body{font-size:15px;color:var(--text-s);line-height:1.8}
+.sec-body p{margin-bottom:14px}.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text-p);font-weight:500}
+.sec-body em{color:var(--phase);font-style:normal;font-weight:500}
+
+/* DIAGRAM WRAP */
+.diag-wrap{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin:24px 0;overflow-x:auto}
+.diag-label{font-family:var(--fm);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-s);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.diag-label::before{content:'◈';color:var(--phase);font-size:14px}
+
+/* CONCEPT BLOCK */
+.concept{border-left:3px solid var(--phase);padding:16px 20px;background:var(--phase-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-term{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--phase);margin-bottom:6px}
+.concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+
+/* CARDS */
+.card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--border-b);box-shadow:var(--sh-card)}
+.card-phase{border-left:3px solid var(--phase);background:linear-gradient(135deg,var(--phase-glow) 0%,var(--bg-s1) 60%)}
+.card-copper{border-left:3px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-s1) 60%)}
+.card-teal{border-left:3px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-s1) 60%)}
+.card-label{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:8px}
+.card-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p);margin-bottom:8px}
+.card-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.card-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+
+/* DOMAIN GRID */
+.domain-pill{display:flex;align-items:flex-start;gap:12px;background:var(--bg-s2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;transition:all .2s}
+.domain-pill:hover{border-color:var(--border-b);background:var(--bg-s3)}
+.domain-num{font-family:var(--fm);font-size:12px;font-weight:600;flex-shrink:0;color:var(--text-s);padding-top:1px;min-width:28px}
+.domain-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center;padding-top:1px}
+.domain-name{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--text-p);margin-bottom:3px}
+.domain-desc{font-size:12px;color:var(--text-s);line-height:1.55}
+.domain-module{font-family:var(--fm);font-size:11px;color:var(--text-t);margin-top:4px}
+.domain-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin:20px 0}
+
+/* COMPARE TABLE */
+.tbl-wrap{overflow-x:auto;margin:16px 0}
+table.compare{width:100%;border-collapse:collapse;font-size:14px}
+.compare th{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);padding:10px 14px;border-bottom:1px solid var(--border-b);text-align:left;white-space:nowrap;background:var(--bg-s2)}
+.compare th:first-child{color:var(--phase)}
+.compare td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-s);vertical-align:top;line-height:1.6}
+.compare td:first-child{font-weight:600;color:var(--text-p);font-family:var(--fm);font-size:13px}
+.compare tr:hover td{background:var(--bg-s2)}
+.compare tr:last-child td{border-bottom:none}
+
+/* KNOWLEDGE CHECK */
+.kc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin:10px 0}
+.kc-q{padding:16px 20px;font-size:15px;font-weight:500;color:var(--text-p);display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s;user-select:none}
+.kc-q:hover{background:var(--bg-s2)}
+.kc-icon{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--phase);background:var(--phase-glow);border:1px solid var(--phase);border-radius:4px;padding:2px 7px;flex-shrink:0;margin-top:2px}
+.kc-chev{margin-left:auto;flex-shrink:0;color:var(--text-s);transition:transform .2s;font-size:13px}
+.kc.open .kc-chev{transform:rotate(180deg)}
+.kc-a{display:none;padding:16px 20px;background:var(--bg-s2);border-top:1px solid var(--border);font-size:14px;color:var(--text-s);line-height:1.75}
+.kc.open .kc-a{display:block}
+.kc-a strong{color:var(--text-p);font-weight:500}
+
+/* TAKEAWAY */
+.takeaway{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin:28px 0}
+.takeaway-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.takeaway-icon{width:36px;height:36px;border-radius:var(--r-sm);background:var(--phase-glow);border:1px solid var(--phase);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--phase);flex-shrink:0}
+.takeaway-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p)}
+.takeaway-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.takeaway-list li{font-size:14px;color:var(--text-s);display:flex;align-items:flex-start;gap:10px;line-height:1.65}
+.takeaway-list li::before{content:'◆';color:var(--phase);font-size:9px;flex-shrink:0;margin-top:5px}
+
+/* ARCHITECT REVIEW */
+.arch-review{background:var(--bg-s1);border:1px solid rgba(232,135,58,.35);border-radius:var(--r-lg);overflow:hidden;margin:28px 0}
+.arch-review-head{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.arch-badge{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:3px 10px;border-radius:var(--r-pill)}
+.arch-title{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--text-p)}
+.arch-list{list-style:none;padding:4px 20px 8px}
+.arch-list li{font-size:14px;color:var(--text-s);display:flex;gap:12px;align-items:flex-start;line-height:1.7;padding:14px 0;border-bottom:1px solid var(--border)}
+.arch-list li:last-child{border-bottom:none}
+.arch-num{font-family:var(--fm);font-size:12px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:24px;font-weight:600}
+
+/* DEP MAP */
+.dep-map{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:16px;background:var(--bg-s2);border-radius:var(--r-md);border:1px solid var(--border);margin:14px 0}
+.dep-node{font-family:var(--fm);font-size:12px;padding:5px 12px;border-radius:var(--r-pill)}
+.dep-cur{background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase);font-weight:600}
+.dep-future{background:var(--bg-s3);border:1px solid var(--border-b);color:var(--text-s)}
+.dep-arr{color:var(--text-s);font-size:16px;flex-shrink:0}
+
+/* BRIDGE */
+.bridge{margin-top:64px;padding-top:48px;border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-s1) 0%,var(--bg-s2) 100%);border:1px solid var(--border-b);border-radius:var(--r-xl);padding:36px;position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--phase),var(--teal),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:var(--phase-glow);pointer-events:none}
+.bridge-eyebrow{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px}
+.bridge-title{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--text-p);margin-bottom:16px;position:relative}
+.bridge-title span{color:var(--phase)}
+.bridge-body{font-size:15px;color:var(--text-s);line-height:1.8;max-width:580px;margin-bottom:24px}
+.bridge-body strong{color:var(--text-p);font-weight:500}
+.bridge-concepts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.bridge-btn{display:inline-flex;align-items:center;gap:10px;background:var(--phase);color:var(--bg-void);font-family:var(--fd);font-size:14px;font-weight:700;padding:13px 26px;border-radius:var(--r-pill);border:none;cursor:pointer;text-decoration:none;transition:all .2s}
+.bridge-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px var(--phase-glow);color:var(--bg-void)}
+
+/* SIDEBAR */
+.toc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.toc-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.toc-item{display:block;padding:6px 10px;font-size:13px;color:var(--text-s);border-radius:var(--r-sm);transition:all .15s;cursor:pointer;border-left:2px solid transparent;text-decoration:none}
+.toc-item:hover{background:var(--bg-s2);color:var(--text-p);border-left-color:var(--border-b)}
+.toc-item.active{background:var(--bg-s2);color:var(--phase);border-left-color:var(--phase)}
+.toc-sub{padding-left:20px;font-size:12px}
+.qref{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.qref-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.qref-item{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.qref-item:last-child{border-bottom:none}
+.qref-term{font-family:var(--fm);font-size:12px;color:var(--teal);white-space:nowrap;flex-shrink:0;font-weight:500}
+.qref-def{color:var(--text-s);line-height:1.55;font-size:13px}
+
+/* FOOTER */
+.footer{border-top:1px solid var(--border);padding:28px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:40px}
+.footer-left{font-family:var(--fm);font-size:12px;color:var(--text-s)}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fadeUp .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
+
+@media(max-width:768px){.shell{padding:0 20px}.nav{padding:0 20px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">IAM<span>·</span>PORTAL</div>
+    <div class="nav-div" style="width:1px;height:18px;background:var(--border-b);flex-shrink:0"></div>
+    <div class="nav-progress">
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <span class="progress-label">M01 / 20</span>
+    </div>
+    <a href="INDEX.html" class="nav-home">← Index</a>
+    <span class="nav-badge">M01 · Phase 0</span>
+  </div>
+</nav>
+
+<div class="shell">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero-content">
+    <div class="hero-phase"><div class="phase-dot"></div>Phase 0 · Foundations — Module 1 of 20</div>
+    <h1 class="hero-title">Enterprise IAM<br><span class="ac">Ecosystem</span> &amp;<br>Architecture Thinking</h1>
+    <p class="hero-sub">Stop thinking in products. Start thinking in ecosystems. This module reframes your 5 years of IAM product experience into the architectural mental model every subsequent module depends on.</p>
+    <div class="hero-meta">
+      <span class="badge badge-phase">Phase 0 · Foundations</span>
+      <span class="badge badge-track">Ecosystem thinking</span>
+      <span class="badge badge-effort">⬛⬛☐☐☐ 4–6 hrs</span>
+      <span class="badge badge-prereq">No prerequisites</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="orient-grid">
+    <div><div class="orient-label">Current module</div><div class="orient-val ac">M01 · Enterprise IAM Ecosystem</div></div>
+    <div><div class="orient-label">Learning track</div><div class="orient-val">Foundations</div></div>
+    <div><div class="orient-label">Current phase</div><div class="orient-val">Phase 0 of 4</div></div>
+    <div><div class="orient-label">Overall progress</div><div class="orient-val">1 of 20 modules</div></div>
+    <div><div class="orient-label">What came before</div><div class="orient-val" style="color:var(--text-s)">Nothing — this is the start</div></div>
+    <div><div class="orient-label">What comes next</div><div class="orient-val">M02 · AuthN, AuthZ &amp; Lifecycle</div></div>
+  </div>
+  <div class="journey-row">
+    <div class="jdot jdot-cur" title="M01 — You are here">M01</div>
+    <div class="jdot jdot-future">M02</div><div class="jdot jdot-future">M03a</div><div class="jdot jdot-future">M03b</div>
+    <div class="jdot jdot-future">M04a</div><div class="jdot jdot-future">M04b</div><div class="jdot jdot-future">M05</div>
+    <div class="jdot jdot-future">M06</div><div class="jdot jdot-future">M07</div><div class="jdot jdot-future">M08</div>
+    <div class="jdot jdot-future">M09a</div><div class="jdot jdot-future">M09b</div><div class="jdot jdot-future">M10</div>
+    <div class="jdot jdot-future">M11</div><div class="jdot jdot-future">M12</div><div class="jdot jdot-future">M13</div>
+    <div class="jdot jdot-future">M14</div><div class="jdot jdot-future">M15</div><div class="jdot jdot-future">M16</div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+<div class="content-main">
+
+<!-- S1: WHY THIS MODULE -->
+<section class="section afu d3" id="why">
+  <div class="sec-label">Why this module matters</div>
+  <h2 class="sec-title">The operator trap — and how to escape it</h2>
+  <div class="sec-body">
+    <p>After five years working with PingFederate, PingDirectory, Saviynt, and CyberArk, you have deep product knowledge. You know how to configure federation servers, design SAML connections, and navigate IGA workflows. That experience is real and valuable.</p>
+    <p>But there is a ceiling to product-operator thinking. When a CISO asks <em>"How should our identity architecture evolve over the next three years?"</em> — the answer cannot be "we should configure PingFederate differently." When an engineering director asks <em>"Why do we need both IGA and PAM?"</em> — the answer requires understanding what each domain actually solves, how they interlock, and where the boundaries are.</p>
+    <p><strong>Architects think in ecosystems, not products.</strong> This module builds the ecosystem mental model that all 19 subsequent modules plug into.</p>
+  </div>
+</section>
+
+<!-- S2: 12 DOMAINS -->
+<section class="section" id="domains">
+  <div class="sec-label">The enterprise IAM ecosystem</div>
+  <h2 class="sec-title">12 domains — one connected system</h2>
+  <div class="sec-body">
+    <p>Enterprise IAM is not one technology. It is a system of twelve interrelated domains. The architect's job is to understand each domain, its relationship to the others, and how they combine into a coherent whole.</p>
+  </div>
+
+  <!-- DIAGRAM 1: ECOSYSTEM MAP — fully rebuilt -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 1 — IAM Ecosystem Map · 12 domains &amp; their relationships</div>
+    <svg viewBox="0 0 980 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="IAM ecosystem map showing 12 domains arranged around a central identity fabric trust layer" style="width:100%;max-width:980px;display:block;font-family:'IBM Plex Mono',monospace">
+      <title>IAM Ecosystem Map</title>
+
+      <!-- Background -->
+      <rect width="980" height="620" fill="#0B0E14" rx="10"/>
+
+      <!-- Subtle grid -->
+      <g stroke="#1E2636" stroke-width="0.5" opacity="0.5">
+        <line x1="0" y1="124" x2="980" y2="124"/><line x1="0" y1="248" x2="980" y2="248"/>
+        <line x1="0" y1="372" x2="980" y2="372"/><line x1="0" y1="496" x2="980" y2="496"/>
+        <line x1="196" y1="0" x2="196" y2="620"/><line x1="392" y1="0" x2="392" y2="620"/>
+        <line x1="588" y1="0" x2="588" y2="620"/><line x1="784" y1="0" x2="784" y2="620"/>
+      </g>
+
+      <!-- DEFS -->
+      <defs>
+        <marker id="arr-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4A5568"/></marker>
+        <marker id="arr-teal" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#00B89A"/></marker>
+        <marker id="arr-sapph" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4A9EFF"/></marker>
+        <marker id="arr-copper" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#E8873A"/></marker>
+        <marker id="arr-jade" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+      </defs>
+
+      <!-- ═══ CENTER: Identity Fabric ═══ -->
+      <ellipse cx="490" cy="310" rx="88" ry="62" fill="rgba(155,127,255,0.1)" stroke="#9B7FFF" stroke-width="1.5"/>
+      <text x="490" y="301" text-anchor="middle" font-size="13" font-weight="700" fill="#C4B0FF">Identity</text>
+      <text x="490" y="318" text-anchor="middle" font-size="13" font-weight="700" fill="#C4B0FF">Fabric</text>
+      <text x="490" y="334" text-anchor="middle" font-size="11" fill="#8A95A8">trust layer</text>
+
+      <!-- ═══ ROW 1 (top) — D01, D02, D03 ═══ -->
+
+      <!-- D01 AuthN & Federation -->
+      <rect x="20" y="28" width="200" height="90" rx="6" fill="#111520" stroke="#00E5C3" stroke-width="1.5"/>
+      <rect x="20" y="28" width="4" height="90" rx="2" fill="#00E5C3"/>
+      <text x="36" y="50" font-size="11" fill="#6B7A8F" font-weight="500">D01</text>
+      <text x="36" y="70" font-size="14" font-weight="700" fill="#E8EDF5">Authentication &amp;</text>
+      <text x="36" y="88" font-size="14" font-weight="700" fill="#00E5C3">Federation</text>
+      <text x="36" y="107" font-size="12" fill="#8A95A8">OAuth · OIDC · SAML · Ping</text>
+      <text x="36" y="121" font-size="11" fill="#6B7A8F">→ Modules M03a, M03b</text>
+
+      <!-- D02 Directory Services -->
+      <rect x="390" y="18" width="200" height="90" rx="6" fill="#111520" stroke="#00E5C3" stroke-width="1.5"/>
+      <rect x="390" y="18" width="4" height="90" rx="2" fill="#00E5C3"/>
+      <text x="406" y="40" font-size="11" fill="#6B7A8F" font-weight="500">D02</text>
+      <text x="406" y="60" font-size="14" font-weight="700" fill="#E8EDF5">Directory</text>
+      <text x="406" y="78" font-size="14" font-weight="700" fill="#00E5C3">Services</text>
+      <text x="406" y="97" font-size="12" fill="#8A95A8">AD · Entra · PingDir · LDAP</text>
+      <text x="406" y="111" font-size="11" fill="#6B7A8F">→ Module M04b</text>
+
+      <!-- D03 MFA & Adaptive Auth -->
+      <rect x="760" y="28" width="200" height="90" rx="6" fill="#111520" stroke="#9B7FFF" stroke-width="1.5"/>
+      <rect x="760" y="28" width="4" height="90" rx="2" fill="#9B7FFF"/>
+      <text x="776" y="50" font-size="11" fill="#6B7A8F" font-weight="500">D03</text>
+      <text x="776" y="70" font-size="14" font-weight="700" fill="#E8EDF5">MFA &amp; Adaptive</text>
+      <text x="776" y="88" font-size="14" font-weight="700" fill="#C4B0FF">Authentication</text>
+      <text x="776" y="107" font-size="12" fill="#8A95A8">FIDO2 · PingID · Passkeys</text>
+      <text x="776" y="121" font-size="11" fill="#6B7A8F">→ Module M04a</text>
+
+      <!-- ═══ ROW 2 (middle) — D04 left, D05 right ═══ -->
+
+      <!-- D04 Authorization -->
+      <rect x="20" y="270" width="200" height="90" rx="6" fill="#111520" stroke="#4A9EFF" stroke-width="1.5"/>
+      <rect x="20" y="270" width="4" height="90" rx="2" fill="#4A9EFF"/>
+      <text x="36" y="292" font-size="11" fill="#6B7A8F" font-weight="500">D04</text>
+      <text x="36" y="312" font-size="14" font-weight="700" fill="#E8EDF5">Authorization</text>
+      <text x="36" y="330" font-size="14" font-weight="700" fill="#7BB8FF">Architecture</text>
+      <text x="36" y="349" font-size="12" fill="#8A95A8">RBAC · ABAC · ReBAC · OPA</text>
+      <text x="36" y="363" font-size="11" fill="#6B7A8F">→ Module M06</text>
+
+      <!-- D05 IGA -->
+      <rect x="760" y="270" width="200" height="90" rx="6" fill="#111520" stroke="#4A9EFF" stroke-width="1.5"/>
+      <rect x="760" y="270" width="4" height="90" rx="2" fill="#4A9EFF"/>
+      <text x="776" y="292" font-size="11" fill="#6B7A8F" font-weight="500">D05</text>
+      <text x="776" y="312" font-size="14" font-weight="700" fill="#E8EDF5">Identity</text>
+      <text x="776" y="330" font-size="14" font-weight="700" fill="#7BB8FF">Governance (IGA)</text>
+      <text x="776" y="349" font-size="12" fill="#8A95A8">Saviynt · SailPoint · JML</text>
+      <text x="776" y="363" font-size="11" fill="#6B7A8F">→ Module M07</text>
+
+      <!-- ═══ ROW 3 (bottom) — D06, D07, D08 ═══ -->
+
+      <!-- D06 PAM -->
+      <rect x="20" y="500" width="200" height="90" rx="6" fill="#111520" stroke="#E8873A" stroke-width="1.5"/>
+      <rect x="20" y="500" width="4" height="90" rx="2" fill="#E8873A"/>
+      <text x="36" y="522" font-size="11" fill="#6B7A8F" font-weight="500">D06</text>
+      <text x="36" y="542" font-size="14" font-weight="700" fill="#E8EDF5">Privileged Access</text>
+      <text x="36" y="560" font-size="14" font-weight="700" fill="#F4A866">Management (PAM)</text>
+      <text x="36" y="579" font-size="12" fill="#8A95A8">CyberArk · JIT · Vault</text>
+      <text x="36" y="593" font-size="11" fill="#6B7A8F">→ Module M08</text>
+
+      <!-- D07 Machine Identity -->
+      <rect x="390" y="510" width="200" height="90" rx="6" fill="#111520" stroke="#E8873A" stroke-width="1.5"/>
+      <rect x="390" y="510" width="4" height="90" rx="2" fill="#E8873A"/>
+      <text x="406" y="532" font-size="11" fill="#6B7A8F" font-weight="500">D07</text>
+      <text x="406" y="552" font-size="14" font-weight="700" fill="#E8EDF5">Machine &amp;</text>
+      <text x="406" y="570" font-size="14" font-weight="700" fill="#F4A866">Non-Human Identity</text>
+      <text x="406" y="589" font-size="12" fill="#8A95A8">SPIFFE · Conjur · Vault · PKI</text>
+      <text x="406" y="603" font-size="11" fill="#6B7A8F">→ Modules M09a, M09b</text>
+
+      <!-- D08 Cloud Identity -->
+      <rect x="760" y="500" width="200" height="90" rx="6" fill="#111520" stroke="#3ECFA0" stroke-width="1.5"/>
+      <rect x="760" y="500" width="4" height="90" rx="2" fill="#3ECFA0"/>
+      <text x="776" y="522" font-size="11" fill="#6B7A8F" font-weight="500">D08</text>
+      <text x="776" y="542" font-size="14" font-weight="700" fill="#E8EDF5">Cloud</text>
+      <text x="776" y="560" font-size="14" font-weight="700" fill="#7DE8C8">Identity</text>
+      <text x="776" y="579" font-size="12" fill="#8A95A8">AWS · Entra · GCP · CIEM</text>
+      <text x="776" y="593" font-size="11" fill="#6B7A8F">→ Module M10</text>
+
+      <!-- ═══ VERTICAL SIDE nodes — D09, D10, D11, D12 ═══ -->
+
+      <!-- D09 Infra Auth — left center -->
+      <rect x="228" y="175" width="160" height="80" rx="5" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="244" y="196" font-size="11" fill="#6B7A8F" font-weight="500">D09</text>
+      <text x="244" y="214" font-size="13" font-weight="600" fill="#8A95A8">Network &amp;</text>
+      <text x="244" y="232" font-size="13" font-weight="600" fill="#8A95A8">Linux Auth</text>
+      <text x="244" y="249" font-size="11" fill="#6B7A8F">RADIUS · PAM · SSSD → M05</text>
+
+      <!-- D10 Identity Security — right center -->
+      <rect x="592" y="175" width="160" height="80" rx="5" fill="#181D2A" stroke="#FF5F7E" stroke-width="1"/>
+      <rect x="592" y="175" width="3" height="80" rx="1" fill="#FF5F7E"/>
+      <text x="607" y="196" font-size="11" fill="#6B7A8F" font-weight="500">D10</text>
+      <text x="607" y="214" font-size="13" font-weight="600" fill="#FF8FA8">Identity Security</text>
+      <text x="607" y="232" font-size="13" font-weight="600" fill="#FF8FA8">&amp; ITDR</text>
+      <text x="607" y="249" font-size="11" fill="#6B7A8F">Zero Trust · ISPM → M11</text>
+
+      <!-- D11 Platform Eng — left lower -->
+      <rect x="228" y="400" width="160" height="80" rx="5" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="244" y="421" font-size="11" fill="#6B7A8F" font-weight="500">D11</text>
+      <text x="244" y="439" font-size="13" font-weight="600" fill="#8A95A8">Platform</text>
+      <text x="244" y="457" font-size="13" font-weight="600" fill="#8A95A8">Engineering</text>
+      <text x="244" y="474" font-size="11" fill="#6B7A8F">APIs · SCIM · Svcs → M12</text>
+
+      <!-- D12 IAM Leadership — right lower -->
+      <rect x="592" y="400" width="160" height="80" rx="5" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="608" y="421" font-size="11" fill="#6B7A8F" font-weight="500">D12</text>
+      <text x="608" y="439" font-size="13" font-weight="600" fill="#8A95A8">IAM Program</text>
+      <text x="608" y="457" font-size="13" font-weight="600" fill="#8A95A8">Leadership</text>
+      <text x="608" y="474" font-size="11" fill="#6B7A8F">Roadmaps · Governance → M15</text>
+
+      <!-- ═══ RELATIONSHIP ARROWS to center fabric ═══ -->
+      <!-- D01 → center -->
+      <line x1="220" y1="100" x2="405" y2="270" stroke="#00B89A" stroke-width="2" marker-end="url(#arr-teal)" opacity="0.7"/>
+      <!-- D02 → center -->
+      <line x1="490" y1="108" x2="490" y2="248" stroke="#00B89A" stroke-width="2" marker-end="url(#arr-teal)" opacity="0.8"/>
+      <!-- D03 → center -->
+      <line x1="762" y1="100" x2="574" y2="270" stroke="#9B7FFF" stroke-width="2" marker-end="url(#arr-gray)" opacity="0.6" stroke-dasharray="6,4"/>
+      <!-- D04 → center -->
+      <line x1="220" y1="315" x2="402" y2="315" stroke="#4A9EFF" stroke-width="2" marker-end="url(#arr-sapph)" opacity="0.7"/>
+      <!-- D05 → center -->
+      <line x1="760" y1="315" x2="578" y2="315" stroke="#4A9EFF" stroke-width="2" marker-end="url(#arr-sapph)" opacity="0.7"/>
+      <!-- D06 → center -->
+      <line x1="220" y1="535" x2="410" y2="360" stroke="#E8873A" stroke-width="2" marker-end="url(#arr-copper)" opacity="0.75"/>
+      <!-- D07 → center -->
+      <line x1="490" y1="510" x2="490" y2="372" stroke="#E8873A" stroke-width="2" marker-end="url(#arr-copper)" opacity="0.8"/>
+      <!-- D08 → center -->
+      <line x1="762" y1="535" x2="572" y2="360" stroke="#3ECFA0" stroke-width="2" marker-end="url(#arr-jade)" opacity="0.75"/>
+      <!-- D09 side → center dashed -->
+      <line x1="388" y1="215" x2="402" y2="280" stroke="#4A5568" stroke-width="1.5" marker-end="url(#arr-gray)" stroke-dasharray="5,4" opacity="0.6"/>
+      <!-- D10 side → center dashed -->
+      <line x1="592" y1="215" x2="575" y2="280" stroke="#FF5F7E" stroke-width="1.5" marker-end="url(#arr-gray)" stroke-dasharray="5,4" opacity="0.5"/>
+      <!-- D11 side → center dashed -->
+      <line x1="388" y1="440" x2="402" y2="360" stroke="#4A5568" stroke-width="1.5" marker-end="url(#arr-gray)" stroke-dasharray="5,4" opacity="0.6"/>
+      <!-- D12 side → center dashed -->
+      <line x1="592" y1="440" x2="575" y2="360" stroke="#4A5568" stroke-width="1.5" marker-end="url(#arr-gray)" stroke-dasharray="5,4" opacity="0.6"/>
+
+      <!-- ═══ LEGEND ═══ -->
+      <rect x="20" y="592" width="340" height="22" rx="4" fill="rgba(11,14,20,0.6)"/>
+      <line x1="30" y1="603" x2="55" y2="603" stroke="#00B89A" stroke-width="2"/>
+      <polygon points="52,600 58,603 52,606" fill="#00B89A"/>
+      <text x="63" y="607" font-size="11" fill="#8A95A8">Core protocol flow</text>
+      <line x1="145" y1="603" x2="170" y2="603" stroke="#4A5568" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="178" y="607" font-size="11" fill="#8A95A8">Supporting domain</text>
+      <rect x="270" y="596" width="12" height="12" rx="2" fill="rgba(155,127,255,0.15)" stroke="#9B7FFF" stroke-width="1"/>
+      <text x="288" y="607" font-size="11" fill="#8A95A8">Identity fabric</text>
+    </svg>
+  </div>
+
+  <p class="sec-body" style="margin-bottom:24px">Every arrow in this diagram represents a dependency or data flow that an enterprise architect must design. The central <em>Identity Fabric</em> is not a product — it is the trust infrastructure enabling every domain to exchange identity assertions. You already work across D01, D02, D05, and D06 daily.</p>
+
+  <!-- Domain reference grid -->
+  <div class="domain-grid">
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#00E5C3">D01</span>
+      <div class="domain-icon" style="color:#00E5C3">🔐</div>
+      <div><div class="domain-name">Authentication &amp; Federation</div><div class="domain-desc">OAuth, OIDC, SAML, PingFederate — the core protocols for proving identity across systems</div><div class="domain-module">Covered in M03a, M03b</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#00E5C3">D02</span>
+      <div class="domain-icon" style="color:#00E5C3">🗂️</div>
+      <div><div class="domain-name">Directory Services</div><div class="domain-desc">AD, Entra ID, PingDirectory, LDAP — where identity data is stored and queried</div><div class="domain-module">Covered in M04b</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#9B7FFF">D03</span>
+      <div class="domain-icon" style="color:#9B7FFF">🛡️</div>
+      <div><div class="domain-name">MFA &amp; Adaptive Auth</div><div class="domain-desc">FIDO2, PingID, passkeys, risk-based engines — how factors are applied and evaluated</div><div class="domain-module">Covered in M04a</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#4A9EFF">D04</span>
+      <div class="domain-icon" style="color:#4A9EFF">⚖️</div>
+      <div><div class="domain-name">Authorization Architecture</div><div class="domain-desc">RBAC, ABAC, ReBAC, OPA, PDP/PEP — deciding what authenticated principals can do</div><div class="domain-module">Covered in M06</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#4A9EFF">D05</span>
+      <div class="domain-icon" style="color:#4A9EFF">📋</div>
+      <div><div class="domain-name">Identity Governance (IGA)</div><div class="domain-desc">Saviynt, SailPoint, JML lifecycle, SoD — governing who has access over time</div><div class="domain-module">Covered in M07</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#E8873A">D06</span>
+      <div class="domain-icon" style="color:#E8873A">🔑</div>
+      <div><div class="domain-name">Privileged Access (PAM)</div><div class="domain-desc">CyberArk, JIT access, session recording — controlling the most dangerous accounts</div><div class="domain-module">Covered in M08</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#E8873A">D07</span>
+      <div class="domain-icon" style="color:#E8873A">🤖</div>
+      <div><div class="domain-name">Machine &amp; Non-Human Identity</div><div class="domain-desc">SPIFFE/SPIRE, Conjur, Vault, PKI — identity for services, containers, and workloads</div><div class="domain-module">Covered in M09a, M09b</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#3ECFA0">D08</span>
+      <div class="domain-icon" style="color:#3ECFA0">☁️</div>
+      <div><div class="domain-name">Cloud Identity</div><div class="domain-desc">AWS IAM, Entra, GCP IAM, CIEM — identity in multi-cloud environments</div><div class="domain-module">Covered in M10</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#8A95A8">D09</span>
+      <div class="domain-icon" style="color:#8A95A8">🌐</div>
+      <div><div class="domain-name">Network &amp; Infrastructure Auth</div><div class="domain-desc">RADIUS, 802.1X, PAM stack, SSSD — identity below the application layer</div><div class="domain-module">Covered in M05</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#FF5F7E">D10</span>
+      <div class="domain-icon" style="color:#FF5F7E">🎯</div>
+      <div><div class="domain-name">Identity Security &amp; ITDR</div><div class="domain-desc">Zero Trust, attack path analysis, SIEM integration, ISPM — identity as a threat surface</div><div class="domain-module">Covered in M11</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#8A95A8">D11</span>
+      <div class="domain-icon" style="color:#8A95A8">⚙️</div>
+      <div><div class="domain-name">Platform Engineering</div><div class="domain-desc">APIs, SCIM, microservices, orchestration — building IAM capabilities at scale</div><div class="domain-module">Covered in M12, M13</div></div>
+    </div>
+    <div class="domain-pill">
+      <span class="domain-num" style="color:#8A95A8">D12</span>
+      <div class="domain-icon" style="color:#8A95A8">📊</div>
+      <div><div class="domain-name">IAM Program Leadership</div><div class="domain-desc">Governance models, roadmaps, business case, vendor evaluation</div><div class="domain-module">Covered in M14, M15</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S3: WHY IAM EXISTS -->
+<section class="section" id="why-exists">
+  <div class="sec-label">Business context</div>
+  <h2 class="sec-title">Why IAM exists — three forces, not one</h2>
+  <div class="sec-body">
+    <p>Every enterprise IAM program is driven by three forces simultaneously. Understanding which force is dominant in your organization tells you which argument will be persuasive when advocating for IAM investment.</p>
+  </div>
+  <div class="card-grid-3" style="margin:20px 0">
+    <div class="card card-teal">
+      <div class="card-label">Force 1 — Security</div>
+      <div class="card-title">Security imperative</div>
+      <div class="card-body">80%+ of enterprise breaches involve compromised credentials. Identity is the primary attack surface. MFA, PAM, zero trust — all driven by the reality that the network perimeter no longer exists.</div>
+    </div>
+    <div class="card card-phase">
+      <div class="card-label">Force 2 — Compliance</div>
+      <div class="card-title">Compliance mandate</div>
+      <div class="card-body">SOX requires SoD controls and access certifications. HIPAA mandates minimum necessary access. PCI-DSS requires privileged access monitoring. Compliance often funds IAM programs that security cannot.</div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">Force 3 — Productivity</div>
+      <div class="card-title">Productivity enabler</div>
+      <div class="card-body">SSO eliminates 15+ login prompts per day. Automated provisioning cuts onboarding from weeks to hours. IAM done well is invisible — but its absence is very loud.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <div class="concept-term">The architect's insight on audience</div>
+    <div class="concept-def">Lead with the force that matters most to <strong>them</strong>. CFOs respond to cost avoidance (fines, breach remediation). CISOs respond to risk reduction. Engineering leaders respond to developer velocity. Same technology. Completely different conversation.</div>
+  </div>
+</section>
+
+<!-- S4: MATURITY MODEL -->
+<section class="section" id="maturity">
+  <div class="sec-label">Maturity model</div>
+  <h2 class="sec-title">IAM maturity — where is your organization?</h2>
+  <div class="sec-body">
+    <p>The IAM Maturity Model helps you assess where an enterprise currently stands and design a realistic roadmap. Most large enterprises sit between Level 2 and Level 3. Architects design programs that move one level at a time — jumping two levels always fails.</p>
+  </div>
+
+  <!-- DIAGRAM 2: MATURITY LADDER — fully rebuilt, proper row heights -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 2 — IAM Maturity Model · L1 Reactive → L5 Continuous</div>
+    <svg viewBox="0 0 880 510" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="IAM maturity ladder from Level 1 Reactive at the bottom to Level 5 Continuous at the top" style="width:100%;max-width:880px;display:block">
+      <title>IAM Maturity Model</title>
+      <rect width="880" height="510" fill="#0B0E14" rx="8"/>
+
+      <!-- Maturity up-arrow axis -->
+      <line x1="858" y1="488" x2="858" y2="22" stroke="#2E3A52" stroke-width="2"/>
+      <polygon points="851,28 858,12 865,28" fill="#2E3A52"/>
+      <text x="848" y="260" font-size="12" fill="#6B7A8F" text-anchor="middle" transform="rotate(-90,848,260)" font-family="IBM Plex Mono">MATURITY INCREASES →</text>
+
+      <!-- L1: REACTIVE -->
+      <rect x="18" y="412" width="826" height="80" rx="5" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+      <rect x="18" y="412" width="5" height="80" rx="2" fill="#FF5F7E"/>
+      <rect x="18" y="412" width="180" height="80" rx="5" fill="rgba(255,95,126,0.07)" stroke="none"/>
+      <text x="36" y="435" font-size="11" font-family="IBM Plex Mono" fill="#FF8FA8" font-weight="700" letter-spacing="1">LEVEL 1 · REACTIVE</text>
+      <text x="36" y="456" font-size="13" font-family="IBM Plex Sans" fill="#C8D0DB">Manual, ad-hoc. No consistent policy. Shared accounts. No audit trail.</text>
+      <text x="36" y="474" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8">Indicators: tickets for everything · Excel as access records · no MFA</text>
+      <text x="36" y="488" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Most orgs start here. Compliance audit forces movement upward.</text>
+
+      <!-- L2: DEFINED -->
+      <rect x="18" y="314" width="826" height="90" rx="5" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+      <rect x="18" y="314" width="5" height="90" rx="2" fill="#E8873A"/>
+      <rect x="18" y="314" width="220" height="90" rx="5" fill="rgba(232,135,58,0.07)" stroke="none"/>
+      <text x="36" y="337" font-size="11" font-family="IBM Plex Mono" fill="#F4A866" font-weight="700" letter-spacing="1">LEVEL 2 · DEFINED</text>
+      <text x="36" y="358" font-size="13" font-family="IBM Plex Sans" fill="#C8D0DB">SSO deployed. Basic RBAC. IGA tool in place. Manual certifications.</text>
+      <text x="36" y="378" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8">Indicators: PingFederate live · Saviynt deployed · annual access reviews</text>
+      <text x="36" y="396" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">→ Your current org is likely here or at L3. This is common for mature enterprises.</text>
+
+      <!-- L3: MANAGED -->
+      <rect x="18" y="210" width="826" height="96" rx="5" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+      <rect x="18" y="210" width="5" height="96" rx="2" fill="#4A9EFF"/>
+      <rect x="18" y="210" width="260" height="96" rx="5" fill="rgba(74,158,255,0.07)" stroke="none"/>
+      <text x="36" y="234" font-size="11" font-family="IBM Plex Mono" fill="#7BB8FF" font-weight="700" letter-spacing="1">LEVEL 3 · MANAGED</text>
+      <text x="36" y="255" font-size="13" font-family="IBM Plex Sans" fill="#C8D0DB">PAM deployed. MFA enforced enterprise-wide. Automated JML. SoD active.</text>
+      <text x="36" y="275" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8">Indicators: CyberArk live · adaptive auth · HR-driven provisioning</text>
+      <text x="36" y="295" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Risk-based access decisions. Quarterly certifications. Privileged session recording.</text>
+
+      <!-- L4: OPTIMIZED -->
+      <rect x="18" y="108" width="826" height="94" rx="5" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+      <rect x="18" y="108" width="5" height="94" rx="2" fill="#9B7FFF"/>
+      <rect x="18" y="108" width="300" height="94" rx="5" fill="rgba(155,127,255,0.07)" stroke="none"/>
+      <text x="36" y="132" font-size="11" font-family="IBM Plex Mono" fill="#C4B0FF" font-weight="700" letter-spacing="1">LEVEL 4 · OPTIMIZED</text>
+      <text x="36" y="153" font-size="13" font-family="IBM Plex Sans" fill="#C8D0DB">Zero trust architecture. JIT everywhere. Machine identity governed. ITDR active.</text>
+      <text x="36" y="173" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8">Indicators: SPIFFE workload ID · continuous access eval · ISPM tooling</text>
+      <text x="36" y="192" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Externalized authorization. Cloud CIEM. Identity threat detection &amp; response.</text>
+
+      <!-- L5: CONTINUOUS -->
+      <rect x="18" y="14" width="826" height="86" rx="5" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+      <rect x="18" y="14" width="5" height="86" rx="2" fill="#00E5C3"/>
+      <rect x="18" y="14" width="340" height="86" rx="5" fill="rgba(0,229,195,0.07)" stroke="none"/>
+      <text x="36" y="38" font-size="11" font-family="IBM Plex Mono" fill="#00E5C3" font-weight="700" letter-spacing="1">LEVEL 5 · CONTINUOUS</text>
+      <text x="36" y="59" font-size="13" font-family="IBM Plex Sans" fill="#C8D0DB">Continuous access evaluation. AI-driven risk. Fully automated identity lifecycle.</text>
+      <text x="36" y="79" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8">Indicators: CAE · identity analytics · self-healing entitlements · zero standing privilege</text>
+    </svg>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">Architect's use of the maturity model</div>
+    <div class="concept-def">When you join a new initiative, your first assessment question is: what level are we at, and what is the one-level-up investment? Trying to jump from Level 2 to Level 4 in a single program always fails. The organizational change management, tooling, and process maturity required is too large. Design programs that move one level at a time with measurable milestones at each step.</div>
+  </div>
+</section>
+
+<!-- S5: OPERATING MODELS -->
+<section class="section" id="operating-models">
+  <div class="sec-label">Operating model</div>
+  <h2 class="sec-title">How enterprises organize the IAM function</h2>
+  <div class="sec-body">
+    <p>The IAM operating model defines who owns identity decisions, who operates the platforms, and how escalations flow. Understanding the model you're working within changes how you design, propose, and communicate architecture.</p>
+  </div>
+  <div class="tbl-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Model</th><th>How it works</th><th>Best for</th><th>IAM team role</th><th>Primary risk</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Centralized</td>
+          <td>IAM team owns all platforms, policy, and operations. Business units consume services.</td>
+          <td>Regulated industries — finance, healthcare, government</td>
+          <td>Platform owner + policy maker</td>
+          <td>Bottleneck for diverse BU needs; slow velocity</td>
+        </tr>
+        <tr>
+          <td>Federated</td>
+          <td>Central IAM sets standards. BUs operate their own identity stacks within guardrails.</td>
+          <td>Large diversified enterprises, M&amp;A-heavy orgs</td>
+          <td>Standard setter + governance board</td>
+          <td>Inconsistent implementation; shadow IAM proliferates</td>
+        </tr>
+        <tr>
+          <td>Hybrid</td>
+          <td>Core infra centralized (directory, federation, PAM). Application identity federated.</td>
+          <td>Most large enterprises in practice</td>
+          <td>Platform eng for core; advisory for apps</td>
+          <td>Unclear ownership at the boundaries</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- S6: 3 MODES -->
+<section class="section" id="roles">
+  <div class="sec-label">Career positioning</div>
+  <h2 class="sec-title">Operator, architect, engineer — the three modes</h2>
+  <div class="sec-body">
+    <p>Most IAM professionals operate deeply in one mode. The transition to Principal Engineer or IAM Architect requires fluency across all three — and the ability to switch modes mid-conversation.</p>
+  </div>
+  <div class="card-grid-3" style="margin:20px 0">
+    <div class="card" style="border-top:3px solid var(--text-t)">
+      <div class="card-label">Mode 1</div>
+      <div class="card-title" style="color:var(--text-s)">IAM Operator</div>
+      <div class="card-body">Configures and maintains existing IAM products. Answers: <em style="color:var(--text-s);font-style:italic">"How do I make this product do X?"</em> Excellent at keeping things running. The ceiling: cannot design what hasn't been built before.</div>
+    </div>
+    <div class="card card-phase">
+      <div class="card-label">Mode 2 — Your target</div>
+      <div class="card-title">IAM Architect</div>
+      <div class="card-body">Designs identity systems. Answers: <em style="color:var(--phase);font-style:italic">"What is the right solution for this enterprise problem?"</em> Thinks in reference architectures, integration patterns, trade-offs. Translates business requirements into technical designs.</div>
+    </div>
+    <div class="card card-teal">
+      <div class="card-label">Mode 3 — Your advantage</div>
+      <div class="card-title">IAM Platform Engineer</div>
+      <div class="card-body">Builds identity platforms. Answers: <em style="color:var(--teal);font-style:italic">"How do we engineer this at scale?"</em> Writes SCIM APIs, token validation services, orchestration pipelines. Your 13 years of Java engineering lives here — this is the rarest combination.</div>
+    </div>
+  </div>
+  <div class="concept">
+    <div class="concept-term">Your unique position in the market</div>
+    <div class="concept-def">You are rare: a software engineer with deep Java and API experience who has worked inside IAM for 5 years. Most IAM architects cannot write a SCIM provisioning service. Most IAM platform engineers do not understand enterprise authorization models. You have both sides. This portal develops the architectural vocabulary to match the engineering depth you already have.</div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="section" id="kc">
+  <div class="sec-label">Knowledge check</div>
+  <h2 class="sec-title">Test your understanding</h2>
+
+  <div class="kc" id="kc1">
+    <div class="kc-q" onclick="toggleKC('kc1')">
+      <span class="kc-icon">Q1</span>
+      A new CISO wants to understand what IAM investment is needed most urgently. You have 10 minutes. What framework do you use to structure your answer?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>Use the maturity model + dominant business force combination.</strong> Rapidly assess current maturity level (L1–L3) by asking three diagnostic questions: Do you have SSO? Do you have automated JML? Is PAM deployed? This places the org at L1–L3 in under two minutes. Then identify which of the three forces matters most to this CISO (security posture, compliance exposure, or productivity cost). Frame the investment as: "We are at Level X, one level up requires Y, and that directly addresses your Z concern." Avoid leading with product names — lead with outcomes and risk reduction.
+    </div>
+  </div>
+
+  <div class="kc" id="kc2">
+    <div class="kc-q" onclick="toggleKC('kc2')">
+      <span class="kc-icon">Q2</span>
+      Your stack includes PingFederate, PingDirectory, Saviynt, and CyberArk. Which of the 12 domains are covered and which are gaps?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>Covered:</strong> D01 (AuthN/Federation via PingFederate), D02 (Directory via PingDirectory), D05 (IGA via Saviynt), D06 (PAM via CyberArk). <strong>Likely partial:</strong> D03 (MFA — PingID may exist but adaptive auth depth varies), D04 (Authorization — RBAC in Saviynt but externalized fine-grained authorization likely missing). <strong>Common gaps:</strong> D07 (Machine identity — service accounts may be in CyberArk but SPIFFE/workload identity is likely absent), D08 (Cloud identity — probably siloed from on-premises), D09 (Infrastructure auth — Linux centralization often underdone), D10 (ITDR — no dedicated tooling in most orgs). This gap analysis is the first step in any IAM roadmap conversation.
+    </div>
+  </div>
+
+  <div class="kc" id="kc3">
+    <div class="kc-q" onclick="toggleKC('kc3')">
+      <span class="kc-icon">Q3</span>
+      What is the Identity Fabric and why is it at the center of the ecosystem diagram rather than a specific product?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>The Identity Fabric is the trust infrastructure, not a product.</strong> It is the aggregate of trust relationships, token formats, protocol agreements, and policy contracts that allow one identity domain to accept assertions from another. PingFederate participates by issuing and consuming SAML assertions and OAuth tokens. Active Directory participates by issuing Kerberos tickets. The fabric itself is the result of correctly designing the integrations between all twelve domains. No single product IS the fabric — and this is why architects who think in product terms hit a ceiling. An architect's job is to design a coherent fabric; a product vendor's job is to participate in one.
+    </div>
+  </div>
+</section>
+
+<!-- KEY TAKEAWAYS -->
+<div class="takeaway">
+  <div class="takeaway-head">
+    <div class="takeaway-icon">◆</div>
+    <div class="takeaway-title">Key takeaways — M01 · Enterprise IAM Ecosystem</div>
+  </div>
+  <ul class="takeaway-list">
+    <li>Enterprise IAM is a 12-domain ecosystem. Products are implementations of domains — not the domains themselves. Think in domains, position products within them.</li>
+    <li>The Identity Fabric is the trust infrastructure connecting all domains. It is not installed — it is designed through the correct integration of protocols, trust relationships, and policy contracts.</li>
+    <li>IAM exists because of three forces: security imperatives, compliance mandates, and productivity requirements. Understanding which force dominates in your organization determines how you build the business case.</li>
+    <li>The IAM Maturity Model (L1–L5) provides a structured assessment and roadmap tool. Most enterprises sit at L2–L3. Design programs that move one level at a time with measurable outcomes.</li>
+    <li>Three modes of IAM work: Operator (configures), Architect (designs), Platform Engineer (builds). Your unique value is fluency across all three — rare at any seniority level, career-defining at Principal.</li>
+    <li>Operating models (centralized, federated, hybrid) determine organizational ownership. Architects must design for the operating model, not just the technology stack.</li>
+  </ul>
+</div>
+
+<!-- ARCHITECT REVIEW -->
+<div class="arch-review">
+  <div class="arch-review-head">
+    <span class="arch-badge">Architect Review</span>
+    <span class="arch-title">Senior-level design questions — no lookup, think through them</span>
+  </div>
+  <ul class="arch-list">
+    <li>
+      <span class="arch-num">01</span>
+      A financial services firm has PingFederate and Active Directory but no IGA tool and no PAM solution. 4,000 employees, SOX audit in 90 days. Using the maturity model, assess their current level, identify the compliance-critical gaps, and design a prioritized 90-day response plan that is realistic given timeline and resources.
+    </li>
+    <li>
+      <span class="arch-num">02</span>
+      Your organization is debating consolidating IAM into a single platform vendor (Okta or SailPoint). As an architect: what questions do you ask before making a recommendation? Which domains genuinely benefit from consolidation and which are better served by best-of-breed specialists? What are the hidden integration costs in a consolidation that the vendor's pitch won't mention?
+    </li>
+    <li>
+      <span class="arch-num">03</span>
+      Draw the Identity Fabric for your current organization from memory — right now, without looking anything up. Which domains are connected? Which are siloed? Where are the trust gaps? If you were given a 12-month mandate and budget to address one gap, which would you fix first and why?
+    </li>
+  </ul>
+</div>
+
+<!-- DEP MAP -->
+<section class="section" id="dep">
+  <div class="sec-label">Knowledge dependency map</div>
+  <div class="dep-map">
+    <span class="dep-node dep-cur">M01 · IAM Ecosystem ← you are here</span>
+    <span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M02 · AuthN, AuthZ &amp; Lifecycle</span>
+    <span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M03a · OAuth 2.0 &amp; OIDC</span>
+    <span class="dep-arr">→</span>
+    <span class="dep-node dep-future">All Phase 1–3 modules</span>
+  </div>
+</section>
+
+<!-- BRIDGE -->
+<div class="bridge" id="bridge">
+  <div class="sec-label">Bridge to next module</div>
+  <div class="bridge-card">
+    <div class="bridge-eyebrow">What you mastered · What comes next</div>
+    <h2 class="bridge-title">You can see the map.<br>Now learn the <span>language.</span></h2>
+    <p class="bridge-body">
+      This module gave you the ecosystem view — twelve domains, their relationships, the maturity model, the operating model, and why IAM exists as a discipline. You can now position any IAM technology within a larger architecture and explain its purpose to any stakeholder.
+      <br><br>
+      Module M02 builds the <strong>universal vocabulary</strong> that all twelve domains share. Every module from M03a onward assumes you can distinguish authentication from authorization with precision, explain principal from credential from claim, and describe how trust is established between identity domains. These distinctions are not pedantic — getting them wrong in an architecture discussion signals operator-level thinking, not architect-level thinking.
+      <br><br>
+      M02 also introduces the complete <strong>identity lifecycle</strong> — Joiner, Mover, Leaver — which M07 (IGA) builds an entire enterprise governance program around, and which M08 (PAM) uses as the foundation for privileged account lifecycle. Building this in M02 means every downstream module speaks the same lifecycle language.
+    </p>
+    <div class="bridge-concepts">
+      <span class="badge badge-phase">AuthN vs AuthZ — precise architectural distinction</span>
+      <span class="badge badge-track">Principal · credential · claim · assertion</span>
+      <span class="badge badge-prereq">Joiner-Mover-Leaver lifecycle model</span>
+      <span class="badge badge-effort">Trust establishment &amp; chain of trust</span>
+    </div>
+    <a href="M02.html" class="bridge-btn">Continue to M02 · Identity Fundamentals →</a>
+  </div>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="toc">
+    <div class="toc-label">In this module</div>
+    <a class="toc-item" href="#why">Why this module matters</a>
+    <a class="toc-item" href="#domains">The 12 IAM domains</a>
+    <a class="toc-item toc-sub" href="#domains">Ecosystem map diagram</a>
+    <a class="toc-item toc-sub" href="#domains">Domain reference grid</a>
+    <a class="toc-item" href="#why-exists">Why IAM exists</a>
+    <a class="toc-item" href="#maturity">Maturity model diagram</a>
+    <a class="toc-item" href="#operating-models">Operating models</a>
+    <a class="toc-item" href="#roles">Operator vs Architect</a>
+    <a class="toc-item" href="#kc">Knowledge check (×3)</a>
+    <a class="toc-item" href="#bridge">Bridge to M02</a>
+  </div>
+
+  <div class="qref">
+    <div class="qref-label">Quick reference</div>
+    <div class="qref-item"><span class="qref-term">Identity Fabric</span><span class="qref-def">Trust infrastructure connecting all 12 domains — not a product</span></div>
+    <div class="qref-item"><span class="qref-term">D01–D12</span><span class="qref-def">The 12 IAM domain taxonomy used throughout this portal</span></div>
+    <div class="qref-item"><span class="qref-term">L1–L5</span><span class="qref-def">IAM maturity levels: Reactive → Defined → Managed → Optimized → Continuous</span></div>
+    <div class="qref-item"><span class="qref-term">3 Forces</span><span class="qref-def">Security · Compliance · Productivity — why IAM exists</span></div>
+    <div class="qref-item"><span class="qref-term">3 Models</span><span class="qref-def">Centralized · Federated · Hybrid operating models</span></div>
+    <div class="qref-item"><span class="qref-term">3 Modes</span><span class="qref-def">Operator · Architect · Platform Engineer</span></div>
+  </div>
+
+  <div class="card card-copper" style="margin-bottom:12px">
+    <div class="card-label">Common mistake</div>
+    <div class="card-title">Product-first thinking</div>
+    <div class="card-body">Saying "we need to upgrade PingFederate" before establishing what domain gap the upgrade addresses. Always anchor to a domain and a maturity step first. The product recommendation follows the architectural diagnosis — never leads it.</div>
+  </div>
+
+  <div class="card card-teal">
+    <div class="card-label">Architect's rule</div>
+    <div class="card-title">No product without a domain</div>
+    <div class="card-body">"We need Saviynt" becomes: "We have a gap in D05 (IGA). Saviynt is the right product for this organization's scale and compliance requirements because…" The domain framing is the difference between a recommendation and a proposal.</div>
+  </div>
+</aside>
+</div><!-- /layout -->
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-left">IAM Architect Portal · M01 of 20 · Phase 0: Foundations</div>
+  <div style="display:flex;gap:8px">
+    <a href="INDEX.html" class="badge badge-prereq" style="text-decoration:none">← Index</a>
+    <a href="M02.html" class="badge badge-phase" style="text-decoration:none">M02 →</a>
+  </div>
+</footer>
+
+</div><!-- /shell -->
+
+<script>
+function toggleKC(id){document.getElementById(id).classList.toggle('open')}
+
+(function(){
+  const items=document.querySelectorAll('.toc-item');
+  const targets=[];
+  items.forEach(a=>{
+    const href=a.getAttribute('href');
+    if(href&&href.startsWith('#')){
+      const el=document.querySelector(href);
+      if(el) targets.push({el,a});
+    }
+  });
+  window.addEventListener('scroll',()=>{
+    let cur=null;
+    targets.forEach(({el})=>{if(window.scrollY>=el.offsetTop-90)cur=el});
+    targets.forEach(({el,a})=>a.classList.toggle('active',el===cur));
+  },{passive:true});
+})();
+
+(function(){
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.style.opacity='1';
+        e.target.style.transform='none';
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:.06});
+  document.querySelectorAll('.section,.card,.kc,.takeaway,.arch-review,.concept,.domain-pill').forEach(el=>{
+    el.style.opacity='0';
+    el.style.transform='translateY(12px)';
+    el.style.transition='opacity .45s ease,transform .45s ease';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
