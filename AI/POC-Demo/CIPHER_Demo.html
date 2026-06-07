@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIPHER — Live Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070b14;--sb:#0d1321;--card:#1a2540;--card2:#111827;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --amber:#f59e0b;--blue:#3b82f6;--purple:#a855f7;--green:#22c55e;
+  --red:#ef4444;--slate1:#f1f5f9;--slate2:#94a3b8;--slate3:#475569;
+  --slate4:#1e293b;--slate5:#334155;--mono:'JetBrains Mono',monospace;
+  --sans:'Outfit',system-ui,sans-serif;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--slate1);font-family:var(--sans);font-size:14px}
+/* LAYOUT */
+#app{display:flex;height:100vh;overflow:hidden}
+/* SIDEBAR */
+#sidebar{width:220px;min-width:220px;background:var(--sb);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#brand{padding:16px 14px 12px;border-bottom:1px solid var(--border)}
+#brand .logo{display:flex;align-items:center;gap:9px;margin-bottom:3px}
+#brand .lock-wrap{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:flex-start;padding-left:7px;flex-shrink:0}
+#brand .lock-icon{font-size:14px;line-height:1}
+#brand .cipher-text{font-size:17px;font-weight:700;letter-spacing:.12em;color:#fff}
+#brand .tagline{font-size:10px;color:var(--slate3);padding-left:39px}
+#sec-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--slate5);padding:12px 14px 5px}
+.sc-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;background:transparent;border:1px solid transparent;border-radius:10px;cursor:pointer;text-align:left;transition:all .15s;margin-bottom:2px;color:var(--slate2)}
+.sc-btn:hover{background:rgba(255,255,255,.04);color:var(--slate1)}
+.sc-btn.active{background:rgba(255,255,255,.05);border-color:var(--border2);color:var(--slate1)}
+.sc-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.sc-info .sc-name{font-size:12px;font-weight:500;line-height:1.3}
+.sc-info .sc-tag{font-size:10px;color:var(--slate3);margin-top:1px}
+#hist-section{flex:1;overflow-y:auto;padding:8px 10px}
+#hist-section::-webkit-scrollbar{width:3px}
+#hist-section::-webkit-scrollbar-thumb{background:var(--slate4);border-radius:2px}
+.hist-item{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:8px;margin-bottom:2px;cursor:default}
+.hist-item .h-icon{font-size:10px;flex-shrink:0}
+.hist-item .h-info .h-name{font-size:11px;font-weight:500;color:var(--slate2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-item .h-info .h-id{font-size:9px;font-family:var(--mono);color:var(--slate3)}
+.hist-dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-left:auto;flex-shrink:0}
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#header{padding:10px 18px;background:rgba(13,19,33,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#hdr-left .hdr-title{font-size:13px;font-weight:600;color:var(--slate1)}
+#hdr-left .hdr-sub{font-size:11px;color:var(--slate3)}
+#hdr-right{display:flex;align-items:center;gap:10px}
+#status-pill{font-size:11px;display:flex;align-items:center;gap:5px;transition:all .3s}
+#replay-btn{font-size:11px;display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--slate2);cursor:pointer;transition:all .15s;font-family:var(--sans)}
+#replay-btn:hover{background:rgba(255,255,255,.07);color:var(--slate1)}
+/* CHAT */
+#chat{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+#chat::-webkit-scrollbar{width:3px}
+#chat::-webkit-scrollbar-thumb{background:var(--slate4);border-radius:2px}
+/* MESSAGES */
+.msg{animation:fadeUp .3s ease forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.row{display:flex;align-items:flex-end;gap:9px}
+.row.user-row{justify-content:flex-end}
+.avatar{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.cipher-avatar{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.user-avatar{background:#1d4ed8;font-size:10px;font-weight:600;color:#fff}
+.bubble{padding:10px 14px;border-radius:16px;max-width:340px;font-size:13px;line-height:1.6}
+.cipher-bubble{background:var(--card);color:var(--slate1);border-radius:16px 16px 16px 4px}
+.user-bubble{background:#2563eb;color:#fff;border-radius:16px 16px 4px 16px;text-align:left}
+.cursor{display:inline-block;width:2px;height:13px;background:var(--slate2);border-radius:1px;margin-left:2px;vertical-align:middle;animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+/* TYPING */
+.typing-dots{display:flex;gap:4px;padding:12px 16px;background:var(--card);border-radius:16px 16px 16px 4px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--slate2)}
+.dot:nth-child(1){animation:dotbounce 1.2s 0s infinite}
+.dot:nth-child(2){animation:dotbounce 1.2s .2s infinite}
+.dot:nth-child(3){animation:dotbounce 1.2s .4s infinite}
+@keyframes dotbounce{0%,80%,100%{transform:scale(.4);opacity:.3}40%{transform:scale(1);opacity:1}}
+/* CLASSIFY */
+.classify-row{margin-left:39px}
+.classify-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:8px;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);font-size:11px;color:var(--slate2)}
+.classify-badge .cb-domain{color:#c084fc;font-weight:600}
+.classify-badge .cb-sep{color:var(--slate5)}
+/* CHIPS */
+.chips-wrap{margin-left:39px;display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.chip{padding:6px 14px;border-radius:20px;border:1px solid var(--slate5);background:transparent;color:var(--slate2);font-size:12px;cursor:pointer;transition:all .2s;font-family:var(--sans)}
+.chip:hover:not(.disabled){border-color:var(--blue);color:#93c5fd}
+.chip.selected{background:var(--blue);border-color:var(--blue);color:#fff;cursor:default}
+.chip.disabled:not(.selected){opacity:.35;cursor:default}
+/* CONFIRM CARD */
+.confirm-wrap{margin-left:39px;max-width:320px}
+.confirm-card{background:var(--card);border:1px solid rgba(245,158,11,.25);border-radius:14px;padding:14px}
+.confirm-header{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.confirm-header .c-icon{font-size:13px}
+.confirm-header .c-title{font-size:12px;font-weight:600;color:var(--amber)}
+.risk-badge{margin-left:auto;font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.2);font-family:var(--mono)}
+.confirm-rows{border-top:1px solid var(--slate4);border-bottom:1px solid var(--slate4);padding:8px 0;margin-bottom:10px}
+.c-row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:11px}
+.c-row .ck{color:var(--slate3)}
+.c-row .cv{color:var(--slate1);font-family:var(--mono);font-size:10.5px;text-align:right}
+.confirm-actions{display:flex;gap:8px}
+.btn-confirm{flex:1;padding:7px;border-radius:9px;background:#2563eb;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.btn-confirm:hover{background:#1d4ed8}
+.btn-confirm:active{transform:scale(.97)}
+.btn-cancel{padding:7px 12px;background:transparent;color:var(--slate3);border:none;font-size:12px;cursor:pointer;font-family:var(--sans);transition:color .15s}
+.btn-cancel:hover{color:var(--slate2)}
+/* AGENT TIMELINE */
+.agent-wrap{margin-left:39px}
+.agent-card{background:#0a0f1c;border:1px solid var(--slate4);border-radius:14px;padding:12px 14px;min-width:220px}
+.agent-header{display:flex;align-items:center;gap:6px;margin-bottom:9px;font-size:11px;font-weight:600;color:#c084fc}
+.agent-event{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11px;font-family:var(--mono)}
+.ae-icon{font-size:11px;flex-shrink:0;width:14px;text-align:center}
+.spin{display:inline-block;animation:spin .8s linear infinite;font-style:normal}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* SUCCESS CARD */
+.success-wrap{margin-left:39px;max-width:340px}
+.success-card{background:var(--card);border:1px solid rgba(34,197,94,.2);border-radius:14px;padding:14px}
+.success-header{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.success-title{font-size:12px;font-weight:600;color:var(--green)}
+.success-req{font-size:10px;font-family:var(--mono);color:var(--slate3);margin-bottom:10px}
+.guide-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 10px;background:#0a0f1c;border:1px solid var(--slate4);border-radius:9px;color:var(--slate2);font-size:11px;cursor:pointer;font-family:var(--sans);margin-bottom:6px;transition:border-color .15s}
+.guide-toggle:hover{border-color:var(--slate3)}
+.guide-content{background:#0a0f1c;border-radius:9px;padding:10px 12px;margin-bottom:8px;display:none}
+.guide-content.open{display:block}
+.guide-row{margin-bottom:8px}
+.guide-row:last-child{margin-bottom:0}
+.guide-k{font-size:10px;color:var(--slate3);margin-bottom:2px}
+.guide-v{font-size:10.5px;font-family:var(--mono);color:var(--slate2);word-break:break-all}
+/* NEXT STEPS TIMELINE */
+.timeline{margin-top:8px;padding:8px 10px;background:#0a0f1c;border-radius:9px}
+.tl-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11px}
+.tl-dot{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px}
+.tl-done{background:rgba(34,197,94,.15);color:var(--green)}
+.tl-pending{background:rgba(245,158,11,.1);color:var(--amber)}
+.tl-todo{background:var(--slate4);color:var(--slate3)}
+.tl-text{color:var(--slate2)}
+/* EMAIL/SECURE NOTICE */
+.secure-notice{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.12);border-radius:9px;margin-top:6px;font-size:11px;color:var(--slate3)}
+.sn-icon{flex-shrink:0;margin-top:1px;font-size:12px}
+/* READ RESULT */
+.read-card{background:var(--card);border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:12px 14px;font-size:11px}
+.read-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:600;color:var(--green)}
+.read-rows{display:grid;gap:5px}
+.read-row{display:flex;justify-content:space-between;gap:10px}
+.read-k{color:var(--slate3)}
+.read-v{font-family:var(--mono);font-size:10.5px;color:var(--slate1)}
+/* TOAST */
+#toast{position:fixed;top:14px;right:16px;background:#0d1321;border:1px solid rgba(34,197,94,.3);border-radius:11px;padding:10px 14px;display:flex;align-items:center;gap:9px;font-size:12px;color:var(--slate1);z-index:9999;transform:translateX(120%);transition:transform .35s cubic-bezier(.34,1.56,.64,1);max-width:300px;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+#toast.show{transform:translateX(0)}
+#toast .toast-icon{font-size:14px;flex-shrink:0}
+/* ERROR MSG */
+.error-bubble{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:16px 16px 16px 4px}
+/* INPUT */
+#input-area{padding:10px 16px;border-top:1px solid var(--border);flex-shrink:0}
+#input-row{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:8px 12px;transition:border-color .2s}
+#input-row:focus-within{border-color:rgba(59,130,246,.4)}
+#msg-input{flex:1;background:transparent;border:none;outline:none;color:var(--slate1);font-size:13px;font-family:var(--sans);caret-color:var(--amber)}
+#msg-input::placeholder{color:var(--slate3)}
+#send-btn{width:28px;height:28px;border-radius:8px;background:#2563eb;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+#send-btn:hover{background:#1d4ed8}
+#send-btn:active{transform:scale(.92)}
+/* STATUS BAR */
+#statusbar{padding:5px 18px;background:var(--bg);border-top:1px solid rgba(255,255,255,.03);display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--slate5);flex-shrink:0}
+#statusbar .sb-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block}
+#statusbar .sb-sep{color:var(--slate4)}
+/* WAITING HINT */
+#waiting-hint{text-align:center;padding:6px;font-size:11px;color:var(--amber);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div id="brand">
+      <div class="logo">
+        <div class="lock-wrap"><span class="lock-icon">🔐</span></div>
+        <span class="cipher-text">CIPHER</span>
+      </div>
+      <div class="tagline">IAM Assistant · POC v1.0</div>
+    </div>
+
+    <div id="sec-label">Scenarios</div>
+    <div style="padding:0 8px">
+      <button class="sc-btn active" onclick="startScenario('sso')" id="btn-sso">
+        <div class="sc-icon" style="background:rgba(59,130,246,.15)">🔑</div>
+        <div class="sc-info">
+          <div class="sc-name">OIDC Onboarding</div>
+          <div class="sc-tag">SSO · Ping Federate</div>
+        </div>
+      </button>
+      <button class="sc-btn" onclick="startScenario('pam')" id="btn-pam">
+        <div class="sc-icon" style="background:rgba(245,158,11,.15)">🛡️</div>
+        <div class="sc-info">
+          <div class="sc-name">CyberArk Safe</div>
+          <div class="sc-tag">PAM · CyberArk</div>
+        </div>
+      </button>
+      <button class="sc-btn" onclick="startScenario('iga')" id="btn-iga">
+        <div class="sc-icon" style="background:rgba(34,197,94,.12)">👥</div>
+        <div class="sc-info">
+          <div class="sc-name">Saviynt Group</div>
+          <div class="sc-tag">IGA · Saviynt</div>
+        </div>
+      </button>
+      <button class="sc-btn" onclick="startScenario('read')" id="btn-read">
+        <div class="sc-icon" style="background:rgba(168,85,247,.12)">🔍</div>
+        <div class="sc-info">
+          <div class="sc-name">Status Check</div>
+          <div class="sc-tag">Read · No confirm</div>
+        </div>
+      </button>
+      <button class="sc-btn" onclick="startScenario('cross')" id="btn-cross">
+        <div class="sc-icon" style="background:rgba(99,102,241,.15)">⚡</div>
+        <div class="sc-info">
+          <div class="sc-name">Cross-domain</div>
+          <div class="sc-tag">SSO + IGA · 2 ops</div>
+        </div>
+      </button>
+    </div>
+
+    <div id="sec-label" style="margin-top:8px">Request History</div>
+    <div id="hist-section">
+      <div id="hist-empty" style="font-size:11px;color:var(--slate5);padding:2px 6px">None yet</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="header">
+      <div id="hdr-left">
+        <div class="hdr-title" id="hdr-title">OIDC Onboarding</div>
+        <div class="hdr-sub" id="hdr-sub">SSO · Ping Federate</div>
+      </div>
+      <div id="hdr-right">
+        <div id="status-pill"></div>
+        <button id="replay-btn" onclick="replayScenario()">↺ Replay</button>
+      </div>
+    </div>
+
+    <div id="chat"></div>
+    <div id="waiting-hint" style="display:none">⬆ Click Confirm above to proceed</div>
+
+    <div id="input-area">
+      <div id="input-row">
+        <input id="msg-input" type="text" placeholder="Ask CIPHER anything about IAM..." autocomplete="off">
+        <button id="send-btn" onclick="sendUserMsg()" title="Send">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="statusbar">
+      <span class="sb-dot"></span>
+      <span>Ollama · llama3.1:8b</span>
+      <span class="sb-sep">·</span>
+      <span>RAG active</span>
+      <span class="sb-sep">·</span>
+      <span>CIPHER v1.0 POC</span>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">
+  <span class="toast-icon">📧</span>
+  <span id="toast-msg">Confirmation sent · IAM team notified</span>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentScenario = 'sso';
+let timers = [];
+let waitingForConfirm = false;
+let resumeFn = null;
+let advanceFn = null;
+let completedRequests = [];
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function uid(){ return Date.now() + Math.floor(Math.random()*9999); }
+function chat(){ return document.getElementById('chat'); }
+function after(ms, fn){ const t = setTimeout(fn, ms); timers.push(t); return t; }
+function clearAll(){ timers.forEach(clearTimeout); timers = []; }
+function scrollBottom(){ const c=chat(); c.scrollTop=c.scrollHeight; }
+function setStatus(text, color){
+  const p = document.getElementById('status-pill');
+  p.innerHTML = text ? `<span style="width:7px;height:7px;border-radius:50%;background:${color};display:inline-block;margin-right:5px"></span><span style="font-size:11px;color:${color}">${text}</span>` : '';
+}
+function showHint(v){ document.getElementById('waiting-hint').style.display = v ? 'block' : 'none'; }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  after(3800, () => t.classList.remove('show'));
+}
+
+// ─── DOM BUILDERS ─────────────────────────────────────────────────────────────
+function cipherRow(id){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg';
+  wrap.id = 'msg-' + id;
+  wrap.innerHTML = `<div class="row"><div class="avatar cipher-avatar">🔐</div><div class="bubble cipher-bubble" id="bub-${id}"></div></div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+  return document.getElementById('bub-' + id);
+}
+function userRow(text){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg';
+  wrap.innerHTML = `<div class="row user-row"><div class="bubble user-bubble">${text}</div><div class="avatar user-avatar">MH</div></div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+}
+function typingRow(){
+  const wrap = document.createElement('div');
+  wrap.id = 'typing-msg';
+  wrap.className = 'msg';
+  wrap.innerHTML = `<div class="row"><div class="avatar cipher-avatar">🔐</div><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+}
+function removeTyping(){ const t = document.getElementById('typing-msg'); if(t) t.remove(); }
+function addClassify(domain, action){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg classify-row';
+  wrap.innerHTML = `<div class="classify-badge">⚡ Intent classified &nbsp;<span class="cb-domain">${domain}</span><span class="cb-sep">›</span>${action}</div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+}
+function addChips(chips, onSelect){
+  const id = 'chips-' + uid();
+  const wrap = document.createElement('div');
+  wrap.id = id;
+  wrap.className = 'msg chips-wrap';
+  chips.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = c;
+    btn.onclick = () => {
+      if(btn.classList.contains('disabled')) return;
+      wrap.querySelectorAll('.chip').forEach(b => { b.classList.remove('selected'); b.classList.add('disabled'); });
+      btn.classList.add('selected');
+      btn.classList.remove('disabled');
+      after(200, () => onSelect(c));
+    };
+    wrap.appendChild(btn);
+  });
+  chat().appendChild(wrap);
+  scrollBottom();
+  return id;
+}
+function selectChip(containerId, value){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  wrap.querySelectorAll('.chip').forEach(b => {
+    b.classList.add('disabled');
+    if(b.textContent === value) b.classList.add('selected');
+  });
+}
+
+// ─── STREAMING ────────────────────────────────────────────────────────────────
+function streamText(el, text, onDone){
+  const words = text.split(' ');
+  let i = 0;
+  el.innerHTML = '<span class="cursor"></span>';
+  const tick = () => {
+    i++;
+    const cur = el.querySelector('.cursor');
+    if(cur) cur.remove();
+    el.textContent = words.slice(0,i).join(' ');
+    if(i < words.length){
+      const c = document.createElement('span'); c.className='cursor'; el.appendChild(c);
+      after(38 + Math.random()*28, tick);
+    } else {
+      after(180, () => { onDone && onDone(); });
+    }
+  };
+  after(60, tick);
+}
+
+// ─── AGENT TIMELINE ───────────────────────────────────────────────────────────
+function addAgentTimeline(events, onDone){
+  const id = 'agent-' + uid();
+  const wrap = document.createElement('div');
+  wrap.className = 'msg agent-wrap';
+  wrap.id = id;
+  wrap.innerHTML = `<div class="agent-card"><div class="agent-header">⚡ Agent Activity</div><div id="ae-list-${id}"></div></div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+  let idx = 0;
+  function showNext(){
+    const list = document.getElementById('ae-list-' + id);
+    if(idx > 0){
+      const prev = list.lastChild;
+      if(prev){ const ic = prev.querySelector('.ae-icon'); if(ic) ic.innerHTML = '✅'; const t = prev.querySelector('.ae-text'); if(t) t.style.color = 'var(--slate3)'; }
+    }
+    if(idx >= events.length){ scrollBottom(); after(300, onDone); return; }
+    const row = document.createElement('div');
+    row.className = 'agent-event';
+    row.innerHTML = `<span class="ae-icon"><i class="spin" style="display:inline-block">⟳</i></span><span class="ae-text" style="color:var(--slate1)">${events[idx]}</span>`;
+    list.appendChild(row);
+    idx++;
+    scrollBottom();
+    after(idx < events.length ? 780 : 500, showNext);
+  }
+  after(200, showNext);
+}
+
+// ─── CONFIRM CARD ─────────────────────────────────────────────────────────────
+function addConfirmCard(rows, riskLabel, onConfirm, onCancel){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg confirm-wrap';
+  wrap.id = 'confirm-card';
+  const rowsHTML = rows.map(([k,v]) => `<div class="c-row"><span class="ck">${k}</span><span class="cv">${v}</span></div>`).join('');
+  wrap.innerHTML = `<div class="confirm-card">
+    <div class="confirm-header">
+      <span class="c-icon">⚠️</span>
+      <span class="c-title">Review before I proceed</span>
+      <span class="risk-badge">${riskLabel}</span>
+    </div>
+    <div class="confirm-rows">${rowsHTML}</div>
+    <div class="confirm-actions">
+      <button class="btn-confirm" id="confirm-yes">Confirm</button>
+      <button class="btn-cancel" id="confirm-no">Cancel</button>
+    </div>
+  </div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+  document.getElementById('confirm-yes').onclick = () => { wrap.remove(); onConfirm(); };
+  document.getElementById('confirm-no').onclick = () => { wrap.remove(); onCancel && onCancel(); };
+}
+
+// ─── SUCCESS CARD ─────────────────────────────────────────────────────────────
+function addSuccessCard(reqId, title, guide, timelineItems, secureNote){
+  const guideId = 'guide-' + uid();
+  const guideRows = guide.map(([k,v]) => `<div class="guide-row"><div class="guide-k">${k}</div><div class="guide-v">${v}</div></div>`).join('');
+  const tlHTML = timelineItems.map(([icon,text,cls]) => `<div class="tl-row"><div class="tl-dot ${cls}">${icon}</div><span class="tl-text">${text}</span></div>`).join('');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg success-wrap';
+  wrap.innerHTML = `<div class="success-card">
+    <div class="success-header">✅ <span class="success-title">${title}</span></div>
+    <div class="success-req">${reqId} · Complete</div>
+    <button class="guide-toggle" onclick="toggleGuide('${guideId}',this)">
+      <span>📋 Integration Guide</span><span id="arr-${guideId}">›</span>
+    </button>
+    <div class="guide-content" id="${guideId}">${guideRows}</div>
+    <div class="timeline">${tlHTML}</div>
+    <div class="secure-notice"><span class="sn-icon">🔒</span><span>${secureNote}</span></div>
+  </div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+}
+function toggleGuide(id, btn){
+  const el = document.getElementById(id);
+  const arr = document.getElementById('arr-' + id);
+  el.classList.toggle('open');
+  arr.textContent = el.classList.contains('open') ? '⌄' : '›';
+  scrollBottom();
+}
+
+// ─── NEXT-ACTION CHIPS ────────────────────────────────────────────────────────
+function addNextChips(options){
+  const bub = cipherRow(uid());
+  bub.textContent = "That's done. Want to see what else CIPHER can handle?";
+  after(300, () => {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg chips-wrap';
+    options.forEach(([label, sc]) => {
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.textContent = label;
+      btn.onclick = () => startScenario(sc);
+      wrap.appendChild(btn);
+    });
+    chat().appendChild(wrap);
+    scrollBottom();
+  });
+}
+
+// ─── READ RESULT ──────────────────────────────────────────────────────────────
+function addReadResult(title, rows){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg';
+  const rowsHTML = rows.map(([k,v,ok]) => `<div class="read-row"><span class="read-k">${k}</span><span class="read-v" style="color:${ok?'var(--green)':'var(--slate1)'}">${v}</span></div>`).join('');
+  wrap.innerHTML = `<div class="row"><div class="avatar cipher-avatar">🔐</div><div class="read-card"><div class="read-header">✅ ${title}</div><div class="read-rows">${rowsHTML}</div></div></div>`;
+  chat().appendChild(wrap);
+  scrollBottom();
+}
+
+// ─── SCENARIO ENGINE ─────────────────────────────────────────────────────────
+function startScenario(sc){
+  clearAll();
+  waitingForConfirm = false;
+  resumeFn = null;
+  currentScenario = sc;
+  document.getElementById('chat').innerHTML = '';
+  showHint(false);
+  document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-' + sc);
+  if(btn) btn.classList.add('active');
+  const meta = { sso:['OIDC Onboarding','SSO · Ping Federate'], pam:['CyberArk Safe (with error recovery)','PAM · CyberArk'], iga:['Saviynt Group','IGA · Saviynt'], read:['Status Check','SSO · Ping Federate — Read only'], cross:['Cross-domain Request','SSO + IGA · 2 operations'] };
+  const [title, sub] = meta[sc] || ['CIPHER','IAM Assistant'];
+  document.getElementById('hdr-title').textContent = title;
+  document.getElementById('hdr-sub').textContent = sub;
+  setStatus('','');
+  after(600, () => {
+    const bub = cipherRow(uid());
+    streamText(bub, "Welcome. I'm CIPHER — your IAM assistant. Watch how I handle a " + title.toLowerCase() + " request end to end.", () => {
+      after(400, () => SCENARIOS[sc]());
+    });
+  });
+}
+function replayScenario(){ startScenario(currentScenario); }
+function addHistory(id, name, domain){
+  const icons = {sso:'🔑',pam:'🛡️',iga:'👥'};
+  completedRequests.push({id, name, domain});
+  const empty = document.getElementById('hist-empty');
+  if(empty) empty.remove();
+  const item = document.createElement('div');
+  item.className = 'hist-item';
+  item.innerHTML = `<span class="h-icon">${icons[domain]||'✅'}</span><div class="h-info" style="min-width:0;flex:1"><div class="h-name">${name}</div><div class="h-id">${id}</div></div><div class="hist-dot"></div>`;
+  document.getElementById('hist-section').appendChild(item);
+}
+
+// ─── SCENARIO DEFINITIONS ─────────────────────────────────────────────────────
+const SCENARIOS = {
+
+  // ── SSO / OIDC ONBOARDING ──────────────────────────────────────────────────
+  sso: function(){
+    setStatus('Processing…','#a855f7');
+    let chipsId;
+    after(900, () => { userRow("I need to onboard my application PaymentService using OIDC."); });
+    after(1600, () => { typingRow(); });
+    after(2200, () => {
+      removeTyping();
+      addClassify('SSO','OIDC onboarding');
+      after(400, () => {
+        const bub = cipherRow(uid());
+        streamText(bub, "Got it — I'll create an OIDC connection in Ping Federate. What's the redirect URI for PaymentService?", () => {
+          after(1200, () => { userRow("https://payments.company.com/callback"); });
+          after(2000, () => { typingRow(); });
+          after(2800, () => {
+            removeTyping();
+            const bub2 = cipherRow(uid());
+            streamText(bub2, "What grant type does PaymentService need?", () => {
+              chipsId = addChips(['Authorization Code','Client Credentials','Both'], (val) => {
+                userRow(val);
+                after(500, () => { typingRow(); });
+                after(1200, () => {
+                  removeTyping();
+                  addConfirmCard([
+                    ['Application','PaymentService'],
+                    ['Protocol','OIDC'],
+                    ['Redirect URI','https://payments.company.com/callback'],
+                    ['Grant Type',val],
+                    ['Environment','Development']
+                  ], '⚠ High write', () => {
+                    showHint(false);
+                    setStatus('Executing…','#a855f7');
+                    addAgentTimeline([
+                      'SSO Agent starting...',
+                      'Calling Ping Federate Admin API...',
+                      'OIDC client created — pf-client-a3f9b2c1',
+                      'Documentation Agent generating guide...',
+                      'Notifying IAM team...',
+                      'Done.'
+                    ], () => {
+                      after(400, () => {
+                        addSuccessCard('REQ-2024-0042','OIDC Connection Created',[
+                          ['Discovery URL','https://idp.company.com/as/.well-known/openid-configuration'],
+                          ['Authorisation Endpoint','https://idp.company.com/as/authorization.oauth2'],
+                          ['Token Endpoint','https://idp.company.com/as/token.oauth2'],
+                          ['Scopes','openid  ·  profile  ·  email'],
+                          ['Client ID','pf-client-a3f9b2c1  (masked)']
+                        ],[
+                          ['✅','Request submitted',  'tl-done'],
+                          ['⏳','SSO team provisions credentials','tl-pending'],
+                          ['○','You receive credentials via secure channel','tl-todo']
+                        ],'Your client secret has been secured. The SSO team will share credentials via your company\'s secure delivery channel — not through chat.');
+                        addHistory('REQ-2024-0042','OIDC · PaymentService','sso');
+                        setStatus('Complete','#22c55e');
+                        after(600, () => showToast('📧 Confirmation sent to mahi@company.com · IAM team notified'));
+                        after(1400, () => addNextChips([['CyberArk Safe →','pam'],['Saviynt Group →','iga']]));
+                      });
+                    });
+                  }, null);
+                  setStatus('Awaiting confirm…','#f59e0b');
+                  showHint(true);
+                });
+              });
+              after(2000, () => { if(chipsId){ selectChip(chipsId,'Authorization Code'); after(200, () => { }); } });
+            });
+          });
+        });
+      });
+    });
+  },
+
+  // ── PAM / CYBERARK SAFE (with error recovery) ─────────────────────────────
+  pam: function(){
+    setStatus('Processing…','#a855f7');
+    after(900, () => { userRow("Create a CyberArk safe for the infrastructure team. Name it infra-prod."); });
+    after(1600, () => { typingRow(); });
+    after(2200, () => {
+      removeTyping();
+      addClassify('PAM','Safe creation');
+      after(400, () => {
+        const bub = cipherRow(uid());
+        streamText(bub, "I can create that safe. Who should be the safe owners?", () => {
+          after(1200, () => { userRow("mahi@company.com and alex@company.com"); });
+          after(2000, () => { typingRow(); });
+          after(2700, () => {
+            removeTyping();
+            const bub2 = cipherRow(uid());
+            // Simulate error recovery: duplicate safe name
+            streamText(bub2, "⚠️ A safe named infra-prod already exists. Would you like to use a different name or add members to the existing safe?", () => {
+              const chipsId2 = addChips(['Use different name','Add members to existing'], (val) => {
+                userRow(val);
+                after(500, () => { typingRow(); });
+                after(1100, () => {
+                  removeTyping();
+                  if(val === 'Use different name'){
+                    const bub3 = cipherRow(uid());
+                    streamText(bub3,"What should the new safe name be?", () => {
+                      after(1200, () => { userRow("infra-prod-v2"); });
+                      after(2000, () => { typingRow(); });
+                      after(2700, () => {
+                        removeTyping();
+                        let cid2 = addChips(['30 days','60 days','90 days'], (ret) => {
+                          userRow(ret);
+                          after(500, () => { typingRow(); });
+                          after(1100, () => {
+                            removeTyping();
+                            addConfirmCard([
+                              ['Safe Name','infra-prod-v2'],
+                              ['Owners','mahi@company.com, alex@company.com'],
+                              ['Retention', ret],
+                              ['CPM','DefaultCPM']
+                            ],'⚠ High write', () => {
+                              showHint(false);
+                              setStatus('Executing…','#a855f7');
+                              addAgentTimeline([
+                                'CyberArk Agent starting...',
+                                'Calling PVWA REST API...',
+                                'Safe created — infra-prod-v2',
+                                'Adding safe members...',
+                                '2 owners added',
+                                'Done.'
+                              ], () => {
+                                after(400, () => {
+                                  addSuccessCard('REQ-2024-0043','CyberArk Safe Provisioned',[
+                                    ['Safe Name','infra-prod-v2'],
+                                    ['CPM Assignment','DefaultCPM'],
+                                    ['Retention Policy',ret],
+                                    ['Owners Added','mahi@company.com, alex@company.com']
+                                  ],[
+                                    ['✅','Safe provisioned','tl-done'],
+                                    ['⏳','Onboard accounts into safe via PAM portal','tl-pending'],
+                                    ['○','Team uses safe for privileged access','tl-todo']
+                                  ],'Safe credentials are managed by CyberArk CPM. Contact the PAM team for account onboarding.');
+                                  addHistory('REQ-2024-0043','Safe · infra-prod-v2','pam');
+                                  setStatus('Complete','#22c55e');
+                                  after(600, () => showToast('📧 Confirmation sent · PAM team notified'));
+                                  after(1400, () => addNextChips([['Saviynt Group →','iga'],['Status Check →','read']]));
+                                });
+                              });
+                            }, null);
+                            setStatus('Awaiting confirm…','#f59e0b');
+                            showHint(true);
+                          });
+                        });
+                        after(2000, () => selectChip(cid2,'30 days'));
+                      });
+                    });
+                  }
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  },
+
+  // ── IGA / SAVIYNT GROUP ───────────────────────────────────────────────────
+  iga: function(){
+    setStatus('Processing…','#a855f7');
+    after(900, () => { userRow("I need to create a Web SSO group in Saviynt for the Payments team."); });
+    after(1600, () => { typingRow(); });
+    after(2200, () => {
+      removeTyping();
+      addClassify('IGA','Group creation');
+      after(400, () => {
+        const bub = cipherRow(uid());
+        streamText(bub, "Sure — I'll create a Web SSO group in Saviynt. What description should I add?", () => {
+          after(1200, () => { userRow("SSO access group for the Payments application team"); });
+          after(2000, () => { typingRow(); });
+          after(2700, () => {
+            removeTyping();
+            const bub2 = cipherRow(uid());
+            streamText(bub2, "And who should own this group?", () => {
+              after(1100, () => { userRow("mahi@company.com"); });
+              after(1900, () => { typingRow(); });
+              after(2600, () => {
+                removeTyping();
+                addConfirmCard([
+                  ['Group Name','SSO-Payments'],
+                  ['Type','Web SSO'],
+                  ['Description','SSO access for Payments application team'],
+                  ['Owner','mahi@company.com']
+                ],'⚠ High write', () => {
+                  showHint(false);
+                  setStatus('Executing…','#a855f7');
+                  addAgentTimeline([
+                    'Saviynt Agent starting...',
+                    'Calling Saviynt REST API...',
+                    'Group created — SSO-Payments',
+                    'Assigning ownership...',
+                    'Ownership assigned',
+                    'Done.'
+                  ], () => {
+                    after(400, () => {
+                      addSuccessCard('REQ-2024-0044','Saviynt Group Created',[
+                        ['Group Name','SSO-Payments'],
+                        ['Group Type','Web SSO'],
+                        ['Owner','mahi@company.com'],
+                        ['Member Access','Via Saviynt self-service portal']
+                      ],[
+                        ['✅','Group provisioned','tl-done'],
+                        ['⏳','Members request access via Saviynt portal','tl-pending'],
+                        ['○','Team gains SSO access to application','tl-todo']
+                      ],'Group entitlements are managed via Saviynt. Members can request access through the self-service portal.');
+                      addHistory('REQ-2024-0044','Group · SSO-Payments','iga');
+                      setStatus('Complete','#22c55e');
+                      after(600, () => showToast('📧 Confirmation sent · IGA team notified'));
+                      after(1400, () => addNextChips([['Cross-domain →','cross'],['Status Check →','read']]));
+                    });
+                  });
+                }, null);
+                setStatus('Awaiting confirm…','#f59e0b');
+                showHint(true);
+              });
+            });
+          });
+        });
+      });
+    });
+  },
+
+  // ── READ / STATUS CHECK ───────────────────────────────────────────────────
+  read: function(){
+    setStatus('','');
+    after(900, () => { userRow("What is the status of my PaymentService OIDC connection?"); });
+    after(1500, () => { typingRow(); });
+    after(2100, () => {
+      removeTyping();
+      addClassify('SSO','Connection status — Read');
+      after(400, () => {
+        const bub = cipherRow(uid());
+        streamText(bub, "This is a read operation — no confirmation needed. Fetching the status directly from Ping Federate now.", () => {
+          after(600, () => {
+            addAgentTimeline([
+              'SSO Agent starting...',
+              'Calling Ping Federate Admin API...',
+              'Connection found — pf-client-a3f9b2c1',
+              'Done.'
+            ], () => {
+              after(300, () => {
+                addReadResult('PaymentService · Connection Active',[
+                  ['Client ID','pf-client-a3f9b2c1'],
+                  ['Status','Active ✓', true],
+                  ['Protocol','OIDC · Authorization Code'],
+                  ['Environment','Development'],
+                  ['Created','2024-01-15'],
+                  ['Last Used','2024-01-20 14:32 UTC']
+                ]);
+                setStatus('Complete','#22c55e');
+                after(600, () => {
+                  const bub2 = cipherRow(uid());
+                  streamText(bub2,"Read operations execute instantly — no confirm gate, no agent stream. The risk classification system only adds friction when the operation creates or changes something permanent.", () => {
+                    after(800, () => addNextChips([['OIDC Onboarding →','sso'],['Cross-domain →','cross']]));
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  },
+
+  // ── CROSS-DOMAIN ─────────────────────────────────────────────────────────
+  cross: function(){
+    setStatus('Processing…','#a855f7');
+    after(900, () => { userRow("I need to onboard PaymentService with OIDC and also create a Saviynt group for it."); });
+    after(1600, () => { typingRow(); });
+    after(2300, () => {
+      removeTyping();
+      const bub = cipherRow(uid());
+      streamText(bub,"I've detected two operations here — an OIDC onboarding and a Saviynt group creation. I'll handle them sequentially, one confirmation at a time.", () => {
+        after(600, () => {
+          const domainBadge = document.createElement('div');
+          domainBadge.className = 'msg classify-row';
+          domainBadge.innerHTML = `<div class="classify-badge">⚡ 2 intents detected &nbsp;<span class="cb-domain">SSO</span><span class="cb-sep">+</span><span class="cb-domain">IGA</span>&nbsp;— sequential execution</div>`;
+          chat().appendChild(domainBadge); scrollBottom();
+          after(800, () => {
+            const bub2 = cipherRow(uid());
+            streamText(bub2,"Starting with the OIDC connection. Redirect URI for PaymentService?", () => {
+              after(1200, () => { userRow("https://payments.company.com/callback"); });
+              after(2000, () => {
+                const chipsId = addChips(['Authorization Code','Client Credentials'], (val) => {
+                  userRow(val);
+                  after(500, () => {
+                    // FIRST CONFIRM CARD
+                    addConfirmCard([
+                      ['Operation','1 of 2 — OIDC Connection'],
+                      ['Application','PaymentService'],
+                      ['Redirect URI','https://payments.company.com/callback'],
+                      ['Grant Type',val]
+                    ],'⚠ High write', () => {
+                      showHint(false);
+                      setStatus('Executing op 1/2…','#a855f7');
+                      addAgentTimeline([
+                        'SSO Agent starting...',
+                        'Calling Ping Federate API...',
+                        'OIDC client created — pf-client-a3f9b2c1',
+                        'Done.'
+                      ], () => {
+                        after(300, () => {
+                          addSuccessCard('REQ-2024-0045','OIDC Connection Created (1 of 2)',[
+                            ['Discovery URL','https://idp.company.com/as/.well-known/openid-configuration'],
+                            ['Client ID','pf-client-a3f9b2c1  (masked)']
+                          ],[
+                            ['✅','OIDC connection provisioned','tl-done'],
+                            ['○','Saviynt group pending…','tl-todo']
+                          ],'Credentials secured. SSO team notified.');
+                          after(700, () => {
+                            const bub3 = cipherRow(uid());
+                            streamText(bub3,"OIDC connection done. Now the Saviynt group — who should own the SSO-Payments group?", () => {
+                              after(1000, () => { userRow("mahi@company.com"); });
+                              after(1800, () => {
+                                // SECOND CONFIRM CARD
+                                addConfirmCard([
+                                  ['Operation','2 of 2 — Saviynt Group'],
+                                  ['Group Name','SSO-Payments'],
+                                  ['Type','Web SSO'],
+                                  ['Owner','mahi@company.com']
+                                ],'⚠ High write', () => {
+                                  showHint(false);
+                                  setStatus('Executing op 2/2…','#a855f7');
+                                  addAgentTimeline([
+                                    'Saviynt Agent starting...',
+                                    'Calling Saviynt REST API...',
+                                    'Group created — SSO-Payments',
+                                    'Done.'
+                                  ], () => {
+                                    after(300, () => {
+                                      addSuccessCard('REQ-2024-0046','Both Operations Complete',[
+                                        ['OIDC Client','pf-client-a3f9b2c1 · Active'],
+                                        ['Saviynt Group','SSO-Payments · Active'],
+                                        ['Total Ops','2 · SSO + IGA']
+                                      ],[
+                                        ['✅','OIDC connection provisioned','tl-done'],
+                                        ['✅','Saviynt group created','tl-done'],
+                                        ['⏳','Credentials and group access delivery pending','tl-pending']
+                                      ],'Both teams notified. Credentials and group access will be delivered via secure channel.');
+                                      addHistory('REQ-2024-0045','OIDC · PaymentService','sso');
+                                      addHistory('REQ-2024-0046','Group · SSO-Payments','iga');
+                                      setStatus('Both complete','#22c55e');
+                                      after(600, () => showToast('📧 SSO + IGA teams notified · 2 operations complete'));
+                                      after(1400, () => addNextChips([['Status Check →','read'],['PAM Safe →','pam']]));
+                                    });
+                                  });
+                                }, null);
+                                setStatus('Awaiting confirm 2/2…','#f59e0b');
+                                showHint(true);
+                              });
+                            });
+                          });
+                        });
+                      });
+                    }, null);
+                    setStatus('Awaiting confirm 1/2…','#f59e0b');
+                    showHint(true);
+                  });
+                });
+                after(2000, () => selectChip(chipsId,'Authorization Code'));
+              });
+            });
+          });
+        });
+      });
+    });
+  }
+};
+
+// ─── USER INPUT ────────────────────────────────────────────────────────────────
+document.getElementById('msg-input').addEventListener('keydown', e => { if(e.key==='Enter') sendUserMsg(); });
+function sendUserMsg(){
+  const inp = document.getElementById('msg-input');
+  const text = inp.value.trim();
+  if(!text) return;
+  inp.value = '';
+  userRow(text);
+  after(800, () => { typingRow(); });
+  after(1600, () => {
+    removeTyping();
+    const bub = cipherRow(uid());
+    const replies = {
+      sso:"That's handled by the SSO Agent. Watch the full OIDC onboarding demo →",
+      pam:"The PAM Agent handles that. See the CyberArk safe creation demo →",
+      iga:"The IGA Agent takes care of that. Watch the Saviynt group demo →",
+      read:"Great question — read operations execute instantly with no confirmation gate. Try the Status Check demo →",
+      cross:"Cross-domain requests are handled sequentially. Watch the cross-domain demo to see two operations in one conversation →"
+    };
+    streamText(bub, replies[currentScenario] || "In the live system I'd handle that end to end. For now, watch me demonstrate the full flow →");
+  });
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+window.onload = () => { startScenario('sso'); };
+</script>
+</body>
+</html>

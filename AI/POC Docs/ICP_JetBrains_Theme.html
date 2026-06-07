@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICP — Identity Context Protocol · Complete Plan</title>
+<style>
+/* ── JetBrains-inspired dark enterprise theme ── */
+:root{
+  --black:#000000;
+  --surface1:#0d0d0d;
+  --surface2:#131313;
+  --surface3:#1a1a1a;
+  --surface4:#222222;
+  --border:#2a2a2a;
+  --border2:#333333;
+  --text1:#ffffff;
+  --text2:#c0c0c0;
+  --text3:#7a7a7a;
+  --teal:#20D97F;
+  --teal-dim:#14a35e;
+  --teal-glow:rgba(32,217,127,.18);
+  --purple:#B060FF;
+  --purple-dim:#8040d0;
+  --purple-glow:rgba(176,96,255,.18);
+  --pink:#FF318C;
+  --pink-dim:#c01f68;
+  --pink-glow:rgba(255,49,140,.18);
+  --amber:#FFB020;
+  --amber-dim:#c08010;
+  --amber-glow:rgba(255,176,32,.15);
+  --blue:#40A0FF;
+  --blue-dim:#2070c0;
+  --blue-glow:rgba(64,160,255,.15);
+  --red:#FF4040;
+  --red-glow:rgba(255,64,64,.15);
+  --green:#20D97F;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
+  font-size:14px;
+  background:var(--black);
+  color:var(--text1);
+  line-height:1.6;
+  min-height:100vh;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--surface1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--teal)}
+
+/* ── NAV ── */
+.nav{
+  background:var(--surface1);
+  border-bottom:1px solid var(--border);
+  padding:0 1.5rem;
+  display:flex;
+  align-items:center;
+  gap:1.5rem;
+  position:sticky;
+  top:0;
+  z-index:100;
+  height:50px;
+}
+.nav::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,var(--teal),var(--purple),var(--pink));
+}
+.nav-brand{
+  font-size:14px;
+  font-weight:700;
+  color:var(--text1);
+  white-space:nowrap;
+  letter-spacing:.03em;
+}
+.nav-brand span{
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.nav-tabs{
+  display:flex;
+  gap:1px;
+  overflow-x:auto;
+  flex:1;
+  -ms-overflow-style:none;
+  scrollbar-width:none;
+}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{
+  font-size:12px;
+  font-weight:500;
+  padding:0 14px;
+  height:50px;
+  color:var(--text3);
+  cursor:pointer;
+  border:none;
+  background:none;
+  white-space:nowrap;
+  border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;
+  letter-spacing:.01em;
+}
+.nav-tab:hover{color:var(--text2)}
+.nav-tab.on{
+  color:var(--teal);
+  border-bottom-color:var(--teal);
+  background:rgba(32,217,127,.04);
+}
+
+/* ── PAGES ── */
+.page{display:none;padding:2rem 2.5rem;max-width:1280px;margin:0 auto}
+.page.on{display:block}
+
+/* ── TYPOGRAPHY ── */
+h1{
+  font-size:28px;
+  font-weight:700;
+  color:var(--text1);
+  margin-bottom:.3rem;
+  letter-spacing:-.01em;
+}
+h2{
+  font-size:16px;
+  font-weight:600;
+  color:var(--text1);
+  margin:1.8rem 0 .7rem;
+}
+h3{
+  font-size:13.5px;
+  font-weight:600;
+  color:var(--text1);
+  margin-bottom:.3rem;
+}
+p{color:var(--text2);line-height:1.7;margin-bottom:.5rem}
+code{
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+  font-size:11.5px;
+  background:var(--surface3);
+  color:var(--teal);
+  padding:2px 6px;
+  border-radius:4px;
+  border:1px solid var(--border);
+}
+pre{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:1.2rem 1.4rem;
+  overflow-x:auto;
+  margin:.8rem 0;
+  position:relative;
+}
+pre::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:2px;
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+  border-radius:8px 8px 0 0;
+}
+pre code{
+  background:none;
+  border:none;
+  padding:0;
+  color:#e2e8f0;
+  font-size:12.5px;
+}
+.subtitle{color:var(--text3);font-size:14px;margin-bottom:1.6rem}
+
+/* ── PILLS ── */
+.pill{
+  display:inline-block;
+  font-size:11px;
+  font-weight:600;
+  padding:2px 9px;
+  border-radius:20px;
+  white-space:nowrap;
+  letter-spacing:.02em;
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+.p-teal{background:rgba(32,217,127,.12);color:var(--teal);border:1px solid rgba(32,217,127,.25)}
+.p-purple{background:rgba(176,96,255,.12);color:var(--purple);border:1px solid rgba(176,96,255,.25)}
+.p-amber{background:rgba(255,176,32,.12);color:var(--amber);border:1px solid rgba(255,176,32,.25)}
+.p-red{background:rgba(255,64,64,.12);color:var(--red);border:1px solid rgba(255,64,64,.25)}
+.p-green{background:rgba(32,217,127,.12);color:var(--green);border:1px solid rgba(32,217,127,.25)}
+.p-blue{background:rgba(64,160,255,.12);color:var(--blue);border:1px solid rgba(64,160,255,.25)}
+.p-gray{background:var(--surface3);color:var(--text3);border:1px solid var(--border)}
+.p-coral{background:rgba(255,100,60,.12);color:#FF6430;border:1px solid rgba(255,100,60,.25)}
+.p-pink{background:rgba(255,49,140,.12);color:var(--pink);border:1px solid rgba(255,49,140,.25)}
+
+/* ── GRIDS ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+
+/* ── CARDS ── */
+.card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1rem 1.1rem;
+  transition:border-color .2s;
+}
+.card:hover{border-color:var(--border2)}
+.card h3{color:var(--text1)}
+.card p,.card li{color:var(--text2);font-size:13px}
+.card ul{padding-left:1.2rem;line-height:1.8}
+.card code{font-size:11px}
+
+.card-teal{border-left:3px solid var(--teal)}
+.card-purple{border-left:3px solid var(--purple)}
+.card-amber{border-left:3px solid var(--amber)}
+.card-red{border-left:3px solid var(--red)}
+.card-blue{border-left:3px solid var(--blue)}
+.card-green{border-left:3px solid var(--green)}
+.card-pink{border-left:3px solid var(--pink)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:1.2rem}
+th{
+  text-align:left;
+  font-size:11px;
+  font-weight:600;
+  color:var(--text3);
+  padding:9px 12px;
+  border-bottom:1px solid var(--border2);
+  background:var(--surface2);
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+td{
+  padding:9px 12px;
+  border-bottom:1px solid var(--border);
+  vertical-align:top;
+  line-height:1.6;
+  color:var(--text2);
+}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2);color:var(--text1)}
+td strong{color:var(--text1)}
+
+/* ── SECTION HEADER ── */
+.sec{
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--text3);
+  margin:2rem 0 .8rem;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── COVER ── */
+.cover{
+  background:var(--surface1);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:3rem 2.5rem;
+  margin-bottom:2rem;
+  position:relative;
+  overflow:hidden;
+}
+.cover::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:2px;
+  background:linear-gradient(90deg,var(--teal),var(--purple),var(--pink));
+}
+.cover-glow-teal{
+  position:absolute;
+  top:-80px;right:-80px;
+  width:400px;height:400px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(32,217,127,.1) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cover-glow-purple{
+  position:absolute;
+  bottom:-100px;left:200px;
+  width:300px;height:300px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(176,96,255,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cover h1{
+  font-size:40px;
+  letter-spacing:-.02em;
+  color:var(--text1);
+  margin-bottom:.4rem;
+  position:relative;
+}
+.cover .tagline{
+  font-size:16px;
+  color:var(--text3);
+  margin-bottom:1.6rem;
+  font-style:italic;
+  position:relative;
+}
+.meta-row{display:flex;gap:8px;flex-wrap:wrap;position:relative}
+.meta-pill{
+  background:var(--surface3);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  padding:4px 14px;
+  font-size:11.5px;
+  color:var(--text3);
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+
+/* ── STAT ROW ── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:1.5rem 0}
+.stat-card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1.2rem;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.stat-card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--teal),transparent);
+}
+.stat-num{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.stat-label{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* ── SCENARIO ── */
+.scenario{border-radius:10px;padding:1.3rem 1.5rem;margin:1rem 0;position:relative;overflow:hidden}
+.scenario::before{content:'';position:absolute;top:0;left:0;right:0;height:1px}
+.scenario-bad{
+  background:rgba(255,64,64,.06);
+  border:1px solid rgba(255,64,64,.2);
+}
+.scenario-bad::before{background:linear-gradient(90deg,var(--red),transparent)}
+.scenario-good{
+  background:rgba(32,217,127,.06);
+  border:1px solid rgba(32,217,127,.2);
+}
+.scenario-good::before{background:linear-gradient(90deg,var(--teal),transparent)}
+.scenario-title{font-size:13.5px;font-weight:600;color:var(--text1);margin-bottom:.7rem}
+.timeline{margin-top:.6rem}
+.tl-item{display:flex;gap:10px;margin-bottom:.6rem;align-items:flex-start}
+.tl-time{
+  min-width:64px;
+  font-size:10.5px;
+  font-weight:700;
+  padding:3px 8px;
+  border-radius:4px;
+  text-align:center;
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+  flex-shrink:0;
+}
+.tl-bad{background:rgba(255,64,64,.15);color:var(--red);border:1px solid rgba(255,64,64,.25)}
+.tl-ok{background:rgba(32,217,127,.12);color:var(--teal);border:1px solid rgba(32,217,127,.25)}
+.tl-text{font-size:13px;color:var(--text2);line-height:1.55}
+
+/* ── POSTURE ── */
+.posture-row{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--border)}
+.posture-row:last-child{border-bottom:none}
+.posture-score{
+  font-size:12px;
+  font-weight:700;
+  min-width:70px;
+  color:var(--text3);
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+.posture-bar-wrap{flex:1;height:6px;background:var(--surface4);border-radius:3px;overflow:hidden}
+.posture-bar{height:100%;border-radius:3px}
+.posture-label{min-width:90px;font-size:12px;font-weight:700;font-family:'JetBrains Mono','Fira Code','Consolas',monospace}
+.posture-action{font-size:12px;color:var(--text3);flex:2}
+
+/* ── RISK SIG ── */
+.risk-sig{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.risk-sig:last-child{border-bottom:none}
+.risk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.risk-name{flex:2;font-size:13px;color:var(--text2)}
+.risk-src{
+  font-size:10.5px;
+  color:var(--text3);
+  min-width:55px;
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+.risk-wt{font-size:13px;font-weight:700;min-width:30px;text-align:right}
+.risk-bar-wrap{width:80px;height:5px;background:var(--surface4);border-radius:3px;overflow:hidden}
+.risk-bar{height:100%;border-radius:3px}
+
+/* ── DEMO CARDS ── */
+.demo-card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:1.2rem;
+  margin-bottom:10px;
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+  transition:border-color .2s;
+}
+.demo-card:hover{border-color:var(--border2)}
+.demo-num{
+  width:36px;height:36px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;
+  flex-shrink:0;
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+.demo-body h4{font-size:14px;font-weight:600;color:var(--text1);margin-bottom:4px}
+.demo-body p{font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.6}
+.demo-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tag{
+  display:inline-block;
+  font-size:11px;
+  padding:2px 8px;
+  border:1px solid var(--border2);
+  border-radius:4px;
+  color:var(--text3);
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+}
+
+/* ── CHECK LIST ── */
+.check-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2)}
+.check-row:last-child{border-bottom:none}
+.check-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.check-done{background:rgba(32,217,127,.2);color:var(--teal);border:1px solid rgba(32,217,127,.3)}
+.check-todo{background:var(--surface3);color:var(--text3);border:1px solid var(--border)}
+
+/* ── NORTH STAR ── */
+.north-star{
+  background:linear-gradient(135deg,rgba(32,217,127,.06),rgba(176,96,255,.06));
+  border:1px solid rgba(32,217,127,.25);
+  border-radius:12px;
+  padding:1.6rem;
+  margin-top:1.5rem;
+  position:relative;
+  overflow:hidden;
+}
+.north-star::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,var(--teal),var(--purple));
+}
+.north-star h3{
+  color:var(--teal);
+  font-size:15px;
+  margin-bottom:.7rem;
+}
+.north-star p{color:var(--text2);font-size:13px;line-height:1.75}
+
+/* ── INFO BAND ── */
+.info-band{
+  background:rgba(64,160,255,.08);
+  border:1px solid rgba(64,160,255,.2);
+  border-radius:8px;
+  padding:1rem 1.2rem;
+  margin:.8rem 0;
+}
+.info-band p{color:var(--text2);font-size:13px;margin:0}
+.info-band strong{color:var(--blue)}
+
+/* ── PROGRESS DOT ── */
+.prog-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.prog-bar-wrap{height:5px;background:var(--surface4);border-radius:3px;overflow:hidden;display:inline-block}
+.prog-bar{height:100%;border-radius:3px}
+
+/* ── CODE HIGHLIGHT ── */
+.kw{color:#CC99CD}
+.str{color:#99C794}
+.fn{color:#6FB3D2}
+.cm{color:#5C6370;font-style:italic}
+.num{color:#F99157}
+.cls{color:#FFD700}
+
+/* ── FOOTER ── */
+.footer{
+  text-align:center;
+  padding:2.5rem;
+  color:var(--text3);
+  font-size:11.5px;
+  border-top:1px solid var(--border);
+  margin-top:3rem;
+  font-family:'JetBrains Mono','Fira Code','Consolas',monospace;
+  letter-spacing:.04em;
+}
+
+@media(max-width:768px){
+  .grid2,.grid3,.grid4{grid-template-columns:1fr}
+  .stat-row{grid-template-columns:1fr 1fr}
+  .page{padding:1rem 1.2rem}
+  .nav-brand{display:none}
+  .cover h1{font-size:26px}
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-brand">ICP <span>Identity Context Protocol</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab on" data-p="overview">Overview</button>
+    <button class="nav-tab" data-p="problem">Problem</button>
+    <button class="nav-tab" data-p="market">Market</button>
+    <button class="nav-tab" data-p="architecture">Architecture</button>
+    <button class="nav-tab" data-p="config">Config design</button>
+    <button class="nav-tab" data-p="techstack">Tech stack</button>
+    <button class="nav-tab" data-p="features">Features</button>
+    <button class="nav-tab" data-p="risk">Risk model</button>
+    <button class="nav-tab" data-p="scenarios">Scenarios</button>
+    <button class="nav-tab" data-p="devex">Dev experience</button>
+    <button class="nav-tab" data-p="roadmap">Roadmap</button>
+    <button class="nav-tab" data-p="demos">Demo milestones</button>
+    <button class="nav-tab" data-p="bizcase">Business case</button>
+    <button class="nav-tab" data-p="proscons">Pros &amp; cons</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ OVERVIEW -->
+<div class="page on" id="page-overview">
+  <div class="cover">
+    <div class="pill p-teal" style="margin-bottom:1rem">Confidential · Architecture Review · May 2026</div>
+    <h1>Identity Context Protocol</h1>
+    <p class="tagline">The plug-and-play identity nervous system for enterprise AI agents</p>
+    <div class="meta-row">
+      <span class="meta-pill">Node.js · TypeScript · MCP</span>
+      <span class="meta-pill">CrewAI · Python · Ollama</span>
+      <span class="meta-pill">Keycloak · Authentik · Entra · Ping</span>
+      <span class="meta-pill">Pluggable · Config-driven · Open source</span>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-num" style="color:var(--teal)">&lt;150ms</div><div class="stat-label">p95 target latency</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--purple)">0–100</div><div class="stat-label">composite risk score</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--amber)">4</div><div class="stat-label">posture decisions</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--red)">5 weeks</div><div class="stat-label">to demo-ready MVP</div></div>
+  </div>
+
+  <div class="sec">What ICP is</div>
+  <div class="grid2">
+    <div class="card card-teal">
+      <h3>One MCP tool call</h3>
+      <p>Any AI agent — CrewAI, LangGraph, AutoGen — calls <code>get_identity_context()</code> before acting. ICP queries all configured identity providers in parallel and returns a unified context payload: who you are, what you can do, how risky this session is, and what posture to apply.</p>
+    </div>
+    <div class="card card-purple">
+      <h3>Plug-and-play IdP design</h3>
+      <p>Every identity provider implements the same <code>IdpConnector</code> interface. Swap Keycloak for Entra by changing one line in <code>icp.config.json</code>. No core code changes. Community can contribute connectors. ICP works with any enterprise identity stack.</p>
+    </div>
+    <div class="card card-amber">
+      <h3>Risk-aware, not just block/allow</h3>
+      <p>Agents receive <strong>allow</strong>, <strong>proceed-with-caution</strong>, <strong>require-approval</strong>, or <strong>deny</strong> — and act proportionally. Caution mode injects security context into the agent's reasoning prompt. Agents self-moderate without hardcoded rules.</p>
+    </div>
+    <div class="card card-blue">
+      <h3>Full audit trail</h3>
+      <p>Every agent action produces a structured audit event: user, agent_id, posture, outcome, risk_score, chain_depth, posture_reasons. The CISO can answer "what did our AI agents do last Tuesday?" with a single query on the audit log.</p>
+    </div>
+  </div>
+
+  <div class="sec">The airport analogy</div>
+  <div class="card" class="info-band">
+    <p><strong>Entra ID</strong> = Terminal A security guard (Microsoft workloads). <strong>Ping Identity</strong> = Terminal B security guard (web apps). Neither terminal knows what the other is doing. The AI agent checks in separately at each terminal with a static token — no unified picture of trust, risk, or current session health.<br><br><strong>ICP = Air Traffic Control.</strong> One real-time view across all terminals. Every agent, every session, every risk signal — unified before any action is taken.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PROBLEM -->
+<div class="page" id="page-problem">
+  <h1>Problem Statement</h1>
+  <p class="subtitle">Three identity blind spots that exist in every enterprise AI deployment today</p>
+
+  <div class="sec">The three blind spots</div>
+  <div class="grid3">
+    <div class="card card-red">
+      <h3>No cross-IdP signal sharing</h3>
+      <p>A privilege escalation in Ping is invisible to Entra-protected resources. Neither IdP surfaces the other's risk signals to AI agents in real time. Agents act on partial identity pictures.</p>
+    </div>
+    <div class="card card-red">
+      <h3>Agents carry static tokens</h3>
+      <p>AI agents receive a token and act on it — zero awareness that the user's session risk changed 5 minutes ago. Location anomaly, stale MFA, device compliance change — invisible to the acting agent.</p>
+    </div>
+    <div class="card card-red">
+      <h3>No chain accountability</h3>
+      <p>When a CrewAI orchestrator spawns 4 sub-agents, nobody records which human authorised them, what their risk was at authorisation time, or what action each agent took. Zero audit trail for automated chains.</p>
+    </div>
+  </div>
+
+  <div class="sec">Negative scenario A — invisible risk (without ICP)</div>
+  <div class="scenario scenario-bad">
+    <div class="scenario-title" style="color:#FF6060">🔴 Raj Kumar · Principal Engineer · Working remotely from Chennai (usual: Bengaluru)</div>
+    <div class="timeline">
+      <div class="tl-item"><span class="tl-time tl-bad">09:15</span><span class="tl-text">Ping grants <strong>Finance-Admin-Temp</strong> to Raj for a separate project. Expires in 60 min. Entra has no idea this happened.</span></div>
+      <div class="tl-item"><span class="tl-time tl-bad">09:38</span><span class="tl-text">Raj opens CrewAI workflow. Orchestrator spawns 3 sub-agents. No human in the loop. 3-hop chain.</span></div>
+      <div class="tl-item"><span class="tl-time tl-bad">09:41</span><span class="tl-text">Data agent calls SharePoint payroll folder. Presents Entra token. Token is valid. Access granted. Payroll data returned.</span></div>
+      <div class="tl-item"><span class="tl-time tl-bad">09:42</span><span class="tl-text">Nobody flagged: anomalous location + privilege escalated + 3-hop agent chain with no human in loop. Action was technically authorised — but the full picture would never have been approved.</span></div>
+    </div>
+  </div>
+
+  <div class="sec">Negative scenario B — credential attack (without ICP)</div>
+  <div class="scenario scenario-bad">
+    <div class="scenario-title" style="color:#FF6060">🔴 Priya's credentials phished overnight — automated exfiltration attempt</div>
+    <div class="timeline">
+      <div class="tl-item"><span class="tl-time tl-bad">03:00</span><span class="tl-text">Attacker logs in from Singapore. Priya is always in Mumbai. Unrecognised device. MFA completed 4+ hours ago.</span></div>
+      <div class="tl-item"><span class="tl-time tl-bad">03:02</span><span class="tl-text">Automated script triggers CrewAI HR data exfiltration workflow. 4-hop agent chain, no human in loop.</span></div>
+      <div class="tl-item"><span class="tl-time tl-bad">03:04</span><span class="tl-text">Agents begin accessing HR records. Static Entra token is valid. No signal from Ping about location anomaly.</span></div>
+      <div class="tl-item"><span class="tl-time tl-bad">03:08</span><span class="tl-text">Data exfiltrated. No alert fires until morning when someone notices unusual access in logs — hours later.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ MARKET -->
+<div class="page" id="page-market">
+  <h1>Market Landscape</h1>
+  <p class="subtitle">Both major vendors shipped AI agent identity products in 2026 — but the cross-IdP gap remains open</p>
+
+  <div class="sec">Competitive gap analysis</div>
+  <table>
+    <tr>
+      <th style="width:28%">Capability</th>
+      <th style="width:18%">Ping for AI (GA Mar 2026)</th>
+      <th style="width:18%">Entra Agent ID (GA May 2026)</th>
+      <th style="width:36%">ICP (what you build)</th>
+    </tr>
+    <tr><td>Agent registration &amp; identity</td><td><span class="pill p-green">✓ Yes</span></td><td><span class="pill p-green">✓ Yes</span></td><td>Defers to both — not duplicated</td></tr>
+    <tr><td>MCP gateway / enforcement</td><td><span class="pill p-green">✓ Agent Gateway</span></td><td><span class="pill p-green">✓ Cond. Access</span></td><td><span class="pill p-teal">✓ Cross-vendor</span></td></tr>
+    <tr><td>Cross-IdP signal fusion</td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-teal">⭐ Core differentiator</span></td></tr>
+    <tr><td>Unified risk score (fused)</td><td>Ping-only signals</td><td>Entra-only signals</td><td><span class="pill p-teal">⭐ Fused from both</span></td></tr>
+    <tr><td>Multi-agent chain tracking</td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-teal">⭐ Full delegation log</span></td></tr>
+    <tr><td>Context injection to agent prompt</td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-teal">⭐ Caution mode</span></td></tr>
+    <tr><td>Pluggable / any IdP</td><td><span class="pill p-red">✗ Ping-only</span></td><td><span class="pill p-red">✗ Entra-only</span></td><td><span class="pill p-teal">⭐ Any IdP via SDK</span></td></tr>
+    <tr><td>Human approval workflow</td><td>Partial</td><td>Partial</td><td><span class="pill p-teal">✓ Built-in</span></td></tr>
+    <tr><td>Consent-scoped delegation</td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-teal">✓ Phase 2</span></td></tr>
+    <tr><td>Config-driven, no code changes</td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-red">✗ No</span></td><td><span class="pill p-teal">✓ icp.config.json</span></td></tr>
+  </table>
+
+  <div class="sec">Why Ping and Entra won't close this gap</div>
+  <div class="grid2">
+    <div class="card card-teal">
+      <h3>Competitors don't cross-integrate</h3>
+      <p>Ping and Entra are direct competitors. Ping will never build deep Entra signal fusion, and Microsoft will never surface Ping risk signals natively. ICP is vendor-neutral by design — it sits above both and reads from either.</p>
+    </div>
+    <div class="card card-purple">
+      <h3>Neither has agent framework depth</h3>
+      <p>CrewAI, LangGraph, and AutoGen don't have identity. Identity vendors don't have agent framework depth. ICP lives at exactly that intersection — and it's the only place these two worlds can meet cleanly.</p>
+    </div>
+  </div>
+
+  <div class="card" class="card card-teal" style="margin-top:4px">
+    <p><strong>Market timing:</strong> MCP launched Nov 2024 — estimated 90%+ enterprise adoption within 12 months. Ping shipped Mar 2026. Entra shipped May 2026. The market just validated the problem is real and enterprises will pay. The cross-IdP fusion window is open right now.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ ARCHITECTURE -->
+<div class="page" id="page-architecture">
+  <h1>Architecture</h1>
+  <p class="subtitle">Four layers, one new component, pluggable by design</p>
+
+  <div class="sec">Four-layer model</div>
+  <table>
+    <tr><th style="width:6%">Layer</th><th style="width:18%">Name</th><th style="width:22%">Technology</th><th style="width:54%">Responsibility</th></tr>
+    <tr><td style="font-weight:700;color:var(--purple)">L1</td><td>AI agent tier</td><td>CrewAI · Python</td><td>Consumes ICP context — posture drives allow / caution / approve / deny decisions</td></tr>
+    <tr><td style="font-weight:700;color:var(--teal)">L2</td><td><strong>ICP MCP server</strong></td><td>Node.js · TypeScript · MCP</td><td><strong>The only new component you build.</strong> Aggregation, risk scoring, chain tracking, audit emission, config-driven connector loading</td></tr>
+    <tr><td style="font-weight:700;color:var(--blue)">L3</td><td>IdP connectors</td><td>Any IdP via connector SDK</td><td>Read-only adapters to identity infrastructure. Phase 1: Keycloak + Authentik. Phase 2: Entra + Ping. Pluggable via config.</td></tr>
+    <tr><td style="font-weight:700;color:var(--amber)">L4</td><td>Context store</td><td>Redis · audit log sink</td><td>Session cache (risk-proportional TTL) + append-only immutable audit log → SIEM</td></tr>
+  </table>
+
+  <div class="sec">Data flow — 9 steps, target &lt;150ms p95</div>
+  <div class="grid2">
+    <div class="card">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:#534AB7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div><span style="font-size:13px">Agent calls <code>get_identity_context(upn, agent_id, action)</code></span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--teal-dim);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div><span style="font-size:13px">Redis cache check — hit? Return immediately (&lt;10ms)</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:#1A56A0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</div><span style="font-size:13px">Cache miss → parallel fan-out to all active connectors</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:#1A56A0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">4</div><span style="font-size:13px">Aggregator merges: conflict resolution, most-restrictive-permanent</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">5</div><span style="font-size:13px">Risk scorer fuses signals → composite score 0–100</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">6</div><span style="font-size:13px">Posture engine maps score → allow / caution / approve / deny</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--teal-dim);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">7</div><span style="font-size:13px">Chain tracker appends delegation log entry</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--teal-dim);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">8</div><span style="font-size:13px">Audit emitter writes structured event to sink</span></div>
+        <div style="display:flex;gap:10px;align-items:center"><div style="width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">9</div><span style="font-size:13px">Unified context payload returned → agent acts proportionally</span></div>
+      </div>
+    </div>
+    <div class="card card-teal">
+      <h3>Context payload (sample)</h3>
+      <pre><code><span class="kw">{</span>
+  <span class="str">"user_upn"</span>: <span class="str">"raj@acme.com"</span>,
+  <span class="str">"recommended_posture"</span>: <span class="str">"proceed-with-caution"</span>,
+  <span class="str">"risk_score"</span>: <span class="kw">{</span>
+    <span class="str">"composite_score"</span>: <span class="num">62</span>,
+    <span class="str">"signals"</span>: <span class="kw">{</span>
+      <span class="str">"location_anomaly"</span>: <span class="kw">true</span>,
+      <span class="str">"privilege_escalated"</span>: <span class="kw">true</span>,
+      <span class="str">"mfa_satisfied"</span>: <span class="kw">true</span>
+    <span class="kw">}</span>
+  <span class="kw">}</span>,
+  <span class="str">"entitlements"</span>: <span class="kw">{</span>
+    <span class="str">"temp_grants"</span>: [<span class="str">"Finance-Admin-Temp"</span>],
+    <span class="str">"scopes_for_action"</span>: [<span class="str">"read:payroll"</span>]
+  <span class="kw">}</span>,
+  <span class="str">"delegation_chain"</span>: <span class="kw">{</span>
+    <span class="str">"chain_depth"</span>: <span class="num">2</span>
+  <span class="kw">}</span>,
+  <span class="str">"cache_ttl_seconds"</span>: <span class="num">60</span>,
+  <span class="str">"posture_reasons"</span>: [
+    <span class="str">"location_anomaly"</span>,
+    <span class="str">"privilege_escalated_recently"</span>
+  ]
+<span class="kw">}</span></code></pre>
+    </div>
+  </div>
+
+  <div class="sec">Pluggable connector interface</div>
+  <pre><code><span class="cm">// Every IdP — Keycloak, Entra, Ping, Okta, Auth0, Cognito — implements this one interface</span>
+<span class="kw">interface</span> <span class="cls">IdpConnector</span> <span class="kw">{</span>
+  name: <span class="str">string</span>;                                           <span class="cm">// "keycloak" | "entra" | "ping" | "okta" ...</span>
+  getIdentity(upn: <span class="str">string</span>): <span class="cls">Promise</span>&lt;<span class="cls">Identity</span>&gt;;             <span class="cm">// who is this user</span>
+  getRiskSignals(upn: <span class="str">string</span>): <span class="cls">Promise</span>&lt;<span class="cls">RiskSignals</span>&gt;;      <span class="cm">// what risk signals exist right now</span>
+  getEntitlements(upn: <span class="str">string</span>): <span class="cls">Promise</span>&lt;<span class="cls">Entitlements</span>&gt;;   <span class="cm">// what are they allowed to do</span>
+  getSessionHealth(token: <span class="str">string</span>): <span class="cls">Promise</span>&lt;<span class="cls">SessionHealth</span>&gt;; <span class="cm">// how clean is the session</span>
+<span class="kw">}</span>
+
+<span class="cm">// Aggregator is IdP-agnostic — receives an array, doesn't care where data came from</span>
+<span class="kw">const</span> contexts = <span class="kw">await</span> <span class="cls">Promise</span>.all(
+  activeConnectors.map(c =&gt; c.getIdentity(upn))
+);
+<span class="kw">return</span> <span class="fn">aggregate</span>(contexts);</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ CONFIG -->
+<div class="page" id="page-config">
+  <h1>Config-Driven Design</h1>
+  <p class="subtitle">One JSON file controls every environment difference — no code changes between dev, staging, and prod</p>
+
+  <div class="sec">icp.config.json — complete reference</div>
+  <pre><code><span class="kw">{</span>
+  <span class="str">"connectors"</span>: [<span class="str">"keycloak"</span>, <span class="str">"authentik"</span>],  <span class="cm">// Phase 1 local | ["entra","ping"] Phase 2 | ["mock"] tests</span>
+
+  <span class="str">"riskWeights"</span>: <span class="kw">{</span>                           <span class="cm">// all weights must sum ≤ 100</span>
+    <span class="str">"location_anomaly"</span>: <span class="num">25</span>,
+    <span class="str">"privilege_escalated_recently"</span>: <span class="num">20</span>,
+    <span class="str">"mfa_age_over_60min"</span>: <span class="num">15</span>,
+    <span class="str">"chain_depth_3plus"</span>: <span class="num">15</span>,
+    <span class="str">"device_non_compliant"</span>: <span class="num">10</span>,
+    <span class="str">"ca_policy_non_compliant"</span>: <span class="num">10</span>,
+    <span class="str">"concurrent_sessions_over_5"</span>: <span class="num">5</span>
+  <span class="kw">}</span>,
+
+  <span class="str">"postureThresholds"</span>: <span class="kw">{</span>                   <span class="cm">// change without code rebuild</span>
+    <span class="str">"allow"</span>:           [<span class="num">0</span>,  <span class="num">25</span>],
+    <span class="str">"caution"</span>:         [<span class="num">26</span>, <span class="num">55</span>],
+    <span class="str">"require_approval"</span>:[<span class="num">56</span>, <span class="num">80</span>],
+    <span class="str">"deny"</span>:            [<span class="num">81</span>, <span class="num">100</span>]
+  <span class="kw">}</span>,
+
+  <span class="str">"cacheTtlByPosture"</span>: <span class="kw">{</span>                  <span class="cm">// seconds — risk-proportional</span>
+    <span class="str">"allow"</span>:           <span class="num">300</span>,
+    <span class="str">"caution"</span>:         <span class="num">120</span>,
+    <span class="str">"require_approval"</span>: <span class="num">60</span>,
+    <span class="str">"deny"</span>:             <span class="num">0</span>   <span class="cm">// never cache deny</span>
+  <span class="kw">}</span>,
+
+  <span class="str">"policy"</span>: <span class="kw">{</span>
+    <span class="str">"allowedHours"</span>:          <span class="str">"09:00-20:00"</span>,   <span class="cm">// agents denied outside these hours</span>
+    <span class="str">"timezone"</span>:              <span class="str">"Asia/Kolkata"</span>,
+    <span class="str">"contractorPostureFloor"</span>: <span class="str">"caution"</span>,       <span class="cm">// min posture for contractors</span>
+    <span class="str">"maxChainDepth"</span>:         <span class="num">4</span>,               <span class="cm">// auto-deny at depth &gt; 4</span>
+    <span class="str">"blastRadiusWindow"</span>:     <span class="num">90</span>,              <span class="cm">// seconds</span>
+    <span class="str">"blastRadiusMaxSystems"</span>: <span class="num">3</span>               <span class="cm">// unique systems in window before spike</span>
+  <span class="kw">}</span>,
+
+  <span class="str">"audit"</span>: <span class="kw">{</span>
+    <span class="str">"sink"</span>:      <span class="str">"stdout"</span>,    <span class="cm">// "stdout" | "file" | "http" | "splunk" | "azure-monitor"</span>
+    <span class="str">"endpoint"</span>:  <span class="str">""</span>,
+    <span class="str">"batchSize"</span>: <span class="num">10</span>
+  <span class="kw">}</span>,
+
+  <span class="str">"server"</span>: <span class="kw">{</span>
+    <span class="str">"transport"</span>: <span class="str">"stdio"</span>,     <span class="cm">// "stdio" | "http"</span>
+    <span class="str">"port"</span>:      <span class="num">3100</span>,
+    <span class="str">"timeout"</span>:   <span class="num">3000</span>         <span class="cm">// hard limit ms — never block agent chain</span>
+  <span class="kw">}</span>
+<span class="kw">}</span></code></pre>
+
+  <div class="sec">Hot-reload + dev overrides</div>
+  <div class="grid2">
+    <div class="card card-teal">
+      <h3>Risk weight hot-reload</h3>
+      <p>ICP watches <code>icp.config.json</code> for changes using <code>fs.watch()</code>. Risk signal weights and posture thresholds update without restart. Security teams tighten posture live during an incident — no redeployment.</p>
+    </div>
+    <div class="card card-amber">
+      <h3>Dev mode overrides (env vars)</h3>
+      <p><code>ICP_DEV_POSTURE=deny</code> — force posture for all calls<br><code>ICP_DEV_SCORE=85</code> — force risk score<br><code>ICP_DEV_CONNECTOR=mock</code> — bypass real IdPs<br><br>Test any branch without engineering specific IdP states.</p>
+    </div>
+  </div>
+
+  <div class="sec">Startup validation (Zod)</div>
+  <div class="card card-blue">
+    <h3>Every config field validated at boot</h3>
+    <p>The entire <code>icp.config.json</code> is parsed through a Zod schema on startup. Invalid config prints a specific, human-readable error — field name, expected type, received value — then exits cleanly. Never a cryptic runtime crash mid-request.</p>
+    <pre style="margin-top:.6rem"><code><span class="cm">// Example validation error output</span>
+<span class="kw">ICP CONFIG ERROR:</span>
+  riskWeights.location_anomaly: Expected number ≤ 100, received 150
+  policy.allowedHours: Invalid time range format. Expected "HH:MM-HH:MM"
+  connectors[0]: Unknown connector "okto". Did you mean "okta"?</code></pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ TECH STACK -->
+<div class="page" id="page-techstack">
+  <h1>Full Tech Stack</h1>
+  <p class="subtitle">100% free, runs completely standalone on your Windows 11 laptop — Intel Ultra 7, 32GB RAM, RTX 500 4GB VRAM</p>
+
+  <div class="sec">PC fit check — memory budget</div>
+  <div class="card" class="info-band">
+    <p><strong>Running full stack simultaneously:</strong> Keycloak ~512MB + Authentik ~600MB + Redis ~50MB + ICP server ~200MB + Ollama Llama 3.1 8B ~5GB RAM + 3.8GB VRAM + CrewAI Python ~300MB + VS Code + OS ~4GB = <strong>~11GB RAM total, 3.8GB VRAM.</strong> Well within your 31.5GB / 4GB envelope. Comfortable headroom.</p>
+  </div>
+
+  <div class="sec">Core stack</div>
+  <table>
+    <tr><th style="width:18%">Layer</th><th style="width:20%">Tool</th><th style="width:12%">Version</th><th style="width:50%">Purpose &amp; install</th></tr>
+    <tr><td><span class="pill p-blue">Runtime</span></td><td>Node.js LTS</td><td>v20.x</td><td>ICP MCP server — native Windows install from nodejs.org</td></tr>
+    <tr><td><span class="pill p-blue">Language</span></td><td>TypeScript</td><td>5.x</td><td>ICP core — strict mode. <code>pnpm add -D typescript</code></td></tr>
+    <tr><td><span class="pill p-blue">Agent framework</span></td><td>CrewAI</td><td>0.80+</td><td>Multi-agent orchestration. <code>pip install crewai</code></td></tr>
+    <tr><td><span class="pill p-blue">Python</span></td><td>Python</td><td>3.11</td><td>CrewAI + ICP bridge. Use WSL2 Ubuntu for best performance.</td></tr>
+    <tr><td><span class="pill p-teal">IdP 1 (dev)</span></td><td>Keycloak</td><td>24.x</td><td>Free, replaces Entra. <code>docker run -p 8080:8080 quay.io/keycloak/keycloak:24 start-dev</code></td></tr>
+    <tr><td><span class="pill p-teal">IdP 2 (dev)</span></td><td>Authentik</td><td>2024.x</td><td>Free, replaces Ping. <code>docker compose up</code> from official compose file. UI at :9000</td></tr>
+    <tr><td><span class="pill p-teal">Cache</span></td><td>Redis</td><td>7.x</td><td>Session cache. <code>docker run -p 6379:6379 redis:7-alpine</code></td></tr>
+    <tr><td><span class="pill p-teal">MCP SDK</span></td><td>@modelcontextprotocol/sdk</td><td>latest</td><td>MCP stdio server in TypeScript. <code>pnpm add @modelcontextprotocol/sdk</code></td></tr>
+    <tr><td><span class="pill p-purple">Containers</span></td><td>Docker Desktop</td><td>4.x</td><td>Free for personal use. WSL2 backend. Runs all 3 services.</td></tr>
+    <tr><td><span class="pill p-purple">Package mgr</span></td><td>pnpm</td><td>9.x</td><td>Monorepo workspaces. <code>npm install -g pnpm</code></td></tr>
+    <tr><td><span class="pill p-purple">Test runner</span></td><td>Vitest</td><td>1.x</td><td>TypeScript-native unit + integration tests. <code>pnpm add -D vitest</code></td></tr>
+    <tr><td><span class="pill p-purple">Python tests</span></td><td>pytest</td><td>8.x</td><td>Agent decision logic tests. <code>pip install pytest</code></td></tr>
+    <tr><td><span class="pill p-amber">AI model runner</span></td><td>Ollama</td><td>latest</td><td>Local LLM API at :11434. Install from ollama.ai — GPU-accelerated on RTX 500.</td></tr>
+    <tr><td><span class="pill p-amber">LLM (fast)</span></td><td>Llama 3.2 3B</td><td>—</td><td>2GB RAM. Best for demo speed. <code>ollama pull llama3.2:3b</code></td></tr>
+    <tr><td><span class="pill p-amber">LLM (quality)</span></td><td>Llama 3.1 8B</td><td>—</td><td>5GB RAM + 3.8GB VRAM with GPU offload. <code>ollama pull llama3.1</code>. Recommended default.</td></tr>
+    <tr><td><span class="pill p-green">HTTP client</span></td><td>httpx (Python)</td><td>0.27</td><td>Async HTTP in CrewAI tool. <code>pip install httpx</code></td></tr>
+    <tr><td><span class="pill p-green">Config validation</span></td><td>Zod</td><td>3.x</td><td>Runtime config schema validation. <code>pnpm add zod</code></td></tr>
+    <tr><td><span class="pill p-green">API testing</span></td><td>Bruno</td><td>1.x</td><td>Free Postman alternative. Test Keycloak + Authentik APIs.</td></tr>
+    <tr><td><span class="pill p-green">IDE</span></td><td>VS Code</td><td>latest</td><td>Free. MCP debugger extension available.</td></tr>
+    <tr><td><span class="pill p-gray">Monitoring (optional)</span></td><td>Grafana + Loki</td><td>latest</td><td>Free, Docker. View audit events and metrics locally. Or just <code>tail -f audit.jsonl</code>.</td></tr>
+  </table>
+
+  <div class="sec">WSL2 setup note (Windows)</div>
+  <div class="card card-amber">
+    <h3>Use WSL2 (Ubuntu 22.04) for Python + CrewAI + Ollama</h3>
+    <p>Much faster than native Windows Python. Node.js runs natively on Windows fine. Docker Desktop with WSL2 backend for Keycloak + Authentik + Redis. RTX 500 supports CUDA 12 — Ollama uses it automatically for GPU offload. Enable CUDA in WSL2: <code>sudo apt install nvidia-cuda-toolkit</code></p>
+    <p style="margin-top:.5rem">CrewAI → Ollama config is 2 lines:</p>
+    <pre><code><span class="fn">llm</span> = <span class="cls">LLM</span>(model=<span class="str">"ollama/llama3.1"</span>, base_url=<span class="str">"http://localhost:11434"</span>)
+<span class="fn">agent</span> = <span class="cls">Agent</span>(role=<span class="str">"..."</span>, llm=llm, tools=[<span class="cls">ICPContextTool</span>()])</code></pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ FEATURES -->
+<div class="page" id="page-features">
+  <h1>Feature List</h1>
+  <p class="subtitle">MVP-1 confirmed features + new additions from latest discussion</p>
+
+  <div class="sec">Phase 1 — core confirmed (MVP-1)</div>
+  <table>
+    <tr><th style="width:4%">#</th><th style="width:24%">Feature</th><th style="width:30%">What it does</th><th style="width:22%">Key file</th><th style="width:10%">Effort</th><th style="width:10%">Priority</th></tr>
+    <tr><td>1</td><td>Cross-IdP context fusion</td><td>Parallel connector calls, conflict resolution, unified payload &lt;150ms</td><td><code>aggregator.ts</code></td><td><span class="pill p-teal">3 days</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>2</td><td>Risk scorer + posture engine</td><td>7 weighted signals → 0–100 score → 4 posture decisions, config-driven weights</td><td><code>scorer.ts</code></td><td><span class="pill p-teal">2 days</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>3</td><td>MCP tool — get_identity_context</td><td>Single MCP tool over stdio, 3s timeout, full unified payload</td><td><code>mcp-server.ts</code></td><td><span class="pill p-teal">1 day</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>4</td><td>Multi-agent chain tracker</td><td>Delegation log: orchestrator→sub-agent→action. Depth ≥ 3 raises risk score.</td><td><code>chain-tracker.ts</code></td><td><span class="pill p-teal">2 days</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>5</td><td>CrewAI decision engine</td><td>enforce_decision() — 4 posture branches, caution prompt injection</td><td><code>icp_decision.py</code></td><td><span class="pill p-teal">2 days</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>6</td><td>Audit emitter</td><td>Structured JSON event per action: user, agent, posture, outcome, chain → SIEM</td><td><code>audit-emitter.ts</code></td><td><span class="pill p-teal">1 day</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>7</td><td>Redis cache layer</td><td>Session-scoped, risk-proportional TTL, webhook invalidation</td><td><code>cache/index.ts</code></td><td><span class="pill p-teal">2 days</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>8</td><td>Keycloak connector</td><td>Local Entra replacement — groups, roles, identity, session via Admin REST API</td><td><code>connector-keycloak/</code></td><td><span class="pill p-teal">2 days</span></td><td><span class="pill p-teal">P0</span></td></tr>
+    <tr><td>9</td><td>Authentik connector</td><td>Local Ping replacement — MFA state, risk signals, sessions via REST API</td><td><code>connector-authentik/</code></td><td><span class="pill p-teal">2 days</span></td><td><span class="pill p-teal">P0</span></td></tr>
+  </table>
+
+  <div class="sec">New additions from this discussion</div>
+  <table>
+    <tr><th style="width:4%">#</th><th style="width:24%">Feature</th><th style="width:30%">What it does</th><th style="width:22%">Notes</th><th style="width:10%">Effort</th><th style="width:10%">Phase</th></tr>
+    <tr><td>10</td><td>icp.config.json + Zod validator</td><td>Single config file — connectors, weights, thresholds, policy, audit sink</td><td>Validates on startup, clear errors</td><td><span class="pill p-teal">0.5 day</span></td><td><span class="pill p-blue">Phase 0</span></td></tr>
+    <tr><td>11</td><td>Mock connector mode</td><td>Built-in fake connector returning configurable scenarios — no Docker needed</td><td>Zero-dependency testing + demo</td><td><span class="pill p-teal">0.5 day</span></td><td><span class="pill p-blue">Phase 0</span></td></tr>
+    <tr><td>12</td><td>npx create-icp-app CLI</td><td>Scaffolds full project — config, connector template, sample agent — 60 seconds to running</td><td>Critical for adoption</td><td><span class="pill p-teal">1 day</span></td><td><span class="pill p-blue">Phase 0</span></td></tr>
+    <tr><td>13</td><td>Docker Compose full stack</td><td>docker compose up → ICP + Keycloak + Authentik + Redis + demo agent. All wired.</td><td>3-minute cold demo</td><td><span class="pill p-teal">1 day</span></td><td><span class="pill p-blue">Phase 1</span></td></tr>
+    <tr><td>14</td><td>ICP_DEV_POSTURE override</td><td>Env var forces posture for all calls — test all 4 branches without IdP engineering</td><td>Dev DX improvement</td><td><span class="pill p-teal">0.5 day</span></td><td><span class="pill p-blue">Phase 0</span></td></tr>
+    <tr><td>15</td><td>Temporal access windows</td><td>Deny agents outside configured hours or stale session — even with valid token</td><td>Config-driven, 1 day build</td><td><span class="pill p-teal">1 day</span></td><td><span class="pill p-blue">Phase 1</span></td></tr>
+    <tr><td>16</td><td>Contractor hard limits</td><td>employee_type=Contractor → posture floor: caution, bulk export: always deny</td><td>Compliance value</td><td><span class="pill p-teal">0.5 day</span></td><td><span class="pill p-blue">Phase 1</span></td></tr>
+    <tr><td>17</td><td>Blast radius limiter</td><td>N distinct systems in M seconds → risk spike. Catches lateral movement.</td><td>Config-driven window + threshold</td><td><span class="pill p-amber">2 days</span></td><td><span class="pill p-blue">Phase 1b</span></td></tr>
+    <tr><td>18</td><td>Step-up auth trigger</td><td>Risk spike mid-session → trigger Authentik/Ping MFA re-auth. Agent resumes on success.</td><td>Real re-auth, not just notify</td><td><span class="pill p-amber">2 days</span></td><td><span class="pill p-blue">Phase 1b</span></td></tr>
+    <tr><td>19</td><td>Risk weight hot-reload</td><td>icp.config.json changes applied live — no restart. Security ops tune sensitivity during incidents.</td><td>fs.watch() implementation</td><td><span class="pill p-teal">0.5 day</span></td><td><span class="pill p-purple">Phase 2</span></td></tr>
+    <tr><td>20</td><td>@icp/connector-sdk npm package</td><td>Typed interface + base class + test helpers + scaffolder. Community builds connectors.</td><td>Ecosystem moat</td><td><span class="pill p-amber">2 days</span></td><td><span class="pill p-purple">Phase 2</span></td></tr>
+    <tr><td>21</td><td>Scenario replay / record</td><td>Record live session to JSON. Replay for demo or regression test without live IdPs.</td><td>Leadership demo independence</td><td><span class="pill p-amber">1 day</span></td><td><span class="pill p-purple">Phase 2</span></td></tr>
+    <tr><td>22</td><td>Consent-scoped delegation</td><td>Human grants scoped token before chain starts — sub-agents validated against it per action</td><td>Architectural differentiator</td><td><span class="pill p-amber">3 days</span></td><td><span class="pill p-purple">Phase 2</span></td></tr>
+    <tr><td>23</td><td>Entra connector</td><td>MS Graph API — identity, groups, CA signals, device compliance</td><td>Phase 2 enterprise target</td><td><span class="pill p-amber">2 days</span></td><td><span class="pill p-purple">Phase 2</span></td></tr>
+    <tr><td>24</td><td>Ping connector</td><td>PingOne API — user, risk, MFA, sessions + webhooks for cache invalidation</td><td>Phase 2 enterprise target</td><td><span class="pill p-amber">2 days</span></td><td><span class="pill p-purple">Phase 2</span></td></tr>
+    <tr><td>25</td><td>ICP health dashboard</td><td>Minimal read-only ops UI — posture distribution, top risky users, latency, last 50 events</td><td>Express.js, read from audit log</td><td><span class="pill p-amber">3 days</span></td><td><span class="pill p-coral">Phase 3</span></td></tr>
+    <tr><td>26</td><td>Agent identity fingerprinting</td><td>Behavioural baseline per agent_id — first-time resource access triggers elevated caution</td><td>Needs data over time</td><td><span class="pill p-coral">5 days</span></td><td><span class="pill p-coral">Phase 3</span></td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ RISK MODEL -->
+<div class="page" id="page-risk">
+  <h1>Risk Scoring Model</h1>
+  <p class="subtitle">Weighted signal fusion from all active connectors → composite 0–100 score → posture decision</p>
+
+  <div class="sec">Signal weights (configurable)</div>
+  <div class="card" style="padding:1.2rem">
+    <div class="risk-sig"><div class="risk-dot" style="background:var(--red)"></div><div class="risk-name">Location anomaly</div><div class="risk-src">Any IdP</div><div class="risk-bar-wrap"><div class="risk-bar" style="width:100%;background:var(--red)"></div></div><div class="risk-wt" style="color:var(--red)">25</div></div>
+    <div class="risk-sig"><div class="risk-dot" style="background:var(--red)"></div><div class="risk-name">Privilege escalated recently (&lt;60 min)</div><div class="risk-src">Any IdP</div><div class="risk-bar-wrap"><div class="risk-bar" style="width:80%;background:var(--red)"></div></div><div class="risk-wt" style="color:var(--red)">20</div></div>
+    <div class="risk-sig"><div class="risk-dot" style="background:var(--amber)"></div><div class="risk-name">MFA age &gt; 60 minutes (stale)</div><div class="risk-src">Any IdP</div><div class="risk-bar-wrap"><div class="risk-bar" style="width:60%;background:var(--amber)"></div></div><div class="risk-wt" style="color:var(--amber)">15</div></div>
+    <div class="risk-sig"><div class="risk-dot" style="background:var(--amber)"></div><div class="risk-name">Chain depth ≥ 3 agent hops</div><div class="risk-src">ICP</div><div class="risk-bar-wrap"><div class="risk-bar" style="width:60%;background:var(--amber)"></div></div><div class="risk-wt" style="color:var(--amber)">15</div></div>
+    <div class="risk-sig"><div class="risk-dot" style="background:#534AB7"></div><div class="risk-name">Device non-compliant</div><div class="risk-src">Any IdP</div><div class="risk-bar-wrap"><div class="risk-bar" style="width:40%;background:var(--purple)"></div></div><div class="risk-wt" style="color:var(--purple)">10</div></div>
+    <div class="risk-sig"><div class="risk-dot" style="background:#534AB7"></div><div class="risk-name">CA / policy non-compliant</div><div class="risk-src">Any IdP</div><div class="risk-bar-wrap"><div class="risk-bar" style="width:40%;background:var(--purple)"></div></div><div class="risk-wt" style="color:var(--purple)">10</div></div>
+    <div class="risk-sig"><div class="risk-dot" style="background:#8094AE"></div><div class="risk-name">Concurrent agent sessions &gt; 5</div><div class="risk-src">ICP</div><div class="risk-bar-wrap"><div class="risk-bar" style="width:20%;background:var(--text3)"></div></div><div class="risk-wt" style="color:var(--text3)">5</div></div>
+  </div>
+
+  <div class="sec">Posture thresholds → agent behaviour</div>
+  <div class="card" style="padding:1.2rem">
+    <div class="posture-row"><div class="posture-score">0 – 25</div><div class="posture-bar-wrap"><div class="posture-bar" style="width:25%;background:var(--teal)"></div></div><div class="posture-label" style="color:var(--teal)">ALLOW</div><div class="posture-action">Proceed normally with scoped entitlements. Cache 300s.</div></div>
+    <div class="posture-row"><div class="posture-score">26 – 55</div><div class="posture-bar-wrap"><div class="posture-bar" style="width:55%;background:var(--amber)"></div></div><div class="posture-label" style="color:var(--amber)">CAUTION</div><div class="posture-action">Inject caution context into prompt. Prefer reads. Log PENDING WRITEs. Cache 120s.</div></div>
+    <div class="posture-row"><div class="posture-score">56 – 80</div><div class="posture-bar-wrap"><div class="posture-bar" style="width:80%;background:#FF6430"></div></div><div class="posture-label" style="color:#FF6430">APPROVE</div><div class="posture-action">Halt agent. Notify human supervisor. Await approval before continuing. Cache 60s.</div></div>
+    <div class="posture-row"><div class="posture-score">81 – 100</div><div class="posture-bar-wrap"><div class="posture-bar" style="width:100%;background:var(--red)"></div></div><div class="posture-label" style="color:var(--red)">DENY</div><div class="posture-action">Hard stop. Raise TaskDeniedError. Emit high-severity audit. Alert SIEM. No cache.</div></div>
+  </div>
+
+  <div class="sec">enforce_decision() — the decision code</div>
+  <pre><code><span class="kw">class</span> <span class="cls">Posture</span>(str, Enum):
+    ALLOW           = <span class="str">"allow"</span>
+    CAUTION         = <span class="str">"proceed-with-caution"</span>
+    REQUIRE_APPROVAL= <span class="str">"require-approval"</span>
+    DENY            = <span class="str">"deny"</span>
+
+<span class="kw">def</span> <span class="fn">enforce_decision</span>(decision: ICPDecision, approval_fn=<span class="kw">None</span>) -&gt; <span class="kw">None</span>:
+    <span class="kw">match</span> decision.posture:
+        <span class="kw">case</span> Posture.DENY:
+            emit_audit(decision, outcome=<span class="str">"blocked"</span>)
+            alert_siem(decision)
+            <span class="kw">raise</span> <span class="cls">TaskDeniedError</span>(decision.reasons)
+
+        <span class="kw">case</span> Posture.REQUIRE_APPROVAL:
+            approved = approval_fn(<span class="str">f"Approve: {decision.action}?"</span>) <span class="kw">if</span> approval_fn <span class="kw">else False</span>
+            <span class="kw">if not</span> approved:
+                emit_audit(decision, outcome=<span class="str">"approval-denied"</span>)
+                <span class="kw">raise</span> <span class="cls">TaskDeniedError</span>(<span class="str">"Human approval not granted"</span>)
+            emit_audit(decision, outcome=<span class="str">"approval-granted"</span>)
+
+        <span class="kw">case</span> Posture.CAUTION:
+            inject_caution_to_prompt(decision)  <span class="cm"># shifts LLM toward hedging</span>
+            emit_audit(decision, outcome=<span class="str">"completed-with-caution"</span>)
+
+        <span class="kw">case</span> Posture.ALLOW:
+            emit_audit(decision, outcome=<span class="str">"completed"</span>)  <span class="cm"># green light</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SCENARIOS -->
+<div class="page" id="page-scenarios">
+  <h1>Scenarios</h1>
+  <p class="subtitle">The same situation — with and without ICP — side by side</p>
+
+  <div class="sec">Scenario A — Raj · anomalous session (score 62 → caution)</div>
+  <div class="grid2">
+    <div class="scenario scenario-bad">
+      <div class="scenario-title" style="color:#FF6060">🔴 Without ICP — invisible risk</div>
+      <div class="timeline">
+        <div class="tl-item"><span class="tl-time tl-bad">09:15</span><span class="tl-text">Ping grants Finance-Admin-Temp. Entra unaware.</span></div>
+        <div class="tl-item"><span class="tl-time tl-bad">09:38</span><span class="tl-text">3-hop agent chain started. No human in loop.</span></div>
+        <div class="tl-item"><span class="tl-time tl-bad">09:41</span><span class="tl-text">Payroll data accessed. Token valid. Access granted.</span></div>
+        <div class="tl-item"><span class="tl-time tl-bad">Result</span><span class="tl-text">Zero visibility. No audit trail. Undetected.</span></div>
+      </div>
+    </div>
+    <div class="scenario scenario-good">
+      <div class="scenario-title" style="color:var(--teal)">🟢 With ICP — protected and audited</div>
+      <div class="timeline">
+        <div class="tl-item"><span class="tl-time tl-ok">09:38</span><span class="tl-text">Agent calls get_identity_context() before any action.</span></div>
+        <div class="tl-item"><span class="tl-time tl-ok">+91ms</span><span class="tl-text">Score 62 → proceed-with-caution. Caution context injected into prompt.</span></div>
+        <div class="tl-item"><span class="tl-time tl-ok">09:40</span><span class="tl-text">Agent flags PENDING WRITE. Manager approves in 30s.</span></div>
+        <div class="tl-item"><span class="tl-time tl-ok">Result</span><span class="tl-text">Task completed. Full audit trail. CISO can answer every question.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">Scenario B — Priya · credential attack (score 91 → deny)</div>
+  <div class="grid2">
+    <div class="scenario scenario-bad">
+      <div class="scenario-title" style="color:#FF6060">🔴 Without ICP — exfiltration succeeds</div>
+      <div class="timeline">
+        <div class="tl-item"><span class="tl-time tl-bad">03:00</span><span class="tl-text">Singapore login. Unrecognised device. 4AM.</span></div>
+        <div class="tl-item"><span class="tl-time tl-bad">03:02</span><span class="tl-text">Automated 4-hop chain starts. No stop signal.</span></div>
+        <div class="tl-item"><span class="tl-time tl-bad">03:08</span><span class="tl-text">HR data exfiltrated. No alert until morning.</span></div>
+      </div>
+    </div>
+    <div class="scenario scenario-good">
+      <div class="scenario-title" style="color:var(--teal)">🟢 With ICP — stopped in 200ms</div>
+      <div class="timeline">
+        <div class="tl-item"><span class="tl-time tl-ok">03:02</span><span class="tl-text">Agent calls get_identity_context().</span></div>
+        <div class="tl-item"><span class="tl-time tl-ok">+170ms</span><span class="tl-text">Score 91 — location(25)+MFA stale(15)+device(10)+chain(15)+CA(10)=75+policy = 91. DENY.</span></div>
+        <div class="tl-item"><span class="tl-time tl-ok">+200ms</span><span class="tl-text">TaskDeniedError raised. SIEM alert fires. Zero data extracted.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">Positive scenario C — config swap (Phase 2 demo)</div>
+  <div class="scenario scenario-good">
+    <div class="scenario-title" style="color:var(--teal)">🟢 Developer switches from Keycloak to Entra — zero code change</div>
+    <div class="timeline">
+      <div class="tl-item"><span class="tl-time tl-ok">Step 1</span><span class="tl-text">Edit icp.config.json: "connectors": ["entra", "ping"]. Set ENTRA_CLIENT_ID, ENTRA_CLIENT_SECRET, PING_CLIENT_ID, PING_CLIENT_SECRET env vars.</span></div>
+      <div class="tl-item"><span class="tl-time tl-ok">Step 2</span><span class="tl-text">Run ICP server. Startup validator confirms both connectors can reach their endpoints.</span></div>
+      <div class="tl-item"><span class="tl-time tl-ok">Step 3</span><span class="tl-text">Same demo agent, same ICP binary, now querying real Entra and real Ping. Payload structure identical. No connector interface changed.</span></div>
+      <div class="tl-item"><span class="tl-time tl-ok">Result</span><span class="tl-text">The pluggable architecture is proven. Any IdP, any enterprise, same ICP core.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ DEVEX -->
+<div class="page" id="page-devex">
+  <h1>Developer Experience</h1>
+  <p class="subtitle">Easy to understand, easy to extend, zero friction from clone to running</p>
+
+  <div class="sec">Monorepo structure</div>
+  <div class="grid2">
+    <pre style="margin:0"><code><span class="str">icp/</span>
+<span class="kw">├── packages/</span>
+<span class="kw">│   ├── icp-core/</span>             <span class="cm"># MCP server engine</span>
+<span class="kw">│   │   └── src/</span>
+<span class="kw">│   │       ├── server.ts</span>
+<span class="kw">│   │       ├── aggregator/</span>
+<span class="kw">│   │       ├── risk/</span>
+<span class="kw">│   │       ├── chain/</span>
+<span class="kw">│   │       ├── cache/</span>
+<span class="kw">│   │       └── audit/</span>
+<span class="kw">│   ├── icp-connector-sdk/</span>    <span class="cm"># interface + helpers</span>
+<span class="kw">│   ├── connector-keycloak/</span>   <span class="cm"># Phase 1</span>
+<span class="kw">│   ├── connector-authentik/</span>  <span class="cm"># Phase 1</span>
+<span class="kw">│   ├── connector-entra/</span>      <span class="cm"># Phase 2</span>
+<span class="kw">│   └── connector-ping/</span>       <span class="cm"># Phase 2</span>
+<span class="kw">├── apps/</span>
+<span class="kw">│   └── icp-demo/</span>             <span class="cm"># CrewAI demo agent</span>
+<span class="kw">├── docker-compose.yml</span>
+<span class="kw">└── icp.config.json</span></code></pre>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="card card-teal">
+        <h3>Zero-to-running in 3 steps</h3>
+        <p><code>git clone https://github.com/your-org/icp</code><br>
+        <code>pnpm install</code><br>
+        <code>docker compose up</code><br><br>
+        Full stack running. Demo agent wired. No manual config.</p>
+      </div>
+      <div class="card card-purple">
+        <h3>Build a new connector in 4 steps</h3>
+        <p><code>npx create-icp-connector my-okta</code><br>
+        Implement 4 interface methods<br>
+        <code>icp test-connector my-okta</code><br>
+        Add to <code>icp.config.json</code></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">icp-dev CLI tools</div>
+  <table>
+    <tr><th style="width:35%">Command</th><th style="width:65%">What it does</th></tr>
+    <tr><td><code>icp validate</code></td><td>Validates icp.config.json against Zod schema. Prints specific errors with field names.</td></tr>
+    <tr><td><code>icp test-connector keycloak</code></td><td>Fires all 4 interface methods against live Keycloak and prints each response. Confirms connector works before wiring into ICP.</td></tr>
+    <tr><td><code>icp simulate --scenario deny</code></td><td>Runs a full request through ICP with mock connector in "deny" scenario. Prints the full payload and decision. No Docker needed.</td></tr>
+    <tr><td><code>icp simulate --scenario caution --upn raj@acme.com</code></td><td>Simulate caution scenario for a specific user UPN. Useful for showing posture to a developer.</td></tr>
+    <tr><td><code>icp logs --tail 20</code></td><td>Pretty-prints last 20 audit events from the configured sink.</td></tr>
+    <tr><td><code>icp replay --file session.json</code></td><td>Replays a recorded session — exact same inputs, exact same outputs. For demos and regression tests without live IdPs.</td></tr>
+    <tr><td><code>npx create-icp-app my-project</code></td><td>Scaffolds a new ICP project — config, mock connector, sample CrewAI agent. Ready to run in 60 seconds.</td></tr>
+    <tr><td><code>npx create-icp-connector my-connector</code></td><td>Scaffolds a new connector package with the IdpConnector interface pre-implemented as a template.</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ ROADMAP -->
+<div class="page" id="page-roadmap">
+  <h1>Delivery Roadmap</h1>
+  <p class="subtitle">5 phases, 6 weeks to production-ready — one developer</p>
+
+  <div class="sec">Phase timeline</div>
+  <div style="overflow-x:auto">
+  <table>
+    <tr><th style="width:12%">Phase</th><th style="width:12%">Week</th><th style="width:42%">Deliverables</th><th style="width:18%">New from discussion</th><th style="width:16%">Exit criteria</th></tr>
+    <tr>
+      <td><span class="pill p-blue">Phase 0</span><br><small>Foundation</small></td>
+      <td>Week 1</td>
+      <td>Monorepo setup · pnpm workspaces · IdpConnector interface · Zod config schema · Mock connector · icp-dev CLI scaffold · ICP_DEV_POSTURE override · Vitest wired</td>
+      <td><span class="pill p-teal">NEW</span> Mock connector<br><span class="pill p-teal">NEW</span> Config schema<br><span class="pill p-teal">NEW</span> Dev overrides</td>
+      <td>icp simulate --scenario deny prints full payload. Config validation catches bad input.</td>
+    </tr>
+    <tr>
+      <td><span class="pill p-teal">Phase 1</span><br><small>Local IdPs</small></td>
+      <td>Week 2</td>
+      <td>Keycloak connector · Authentik connector · Docker Compose full stack · aggregator.ts · scorer.ts (config-driven weights) · Posture engine · Temporal access windows · Contractor hard limits</td>
+      <td><span class="pill p-teal">NEW</span> Docker Compose<br><span class="pill p-teal">NEW</span> Pluggable loading<br><span class="pill p-teal">NEW</span> Temporal windows</td>
+      <td>docker compose up → curl ICP → unified payload from both Keycloak + Authentik. Integration tests green.</td>
+    </tr>
+    <tr>
+      <td><span class="pill p-teal">Phase 1b</span><br><small>ICP Core</small></td>
+      <td>Week 3</td>
+      <td>MCP server (stdio) · chain-tracker.ts · audit-emitter.ts · Redis cache · icp_tool.py · icp_decision.py · icp_prompt_injector.py · Ollama + Llama 3.1 · Blast radius limiter · Step-up auth trigger</td>
+      <td><span class="pill p-teal">NEW</span> Blast radius<br><span class="pill p-teal">NEW</span> Step-up auth<br><span class="pill p-teal">NEW</span> CLI tools</td>
+      <td>E2E: CrewAI agent calls ICP, all 4 posture branches work, audit events written, cache hit rate &gt;70%.</td>
+    </tr>
+    <tr>
+      <td><span class="pill p-purple">Phase 2</span><br><small>Production</small></td>
+      <td>Week 4–5</td>
+      <td>@icp/connector-sdk npm package · Entra connector · Ping connector · Circuit breaker · Ping webhooks · Key Vault secrets · Risk weight hot-reload · Scenario replay · Consent-scoped delegation · npm publish pipeline · Load test</td>
+      <td><span class="pill p-purple">NEW</span> Connector SDK<br><span class="pill p-purple">NEW</span> Hot-reload<br><span class="pill p-purple">NEW</span> Scenario replay</td>
+      <td>Config swap Keycloak→Entra works without code change. p95 &lt;150ms at 200 concurrent sessions. Secrets from Key Vault.</td>
+    </tr>
+    <tr>
+      <td><span class="pill p-coral">Phase 3</span><br><small>Ecosystem</small></td>
+      <td>Week 6+</td>
+      <td>Okta connector · Auth0 connector · Health dashboard UI · Cross-agent session correlation · Agent identity fingerprinting · GitHub Actions CI/CD · Docker image on GHCR · Community connector registry</td>
+      <td><span class="pill p-coral">NEW</span> Connector registry<br><span class="pill p-coral">NEW</span> Full CI/CD<br><span class="pill p-coral">NEW</span> GHCR image</td>
+      <td>Okta developer installs @icp/connector-sdk and builds working Okta connector in &lt;4 hours using only the README.</td>
+    </tr>
+  </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ DEMOS -->
+<div class="page" id="page-demos">
+  <h1>Demo Milestones</h1>
+  <p class="subtitle">What you can show at the end of each phase — with clear audience and proof points</p>
+
+  <div class="demo-card">
+    <div class="demo-num" style="background:rgba(64,160,255,.15);color:var(--blue);border:1px solid rgba(64,160,255,.3)">D1</div>
+    <div class="demo-body">
+      <h4>End of Week 1 — "ICP responds to a request"</h4>
+      <p>Run <code>icp simulate --scenario caution</code> in terminal. ICP returns a full JSON payload: composite_score 52, posture: proceed-with-caution, posture_reasons: ["location_anomaly", "mfa_stale"]. No Docker, no IdP, pure mock. Switch to <code>--scenario deny</code> — score 91, deny, audit event printed.</p>
+      <div class="demo-tags">
+        <span class="pill p-gray">Audience: yourself + co-developer</span>
+        <span class="pill p-teal">Proves: config works · interface typed · payload schema correct · all 4 posture branches reachable</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-num" style="background:rgba(32,217,127,.15);color:var(--teal);border:1px solid rgba(32,217,127,.3)">D2</div>
+    <div class="demo-body">
+      <h4>End of Week 2 — "Two local IdPs, one unified context"</h4>
+      <p><code>docker compose up</code> — all services start. Create test user in Keycloak with location_anomaly attribute. Call ICP via Bruno/curl. Watch it query Keycloak + Authentik in parallel and return a merged payload with source_latency_ms breakdown. Change a risk weight in <code>icp.config.json</code> — watch score change without restart.</p>
+      <div class="demo-tags">
+        <span class="pill p-gray">Audience: technical reviewer / architect</span>
+        <span class="pill p-teal">Proves: pluggable connectors · parallel fan-out · conflict resolution · config hot-reload</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-num" style="background:rgba(32,217,127,.15);color:var(--teal);border:1px solid rgba(32,217,127,.3)">D3</div>
+    <div class="demo-body">
+      <h4>End of Week 3 — "CrewAI agent makes risk-aware decisions"</h4>
+      <p>Run <code>python demo_agent.py</code>. CrewAI data agent tries to read a "payroll" resource. ICP returns score 62, posture: caution. Agent's prompt gets injected with caution context. Agent outputs "PENDING WRITE: payroll summary" instead of executing. Switch to deny scenario — TaskDeniedError raised, audit event printed. All running locally on Ollama Llama 3.1.</p>
+      <div class="demo-tags">
+        <span class="pill p-gray">Audience: technical architect / principal developer</span>
+        <span class="pill p-teal">Proves: full E2E — IdP → ICP → CrewAI → decision → audit. Local AI model working.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-num" style="background:rgba(176,96,255,.15);color:var(--purple);border:1px solid rgba(176,96,255,.3)">D4</div>
+    <div class="demo-body">
+      <h4>End of Week 4–5 — "Swap to real IdP — zero code change"</h4>
+      <p>Edit one line in <code>icp.config.json</code>: <code>"connectors": ["entra", "ping"]</code>. Set 4 env vars. Run. Same demo agent, same ICP binary, now querying real Entra and real Ping. Show the diff — it's only config. Show <code>npm install @icp/connector-keycloak</code> installing a connector as a package.</p>
+      <div class="demo-tags">
+        <span class="pill p-gray">Audience: CTO / enterprise architect</span>
+        <span class="pill p-teal">Proves: vendor-neutral · no lock-in · connector SDK works · production path clear</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-num" style="background:rgba(255,176,32,.15);color:var(--amber);border:1px solid rgba(255,176,32,.3)">D5</div>
+    <div class="demo-body">
+      <h4>End of Week 5–6 — "The CISO demo"</h4>
+      <p>Run Raj scenario (caution) and Priya attack scenario (deny) back-to-back using <code>icp replay</code> — no live infrastructure needed for the presentation. Show the audit log — every action, posture, risk score, chain depth, outcome. Show posture distribution from health dashboard. Score 91 → deny → SIEM alert fires in 200ms. Zero data exfiltrated. Full trail answerable in one query.</p>
+      <div class="demo-tags">
+        <span class="pill p-gray">Audience: CISO / leadership / investor</span>
+        <span class="pill p-teal">Proves: compliance story · attack prevention · enterprise-grade audit · demo-independent of live infra</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="north-star">
+    <h3>The north star demo — when you know ICP is real</h3>
+    <p>A developer who has never seen ICP clones the repo, runs <code>docker compose up</code>, runs <code>python demo_agent.py</code>, and within 5 minutes watches a CrewAI agent get blocked from exfiltrating data because ICP scored the session 91 and raised TaskDeniedError. They then edit one line in <code>icp.config.json</code> — change location_anomaly weight from 25 to 0 — rerun — score drops below deny threshold — agent proceeds. They understand the entire system from that one interaction.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ BIZ CASE -->
+<div class="page" id="page-bizcase">
+  <h1>Business Case</h1>
+  <p class="subtitle">What each stakeholder gains — and the question each of them is asking</p>
+
+  <div class="grid3">
+    <div class="card card-red">
+      <h3>CISO</h3>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:.6rem"><em>"What did our AI agents do last Tuesday and were they authorised?"</em></p>
+      <ul style="font-size:13px;color:var(--text2);padding-left:1.1rem;line-height:1.8">
+        <li>Zero-trust posture for AI agents for the first time</li>
+        <li>Complete audit trail per agent action — compliance-ready</li>
+        <li>Real-time SIEM alerts on high-risk sessions</li>
+        <li>No forklift — reads existing Ping + Entra stack</li>
+        <li>SOC2 / ISO27001 / GDPR evidence auto-generated</li>
+      </ul>
+    </div>
+    <div class="card card-teal">
+      <h3>CTO / Architect</h3>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:.6rem"><em>"How do we govern AI agents without rebuilding our IAM stack?"</em></p>
+      <ul style="font-size:13px;color:var(--text2);padding-left:1.1rem;line-height:1.8">
+        <li>MCP-native — works with any agent framework today</li>
+        <li>Extends existing IAM investment — no forklift</li>
+        <li>Node.js + TypeScript — fits current stack</li>
+        <li>Sidecar → centralised service scale path</li>
+        <li>Pluggable — any IdP, not vendor-locked</li>
+      </ul>
+    </div>
+    <div class="card card-purple">
+      <h3>Principal Developers</h3>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:.6rem"><em>"How do I make my agent security-aware without writing custom policy logic?"</em></p>
+      <ul style="font-size:13px;color:var(--text2);padding-left:1.1rem;line-height:1.8">
+        <li>One tool call — all identity context resolved</li>
+        <li>Posture drives code logic — match/switch pattern</li>
+        <li>Caution mode — agents self-moderate without hardcoding</li>
+        <li>Clean audit events to any SIEM out of the box</li>
+        <li>npx create-icp-app — zero-to-running in 60 seconds</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec">Why ICP doesn't compete with Ping or Entra</div>
+  <div class="card" class="info-band">
+    <p><strong>ICP does not replace Ping or Entra.</strong> It makes the investment in both significantly more valuable in an AI-agent world. Every Ping customer who deploys ICP gets Entra signal visibility for the first time — and vice versa. ICP is the layer that connects what already exists. That's the sales story to enterprise security teams.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PROS CONS -->
+<div class="page" id="page-proscons">
+  <h1>Pros, Cons &amp; Feasibility</h1>
+  <p class="subtitle">Honest assessment — strengths, risks, and what done looks like</p>
+
+  <div class="sec">Strengths</div>
+  <table>
+    <tr><th style="width:22%">Strength</th><th style="width:78%">Detail</th></tr>
+    <tr><td><span class="pill p-green">Market timing</span></td><td>MCP is brand new (Nov 2024). No identity layer for it exists. Ping + Entra shipping in 2026 validates the problem. Cross-IdP fusion window is open right now.</td></tr>
+    <tr><td><span class="pill p-green">Real gap</span></td><td>Neither Ping nor Entra closes the cross-IdP fusion or multi-agent chain tracking gap. ICP's differentiation is verifiable by looking at their product pages.</td></tr>
+    <tr><td><span class="pill p-green">Pluggable architecture</span></td><td>Not locked to Ping + Entra. Targets Okta shops, AWS shops, Auth0 shops — the majority of the enterprise market — with zero core code changes.</td></tr>
+    <tr><td><span class="pill p-green">No forklift</span></td><td>Read-only on top of existing stack. No migration. No rip-and-replace. Lowest possible adoption friction.</td></tr>
+    <tr><td><span class="pill p-green">Domain moat</span></td><td>18+ years IAM depth — knowing where Ping and Entra silently conflict is not replicable from API documentation alone.</td></tr>
+    <tr><td><span class="pill p-green">Config-driven</span></td><td>Any environment, any IdP, any risk posture — one JSON file. No rebuilds. Operations teams can tune live during incidents.</td></tr>
+    <tr><td><span class="pill p-green">Compliance magnet</span></td><td>Complete audit trail per agent action answers SOC2, ISO27001, GDPR questions CISOs cannot answer today for AI agents.</td></tr>
+    <tr><td><span class="pill p-green">Network effect</span></td><td>Every new AI agent deployed in the enterprise needs ICP more, not less. Value compounds as agent footprint grows.</td></tr>
+  </table>
+
+  <div class="sec">Risks &amp; mitigations</div>
+  <table>
+    <tr><th style="width:24%">Risk</th><th style="width:12%">Likelihood</th><th style="width:12%">Impact</th><th style="width:52%">Mitigation</th></tr>
+    <tr><td>Vendor encroachment (Ping/Entra building cross-IdP)</td><td><span class="pill p-amber">High</span></td><td><span class="pill p-amber">Medium</span></td><td>They are competitors — Ping won't integrate Entra signals deeply. Stay focused on cross-vendor fusion + chain tracking. Community connector ecosystem is additional moat.</td></tr>
+    <tr><td>Cold-start adoption</td><td><span class="pill p-amber">Medium</span></td><td><span class="pill p-red">High</span></td><td>npx create-icp-app + Docker Compose + mock connector removes all friction. One compelling demo with the CISO story breaks the loop.</td></tr>
+    <tr><td>Latency pressure (&gt;150ms)</td><td><span class="pill p-amber">Medium</span></td><td><span class="pill p-red">High</span></td><td>Parallel fan-out (not sequential). Aggressive Redis caching. Risk-proportional TTL. Hard 3s timeout. p95 target.</td></tr>
+    <tr><td>Ping API rate limits</td><td><span class="pill p-amber">Medium</span></td><td><span class="pill p-amber">Medium</span></td><td>Event-driven cache via webhooks — don't poll. Exponential backoff with jitter. Phase 1 uses Authentik which has no rate limits.</td></tr>
+    <tr><td>Stale cache risk</td><td><span class="pill p-amber">Medium</span></td><td><span class="pill p-red">High</span></td><td>Risk-proportional TTL. Deny posture never cached. Webhook invalidation on auth events.</td></tr>
+    <tr><td>ICP credential compromise</td><td><span class="pill p-green">Low</span></td><td><span class="pill p-red">Critical</span></td><td>Secrets in Key Vault only. 90-day rotation. Alert on unexpected token issuances. ICP is read-only — no write permissions ever.</td></tr>
+    <tr><td>API schema drift (IdP changes)</td><td><span class="pill p-amber">Medium</span></td><td><span class="pill p-amber">Medium</span></td><td>Connector tests run against recorded API responses. Schema validation layer alerts on unexpected field changes.</td></tr>
+    <tr><td>ICP server unavailable</td><td><span class="pill p-green">Low</span></td><td><span class="pill p-red">High</span></td><td>Circuit breaker: if ICP unreachable after 500ms → fall back to deny-by-default or last cached posture per config.</td></tr>
+  </table>
+
+  <div class="sec">Feasibility summary</div>
+  <table>
+    <tr><th style="width:28%">Dimension</th><th style="width:14%">Rating</th><th style="width:58%">Reasoning</th></tr>
+    <tr><td>Technical feasibility</td><td><span class="pill p-green">Very high</span></td><td>All APIs exist. MCP SDK available. Node.js + TypeScript well-suited. No novel research required.</td></tr>
+    <tr><td>Domain feasibility</td><td><span class="pill p-green">Very high</span></td><td>18+ years directly in Entra and Ping — you already know the API surfaces, edge cases, and gotchas.</td></tr>
+    <tr><td>Build complexity</td><td><span class="pill p-amber">Medium</span></td><td>Hardest: aggregator conflict resolution + risk signal weighting. Everything else is well-understood integration work.</td></tr>
+    <tr><td>Market timing</td><td><span class="pill p-green">Excellent</span></td><td>MCP Nov 2024, Ping AI Mar 2026, Entra Agent ID May 2026 — market validated. Window open but narrowing.</td></tr>
+    <tr><td>Solo MVP viability</td><td><span class="pill p-green">Yes</span></td><td>One developer with your background: 5–6 weeks to demo-ready. Connector code is the highest-confidence work.</td></tr>
+    <tr><td>Regulatory tailwind</td><td><span class="pill p-green">Strong</span></td><td>SOC2, ISO27001, GDPR, NIS2 all require audit trails for privileged actions. AI agents are now privileged actors — compliance demand is mandatory, not optional.</td></tr>
+    <tr><td>PC suitability (your setup)</td><td><span class="pill p-green">Excellent</span></td><td>Intel Ultra 7 + 32GB RAM + RTX 500 4GB — runs full stack (all Docker services + Ollama 8B + CrewAI) at ~11GB RAM. Comfortable headroom.</td></tr>
+  </table>
+</div>
+
+
+
+
+<div class="footer">
+  ICP — Identity Context Protocol &nbsp;·&nbsp; Complete Design Document &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; May 2026<br>
+  Node.js &nbsp;·&nbsp; TypeScript &nbsp;·&nbsp; MCP &nbsp;·&nbsp; CrewAI &nbsp;·&nbsp; Keycloak &nbsp;·&nbsp; Authentik &nbsp;·&nbsp; Ollama &nbsp;·&nbsp; Pluggable by design
+</div>
+<script>
+document.querySelectorAll('.nav-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('page-'+t.dataset.p).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

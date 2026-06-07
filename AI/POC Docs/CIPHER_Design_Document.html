@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIPHER — Design &amp; Architecture Document</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:        #0b1829;
+  --navy-2:      #152238;
+  --navy-border: #1e3350;
+  --amber:       #f59e0b;
+  --amber-dim:   #fbbf2488;
+  --blue:        #2563eb;
+  --blue-soft:   #3b82f6;
+  --purple:      #7c3aed;
+  --teal:        #0891b2;
+  --green:       #059669;
+  --red:         #dc2626;
+  --bg:          #080f1e;
+  --surface:     #0d1b2e;
+  --border:      #1a2f48;
+  --text:        #e2e8f0;
+  --text-2:      #b0c4d8;
+  --text-3:      #607a94;
+  --text-4:      #3d5570;
+  --sidebar-w:   248px;
+  --radius:      8px;
+  --shadow:      0 1px 4px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Outfit',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  display:flex;min-height:100vh;font-size:14px;line-height:1.65;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar-w);background:var(--navy);
+  position:fixed;top:0;left:0;bottom:0;
+  overflow-y:auto;display:flex;flex-direction:column;
+  z-index:100;padding-bottom:24px;
+  border-right:1px solid var(--navy-border);
+}
+.sb-brand{padding:26px 20px 22px;border-bottom:1px solid var(--navy-border);margin-bottom:6px}
+.sb-logo{
+  font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
+  color:#fff;letter-spacing:.1em;display:flex;align-items:center;gap:9px
+}
+.sb-logo svg{flex-shrink:0}
+.sb-tagline{font-size:10px;color:#475569;margin-top:5px;line-height:1.5;letter-spacing:.02em}
+.sb-meta{margin-top:12px;display:flex;flex-direction:column;gap:3px}
+.sb-meta span{font-size:11px;color:#475569}
+.sb-meta strong{color:var(--amber)}
+.nav-label{font-size:10px;font-weight:600;color:#334155;text-transform:uppercase;
+  letter-spacing:.1em;padding:14px 20px 5px}
+.nav-a{
+  display:flex;align-items:center;gap:9px;padding:7px 20px;
+  color:#64748b;text-decoration:none;font-size:13px;font-weight:400;
+  transition:all .15s;border-left:2px solid transparent;cursor:pointer
+}
+.nav-a:hover{color:#e2e8f0;background:rgba(255,255,255,.04);border-left-color:var(--amber)}
+.nav-a.active{color:#f1f5f9;background:rgba(245,158,11,.09);border-left-color:var(--amber)}
+.nav-n{
+  width:18px;height:18px;background:var(--navy-border);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;color:#475569;flex-shrink:0
+}
+.sb-footer{
+  margin-top:auto;padding:16px 20px 0;
+  border-top:1px solid var(--navy-border);
+  font-size:10px;color:#334155;line-height:1.7
+}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar-w);flex:1;min-width:0}
+
+/* ── HEADER ── */
+.hdr{
+  background:linear-gradient(135deg,#0b1829 0%,#102240 55%,#0c1e38 100%);
+  padding:52px 60px 48px;position:relative;overflow:hidden
+}
+.hdr::before{
+  content:'';position:absolute;top:-80px;right:-60px;
+  width:340px;height:340px;
+  background:radial-gradient(circle,rgba(245,158,11,.1) 0%,transparent 68%);
+  pointer-events:none
+}
+.hdr::after{
+  content:'';position:absolute;bottom:-50px;left:240px;
+  width:220px;height:220px;
+  background:radial-gradient(circle,rgba(37,99,235,.13) 0%,transparent 68%);
+  pointer-events:none
+}
+.hdr-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(245,158,11,.13);border:1px solid rgba(245,158,11,.28);
+  color:#fbbf24;font-size:10px;font-weight:600;
+  padding:3px 10px;border-radius:20px;margin-bottom:18px;
+  letter-spacing:.06em;text-transform:uppercase
+}
+.hdr-title{
+  font-family:'Syne',sans-serif;font-size:52px;font-weight:800;
+  color:#fff;letter-spacing:.07em;line-height:1;margin-bottom:8px
+}
+.hdr-sub{font-size:14px;color:#64748b;margin-bottom:30px;font-weight:300;letter-spacing:.02em}
+.hdr-stats{display:flex;gap:36px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat-v{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;color:#e2e8f0}
+.stat-l{font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── CONTENT ── */
+.content{padding:44px 60px 80px;max-width:940px}
+.sec{margin-bottom:58px;scroll-margin-top:28px}
+.sec-hdr{
+  display:flex;align-items:center;gap:11px;
+  margin-bottom:22px;padding-bottom:12px;
+  border-bottom:1.5px solid var(--border)
+}
+.sec-num{
+  font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+  color:var(--text-4);letter-spacing:.1em;text-transform:uppercase
+}
+.sec-title{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;color:var(--text)}
+.sec-line{height:2px;border-radius:2px;flex:1;margin-left:6px}
+
+/* ── CARDS ── */
+.card{
+  background:var(--surface);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:22px 24px;
+  margin-bottom:14px;border:1px solid var(--border)
+}
+.card-t{
+  font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  color:var(--text);margin-bottom:11px;
+  text-transform:uppercase;letter-spacing:.07em
+}
+p{color:var(--text-2);margin-bottom:12px;line-height:1.72}
+p:last-child{margin-bottom:0}
+
+/* ── TABLES ── */
+.tw{
+  background:var(--surface);border-radius:var(--radius);
+  box-shadow:var(--shadow);border:1px solid var(--border);
+  overflow:hidden;margin-bottom:14px
+}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{
+  background:#0a1828;color:var(--text-3);font-weight:600;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  padding:9px 15px;text-align:left;border-bottom:1px solid var(--border)
+}
+tbody td{
+  padding:9px 15px;border-bottom:1px solid #0f2038;
+  color:var(--text-2);vertical-align:top;line-height:1.5
+}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#0f2038}
+tr.hlg{background:#071e10}tr.hlg:hover{background:#0a2614}
+tr.hla{background:#1c1200}tr.hla:hover{background:#241800}
+tr.hlr{background:#1e0808}tr.hlr:hover{background:#280a0a}
+
+/* ── BADGES ── */
+.b{display:inline-flex;align-items:center;padding:2px 8px;
+   border-radius:12px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.bg{background:#071e10;color:#4ade80}
+.bb{background:#0c1e3c;color:#60a5fa}
+.bp{background:#180d33;color:#a78bfa}
+.bt{background:#042830;color:#22d3ee}
+.ba{background:#251505;color:#fbbf24}
+.br{background:#2a0808;color:#f87171}
+.bk{background:#1a2a3a;color:#607a94;border:1px solid var(--border)}
+
+/* ── CALLOUTS ── */
+.co{border-radius:var(--radius);padding:13px 17px;margin-bottom:14px;
+    font-size:13px;line-height:1.6;border-left:3px solid}
+.co strong{font-weight:600}
+.co-rule{background:#280808;border-color:#dc2626;color:#fca5a5}
+.co-note{background:#071828;border-color:#0ea5e9;color:#7dd3fc}
+.co-tip {background:#042010;border-color:#059669;color:#6ee7b7}
+.co-warn{background:#201204;border-color:#f59e0b;color:#fcd34d}
+
+/* ── CODE ── */
+code{
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;
+  background:#1a2a3a;padding:1px 5px;border-radius:4px;color:#93c5fd
+}
+pre{
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;
+  background:#0f172a;color:#e2e8f0;border-radius:var(--radius);
+  padding:18px 20px;overflow-x:auto;line-height:1.75;margin-bottom:14px
+}
+.cm{color:#475569}.kw{color:#93c5fd}.st{color:#86efac}
+.va{color:#fde68a}.fn{color:#c4b5fd}.pu{color:#f9a8d4}
+
+/* ── DOMAIN GRID ── */
+.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.dcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)
+}
+.dicon{width:34px;height:34px;border-radius:7px;display:flex;
+  align-items:center;justify-content:center;font-size:17px;margin-bottom:9px}
+.dname{font-family:'Syne',sans-serif;font-size:13.5px;font-weight:700;margin-bottom:1px}
+.dplat{font-size:11px;color:var(--text-3);margin-bottom:7px}
+.dops{list-style:none;font-size:11.5px;color:var(--text-3);line-height:1.85}
+.dops li::before{content:'→ ';color:var(--text-4)}
+
+/* ── ARCH DIAGRAM ── */
+.arch{
+  background:#0f172a;border-radius:var(--radius);
+  padding:26px;margin-bottom:14px
+}
+.a-lbl{font-family:'JetBrains Mono',monospace;font-size:9.5px;
+  font-weight:500;text-transform:uppercase;letter-spacing:.1em;
+  margin-bottom:7px;padding-left:2px}
+.a-box{
+  border-radius:6px;padding:10px 15px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:'JetBrains Mono',monospace;font-size:12px;margin-bottom:5px
+}
+.a-tag{font-size:10px;color:#475569}
+.a-arr{text-align:center;color:#334155;font-size:15px;padding:2px 0;
+  font-family:'JetBrains Mono',monospace}
+.a-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:5px}
+.a-row2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:5px}
+.abl{background:rgba(37,99,235,.14);border:1px solid rgba(37,99,235,.28);color:#93c5fd}
+.apr{background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.28);color:#c4b5fd}
+.atl{background:rgba(8,145,178,.14);border:1px solid rgba(8,145,178,.28);color:#67e8f9}
+.aam{background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.28);color:#fde68a}
+.agr{background:rgba(71,85,105,.18);border:1px solid rgba(71,85,105,.36);color:#94a3b8}
+.a-inner{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:7px;padding:12px 14px;
+  background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);
+  border-radius:6px;margin-bottom:5px
+}
+.a-step{background:rgba(255,255,255,.04);border-radius:4px;padding:8px;text-align:center}
+.a-sttl{color:#c4b5fd;font-size:10.5px;font-weight:600;margin-bottom:3px;
+  font-family:'Syne',sans-serif}
+.a-stds{color:#4b5563;font-size:9.5px;font-family:'JetBrains Mono',monospace}
+
+/* ── PHASE GRID ── */
+.pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.pcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);
+  border-top:3px solid
+}
+.p-num{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.p-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+  color:var(--text);margin-bottom:3px}
+.p-time{font-size:11px;color:var(--text-3);margin-bottom:11px}
+.p-list{list-style:none;font-size:12px;color:var(--text-3);line-height:1.95}
+.p-list li::before{content:'· ';color:var(--text-4)}
+
+/* ── ENV PROFILES ── */
+.egrid{display:grid;gap:9px;margin-bottom:14px}
+.ecard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:13px 17px;
+  display:grid;grid-template-columns:170px 90px 1fr;
+  gap:16px;align-items:start;box-shadow:0 1px 3px rgba(0,0,0,.05)
+}
+.en{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--text)}
+.ew{font-size:11px;color:var(--text-3);margin-top:2px}
+.ev{font-family:'JetBrains Mono',monospace;font-size:11px;color:#64748b;line-height:1.85}
+
+/* ── STEPS ── */
+.steps{list-style:none;counter-reset:steps;margin-bottom:14px}
+.steps li{
+  counter-increment:steps;padding:10px 16px 10px 48px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:5px;font-size:13px;
+  color:var(--text-2);position:relative;box-shadow:var(--shadow)
+}
+.steps li::before{
+  content:counter(steps);position:absolute;left:13px;
+  top:50%;transform:translateY(-50%);
+  width:22px;height:22px;background:var(--blue);color:#fff;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;font-family:'Syne',sans-serif
+}
+/* ── CHECKLIST ── */
+.chk{list-style:none;margin-bottom:14px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden}
+.chk li{padding:8px 16px;display:flex;align-items:flex-start;
+  gap:10px;font-size:12.5px;color:var(--text-2);
+  border-bottom:1px solid #0f2038}
+.chk li:last-child{border-bottom:none}
+.chk li::before{content:'☐';color:var(--blue);font-size:14px;flex-shrink:0}
+
+/* ── TWO COL ── */
+.tcol{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+
+/* ── FOOTER ── */
+.doc-footer{
+  padding:22px 60px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--text-4);
+  display:flex;justify-content:space-between;align-items:center
+}
+
+@media print{
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .content{padding:20px 40px}
+  pre{background:#1a2a3a;color:#e2e8f0}
+}
+@media(max-width:900px){
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .content{padding:24px}
+  .dgrid,.pgrid,.tcol{grid-template-columns:1fr}
+  .ecard{grid-template-columns:1fr}
+  .hdr{padding:32px 24px}
+  .hdr-title{font-size:36px}
+  .a-row3{grid-template-columns:1fr}
+  .a-inner{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      CIPHER
+    </div>
+    <div class="sb-tagline">Conversational Identity Platform<br>for Human-Empowered Requests</div>
+    <div class="sb-meta">
+      <span>Version <strong>1.0</strong> &nbsp;·&nbsp; POC</span>
+      <span>Phase <strong>1</strong> &nbsp;·&nbsp; Design Brief</span>
+    </div>
+  </div>
+
+  <div class="nav-label">Contents</div>
+  <a class="nav-a active" href="#overview"><span class="nav-n">1</span>Overview</a>
+  <a class="nav-a" href="#architecture"><span class="nav-n">2</span>Architecture</a>
+  <a class="nav-a" href="#stack"><span class="nav-n">3</span>Tech Stack</a>
+  <a class="nav-a" href="#ai"><span class="nav-n">4</span>AI &amp; Models</a>
+  <a class="nav-a" href="#agents"><span class="nav-n">5</span>Agent Design</a>
+  <a class="nav-a" href="#operations"><span class="nav-n">6</span>IAM Operations</a>
+  <a class="nav-a" href="#security"><span class="nav-n">7</span>Security Model</a>
+  <a class="nav-a" href="#phases"><span class="nav-n">8</span>Phase Roadmap</a>
+  <a class="nav-a" href="#deployment"><span class="nav-n">9</span>Deployment</a>
+  <a class="nav-a" href="#start"><span class="nav-n">10</span>Quick Start</a>
+
+  <div class="sb-footer">
+    Hardware target<br>
+    Intel Core Ultra 7 155H<br>
+    32 GB RAM &nbsp;·&nbsp; RTX 500 Ada 4 GB<br>
+    954 GB storage
+  </div>
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div class="main">
+
+<header class="hdr">
+  <div class="hdr-pill">🔐 IAM · Multi-Agent AI · Personal Laptop POC</div>
+  <div class="hdr-title">CIPHER</div>
+  <div class="hdr-sub">Conversational Identity Platform for Human-Empowered Requests</div>
+  <div class="hdr-stats">
+    <div class="stat"><div class="stat-v">3</div><div class="stat-l">IAM Domains</div></div>
+    <div class="stat"><div class="stat-v">TypeScript</div><div class="stat-l">Primary Language</div></div>
+    <div class="stat"><div class="stat-v">1 Model</div><div class="stat-l">Phase 1 (llama3.1:8b)</div></div>
+    <div class="stat"><div class="stat-v">3–4 wks</div><div class="stat-l">Phase 1 Build</div></div>
+    <div class="stat"><div class="stat-v">$0</div><div class="stat-l">Phase 1 Cost</div></div>
+  </div>
+</header>
+
+<main class="content">
+
+<!-- ════ 1. OVERVIEW ════ -->
+<section class="sec" id="overview">
+  <div class="sec-hdr">
+    <span class="sec-num">01</span>
+    <h2 class="sec-title">Overview</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#2563eb,transparent)"></div>
+  </div>
+
+  <div class="card">
+    <p>CIPHER replaces the traditional form-and-ticket IAM portal with a conversational AI interface. A user types what they need in plain English — "onboard my app with OIDC", "create a CyberArk safe for my team", "create a Web SSO group in Saviynt" — and the system collects the required parameters, confirms the action, executes it, and returns a complete integration guide. No forms, no tickets, no handoff delays.</p>
+    <p>The system is built around a multi-agent pattern: a supervisor routes each request to the right specialist agent, which owns the full workflow for its domain. Phase 1 is TypeScript-only, runs entirely on a personal laptop using free local models, and is designed so any single component — LLM provider, mock API, database — can be swapped by changing one environment variable.</p>
+  </div>
+
+  <div class="dgrid">
+    <div class="dcard">
+      <div class="dicon" style="background:#0c1e3c">🔑</div>
+      <div class="dname">SSO / Federation</div>
+      <div class="dplat">Ping Federate</div>
+      <ul class="dops">
+        <li>OIDC client onboarding</li>
+        <li>SAML SP connection</li>
+        <li>Connection status checks</li>
+        <li>Client secret rotation</li>
+      </ul>
+    </div>
+    <div class="dcard">
+      <div class="dicon" style="background:#251505">🛡️</div>
+      <div class="dname">PAM</div>
+      <div class="dplat">CyberArk</div>
+      <ul class="dops">
+        <li>Safe creation</li>
+        <li>Safe member management</li>
+        <li>Safe listing &amp; details</li>
+        <li>Account access provisioning</li>
+      </ul>
+    </div>
+    <div class="dcard">
+      <div class="dicon" style="background:#071e10">👥</div>
+      <div class="dname">IGA</div>
+      <div class="dplat">Saviynt</div>
+      <ul class="dops">
+        <li>Web SSO group creation</li>
+        <li>Group member management</li>
+        <li>Access request submission</li>
+        <li>Request status tracking</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="co co-tip">
+    <strong>Design philosophy:</strong> Design every architectural pattern correctly from day one. Implement each pattern as simply as possible in Phase 1. Add frameworks (LangGraph, XState, CrewAI) only when you feel the pain of not having them — not before.
+  </div>
+</section>
+
+<!-- ════ 2. ARCHITECTURE ════ -->
+<section class="sec" id="architecture">
+  <div class="sec-hdr">
+    <span class="sec-num">02</span>
+    <h2 class="sec-title">Phase 1 Architecture</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#7c3aed,transparent)"></div>
+  </div>
+
+  <div class="arch">
+    <div class="a-lbl" style="color:#334155">Presentation</div>
+    <div class="a-box abl">
+      <span>React 18 + Vite + TypeScript</span>
+      <span class="a-tag">Vercel AI SDK useChat · shadcn/ui · Tailwind</span>
+    </div>
+    <div class="a-arr">↓  SSE token stream</div>
+
+    <div class="a-lbl" style="color:#334155">API</div>
+    <div class="a-box abl">
+      <span>Fastify + TypeScript</span>
+      <span class="a-tag">Auth · SSE · Zod · Prisma + SQLite · Sessions</span>
+    </div>
+    <div class="a-arr">↓</div>
+
+    <div class="a-lbl" style="color:#334155">Agent Loop — plain TypeScript, no framework</div>
+    <div class="a-inner">
+      <div class="a-step">
+        <div class="a-sttl">Classify</div>
+        <div class="a-stds">1 LLM call<br>→ intent + domain</div>
+      </div>
+      <div class="a-step">
+        <div class="a-sttl">Collect Slots</div>
+        <div class="a-stds">Zod schema<br>ask if missing</div>
+      </div>
+      <div class="a-step">
+        <div class="a-sttl">Confirm</div>
+        <div class="a-stds">risk-level gate<br>user approves</div>
+      </div>
+      <div class="a-step">
+        <div class="a-sttl">Execute</div>
+        <div class="a-stds">agent fn()<br>→ tool call</div>
+      </div>
+    </div>
+    <div class="a-arr">↓  switch(intent)</div>
+
+    <div class="a-lbl" style="color:#334155">Specialist Agents</div>
+    <div class="a-row3">
+      <div class="a-box atl" style="flex-direction:column;gap:3px;align-items:center;justify-content:center">
+        <span>ssoAgent()</span><span class="a-tag">tools: Ping Federate</span>
+      </div>
+      <div class="a-box atl" style="flex-direction:column;gap:3px;align-items:center;justify-content:center">
+        <span>cyberarkAgent()</span><span class="a-tag">tools: PVWA API</span>
+      </div>
+      <div class="a-box atl" style="flex-direction:column;gap:3px;align-items:center;justify-content:center">
+        <span>saviyntAgent()</span><span class="a-tag">tools: IGA API</span>
+      </div>
+    </div>
+    <div class="a-arr">↓  all LLM calls route through</div>
+
+    <div class="a-lbl" style="color:#334155">LLM Gateway — model-agnostic</div>
+    <div class="a-box aam">
+      <span>getLLM(capability) &mdash; reads LLM_PROVIDER env var</span>
+      <span class="a-tag">Ollama · Groq · Gemini · Anthropic</span>
+    </div>
+    <div class="a-arr">↓  Phase 1 defaults</div>
+
+    <div class="a-row2">
+      <div class="a-box agr" style="flex-direction:column;gap:3px">
+        <span>llama3.1:8b via Ollama</span>
+        <span class="a-tag">one model — classify + reason + structure</span>
+      </div>
+      <div class="a-box agr" style="flex-direction:column;gap:3px">
+        <span>3 Mock Express Servers</span>
+        <span class="a-tag">Ping :9031 · CyberArk :1858 · Saviynt :8080</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="co co-note">
+    <strong>Why TypeScript only in Phase 1:</strong> Python + CrewAI adds a second language, a second framework, an internal HTTP boundary, and a context switch every time you debug. Three well-defined async agent functions in TypeScript are more readable and faster to build. Python + CrewAI is added in Phase 3 only if TypeScript proves insufficient.
+  </div>
+</section>
+
+<!-- ════ 3. TECH STACK ════ -->
+<section class="sec" id="stack">
+  <div class="sec-hdr">
+    <span class="sec-num">03</span>
+    <h2 class="sec-title">Tech Stack</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#0891b2,transparent)"></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Technology</th><th>Why this choice</th><th>Phase</th></tr>
+      </thead>
+      <tbody>
+        <tr class="hlg"><td>UI framework</td><td><code>React 18 + Vite + TypeScript</code></td><td>Industry standard. Fast HMR. You know it well.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>Chat streaming</td><td><code>Vercel AI SDK useChat</code></td><td>Token-by-token streaming to browser. Works with any LLM provider. The demo's key visual.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>UI components</td><td><code>shadcn/ui + Tailwind CSS v4</code></td><td>Copy-paste components — you own the code. No runtime dependency. Accessible by default.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr><td>Frontend state</td><td><code>React Context + useState</code></td><td>Sufficient for Phase 1 chat + request history. Add Zustand when you feel the pain.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>API server</td><td><code>Fastify + TypeScript</code></td><td>2–3× faster than Express. First-class TypeScript. Schema validation built in.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>LLM streaming (server)</td><td><code>Vercel AI SDK streamText</code></td><td>Handles SSE from Ollama to browser. Tool calling, generateObject. Identical API across all providers.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>Validation</td><td><code>Zod</code></td><td>Runtime schema validation everywhere: env vars, tool inputs, API routes, slot schemas.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>Database ORM</td><td><code>Prisma + SQLite</code></td><td>Zero infrastructure. Type-safe queries. One env var change to PostgreSQL in production.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>LLM runtime</td><td><code>Ollama (Docker)</code></td><td>Free. Local. Auto-detects NVIDIA GPU via CUDA. All models via REST on port 11434.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>Mock providers</td><td><code>Express + TypeScript ×3</code></td><td>Full control: realistic error responses, schema validation, state persistence in JSON.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hlg"><td>Dev tooling</td><td><code>pnpm workspaces · Makefile · concurrently</code></td><td>Single repo. Four Makefile commands. One terminal for all service logs.</td><td><span class="b bb">Phase 1</span></td></tr>
+        <tr class="hla"><td>Frontend state (upgrade)</td><td><code>Zustand + TanStack Query</code></td><td>Add when React Context becomes unwieldy.</td><td><span class="b bp">Phase 2</span></td></tr>
+        <tr class="hla"><td>Agent orchestration</td><td><code>LangGraph.js</code></td><td>Add when routing becomes genuinely complex — cross-domain dependencies, retry graphs.</td><td><span class="b bp">Phase 2</span></td></tr>
+        <tr class="hla"><td>Workflow machines</td><td><code>XState v5</code></td><td>Add when slot-filling workflows need hardening beyond simple Zod schemas.</td><td><span class="b bp">Phase 2</span></td></tr>
+        <tr class="hla"><td>Vector store + RAG</td><td><code>ChromaDB + nomic-embed-text</code></td><td>Phase 1 generates guides from LLM prompts. RAG over IAM docs is a Phase 2 quality upgrade.</td><td><span class="b bp">Phase 2</span></td></tr>
+        <tr class="hla"><td>Email</td><td><code>Mailpit + Nodemailer + React Email</code></td><td>Phase 1 console.logs email content. Full HTML email rendering is Phase 2 demo polish.</td><td><span class="b bp">Phase 2</span></td></tr>
+        <tr class="hla"><td>Multi-agent (Python)</td><td><code>FastAPI + CrewAI</code></td><td>Only if TypeScript agent layer proves limiting. Separate service, clean REST boundary.</td><td><span class="b bt">Phase 3</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════ 4. AI & MODELS ════ -->
+<section class="sec" id="ai">
+  <div class="sec-hdr">
+    <span class="sec-num">04</span>
+    <h2 class="sec-title">AI &amp; Model Strategy</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#7c3aed,transparent)"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-t">Model-Agnostic Design</div>
+    <p>No agent, tool, or prompt file ever references a model name or provider directly. All LLM calls route through a single <code>getLLM(capability)</code> gateway function. Swapping the entire AI backend is one environment variable: <code>LLM_PROVIDER=groq</code>. The rest of CIPHER is completely unaware. The same code runs on your laptop with Ollama today and on Claude API in production tomorrow.</p>
+  </div>
+
+  <div class="tcol">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Capability Tiers</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Capability</th><th>Env var</th><th>Phase 1 model</th></tr></thead>
+          <tbody>
+            <tr><td><strong>REASONING</strong></td><td><code>MODEL_REASONING</code></td><td><code>llama3.1:8b</code></td></tr>
+            <tr><td><strong>FAST</strong></td><td><code>MODEL_FAST</code></td><td><code>llama3.1:8b</code> (same)</td></tr>
+            <tr><td><strong>STRUCTURED</strong></td><td><code>MODEL_STRUCTURED</code></td><td><code>llama3.1:8b</code> (same)</td></tr>
+            <tr class="hla"><td><strong>EMBEDDING</strong></td><td><code>MODEL_EMBEDDING</code></td><td>Phase 2 with RAG</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="co co-note" style="margin-top:9px">Phase 1 uses one model for all roles. Multi-model optimisation (adding <code>phi3:mini</code> for speed) is a Phase 2 upgrade once the concept is proven.</div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Supported Providers</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Provider</th><th>Cost</th><th>Where</th><th>Embeds</th></tr></thead>
+          <tbody>
+            <tr class="hlg"><td><strong>Ollama</strong></td><td><span class="b bg">Free</span></td><td>Local</td><td>✓</td></tr>
+            <tr class="hlg"><td><strong>Groq</strong></td><td><span class="b bg">Free tier</span></td><td>Cloud</td><td>✗</td></tr>
+            <tr><td><strong>Gemini</strong></td><td><span class="b bg">Free tier</span></td><td>Cloud</td><td>✓</td></tr>
+            <tr><td><strong>LM Studio</strong></td><td><span class="b bg">Free</span></td><td>Local</td><td>✓</td></tr>
+            <tr><td><strong>Anthropic</strong></td><td><span class="b ba">Paid</span></td><td>Cloud</td><td>✗</td></tr>
+            <tr><td><strong>OpenAI</strong></td><td><span class="b ba">Paid</span></td><td>Cloud</td><td>✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Environment Profiles — drop-in .env files per scenario</div>
+  <div class="egrid">
+    <div class="ecard" style="border-left:3px solid #2563eb">
+      <div><div class="en">.env.laptop</div><div class="ew">Daily dev · personal machine</div></div>
+      <div><span class="b bg">Free</span></div>
+      <div class="ev">LLM_PROVIDER=ollama<br>MODEL_REASONING=llama3.1:8b<br>LLM_BASE_URL=http://localhost:11434</div>
+    </div>
+    <div class="ecard" style="border-left:3px solid #7c3aed">
+      <div><div class="en">.env.demo-groq</div><div class="ew">Office demo · no models installed</div></div>
+      <div><span class="b bg">Free</span></div>
+      <div class="ev">LLM_PROVIDER=groq<br>MODEL_REASONING=llama-3.1-70b-versatile<br>GROQ_API_KEY=gsk_...</div>
+    </div>
+    <div class="ecard" style="border-left:3px solid #0891b2">
+      <div><div class="en">.env.demo-gemini</div><div class="ew">Zero local deps · full cloud</div></div>
+      <div><span class="b bg">Free</span></div>
+      <div class="ev">LLM_PROVIDER=google<br>MODEL_REASONING=gemini-1.5-flash<br>GOOGLE_API_KEY=AIza...</div>
+    </div>
+    <div class="ecard" style="border-left:3px solid #059669">
+      <div><div class="en">.env.production</div><div class="ew">Post-approval · real IAM APIs</div></div>
+      <div><span class="b ba">Paid</span></div>
+      <div class="ev">LLM_PROVIDER=anthropic<br>MODEL_REASONING=claude-3-5-sonnet-20241022<br>ANTHROPIC_API_KEY=sk-ant-...</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 5. AGENT DESIGN ════ -->
+<section class="sec" id="agents">
+  <div class="sec-hdr">
+    <span class="sec-num">05</span>
+    <h2 class="sec-title">Agent Design</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#059669,transparent)"></div>
+  </div>
+
+  <div class="tcol">
+    <div class="card">
+      <div class="card-t">Supervisor + Specialist Pattern</div>
+      <p>One supervisor function classifies user intent and routes to the correct specialist via a plain <code>switch(intent)</code>. Each specialist is a plain async TypeScript function owning its full workflow — slot collection, tool calling, result handling. Supervisor is deliberately dumb: routing only. Specialist is smart: domain logic only.</p>
+      <p>Adding a new domain means adding one new agent function and one new switch case. No framework changes.</p>
+    </div>
+    <div class="card">
+      <div class="card-t">Slot Filling — 40 lines, no framework</div>
+      <p>Each operation has a Zod schema of required fields. The slot collector checks which fields are present in the conversation context and which are missing. For each missing field it asks one question. Once all fields are populated it moves to the confirmation step.</p>
+      <p>XState v5 state machines are added in Phase 2 when this simple approach shows its limits — not before.</p>
+    </div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>Risk level</th><th>Confirmation UX</th><th>Example operations</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="b bk">Read</span></td><td>None — execute immediately and stream result</td><td>Get connection status, list safes, check group info, request status</td></tr>
+        <tr><td><span class="b bb">Low write</span></td><td>Inline chip: "Add John to infra-prod? [Yes] [No]"</td><td>Add member to safe, add member to group, append redirect URI</td></tr>
+        <tr class="hla"><td><span class="b ba">High write</span></td><td>Full summary card — all parameters shown — [Confirm] [Edit] [Cancel]</td><td>Create OIDC connection, create safe, create group, rotate client secret</td></tr>
+        <tr class="hlr"><td><span class="b br">Destructive</span></td><td>Summary card + user must type the resource name to proceed</td><td>Delete OIDC client, delete safe, remove safe member</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="co co-rule">
+    <strong>Hard rule:</strong> Risk level is declared as static metadata on each tool definition. The LLM never decides whether to confirm. The tool contract decides. This is non-negotiable.
+  </div>
+</section>
+
+<!-- ════ 6. OPERATIONS ════ -->
+<section class="sec" id="operations">
+  <div class="sec-hdr">
+    <span class="sec-num">06</span>
+    <h2 class="sec-title">IAM Operations Coverage</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#0891b2,transparent)"></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>Domain</th><th>Intent</th><th>Example phrase</th><th>Risk</th><th>Required slots</th></tr>
+      </thead>
+      <tbody>
+        <tr><td rowspan="4"><strong>SSO</strong><br><span style="font-size:10.5px;color:var(--text-3)">Ping Federate</span></td>
+          <td><code>sso.create_oidc</code></td><td>"Onboard my app with OIDC"</td><td><span class="b ba">High write</span></td><td>appName, redirectUris, grantTypes, env</td></tr>
+        <tr><td><code>sso.create_saml</code></td><td>"Add SAML connection for HR Portal"</td><td><span class="b ba">High write</span></td><td>spEntityId, acsUrl, nameIdFormat</td></tr>
+        <tr><td><code>sso.get_status</code></td><td>"Is PaymentService connected?"</td><td><span class="b bk">Read</span></td><td>connectionId or appName</td></tr>
+        <tr><td><code>sso.rotate_secret</code></td><td>"Rotate the secret for PaymentService"</td><td><span class="b ba">High write</span></td><td>clientId, confirmation</td></tr>
+        <tr><td rowspan="4"><strong>PAM</strong><br><span style="font-size:10.5px;color:var(--text-3)">CyberArk</span></td>
+          <td><code>pam.create_safe</code></td><td>"Create a safe for team infra"</td><td><span class="b ba">High write</span></td><td>safeName, description, owners, retentionDays</td></tr>
+        <tr><td><code>pam.get_safe</code></td><td>"Who owns safe infra-prod?"</td><td><span class="b bk">Read</span></td><td>safeName</td></tr>
+        <tr><td><code>pam.add_member</code></td><td>"Add alice@co.com to infra-prod"</td><td><span class="b bb">Low write</span></td><td>safeName, memberEmail, permissions</td></tr>
+        <tr><td><code>pam.remove_member</code></td><td>"Remove Bob from infra-prod safe"</td><td><span class="b br">Destructive</span></td><td>safeName, memberEmail</td></tr>
+        <tr><td rowspan="4"><strong>IGA</strong><br><span style="font-size:10.5px;color:var(--text-3)">Saviynt</span></td>
+          <td><code>iga.create_group</code></td><td>"Create a Web SSO group for Payments"</td><td><span class="b ba">High write</span></td><td>groupName, groupType, description, owners</td></tr>
+        <tr><td><code>iga.add_member</code></td><td>"Add Alice to SSO-Payments group"</td><td><span class="b bb">Low write</span></td><td>groupName, userId</td></tr>
+        <tr><td><code>iga.request_access</code></td><td>"I need access to PaymentService"</td><td><span class="b ba">High write</span></td><td>userId, resourceName, justification</td></tr>
+        <tr><td><code>iga.check_request</code></td><td>"Is REQ-042 approved?"</td><td><span class="b bk">Read</span></td><td>requestId</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-t">Cross-Domain Requests</div>
+    <p>When a user requests operations across two domains — "onboard PaymentService with OIDC and create a Saviynt group for it" — the supervisor detects multiple intents and runs them <strong>sequentially</strong>. First confirmation card, user approves, execute, then second confirmation card. Simple, predictable, no combined card complexity. Parallel execution is a Phase 2 optimisation for read-only cross-domain queries.</p>
+  </div>
+</section>
+
+<!-- ════ 7. SECURITY ════ -->
+<section class="sec" id="security">
+  <div class="sec-hdr">
+    <span class="sec-num">07</span>
+    <h2 class="sec-title">Security Model</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#dc2626,transparent)"></div>
+  </div>
+
+  <div class="co co-rule">
+    <strong>Hard rule — non-negotiable:</strong> No credentials, client secrets, signing certificates, or API keys ever appear in the chat stream. The SSE channel from LLM to browser is not a secure channel. Enforced in system prompt, agent output schemas, and tool definitions.
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Sensitivity</th><th>In chat?</th><th>How it reaches the requester</th></tr>
+      </thead>
+      <tbody>
+        <tr class="hlg"><td>Metadata URL, Issuer URL, Token Endpoint, Scopes, ACS URL</td><td><span class="b bg">Public</span></td><td>✅ Yes — integration guide</td><td>Formatted guide card in chat. Downloadable as Markdown.</td></tr>
+        <tr class="hla"><td>Client ID</td><td><span class="b ba">Semi-sensitive</span></td><td>⚠️ Masked — <code>pf-***-a3f9</code></td><td>Partial value in guide. Full value never shown in chat.</td></tr>
+        <tr class="hlr"><td>Client Secret, Signing Cert, Private Key</td><td><span class="b br">Secret</span></td><td>❌ Never</td><td>Stored in DB. IAM team notified (mocked in Phase 1) and delivers credentials via your company's secure channel.</td></tr>
+        <tr><td>IAM team notification</td><td><span class="b bk">Internal</span></td><td>✅ Status only</td><td>Chat confirms: "Request REQ-0042 processed. The IAM team has been notified and will share credentials." Email fires to IAM team with full request details.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tcol">
+    <div class="card">
+      <div class="card-t">Authentication (Phase 1)</div>
+      <p>Simple JWT. Users table in SQLite: id, email, name, passwordHash, role. Login form: email + password. Fastify JWT plugin validates on every request. Max 10–15 users seeded via script. No OIDC integration in Phase 1 — ironic but correct for a POC.</p>
+    </div>
+    <div class="card">
+      <div class="card-t">Email Flow (Phase 1 → Production)</div>
+      <p>Phase 1: email content written to server console — readable, no infrastructure. Phase 2: Mailpit (free Docker container) captures real HTML emails locally. Phase 4: one env var change to real SMTP. The Nodemailer client code never changes — only the transport config.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 8. PHASES ════ -->
+<section class="sec" id="phases">
+  <div class="sec-hdr">
+    <span class="sec-num">08</span>
+    <h2 class="sec-title">Phase Roadmap</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#f59e0b,transparent)"></div>
+  </div>
+
+  <div class="pgrid">
+    <div class="pcard" style="border-top-color:#2563eb">
+      <div class="p-num" style="color:#2563eb">Phase 1</div>
+      <div class="p-name">Prove the concept</div>
+      <div class="p-time">3–4 weeks &nbsp;·&nbsp; $0 cost &nbsp;·&nbsp; TypeScript only</div>
+      <ul class="p-list">
+        <li>Full chat UI with SSE streaming</li>
+        <li>All 3 domains working end-to-end</li>
+        <li>Slot filling · confirm gate · execution</li>
+        <li>Integration guide generated post-op</li>
+        <li>Request history panel</li>
+        <li>Simple JWT auth &amp; login page</li>
+        <li>Mock providers (Ping · CyberArk · Saviynt)</li>
+        <li>Makefile · env validator · feature flags</li>
+        <li>One model: llama3.1:8b via Ollama</li>
+      </ul>
+    </div>
+    <div class="pcard" style="border-top-color:#7c3aed">
+      <div class="p-num" style="color:#7c3aed">Phase 2</div>
+      <div class="p-name">Make it impressive</div>
+      <div class="p-time">2–3 weeks &nbsp;·&nbsp; Free &nbsp;·&nbsp; Demo-ready</div>
+      <ul class="p-list">
+        <li>Live agent activity stream</li>
+        <li>Mailpit + React Email templates</li>
+        <li>Demo seed data + guided walkthrough</li>
+        <li>System status bar in UI</li>
+        <li>Cloudflare Tunnel (<code>make share</code>)</li>
+        <li>Dev Container (.devcontainer)</li>
+        <li>Multi-model: add phi3:mini for speed</li>
+        <li>ChromaDB + RAG over IAM docs</li>
+        <li>Bruno API collection</li>
+      </ul>
+    </div>
+    <div class="pcard" style="border-top-color:#0891b2">
+      <div class="p-num" style="color:#0891b2">Phase 3</div>
+      <div class="p-name">Scale the architecture</div>
+      <div class="p-time">3–4 weeks &nbsp;·&nbsp; Free or minimal</div>
+      <ul class="p-list">
+        <li>Python + FastAPI + CrewAI (if needed)</li>
+        <li>LangGraph.js supervisor (if routing grows)</li>
+        <li>XState v5 per-agent state machines</li>
+        <li>All LLM provider adapters wired</li>
+        <li>OpenAPI docs + GitHub Actions CI</li>
+        <li>SAML agent (Phase 2 SSO feature)</li>
+        <li>Mock scenario config for error testing</li>
+      </ul>
+    </div>
+    <div class="pcard" style="border-top-color:#059669">
+      <div class="p-num" style="color:#059669">Phase 4</div>
+      <div class="p-name">Production</div>
+      <div class="p-time">Company-dependent &nbsp;·&nbsp; Real costs apply</div>
+      <ul class="p-list">
+        <li>Swap mock APIs → real Ping / CyberArk / Saviynt</li>
+        <li>SQLite → PostgreSQL</li>
+        <li>Ollama → Claude API or Azure OpenAI</li>
+        <li>OIDC auth via Ping Federate itself</li>
+        <li>RBAC — requester vs IAM admin roles</li>
+        <li>Real email / Slack notifications</li>
+        <li>Audit trail + compliance logging</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="co co-tip">
+    <strong>The upgrade contract:</strong> Every Phase 1 component has a one-line swap to its production equivalent. LLM provider: one env var. Database: one connection string. Mock APIs → real APIs: one base URL per provider. Nothing is rewritten — only reconfigured.
+  </div>
+</section>
+
+<!-- ════ 9. DEPLOYMENT ════ -->
+<section class="sec" id="deployment">
+  <div class="sec-hdr">
+    <span class="sec-num">09</span>
+    <h2 class="sec-title">Deployment Strategy</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#ea580c,transparent)"></div>
+  </div>
+
+  <div class="tcol">
+    <div class="card">
+      <div class="card-t">What GitHub carries</div>
+      <p>All source code, <code>package.json</code>, <code>pnpm-lock.yaml</code>, <code>docker-compose.yml</code>, Prisma schema, <code>.env.example</code>, and Makefile travel via GitHub. Everything to recreate the environment is in the repo.</p>
+      <p><strong style="color:#f87171">Does NOT travel:</strong> <code>.env.local</code> (recreate from example), <code>node_modules</code> (install from lockfile), Ollama model files (~12 GB — see USB steps below), SQLite database file.</p>
+    </div>
+    <div class="card">
+      <div class="card-t">Switching providers at office</div>
+      <p>If ollama.com is blocked by corporate firewall, switch to Groq — free, fast, no models needed:</p>
+      <pre style="margin-top:8px"><span class="cm"># One command — nothing else changes</span>
+<span class="st">cp .env.demo-groq .env.local</span>
+<span class="kw">pnpm dev</span>
+
+<span class="cm"># Free API key at console.groq.com</span>
+<span class="cm"># llama-3.1-70b runs at 500+ t/s on Groq</span></pre>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Offline model transfer: personal laptop → office laptop via USB</div>
+  <ol class="steps">
+    <li>Pull models at home on personal laptop: <code>ollama pull llama3.1:8b &amp;&amp; ollama pull phi3:mini</code></li>
+    <li>Locate model folder — Windows: <code>C:\Users\YourName\.ollama\models\</code> · Mac/Linux: <code>~/.ollama/models/</code></li>
+    <li>Copy entire <code>models\</code> folder to a USB 3.0 drive or external SSD (~12 GB — never use USB 2.0)</li>
+    <li>Also copy to USB: <code>OllamaSetup.exe</code>, Node 20 installer, Python 3.11 installer, your <code>.env.local</code></li>
+    <li>On office laptop: install Ollama, paste the <code>blobs\</code> and <code>manifests\</code> folders into its models directory</li>
+    <li>Verify: run <code>ollama list</code> — all models appear instantly with no internet download</li>
+  </ol>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Office laptop pre-flight checklist</div>
+  <ul class="chk">
+    <li><code>node --version</code> shows v20.x or higher</li>
+    <li><code>python --version</code> shows 3.11 or higher</li>
+    <li><code>ollama list</code> shows all required models (or Groq profile ready)</li>
+    <li>GitHub accessible via HTTPS — run <code>curl https://github.com</code></li>
+    <li>npm registry accessible — run <code>npm ping</code></li>
+    <li><code>.env.local</code> created from <code>.env.example</code> with all required keys</li>
+    <li>Ports 3001, 5173, 9031, 1858, 8080, 11434 are free</li>
+    <li>Docker Desktop installed (or use Ollama native installer — Docker not required)</li>
+  </ul>
+</section>
+
+<!-- ════ 10. QUICK START ════ -->
+<section class="sec" id="start">
+  <div class="sec-hdr">
+    <span class="sec-num">10</span>
+    <h2 class="sec-title">Quick Start</h2>
+    <div class="sec-line" style="background:linear-gradient(90deg,#059669,transparent)"></div>
+  </div>
+
+  <div class="tcol">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">First-time setup</div>
+      <pre><span class="cm"># 1. Pull models (do this once at home)</span>
+ollama pull llama3.1:8b
+ollama pull phi3:mini
+
+<span class="cm"># 2. Clone repo and install</span>
+git clone https://github.com/you/cipher
+cd cipher
+pnpm install
+
+<span class="cm"># 3. Configure</span>
+cp .env.example .env.local
+<span class="cm"># Edit .env.local — set JWT_SECRET at minimum</span>
+
+<span class="cm"># 4. Setup database + seed</span>
+make setup</pre>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Daily commands</div>
+      <pre><span class="kw">make dev</span>    <span class="cm"># start everything</span>
+<span class="kw">make reset</span>  <span class="cm"># wipe DB, fresh start</span>
+<span class="kw">make check</span>  <span class="cm"># health check + model warmup</span>
+<span class="kw">make share</span>  <span class="cm"># Cloudflare tunnel (Phase 2)</span>
+
+<span class="cm"># Services started by make dev:</span>
+<span class="st">http://localhost:5173</span>  <span class="cm">CIPHER UI</span>
+<span class="st">http://localhost:3001</span>  <span class="cm">API</span>
+<span class="st">http://localhost:9031</span>  <span class="cm">Mock Ping Federate</span>
+<span class="st">http://localhost:1858</span>  <span class="cm">Mock CyberArk</span>
+<span class="st">http://localhost:8080</span>  <span class="cm">Mock Saviynt</span>
+<span class="st">http://localhost:5555</span>  <span class="cm">Prisma Studio (DB GUI)</span></pre>
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Project structure</div>
+  <pre><span class="va">cipher/</span>
+├── <span class="va">apps/</span>
+│   ├── <span class="va">web/</span>              <span class="cm">React frontend</span>
+│   ├── <span class="va">api/</span>              <span class="cm">Fastify API + agent loop (TypeScript)</span>
+│   │   └── <span class="va">src/</span>
+│   │       ├── agents/   <span class="cm">ssoAgent · cyberarkAgent · saviyntAgent</span>
+│   │       ├── gateway/  <span class="cm">getLLM() — LLM Provider Gateway</span>
+│   │       ├── tools/    <span class="cm">typed fetch wrappers per IAM provider</span>
+│   │       └── routes/   <span class="cm">chat · requests · auth · health</span>
+│   └── <span class="va">mock-providers/</span>   <span class="cm">Ping :9031 · CyberArk :1858 · Saviynt :8080</span>
+├── <span class="va">packages/</span>
+│   └── <span class="va">shared/</span>           <span class="cm">TypeScript types + Zod schemas (shared)</span>
+├── <span class="va">scripts/</span>
+│   ├── preflight.ts      <span class="cm">Health check + model warmup (runs on make check)</span>
+│   └── seed.ts           <span class="cm">Seed test users + demo requests</span>
+├── <span class="va">config/</span>
+│   └── features.ts       <span class="cm">FEATURE_RAG · FEATURE_ACTIVITY_STREAM · etc.</span>
+├── docker-compose.yml    <span class="cm">Ollama only in Phase 1</span>
+├── Makefile
+├── .env.example
+├── .env.laptop           <span class="cm">Ollama local profile</span>
+├── .env.demo-groq        <span class="cm">Groq cloud profile</span>
+└── .env.demo-gemini      <span class="cm">Gemini cloud profile</span></pre>
+</section>
+
+</main>
+
+<footer class="doc-footer">
+  <span>CIPHER &nbsp;·&nbsp; Design Document v1.0 &nbsp;·&nbsp; Phase 1 POC</span>
+  <span>All components free and open-source &nbsp;·&nbsp; Runs entirely on personal hardware</span>
+</footer>
+
+</div><!-- /.main -->
+
+<script>
+const navLinks = document.querySelectorAll('.nav-a');
+const sections = document.querySelectorAll('.sec');
+
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const a = document.querySelector(`.nav-a[href="#${e.target.id}"]`);
+      if (a) a.classList.add('active');
+    }
+  });
+}, { threshold: 0.2, rootMargin: '-60px 0px -60% 0px' });
+
+sections.forEach(s => obs.observe(s));
+
+navLinks.forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(link.getAttribute('href'));
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+</body>
+</html>

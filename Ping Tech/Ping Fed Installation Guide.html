@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PingFederate — Ansible Installation Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN DIRECTION: Terminal-meets-Blueprint
+   Industrial amber/slate dark theme,
+   monospace-dominant, high information density
+   with structured breathing room.
+═══════════════════════════════════════ */
+:root {
+  --bg:        #0c0e0f;
+  --bg2:       #111416;
+  --bg3:       #161a1c;
+  --bg4:       #1c2124;
+  --bg5:       #222830;
+  --border:    #252c30;
+  --border2:   #2e3840;
+  --border3:   #3a4a56;
+
+  --text:      #dce8f0;
+  --text2:     #a0b8c8;
+  --text3:     #607888;
+  --text4:     #384858;
+
+  --amber:     #f5a623;
+  --amber2:    #ffbf4d;
+  --amber3:    #ffd480;
+  --green:     #3dd68c;
+  --green2:    #6eeaaa;
+  --blue:      #4da6ff;
+  --blue2:     #80c0ff;
+  --teal:      #1dc9b0;
+  --teal2:     #4ddecb;
+  --red:       #ff5a5a;
+  --red2:      #ff8888;
+  --purple:    #b08aff;
+  --purple2:   #ccaaff;
+  --slate:     #8aa0b0;
+
+  --mono: 'Azeret Mono', monospace;
+  --display: 'Fraunces', serif;
+  --body: 'DM Sans', sans-serif;
+  --r: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 15px; }
+
+body {
+  font-family: var(--body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 5px; background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  min-height: 320px;
+  display: flex; align-items: flex-end;
+  padding: 0 48px 52px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 700px 400px at 80% 30%, rgba(245,166,35,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 400px 600px at 0% 100%, rgba(29,201,176,0.05) 0%, transparent 60%);
+}
+/* Blueprint grid */
+.hero-grid {
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(245,166,35,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,166,35,0.06) 1px, transparent 1px),
+    linear-gradient(rgba(245,166,35,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,166,35,0.03) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  mask-image: linear-gradient(180deg, transparent 0%, black 40%, black 80%, transparent 100%);
+}
+/* Corner bracket decoration */
+.hero::before {
+  content: '';
+  position: absolute; top: 24px; left: 48px;
+  width: 40px; height: 40px;
+  border-top: 2px solid var(--amber);
+  border-left: 2px solid var(--amber);
+  opacity: 0.5;
+}
+.hero::after {
+  content: '';
+  position: absolute; bottom: 52px; right: 48px;
+  width: 40px; height: 40px;
+  border-bottom: 2px solid var(--amber);
+  border-right: 2px solid var(--amber);
+  opacity: 0.3;
+}
+.hero-inner { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; width: 100%; }
+.hero-label {
+  font-family: var(--mono); font-size: 10px; color: var(--amber);
+  letter-spacing: 0.18em; text-transform: uppercase;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+}
+.hero-label::before {
+  content: '';
+  display: inline-block; width: 28px; height: 1px;
+  background: var(--amber);
+}
+.hero h1 {
+  font-family: var(--display); font-size: clamp(36px,5vw,66px);
+  font-weight: 700; line-height: 1.05; color: #eef5fa;
+  margin-bottom: 16px;
+}
+.hero h1 em { font-style: italic; font-weight: 300; color: var(--amber2); }
+.hero-meta {
+  display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 32px;
+}
+.hero-meta-item {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 11px; color: var(--text3);
+}
+.hero-meta-item::before { content: '◆'; color: var(--amber); font-size: 6px; }
+.hero-meta-item span { color: var(--text2); }
+.hero-stats {
+  display: flex; gap: 0; border: 1px solid var(--border2);
+  border-radius: var(--r); overflow: hidden; width: fit-content;
+}
+.hero-stat {
+  padding: 12px 28px; border-right: 1px solid var(--border2);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.hero-stat:last-child { border-right: none; }
+.hero-stat-n { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--amber2); }
+.hero-stat-l { font-family: var(--mono); font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── STICKY NAV ── */
+.top-bar {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(12,14,15,0.96); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: stretch;
+}
+.top-bar-logo {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 28px; border-right: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; color: var(--amber);
+  white-space: nowrap; flex-shrink: 0;
+}
+.top-bar-logo .lb { width: 8px; height: 8px; background: var(--amber); border-radius: 2px; }
+.top-bar-nav { display: flex; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.top-bar-nav::-webkit-scrollbar { display: none; }
+.top-bar-nav a {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 16px; height: 46px;
+  font-family: var(--mono); font-size: 10.5px; color: var(--text3);
+  text-decoration: none; white-space: nowrap; letter-spacing: 0.04em;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.top-bar-nav a .n { color: var(--text4); font-size: 9px; }
+.top-bar-nav a:hover, .top-bar-nav a.active { color: var(--amber2); border-bottom-color: var(--amber); }
+.top-bar-actions {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 20px; border-left: 1px solid var(--border); flex-shrink: 0;
+}
+.tb-btn {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 5px; padding: 6px 12px; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.tb-btn:hover { color: var(--amber2); border-color: var(--amber); background: rgba(245,166,35,0.06); }
+.tb-btn.copied { color: var(--green); border-color: var(--green); background: rgba(61,214,140,0.08); }
+
+/* ── LAYOUT ── */
+.layout {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  max-width: 1360px; margin: 0 auto;
+}
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position: sticky; top: 46px;
+  height: calc(100vh - 46px); overflow-y: auto;
+  padding: 28px 0 28px 24px;
+  border-right: 1px solid var(--border);
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+@media (max-width: 860px) { .sidebar { display: none; } }
+.toc-group { margin-bottom: 24px; }
+.toc-group-label {
+  font-family: var(--mono); font-size: 9px; color: var(--amber);
+  text-transform: uppercase; letter-spacing: 0.15em;
+  padding: 0 4px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.toc-group-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.toc-link {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 5px;
+  font-family: var(--mono); font-size: 11px; color: var(--text3);
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s; border-left: 2px solid transparent;
+  margin-bottom: 2px;
+}
+.toc-link .tn { font-size: 9px; color: var(--text4); min-width: 18px; }
+.toc-link:hover, .toc-link.active {
+  color: var(--amber2); background: rgba(245,166,35,0.06);
+  border-left-color: var(--amber);
+}
+.toc-sub-link {
+  display: block; padding: 3px 8px 3px 28px;
+  font-family: var(--mono); font-size: 10px; color: var(--text4);
+  text-decoration: none; border-left: 1px solid var(--border);
+  margin-left: 16px; transition: color 0.15s, border-color 0.15s;
+}
+.toc-sub-link:hover { color: var(--text2); border-left-color: var(--amber); }
+
+/* ── MAIN ── */
+.main { padding: 44px 56px 80px; max-width: 960px; }
+@media (max-width: 860px) { .main { padding: 28px 20px 60px; } }
+
+/* ── PHASE SECTIONS ── */
+.section { margin-bottom: 80px; scroll-margin-top: 56px; }
+.section-header {
+  display: flex; align-items: flex-start; gap: 20px;
+  margin-bottom: 32px; padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.section-header::after {
+  content: ''; position: absolute; bottom: -1px; left: 0;
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+}
+.sec-badge {
+  flex-shrink: 0;
+  width: 44px; height: 44px;
+  background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.25);
+  border-radius: var(--r);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px;
+}
+.sec-badge .sn { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--amber); line-height: 1; }
+.sec-badge .sl { font-family: var(--mono); font-size: 7px; color: var(--text4); text-transform: uppercase; letter-spacing: 0.1em; }
+.sec-title { flex: 1; }
+.sec-title h2 {
+  font-family: var(--display); font-size: clamp(22px,2.8vw,30px);
+  font-weight: 600; color: #eef5fa; line-height: 1.15;
+}
+.sec-title p { font-size: 13.5px; color: var(--text3); margin-top: 5px; }
+
+h3 {
+  font-size: 16px; font-weight: 600;
+  color: var(--amber3); margin: 36px 0 14px;
+  display: flex; align-items: center; gap: 10px;
+  scroll-margin-top: 56px;
+}
+h3::before {
+  content: ''; flex-shrink: 0;
+  width: 14px; height: 2px;
+  background: var(--amber); border-radius: 1px;
+}
+
+h4 {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: var(--teal2); margin: 18px 0 10px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  display: flex; align-items: center; gap: 8px;
+}
+h4::before { content: '//'; color: var(--teal); }
+
+p { color: var(--text2); margin-bottom: 14px; font-size: 14.5px; line-height: 1.72; }
+p strong { color: var(--text); font-weight: 600; }
+
+a { color: var(--amber2); text-decoration: none; border-bottom: 1px solid rgba(245,166,35,0.3); transition: 0.2s; }
+a:hover { color: var(--amber3); border-bottom-color: var(--amber2); }
+
+/* ── CODE BLOCKS ── */
+.code-block {
+  border-radius: var(--r); border: 1px solid var(--border2);
+  overflow: hidden; margin: 16px 0;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.35);
+}
+.cb-header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg4); padding: 8px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.cb-left { display: flex; align-items: center; gap: 10px; }
+.cb-dots { display: flex; gap: 5px; }
+.cb-dots span { width: 10px; height: 10px; border-radius: 50%; }
+.d1 { background: #ff5f57; } .d2 { background: #febc2e; } .d3 { background: #28c840; }
+.cb-lang {
+  font-family: var(--mono); font-size: 10px; color: var(--amber);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  background: rgba(245,166,35,0.08); border: 1px solid rgba(245,166,35,0.15);
+  padding: 2px 8px; border-radius: 4px;
+}
+.cb-title { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.copy-btn {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  background: none; border: 1px solid var(--border2);
+  border-radius: 4px; padding: 4px 12px; cursor: pointer;
+  transition: all 0.18s;
+}
+.copy-btn:hover { color: var(--amber2); border-color: var(--amber); }
+.copy-btn.ok { color: var(--green); border-color: var(--green); }
+
+pre {
+  background: #080b0d;
+  padding: 22px 24px; overflow-x: auto;
+  font-family: var(--mono); font-size: 12.5px;
+  line-height: 1.8; tab-size: 2;
+}
+
+/* Syntax tokens */
+.cm  { color: #3d5465; font-style: italic; }
+.kw  { color: #b08aff; font-weight: 600; }
+.st  { color: #9ecf72; }
+.nm  { color: #5bbcff; }
+.vl  { color: #f5a623; }
+.fn  { color: #ffd480; }
+.op  { color: #4ddecb; }
+.hl  { display: block; background: rgba(245,166,35,0.07); margin: 0 -24px; padding: 0 24px; }
+.err { color: var(--red2); text-decoration: underline wavy var(--red); }
+
+code {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--amber2); background: rgba(245,166,35,0.08);
+  border: 1px solid rgba(245,166,35,0.18);
+  padding: 1px 7px; border-radius: 4px;
+}
+
+/* ── CALLOUTS ── */
+.callout {
+  border-radius: var(--r); padding: 16px 20px;
+  margin: 20px 0; display: flex; gap: 14px;
+  font-size: 13.5px; line-height: 1.65;
+}
+.callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.callout strong { display: block; font-size: 12.5px; margin-bottom: 3px; font-family: var(--mono); letter-spacing: 0.04em; }
+.callout.info    { background: rgba(77,166,255,0.07); border: 1px solid rgba(77,166,255,0.2); color: var(--text2); }
+.callout.warn    { background: rgba(245,166,35,0.07); border: 1px solid rgba(245,166,35,0.2); color: var(--text2); }
+.callout.tip     { background: rgba(29,201,176,0.07); border: 1px solid rgba(29,201,176,0.2); color: var(--text2); }
+.callout.danger  { background: rgba(255,90,90,0.07); border: 1px solid rgba(255,90,90,0.2); color: var(--text2); }
+.callout.success { background: rgba(61,214,140,0.07); border: 1px solid rgba(61,214,140,0.2); color: var(--text2); }
+.callout.info  .callout-icon { color: var(--blue2); }
+.callout.warn  .callout-icon { color: var(--amber2); }
+.callout.tip   .callout-icon { color: var(--teal2); }
+.callout.danger .callout-icon { color: var(--red2); }
+.callout.success .callout-icon { color: var(--green2); }
+
+/* ── TABLES ── */
+.table-wrap { overflow-x: auto; margin: 18px 0; border-radius: var(--r); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--bg4); }
+th {
+  padding: 10px 16px; text-align: left;
+  font-family: var(--mono); font-size: 10px; color: var(--amber2);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border2);
+}
+td { padding: 10px 16px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+td strong { color: var(--text); }
+td code { font-size: 11px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(245,166,35,0.025); }
+
+/* ── LISTS ── */
+ul, ol { padding-left: 22px; margin-bottom: 14px; }
+li { margin-bottom: 7px; color: var(--text2); font-size: 14px; }
+li strong { color: var(--text); }
+li code { font-size: 11.5px; }
+
+.steps { list-style: none; padding: 0; counter-reset: s; }
+.steps li {
+  counter-increment: s; position: relative;
+  padding: 13px 16px 13px 54px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r); margin-bottom: 10px;
+  font-size: 13.5px; color: var(--text2);
+  transition: border-color 0.2s;
+}
+.steps li:hover { border-color: var(--amber); }
+.steps li::before {
+  content: counter(s);
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.3);
+  font-family: var(--mono); font-size: 11px; color: var(--amber);
+  display: flex; align-items: center; justify-content: center;
+}
+.steps li strong { color: var(--amber2); }
+
+/* ── FILE TREE ── */
+.file-tree {
+  background: #080b0d; border: 1px solid var(--border2);
+  border-radius: var(--r); padding: 20px 24px;
+  font-family: var(--mono); font-size: 12.5px;
+  line-height: 1.9; overflow-x: auto;
+  margin: 16px 0;
+}
+.ft-dir   { color: var(--amber2); }
+.ft-file  { color: var(--text2); }
+.ft-yml   { color: var(--green); }
+.ft-j2    { color: var(--purple); }
+.ft-txt   { color: var(--teal2); }
+.ft-cm    { color: var(--text4); font-style: italic; }
+.ft-tree  { color: var(--text3); user-select: none; }
+
+/* ── TAGS ── */
+.tag { display: inline-block; font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid; margin: 2px; }
+.t-amber  { color: var(--amber2);  border-color: rgba(245,166,35,0.35);  background: rgba(245,166,35,0.08); }
+.t-green  { color: var(--green2);  border-color: rgba(61,214,140,0.35);  background: rgba(61,214,140,0.08); }
+.t-blue   { color: var(--blue2);   border-color: rgba(77,166,255,0.35);  background: rgba(77,166,255,0.08); }
+.t-teal   { color: var(--teal2);   border-color: rgba(29,201,176,0.35);  background: rgba(29,201,176,0.08); }
+.t-purple { color: var(--purple2); border-color: rgba(176,138,255,0.35); background: rgba(176,138,255,0.08); }
+.t-red    { color: var(--red2);    border-color: rgba(255,90,90,0.35);   background: rgba(255,90,90,0.08); }
+
+/* ── CARDS ── */
+.card-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); margin: 16px 0; }
+.card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover { border-color: var(--border3); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.card h4 { margin-top: 0; }
+.card p { font-size: 13px; color: var(--text2); margin: 0; }
+.card-amber  { border-top: 2px solid var(--amber); }
+.card-green  { border-top: 2px solid var(--green); }
+.card-teal   { border-top: 2px solid var(--teal); }
+.card-blue   { border-top: 2px solid var(--blue); }
+.card-purple { border-top: 2px solid var(--purple); }
+
+/* ── PHASE PROGRESS BAR ── */
+.phase-track {
+  display: flex; gap: 0; margin: 0 0 40px;
+  border: 1px solid var(--border2); border-radius: var(--r); overflow: hidden;
+}
+.phase-step {
+  flex: 1; padding: 12px 16px; text-align: center;
+  border-right: 1px solid var(--border2);
+  font-family: var(--mono); font-size: 10px; color: var(--text4);
+  letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.phase-step:last-child { border-right: none; }
+.phase-step .ps-n { font-size: 15px; font-weight: 700; color: var(--text3); }
+.phase-step:hover { background: rgba(245,166,35,0.05); }
+.phase-step.active { background: rgba(245,166,35,0.08); color: var(--amber2); }
+.phase-step.active .ps-n { color: var(--amber); }
+.phase-step.done { color: var(--green); }
+.phase-step.done .ps-n { color: var(--green2); }
+
+/* ── VARIABLE TABLE SPECIAL ── */
+.var-table td:first-child { font-family: var(--mono); color: var(--amber2); font-size: 12px; }
+.var-table td:nth-child(2) { font-family: var(--mono); color: var(--green); font-size: 11.5px; }
+.var-table td:last-child { font-size: 13px; color: var(--text2); }
+
+/* ── DIVIDER ── */
+hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+@media (max-width: 680px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 48px; background: var(--bg2);
+  font-family: var(--mono); font-size: 11px; color: var(--text4);
+  text-align: center;
+}
+footer strong { color: var(--text3); }
+
+/* ── PRINT ── */
+@media print {
+  .top-bar, .sidebar, .tb-btn, .copy-btn { display: none !important; }
+  .layout { grid-template-columns: 1fr; }
+  .main { padding: 20px; max-width: 100%; }
+  body { background: #fff; color: #111; }
+  pre { background: #f5f5f5 !important; border: 1px solid #ddd; }
+  .callout, .card { background: #fafafa !important; border-color: #ddd !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ HERO ══════ -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero-label">Infrastructure Automation Series</div>
+    <h1>PingFederate<br>Installation via <em>Ansible</em></h1>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><span>On-Premises &amp; AWS EC2</span></div>
+      <div class="hero-meta-item"><span>Admin + Engine Cluster</span></div>
+      <div class="hero-meta-item"><span>PingFederate 12.x / 11.x</span></div>
+      <div class="hero-meta-item"><span>RHEL 8/9 · Amazon Linux 2023</span></div>
+      <div class="hero-meta-item"><span>Java 17</span></div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><span class="hero-stat-n">8</span><span class="hero-stat-l">Phases</span></div>
+      <div class="hero-stat"><span class="hero-stat-n">40+</span><span class="hero-stat-l">Tasks</span></div>
+      <div class="hero-stat"><span class="hero-stat-n">25+</span><span class="hero-stat-l">Code Blocks</span></div>
+      <div class="hero-stat"><span class="hero-stat-n">3</span><span class="hero-stat-l">Environments</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ TOP NAV ══════ -->
+<div class="top-bar">
+  <div class="top-bar-logo"><span class="lb"></span>PF · Ansible</div>
+  <nav class="top-bar-nav">
+    <a href="#s0"><span class="n">00</span>Overview</a>
+    <a href="#s1"><span class="n">01</span>Prereqs</a>
+    <a href="#s2"><span class="n">02</span>Project Layout</a>
+    <a href="#s3"><span class="n">03</span>Inventory</a>
+    <a href="#s4"><span class="n">04</span>Variables</a>
+    <a href="#s5"><span class="n">05</span>Roles</a>
+    <a href="#s6"><span class="n">06</span>Playbooks</a>
+    <a href="#s7"><span class="n">07</span>Templates</a>
+    <a href="#s8"><span class="n">08</span>Handlers&amp;Verify</a>
+  </nav>
+  <div class="top-bar-actions">
+    <button class="tb-btn" onclick="window.print()">🖨 Print</button>
+  </div>
+</div>
+
+<!-- ══════ LAYOUT ══════ -->
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="toc-group">
+    <div class="toc-group-label">Setup</div>
+    <a class="toc-link" href="#s0"><span class="tn">00</span>Overview &amp; Architecture</a>
+    <a class="toc-sub-link" href="#s0-what">What Ansible Does</a>
+    <a class="toc-sub-link" href="#s0-arch">Target Topology</a>
+    <a class="toc-link" href="#s1"><span class="tn">01</span>Prerequisites</a>
+    <a class="toc-sub-link" href="#s1-control">Control Node</a>
+    <a class="toc-sub-link" href="#s1-targets">Target Hosts</a>
+    <a class="toc-sub-link" href="#s1-files">Required Files</a>
+  </div>
+  <div class="toc-group">
+    <div class="toc-group-label">Project Structure</div>
+    <a class="toc-link" href="#s2"><span class="tn">02</span>Project Layout</a>
+    <a class="toc-link" href="#s3"><span class="tn">03</span>Inventory</a>
+    <a class="toc-sub-link" href="#s3-onprem">On-Premises Inventory</a>
+    <a class="toc-sub-link" href="#s3-aws">AWS Dynamic Inventory</a>
+    <a class="toc-link" href="#s4"><span class="tn">04</span>Variables</a>
+    <a class="toc-sub-link" href="#s4-default">defaults/main.yml</a>
+    <a class="toc-sub-link" href="#s4-vault">Vault Secrets</a>
+    <a class="toc-sub-link" href="#s4-env">Per-Environment Vars</a>
+  </div>
+  <div class="toc-group">
+    <div class="toc-group-label">Roles &amp; Tasks</div>
+    <a class="toc-link" href="#s5"><span class="tn">05</span>Roles</a>
+    <a class="toc-sub-link" href="#s5-common">common role</a>
+    <a class="toc-sub-link" href="#s5-java">java role</a>
+    <a class="toc-sub-link" href="#s5-pf">pingfederate role</a>
+    <a class="toc-sub-link" href="#s5-engine">engine role</a>
+    <a class="toc-link" href="#s6"><span class="tn">06</span>Playbooks</a>
+    <a class="toc-sub-link" href="#s6-site">site.yml</a>
+    <a class="toc-sub-link" href="#s6-admin">install-admin.yml</a>
+    <a class="toc-sub-link" href="#s6-engine">install-engines.yml</a>
+  </div>
+  <div class="toc-group">
+    <div class="toc-group-label">Config &amp; Ops</div>
+    <a class="toc-link" href="#s7"><span class="tn">07</span>Jinja2 Templates</a>
+    <a class="toc-sub-link" href="#s7-run">run.properties.j2</a>
+    <a class="toc-sub-link" href="#s7-tcp">tcp.xml.j2</a>
+    <a class="toc-sub-link" href="#s7-service">systemd.service.j2</a>
+    <a class="toc-link" href="#s8"><span class="tn">08</span>Handlers &amp; Verify</a>
+    <a class="toc-sub-link" href="#s8-handlers">handlers/main.yml</a>
+    <a class="toc-sub-link" href="#s8-verify">Verification Tasks</a>
+    <a class="toc-sub-link" href="#s8-idempotent">Idempotency Notes</a>
+    <a class="toc-sub-link" href="#s8-tags">Ansible Tags</a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 0 — OVERVIEW
+═══════════════════════════════════════════════ -->
+<div class="section" id="s0">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">00</span><span class="sl">intro</span></div>
+    <div class="sec-title">
+      <h2>Overview &amp; Architecture</h2>
+      <p>What this Ansible project automates and the target deployment topology.</p>
+    </div>
+  </div>
+
+  <p>This guide walks through a production-ready <strong>Ansible role and playbook structure</strong> for installing and configuring PingFederate in clustered mode — one Admin node plus N Engine nodes. The automation handles every step from OS hardening through service verification, and is designed to be fully idempotent and environment-aware (dev/staging/prod, on-prem/AWS).</p>
+
+  <div class="phase-track">
+    <div class="phase-step done"><span class="ps-n">01</span>OS Prep</div>
+    <div class="phase-step done"><span class="ps-n">02</span>Java Install</div>
+    <div class="phase-step done"><span class="ps-n">03</span>PF Extract</div>
+    <div class="phase-step done"><span class="ps-n">04</span>License + Config</div>
+    <div class="phase-step active"><span class="ps-n">05</span>Cluster Setup</div>
+    <div class="phase-step"><span class="ps-n">06</span>Systemd</div>
+    <div class="phase-step"><span class="ps-n">07</span>Service Start</div>
+    <div class="phase-step"><span class="ps-n">08</span>Verify</div>
+  </div>
+
+  <h3 id="s0-what">What the Ansible Automation Covers</h3>
+  <div class="card-grid">
+    <div class="card card-amber">
+      <h4>OS Preparation</h4>
+      <p>User/group creation, directory layout, OS limits (<code>ulimit</code>), firewall rules, SELinux/AppArmor adjustments, NTP configuration.</p>
+    </div>
+    <div class="card card-green">
+      <h4>Java 17 Install</h4>
+      <p>Install OpenJDK 17 from package repo or custom path. Set <code>JAVA_HOME</code>, validate version. Optionally install Amazon Corretto on AWS.</p>
+    </div>
+    <div class="card card-teal">
+      <h4>PingFederate Deploy</h4>
+      <p>Download/copy the ZIP, extract to target path, install license, configure <code>run.properties</code> and <code>tcp.xml</code> per node role (admin vs engine).</p>
+    </div>
+    <div class="card card-blue">
+      <h4>Cluster Config</h4>
+      <p>Configure JGroups TCP discovery (S3_PING for AWS, TCPPING for on-prem), set operational mode per host group, configure engine→admin connectivity.</p>
+    </div>
+    <div class="card card-purple">
+      <h4>Systemd Service</h4>
+      <p>Install a systemd unit file for PingFederate, enable on boot, configure restart policy and JVM options via environment file.</p>
+    </div>
+    <div class="card card-amber">
+      <h4>Post-Install Verify</h4>
+      <p>Wait for PingFederate to come up, hit the heartbeat endpoint, validate the cluster member count, assert no errors in server.log.</p>
+    </div>
+  </div>
+
+  <h3 id="s0-arch">Target Topology</h3>
+  <div class="callout info">
+    <span class="callout-icon">🏗</span>
+    <div class="callout-body"><strong>Deployment Model</strong>
+    The Ansible inventory defines two host groups: <code>[pf_admin]</code> (exactly one node) and <code>[pf_engines]</code> (one or more nodes). The Admin node runs in <code>CLUSTERED_CONSOLE</code> mode and is never added to the load balancer target group. Engine nodes run in <code>CLUSTERED_ENGINE</code> mode and are behind the LB. Both groups run the same role with behavior controlled by host-group-specific variables.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Host Group</th><th>PF Mode</th><th>Ports</th><th>In LB?</th><th>Startup Dependency</th></tr></thead>
+      <tbody>
+        <tr><td><code>pf_admin</code></td><td><code>CLUSTERED_CONSOLE</code></td><td>9999 (admin), 7600 (JGroups)</td><td>No</td><td>Starts first — engines wait for it</td></tr>
+        <tr><td><code>pf_engines</code></td><td><code>CLUSTERED_ENGINE</code></td><td>9031 (runtime), 7600 (JGroups)</td><td>Yes</td><td>Requires admin to be up and cluster formed</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 1 — PREREQUISITES
+═══════════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">01</span><span class="sl">prereq</span></div>
+    <div class="sec-title">
+      <h2>Prerequisites</h2>
+      <p>Everything that must be in place before running the playbooks.</p>
+    </div>
+  </div>
+
+  <h3 id="s1-control">Control Node Requirements</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">bash</span><span class="cb-title">Ansible Control Node Setup</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm"># ── 1. Ansible version requirement</span>
+<span class="fn">ansible</span> --version
+<span class="cm"># Requires: ansible-core >= 2.14  (for community.general + ansible.posix)</span>
+
+<span class="cm"># ── 2. Install required collections</span>
+<span class="fn">ansible-galaxy</span> collection install \
+  community.general \
+  ansible.posix \
+  amazon.aws          <span class="cm"># only needed for AWS dynamic inventory</span>
+
+<span class="cm"># ── 3. Python dependencies on control node</span>
+<span class="fn">pip3</span> install boto3 botocore   <span class="cm"># for AWS dynamic inventory plugin</span>
+
+<span class="cm"># ── 4. SSH key setup — control node must reach all targets</span>
+<span class="fn">ssh-keygen</span> -t ed25519 -C <span class="st">"ansible-pingfederate"</span>
+<span class="cm"># Copy public key to all target hosts:</span>
+<span class="fn">ssh-copy-id</span> -i ~/.ssh/ansible_pf.pub pf-admin01.example.com
+<span class="fn">ssh-copy-id</span> -i ~/.ssh/ansible_pf.pub pf-engine01.example.com
+<span class="fn">ssh-copy-id</span> -i ~/.ssh/ansible_pf.pub pf-engine02.example.com
+
+<span class="cm"># ── 5. Test connectivity</span>
+<span class="fn">ansible</span> -i inventory/prod/hosts.yml all -m ping \
+  --private-key ~/.ssh/ansible_pf
+<span class="cm"># Expected: pong from all hosts</span></pre>
+  </div>
+
+  <h3 id="s1-targets">Target Host Requirements</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Requirement</th><th>Admin Node</th><th>Engine Nodes</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>OS</strong></td><td colspan="2">RHEL 8/9, CentOS Stream 9, Amazon Linux 2023, Ubuntu 22.04</td><td>Role uses <code>ansible_os_family</code> for package manager selection</td></tr>
+        <tr><td><strong>CPU</strong></td><td>2+ vCPU</td><td>4+ vCPU</td><td>Engine nodes handle all runtime SSO traffic</td></tr>
+        <tr><td><strong>RAM</strong></td><td>8 GB</td><td>16 GB</td><td>JVM heap set to 50% of RAM by default</td></tr>
+        <tr><td><strong>Disk</strong></td><td>20 GB</td><td>20 GB</td><td><code>/opt/pingfederate</code> mount recommended</td></tr>
+        <tr><td><strong>sudo</strong></td><td colspan="2">Ansible user needs passwordless sudo</td><td><code>ansible ALL=(ALL) NOPASSWD:ALL</code> in sudoers</td></tr>
+        <tr><td><strong>Python</strong></td><td colspan="2">Python 3.8+ on target hosts</td><td>Required by Ansible modules</td></tr>
+        <tr><td><strong>Network</strong></td><td colspan="2">TCP 7600/7700 between engines+admin; TCP 9999 from admin to engineers; TCP 9031 from LB to engines</td><td>Must be open in firewall / SG before running playbook</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="s1-files">Required External Files</h3>
+  <p>Before running, obtain these files and place them in the <code>files/</code> directory or configure the download URL in variables:</p>
+
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">bash</span><span class="cb-title">Required Files — Placement</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm"># Place these files before running the playbook:</span>
+roles/pingfederate/files/
+├── <span class="vl">pingfederate-12.1.0.zip</span>       <span class="cm"># PF distribution ZIP (from Ping Identity portal)</span>
+├── <span class="vl">pingfederate.lic</span>              <span class="cm"># Valid license file</span>
+└── <span class="vl">plugins/</span>                      <span class="cm"># Optional: custom adapter JARs</span>
+    ├── pf-pingid-adapter-3.x.jar
+    └── pf-kerberos-adapter-2.x.jar
+
+<span class="cm"># OR configure remote download in group_vars/all/vars.yml:
+# pf_download_url: "https://internal-artifacts.example.com/pingfederate-12.1.0.zip"
+# pf_download_checksum: "sha256:abc123..."</span>
+
+<span class="cm"># Ansible Vault for secrets (create before first run):</span>
+<span class="fn">ansible-vault</span> create inventory/prod/group_vars/all/vault.yml
+<span class="cm"># Add: pf_admin_password, pf_ldap_bind_password, pf_keystore_password</span></pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 2 — PROJECT LAYOUT
+═══════════════════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">02</span><span class="sl">layout</span></div>
+    <div class="sec-title">
+      <h2>Project Directory Layout</h2>
+      <p>The full Ansible project structure following best-practice role layout conventions.</p>
+    </div>
+  </div>
+
+  <div class="file-tree">
+<span class="ft-dir">pingfederate-ansible/</span>
+<span class="ft-tree">├── </span><span class="ft-yml">ansible.cfg</span>                          <span class="ft-cm"># Ansible config: inventory, ssh key, roles path</span>
+<span class="ft-tree">├── </span><span class="ft-yml">site.yml</span>                             <span class="ft-cm"># Master playbook: run everything</span>
+<span class="ft-tree">├── </span><span class="ft-yml">install-admin.yml</span>                    <span class="ft-cm"># Standalone: deploy admin node only</span>
+<span class="ft-tree">├── </span><span class="ft-yml">install-engines.yml</span>                  <span class="ft-cm"># Standalone: deploy engine nodes only</span>
+<span class="ft-tree">├── </span><span class="ft-yml">upgrade.yml</span>                          <span class="ft-cm"># Rolling upgrade playbook</span>
+<span class="ft-tree">│</span>
+<span class="ft-tree">├── </span><span class="ft-dir">inventory/</span>
+<span class="ft-tree">│   ├── </span><span class="ft-dir">prod/</span>
+<span class="ft-tree">│   │   ├── </span><span class="ft-yml">hosts.yml</span>                    <span class="ft-cm"># Static inventory</span>
+<span class="ft-tree">│   │   └── </span><span class="ft-dir">group_vars/</span>
+<span class="ft-tree">│   │       ├── </span><span class="ft-dir">all/</span>
+<span class="ft-tree">│   │       │   ├── </span><span class="ft-yml">vars.yml</span>             <span class="ft-cm"># Non-secret variables</span>
+<span class="ft-tree">│   │       │   └── </span><span class="ft-yml">vault.yml</span>            <span class="ft-cm"># Ansible Vault encrypted secrets</span>
+<span class="ft-tree">│   │       ├── </span><span class="ft-yml">pf_admin.yml</span>             <span class="ft-cm"># Admin-specific vars</span>
+<span class="ft-tree">│   │       └── </span><span class="ft-yml">pf_engines.yml</span>           <span class="ft-cm"># Engine-specific vars</span>
+<span class="ft-tree">│   ├── </span><span class="ft-dir">staging/</span>
+<span class="ft-tree">│   │   └── </span><span class="ft-yml">...</span>                          <span class="ft-cm"># Same structure, staging values</span>
+<span class="ft-tree">│   └── </span><span class="ft-dir">aws/</span>
+<span class="ft-tree">│       └── </span><span class="ft-yml">aws_ec2.yml</span>                  <span class="ft-cm"># AWS dynamic inventory plugin config</span>
+<span class="ft-tree">│</span>
+<span class="ft-tree">└── </span><span class="ft-dir">roles/</span>
+<span class="ft-tree">    ├── </span><span class="ft-dir">common/</span>                          <span class="ft-cm"># OS prep applied to ALL pf hosts</span>
+<span class="ft-tree">    │   ├── </span><span class="ft-dir">tasks/main.yml</span>
+<span class="ft-tree">    │   ├── </span><span class="ft-dir">handlers/main.yml</span>
+<span class="ft-tree">    │   └── </span><span class="ft-dir">defaults/main.yml</span>
+<span class="ft-tree">    ├── </span><span class="ft-dir">java/</span>                            <span class="ft-cm"># Java 17 installation</span>
+<span class="ft-tree">    │   ├── </span><span class="ft-dir">tasks/</span>
+<span class="ft-tree">    │   │   ├── </span><span class="ft-yml">main.yml</span>
+<span class="ft-tree">    │   │   ├── </span><span class="ft-yml">rhel.yml</span>
+<span class="ft-tree">    │   │   └── </span><span class="ft-yml">debian.yml</span>
+<span class="ft-tree">    │   └── </span><span class="ft-dir">defaults/main.yml</span>
+<span class="ft-tree">    └── </span><span class="ft-dir">pingfederate/</span>                    <span class="ft-cm"># Main PF role</span>
+<span class="ft-tree">        ├── </span><span class="ft-dir">tasks/</span>
+<span class="ft-tree">        │   ├── </span><span class="ft-yml">main.yml</span>                 <span class="ft-cm"># Includes sub-tasks conditionally</span>
+<span class="ft-tree">        │   ├── </span><span class="ft-yml">install.yml</span>              <span class="ft-cm"># Extract, license, permissions</span>
+<span class="ft-tree">        │   ├── </span><span class="ft-yml">configure.yml</span>            <span class="ft-cm"># run.properties, tcp.xml, env file</span>
+<span class="ft-tree">        │   ├── </span><span class="ft-yml">plugins.yml</span>              <span class="ft-cm"># Copy adapter JARs to deploy/</span>
+<span class="ft-tree">        │   ├── </span><span class="ft-yml">systemd.yml</span>              <span class="ft-cm"># Install and enable systemd unit</span>
+<span class="ft-tree">        │   └── </span><span class="ft-yml">verify.yml</span>               <span class="ft-cm"># Health check + cluster assertion</span>
+<span class="ft-tree">        ├── </span><span class="ft-dir">handlers/main.yml</span>
+<span class="ft-tree">        ├── </span><span class="ft-dir">defaults/main.yml</span>            <span class="ft-cm"># All default variable values</span>
+<span class="ft-tree">        ├── </span><span class="ft-dir">vars/main.yml</span>                <span class="ft-cm"># Internal computed vars</span>
+<span class="ft-tree">        ├── </span><span class="ft-dir">files/</span>
+<span class="ft-tree">        │   ├── </span><span class="ft-txt">pingfederate-12.1.0.zip</span>
+<span class="ft-tree">        │   └── </span><span class="ft-txt">pingfederate.lic</span>
+<span class="ft-tree">        └── </span><span class="ft-dir">templates/</span>
+<span class="ft-tree">            ├── </span><span class="ft-j2">run.properties.j2</span>
+<span class="ft-tree">            ├── </span><span class="ft-j2">tcp.xml.j2</span>
+<span class="ft-tree">            ├── </span><span class="ft-j2">pingfederate.service.j2</span>
+<span class="ft-tree">            ├── </span><span class="ft-j2">pingfederate.env.j2</span>      <span class="ft-cm"># JVM options environment file</span>
+<span class="ft-tree">            └── </span><span class="ft-j2">log4j2.xml.j2</span>            <span class="ft-cm"># Optional: custom logging config</span>
+  </div>
+
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">ini</span><span class="cb-title">ansible.cfg</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm"># ansible.cfg — root of project directory</span>
+<span class="kw">[defaults]</span>
+<span class="nm">inventory</span>           = inventory/prod/hosts.yml
+<span class="nm">roles_path</span>          = roles
+<span class="nm">private_key_file</span>    = ~/.ssh/ansible_pf
+<span class="nm">remote_user</span>         = ansible
+<span class="nm">host_key_checking</span>   = False
+<span class="nm">retry_files_enabled</span> = False
+<span class="nm">stdout_callback</span>     = yaml
+<span class="nm">callback_whitelist</span>  = profile_tasks   <span class="cm"># shows task timing</span>
+<span class="nm">forks</span>               = 10
+<span class="nm">timeout</span>             = 30
+
+<span class="kw">[privilege_escalation]</span>
+<span class="nm">become</span>       = True
+<span class="nm">become_method</span>= sudo
+<span class="nm">become_user</span>  = root
+
+<span class="kw">[ssh_connection]</span>
+<span class="nm">pipelining</span>         = True   <span class="cm"># speeds up execution significantly</span>
+<span class="nm">ssh_args</span>           = -o ControlMaster=auto -o ControlPersist=60s -o StrictHostKeyChecking=no
+<span class="nm">control_path_dir</span>   = /tmp/.ansible-cp</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 3 — INVENTORY
+═══════════════════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">03</span><span class="sl">inventory</span></div>
+    <div class="sec-title">
+      <h2>Inventory Files</h2>
+      <p>Static inventory for on-premises and dynamic AWS EC2 inventory using the aws_ec2 plugin.</p>
+    </div>
+  </div>
+
+  <h3 id="s3-onprem">On-Premises Static Inventory</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">inventory/prod/hosts.yml</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# inventory/prod/hosts.yml — Production On-Premises Inventory</span>
+<span class="nm">all</span>:
+  <span class="nm">children</span>:
+
+    <span class="nm">pf_admin</span>:                              <span class="cm"># Exactly ONE host here</span>
+      <span class="nm">hosts</span>:
+        <span class="nm">pf-admin01.corp.example.com</span>:
+          <span class="nm">ansible_host</span>: <span class="st">10.20.1.10</span>
+          <span class="nm">pf_node_role</span>: <span class="st">admin</span>             <span class="cm"># used in templates</span>
+          <span class="nm">pf_cluster_bind_address</span>: <span class="st">10.20.1.10</span>
+
+    <span class="nm">pf_engines</span>:                            <span class="cm"># Add/remove engine hosts here</span>
+      <span class="nm">hosts</span>:
+        <span class="nm">pf-engine01.corp.example.com</span>:
+          <span class="nm">ansible_host</span>: <span class="st">10.20.1.11</span>
+          <span class="nm">pf_node_role</span>: <span class="st">engine</span>
+          <span class="nm">pf_cluster_bind_address</span>: <span class="st">10.20.1.11</span>
+        <span class="nm">pf-engine02.corp.example.com</span>:
+          <span class="nm">ansible_host</span>: <span class="st">10.20.1.12</span>
+          <span class="nm">pf_node_role</span>: <span class="st">engine</span>
+          <span class="nm">pf_cluster_bind_address</span>: <span class="st">10.20.1.12</span>
+
+    <span class="nm">pf_all</span>:                                <span class="cm"># Convenience group for common tasks</span>
+      <span class="nm">children</span>:
+        <span class="nm">pf_admin</span>:
+        <span class="nm">pf_engines</span>:
+
+  <span class="nm">vars</span>:
+    <span class="nm">ansible_user</span>: <span class="st">ansible</span>
+    <span class="nm">ansible_python_interpreter</span>: <span class="st">/usr/bin/python3</span></pre>
+  </div>
+
+  <h3 id="s3-aws">AWS Dynamic Inventory</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">inventory/aws/aws_ec2.yml — Dynamic Inventory via EC2 Tags</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# AWS Dynamic Inventory — uses EC2 instance tags for group assignment
+# Prerequisites: boto3 installed, AWS credentials configured (IAM role or env vars)
+# Usage: ansible-playbook -i inventory/aws/aws_ec2.yml site.yml</span>
+<span class="nm">plugin</span>: <span class="st">amazon.aws.aws_ec2</span>
+<span class="nm">regions</span>:
+  - <span class="st">us-east-1</span>
+
+<span class="nm">filters</span>:
+  <span class="nm">instance-state-name</span>: <span class="st">running</span>
+  <span class="nm">tag:Project</span>: <span class="st">PingFederate</span>
+  <span class="nm">tag:Environment</span>: <span class="st">prod</span>            <span class="cm"># change to staging/dev as needed</span>
+
+<span class="cm"># Group instances by tag:PFRole → creates pf_admin and pf_engines groups</span>
+<span class="nm">keyed_groups</span>:
+  - <span class="nm">key</span>: <span class="st">tags.PFRole</span>
+    <span class="nm">prefix</span>: <span class="st">pf</span>
+    <span class="nm">separator</span>: <span class="st">"_"</span>
+  - <span class="nm">key</span>: <span class="st">tags.Environment</span>
+    <span class="nm">prefix</span>: <span class="st">env</span>
+    <span class="nm">separator</span>: <span class="st">"_"</span>
+
+<span class="nm">hostnames</span>:
+  - <span class="st">private-dns-name</span>            <span class="cm"># use private DNS within VPC</span>
+
+<span class="cm"># Expose useful host variables from EC2 metadata</span>
+<span class="nm">compose</span>:
+  <span class="nm">ansible_host</span>: <span class="st">private_ip_address</span>
+  <span class="nm">pf_cluster_bind_address</span>: <span class="st">private_ip_address</span>
+  <span class="nm">pf_node_role</span>: <span class="st">tags.PFRole</span>          <span class="cm"># "admin" or "engine"</span>
+  <span class="nm">pf_az</span>: <span class="st">placement.availability_zone</span>
+
+<span class="cm"># Required EC2 tags to set on your instances:
+#   Project=PingFederate
+#   Environment=prod
+#   PFRole=admin    (on admin instance)
+#   PFRole=engine   (on engine instances)</span></pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 4 — VARIABLES
+═══════════════════════════════════════════════ -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">04</span><span class="sl">vars</span></div>
+    <div class="sec-title">
+      <h2>Variables</h2>
+      <p>Role defaults, Vault secrets, and per-environment overrides — the full variable hierarchy.</p>
+    </div>
+  </div>
+
+  <h3 id="s4-default">roles/pingfederate/defaults/main.yml</h3>
+  <p>All default values — override these in <code>group_vars/</code> or <code>host_vars/</code> without touching the role.</p>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">roles/pingfederate/defaults/main.yml — Complete Defaults</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# ═══════════════════════════════════════════════════════
+# PingFederate Role — Default Variables
+# Override in group_vars/pf_admin.yml, group_vars/pf_engines.yml
+# or inventory host vars for host-specific tuning.
+# ═══════════════════════════════════════════════════════</span>
+
+<span class="cm"># ── Version &amp; Source</span>
+<span class="nm">pf_version</span>: <span class="st">"12.1.0"</span>
+<span class="nm">pf_zip_filename</span>: <span class="st">"pingfederate-{{ pf_version }}.zip"</span>
+<span class="nm">pf_source</span>: <span class="st">"local"</span>           <span class="cm"># "local" | "url" | "s3"</span>
+<span class="nm">pf_download_url</span>: <span class="st">""</span>           <span class="cm"># used when pf_source == "url"</span>
+<span class="nm">pf_s3_bucket</span>: <span class="st">""</span>              <span class="cm"># used when pf_source == "s3"</span>
+<span class="nm">pf_s3_key</span>: <span class="st">"artifacts/{{ pf_zip_filename }}"</span>
+<span class="nm">pf_checksum</span>: <span class="st">""</span>               <span class="cm"># sha256:abc... — leave empty to skip verification</span>
+
+<span class="cm"># ── Paths</span>
+<span class="nm">pf_install_dir</span>: <span class="st">"/opt/pingfederate"</span>
+<span class="nm">pf_home</span>: <span class="st">"{{ pf_install_dir }}/pingfederate-{{ pf_version }}"</span>
+<span class="nm">pf_log_dir</span>: <span class="st">"{{ pf_home }}/server/default/log"</span>
+<span class="nm">pf_conf_dir</span>: <span class="st">"{{ pf_home }}/server/default/conf"</span>
+<span class="nm">pf_data_dir</span>: <span class="st">"{{ pf_home }}/server/default/data"</span>
+<span class="nm">pf_deploy_dir</span>: <span class="st">"{{ pf_home }}/server/default/deploy"</span>
+<span class="nm">pf_tmp_dir</span>: <span class="st">"/tmp/pf_install"</span>
+
+<span class="cm"># ── OS User &amp; Group</span>
+<span class="nm">pf_user</span>: <span class="st">"pingfederate"</span>
+<span class="nm">pf_group</span>: <span class="st">"pingfederate"</span>
+<span class="nm">pf_user_uid</span>: <span class="vl">5000</span>             <span class="cm"># fixed UID for consistency across hosts</span>
+<span class="nm">pf_user_gid</span>: <span class="vl">5000</span>
+
+<span class="cm"># ── Java</span>
+<span class="nm">java_version</span>: <span class="st">"17"</span>
+<span class="nm">java_package_rhel</span>: <span class="st">"java-17-amazon-corretto-headless"</span>    <span class="cm"># Amazon Linux 2023</span>
+<span class="nm">java_package_rhel_generic</span>: <span class="st">"java-17-openjdk-headless"</span>     <span class="cm"># RHEL/CentOS</span>
+<span class="nm">java_package_debian</span>: <span class="st">"openjdk-17-jdk-headless"</span>           <span class="cm"># Ubuntu/Debian</span>
+<span class="nm">java_home</span>: <span class="st">"/usr/lib/jvm/java-17-openjdk"</span>
+
+<span class="cm"># ── Network / Ports</span>
+<span class="nm">pf_https_port</span>: <span class="vl">9031</span>
+<span class="nm">pf_admin_port</span>: <span class="vl">9999</span>
+<span class="nm">pf_cluster_port</span>: <span class="vl">7600</span>
+<span class="nm">pf_cluster_failure_detection_port</span>: <span class="vl">7700</span>
+<span class="nm">pf_base_url</span>: <span class="st">"https://{{ ansible_fqdn }}:{{ pf_https_port }}"</span>
+<span class="nm">pf_admin_base_url</span>: <span class="st">"https://{{ pf_admin_host }}:{{ pf_admin_port }}"</span>
+<span class="nm">pf_admin_host</span>: <span class="st">""</span>             <span class="cm"># FQDN of admin node — required for engine mode</span>
+
+<span class="cm"># ── Cluster Discovery</span>
+<span class="nm">pf_cluster_discovery</span>: <span class="st">"tcpping"</span>  <span class="cm"># "tcpping" | "s3ping" | "kubeping"</span>
+<span class="nm">pf_cluster_initial_hosts</span>: []      <span class="cm"># for tcpping: ["10.0.1.10[7600]","10.0.1.11[7600]"]</span>
+<span class="nm">pf_s3ping_bucket</span>: <span class="st">""</span>             <span class="cm"># for s3ping: S3 bucket name</span>
+<span class="nm">pf_s3ping_region</span>: <span class="st">"us-east-1"</span>   <span class="cm"># for s3ping: AWS region</span>
+
+<span class="cm"># ── JVM / Performance</span>
+<span class="nm">pf_jvm_xms</span>: <span class="st">"2048m"</span>
+<span class="nm">pf_jvm_xmx</span>: <span class="st">"2048m"</span>            <span class="cm"># set equal to Xms to prevent heap growth pauses</span>
+<span class="nm">pf_jvm_gc</span>: <span class="st">"G1GC"</span>
+<span class="nm">pf_jvm_extra_args</span>: <span class="st">"-Dfile.encoding=UTF-8 -Djava.awt.headless=true"</span>
+
+<span class="cm"># ── TLS</span>
+<span class="nm">pf_ssl_protocols</span>: <span class="st">"TLSv1.3,TLSv1.2"</span>
+<span class="nm">pf_admin_user</span>: <span class="st">"Administrator"</span>
+<span class="cm"># pf_admin_password: defined in vault.yml</span>
+
+<span class="cm"># ── Operational Mode (set per host group)</span>
+<span class="nm">pf_operational_mode</span>: <span class="st">"STANDALONE"</span>  <span class="cm"># overridden in group_vars</span>
+
+<span class="cm"># ── OS Limits</span>
+<span class="nm">pf_nofile_limit</span>: <span class="vl">65536</span>
+<span class="nm">pf_nproc_limit</span>: <span class="vl">4096</span>
+
+<span class="cm"># ── Firewall</span>
+<span class="nm">pf_manage_firewall</span>: <span class="kw">true</span>     <span class="cm"># set false if firewall is managed externally (SG in AWS)</span>
+<span class="nm">pf_firewall_zone</span>: <span class="st">"public"</span>
+
+<span class="cm"># ── Plugins</span>
+<span class="nm">pf_plugins</span>: []                <span class="cm"># list of local plugin JAR filenames to copy to deploy/</span>
+<span class="cm"># pf_plugins:
+#   - pf-pingid-adapter-3.2.1.jar
+#   - pf-kerberos-adapter-2.1.0.jar</span>
+
+<span class="cm"># ── Verification</span>
+<span class="nm">pf_startup_wait_seconds</span>: <span class="vl">120</span>  <span class="cm"># max seconds to wait for PF to come up</span>
+<span class="nm">pf_startup_retries</span>: <span class="vl">20</span>
+<span class="nm">pf_startup_delay</span>: <span class="vl">6</span>           <span class="cm"># seconds between retries</span></pre>
+  </div>
+
+  <h3 id="s4-vault">Ansible Vault — Secrets</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">inventory/prod/group_vars/all/vault.yml — Encrypted Secrets</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# This file is encrypted with ansible-vault.
+# Create: ansible-vault create inventory/prod/group_vars/all/vault.yml
+# Edit:   ansible-vault edit inventory/prod/group_vars/all/vault.yml
+# View:   ansible-vault view inventory/prod/group_vars/all/vault.yml
+#
+# Run playbooks with: --ask-vault-pass  OR  --vault-password-file ~/.vault_pass</span>
+
+<span class="nm">vault_pf_admin_password</span>: <span class="st">"2FederateM0re!"</span>         <span class="cm"># PF admin console password</span>
+<span class="nm">vault_pf_keystore_password</span>: <span class="st">"StrongKeystorePass123"</span>  <span class="cm"># JKS keystore password</span>
+<span class="nm">vault_pf_ldap_bind_password</span>: <span class="st">"LdapBindPassw0rd!"</span>      <span class="cm"># PD service account password</span>
+<span class="nm">vault_pf_s3ping_access_key</span>: <span class="st">""</span>                       <span class="cm"># only if not using IAM roles</span>
+<span class="nm">vault_pf_s3ping_secret_key</span>: <span class="st">""</span></pre>
+  </div>
+
+  <h3 id="s4-env">Per-Environment Group Variables</h3>
+  <div class="two-col">
+    <div class="code-block">
+      <div class="cb-header">
+        <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+        <span class="cb-lang">yaml</span><span class="cb-title">group_vars/pf_admin.yml</span></div>
+        <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+      </div>
+      <pre style="background:#080b0d;padding:16px;font-family:'Azeret Mono',monospace;font-size:11.5px;line-height:1.75;overflow-x:auto"><span class="cm">---
+# Admin node overrides</span>
+<span class="nm">pf_operational_mode</span>: <span class="st">"CLUSTERED_CONSOLE"</span>
+<span class="nm">pf_admin_password</span>: <span class="st">"{{ vault_pf_admin_password }}"</span>
+<span class="nm">pf_jvm_xms</span>: <span class="st">"1024m"</span>
+<span class="nm">pf_jvm_xmx</span>: <span class="st">"1024m"</span>
+<span class="cm"># Admin node has less traffic — smaller heap</span></pre>
+    </div>
+    <div class="code-block">
+      <div class="cb-header">
+        <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+        <span class="cb-lang">yaml</span><span class="cb-title">group_vars/pf_engines.yml</span></div>
+        <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+      </div>
+      <pre style="background:#080b0d;padding:16px;font-family:'Azeret Mono',monospace;font-size:11.5px;line-height:1.75;overflow-x:auto"><span class="cm">---
+# Engine node overrides</span>
+<span class="nm">pf_operational_mode</span>: <span class="st">"CLUSTERED_ENGINE"</span>
+<span class="nm">pf_jvm_xms</span>: <span class="st">"4096m"</span>
+<span class="nm">pf_jvm_xmx</span>: <span class="st">"4096m"</span>
+<span class="cm"># pf_admin_host set in inventory host vars</span>
+<span class="cm"># or via: -e pf_admin_host=pf-admin01.corp.example.com</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 5 — ROLES
+═══════════════════════════════════════════════ -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">05</span><span class="sl">roles</span></div>
+    <div class="sec-title">
+      <h2>Ansible Roles — Task Files</h2>
+      <p>Every task file in the pingfederate role, from OS preparation through post-install verification.</p>
+    </div>
+  </div>
+
+  <h3 id="s5-common">roles/common/tasks/main.yml — OS Preparation</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">roles/common/tasks/main.yml</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# Common OS preparation tasks applied to ALL PingFederate hosts</span>
+
+<span class="kw">- name</span>: <span class="st">Create pingfederate OS group</span>
+  <span class="kw">ansible.builtin.group</span>:
+    <span class="nm">name</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">gid</span>: <span class="st">"{{ pf_user_gid }}"</span>
+    <span class="nm">state</span>: present
+  <span class="nm">tags</span>: [user, setup]
+
+<span class="kw">- name</span>: <span class="st">Create pingfederate OS user</span>
+  <span class="kw">ansible.builtin.user</span>:
+    <span class="nm">name</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">uid</span>: <span class="st">"{{ pf_user_uid }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">shell</span>: <span class="st">/sbin/nologin</span>
+    <span class="nm">home</span>: <span class="st">"{{ pf_install_dir }}"</span>
+    <span class="nm">create_home</span>: <span class="kw">false</span>
+    <span class="nm">system</span>: <span class="kw">true</span>
+    <span class="nm">comment</span>: <span class="st">"PingFederate Service Account"</span>
+    <span class="nm">state</span>: present
+  <span class="nm">tags</span>: [user, setup]
+
+<span class="kw">- name</span>: <span class="st">Create base installation directory</span>
+  <span class="kw">ansible.builtin.file</span>:
+    <span class="nm">path</span>: <span class="st">"{{ pf_install_dir }}"</span>
+    <span class="nm">state</span>: directory
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0750'</span>
+  <span class="nm">tags</span>: [setup]
+
+<span class="kw">- name</span>: <span class="st">Set OS file descriptor limits for pingfederate user</span>
+  <span class="kw">community.general.pam_limits</span>:
+    <span class="nm">domain</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">limit_type</span>: <span class="st">"{{ item.type }}"</span>
+    <span class="nm">limit_item</span>: <span class="st">"{{ item.item }}"</span>
+    <span class="nm">value</span>: <span class="st">"{{ item.value }}"</span>
+  <span class="kw">loop</span>:
+    - { type: soft, item: nofile, value: <span class="st">"{{ pf_nofile_limit }}"</span> }
+    - { type: hard, item: nofile, value: <span class="st">"{{ pf_nofile_limit }}"</span> }
+    - { type: soft, item: nproc,  value: <span class="st">"{{ pf_nproc_limit }}"</span> }
+    - { type: hard, item: nproc,  value: <span class="st">"{{ pf_nproc_limit }}"</span> }
+  <span class="nm">tags</span>: [limits, setup]
+
+<span class="kw">- name</span>: <span class="st">Configure NTP (chrony)</span>
+  <span class="kw">ansible.builtin.package</span>:
+    <span class="nm">name</span>: chrony
+    <span class="nm">state</span>: present
+  <span class="nm">tags</span>: [ntp]
+
+<span class="kw">- name</span>: <span class="st">Enable and start chronyd</span>
+  <span class="kw">ansible.builtin.service</span>:
+    <span class="nm">name</span>: chronyd
+    <span class="nm">state</span>: started
+    <span class="nm">enabled</span>: <span class="kw">true</span>
+  <span class="nm">tags</span>: [ntp]
+
+<span class="kw">- name</span>: <span class="st">Open firewall ports (when pf_manage_firewall is true)</span>
+  <span class="kw">ansible.posix.firewalld</span>:
+    <span class="nm">port</span>: <span class="st">"{{ item }}"</span>
+    <span class="nm">zone</span>: <span class="st">"{{ pf_firewall_zone }}"</span>
+    <span class="nm">permanent</span>: <span class="kw">true</span>
+    <span class="nm">state</span>: enabled
+  <span class="kw">loop</span>:
+    - <span class="st">"{{ pf_https_port }}/tcp"</span>
+    - <span class="st">"{{ pf_cluster_port }}/tcp"</span>
+    - <span class="st">"{{ pf_cluster_failure_detection_port }}/tcp"</span>
+  <span class="kw">when</span>: pf_manage_firewall | bool
+  <span class="kw">notify</span>: reload firewalld
+  <span class="nm">tags</span>: [firewall]
+
+<span class="kw">- name</span>: <span class="st">Open admin port (admin hosts only)</span>
+  <span class="kw">ansible.posix.firewalld</span>:
+    <span class="nm">port</span>: <span class="st">"{{ pf_admin_port }}/tcp"</span>
+    <span class="nm">zone</span>: <span class="st">"{{ pf_firewall_zone }}"</span>
+    <span class="nm">permanent</span>: <span class="kw">true</span>
+    <span class="nm">state</span>: enabled
+  <span class="kw">when</span>: pf_manage_firewall | bool and pf_operational_mode == "CLUSTERED_CONSOLE"
+  <span class="kw">notify</span>: reload firewalld
+  <span class="nm">tags</span>: [firewall]</pre>
+  </div>
+
+  <h3 id="s5-java">roles/java/tasks/main.yml</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">roles/java/tasks/main.yml</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---</span>
+<span class="kw">- name</span>: <span class="st">Include OS-family specific Java install tasks</span>
+  <span class="kw">ansible.builtin.include_tasks</span>:
+    <span class="nm">file</span>: <span class="st">"{{ ansible_os_family | lower }}.yml"</span>
+  <span class="nm">tags</span>: [java]
+
+<span class="kw">- name</span>: <span class="st">Set JAVA_HOME in /etc/environment</span>
+  <span class="kw">ansible.builtin.lineinfile</span>:
+    <span class="nm">path</span>: /etc/environment
+    <span class="nm">regexp</span>: <span class="st">'^JAVA_HOME='</span>
+    <span class="nm">line</span>: <span class="st">'JAVA_HOME="{{ java_home }}"'</span>
+    <span class="nm">state</span>: present
+  <span class="nm">tags</span>: [java]
+
+<span class="kw">- name</span>: <span class="st">Verify Java version</span>
+  <span class="kw">ansible.builtin.command</span>: java -version
+  <span class="nm">register</span>: java_ver_output
+  <span class="nm">changed_when</span>: <span class="kw">false</span>
+  <span class="nm">tags</span>: [java, verify]
+
+<span class="kw">- name</span>: <span class="st">Assert Java 17 is installed</span>
+  <span class="kw">ansible.builtin.assert</span>:
+    <span class="nm">that</span>: <span class="st">"'17' in java_ver_output.stderr"</span>
+    <span class="nm">fail_msg</span>: <span class="st">"Java 17 not found. Got: {{ java_ver_output.stderr }}"</span>
+    <span class="nm">success_msg</span>: <span class="st">"Java 17 confirmed ✓"</span>
+  <span class="nm">tags</span>: [java, verify]
+
+<span class="cm">---
+# roles/java/tasks/redhat.yml</span>
+<span class="kw">- name</span>: <span class="st">Install Java 17 on RHEL/Amazon Linux</span>
+  <span class="kw">ansible.builtin.package</span>:
+    <span class="nm">name</span>: >-
+      {{
+        java_package_rhel
+        if ansible_distribution in ['Amazon','Fedora']
+        else java_package_rhel_generic
+      }}
+    <span class="nm">state</span>: present
+
+<span class="cm">---
+# roles/java/tasks/debian.yml</span>
+<span class="kw">- name</span>: <span class="st">Update apt cache</span>
+  <span class="kw">ansible.builtin.apt</span>:
+    <span class="nm">update_cache</span>: <span class="kw">true</span>
+    <span class="nm">cache_valid_time</span>: <span class="vl">3600</span>
+
+<span class="kw">- name</span>: <span class="st">Install Java 17 on Debian/Ubuntu</span>
+  <span class="kw">ansible.builtin.apt</span>:
+    <span class="nm">name</span>: <span class="st">"{{ java_package_debian }}"</span>
+    <span class="nm">state</span>: present</pre>
+  </div>
+
+  <h3 id="s5-pf">roles/pingfederate/tasks/install.yml</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">roles/pingfederate/tasks/install.yml — Extract, License, Permissions</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# install.yml — Download/copy and extract PingFederate</span>
+
+<span class="kw">- name</span>: <span class="st">Create temp extraction directory</span>
+  <span class="kw">ansible.builtin.file</span>:
+    <span class="nm">path</span>: <span class="st">"{{ pf_tmp_dir }}"</span>
+    <span class="nm">state</span>: directory
+    <span class="nm">mode</span>: <span class="st">'0755'</span>
+  <span class="nm">tags</span>: [install]
+
+<span class="cm"># ── Option A: copy local ZIP from files/ directory</span>
+<span class="kw">- name</span>: <span class="st">Copy PingFederate ZIP from control node (local source)</span>
+  <span class="kw">ansible.builtin.copy</span>:
+    <span class="nm">src</span>: <span class="st">"{{ pf_zip_filename }}"</span>
+    <span class="nm">dest</span>: <span class="st">"{{ pf_tmp_dir }}/{{ pf_zip_filename }}"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0640'</span>
+    <span class="nm">checksum</span>: <span class="st">"{{ pf_checksum | default(omit) }}"</span>
+  <span class="kw">when</span>: pf_source == "local"
+  <span class="nm">tags</span>: [install]
+
+<span class="cm"># ── Option B: download from artifact server / S3</span>
+<span class="kw">- name</span>: <span class="st">Download PingFederate ZIP from URL</span>
+  <span class="kw">ansible.builtin.get_url</span>:
+    <span class="nm">url</span>: <span class="st">"{{ pf_download_url }}"</span>
+    <span class="nm">dest</span>: <span class="st">"{{ pf_tmp_dir }}/{{ pf_zip_filename }}"</span>
+    <span class="nm">checksum</span>: <span class="st">"{{ pf_checksum | default(omit) }}"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0640'</span>
+  <span class="kw">when</span>: pf_source == "url"
+  <span class="nm">tags</span>: [install]
+
+<span class="kw">- name</span>: <span class="st">Download PingFederate ZIP from S3</span>
+  <span class="kw">amazon.aws.s3_object</span>:
+    <span class="nm">bucket</span>: <span class="st">"{{ pf_s3_bucket }}"</span>
+    <span class="nm">object</span>: <span class="st">"{{ pf_s3_key }}"</span>
+    <span class="nm">dest</span>: <span class="st">"{{ pf_tmp_dir }}/{{ pf_zip_filename }}"</span>
+    <span class="nm">mode</span>: <span class="st">get</span>
+  <span class="kw">when</span>: pf_source == "s3"
+  <span class="nm">tags</span>: [install]
+
+<span class="kw">- name</span>: <span class="st">Check if PingFederate is already extracted (idempotency guard)</span>
+  <span class="kw">ansible.builtin.stat</span>:
+    <span class="nm">path</span>: <span class="st">"{{ pf_home }}/bin/run.sh"</span>
+  <span class="nm">register</span>: pf_extracted
+
+<span class="kw">- name</span>: <span class="st">Extract PingFederate ZIP</span>
+  <span class="kw">ansible.builtin.unarchive</span>:
+    <span class="nm">src</span>: <span class="st">"{{ pf_tmp_dir }}/{{ pf_zip_filename }}"</span>
+    <span class="nm">dest</span>: <span class="st">"{{ pf_install_dir }}"</span>
+    <span class="nm">remote_src</span>: <span class="kw">true</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">creates</span>: <span class="st">"{{ pf_home }}/bin/run.sh"</span>   <span class="cm"># idempotent: skip if already exists</span>
+  <span class="nm">tags</span>: [install]
+
+<span class="kw">- name</span>: <span class="st">Set ownership on entire PF directory tree</span>
+  <span class="kw">ansible.builtin.file</span>:
+    <span class="nm">path</span>: <span class="st">"{{ pf_home }}"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">recurse</span>: <span class="kw">true</span>
+  <span class="nm">tags</span>: [install, permissions]
+
+<span class="kw">- name</span>: <span class="st">Install PingFederate license file</span>
+  <span class="kw">ansible.builtin.copy</span>:
+    <span class="nm">src</span>: pingfederate.lic
+    <span class="nm">dest</span>: <span class="st">"{{ pf_conf_dir }}/pingfederate.lic"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0640'</span>
+  <span class="nm">tags</span>: [install, license]
+
+<span class="kw">- name</span>: <span class="st">Make run.sh executable</span>
+  <span class="kw">ansible.builtin.file</span>:
+    <span class="nm">path</span>: <span class="st">"{{ pf_home }}/bin/run.sh"</span>
+    <span class="nm">mode</span>: <span class="st">'0750'</span>
+  <span class="nm">tags</span>: [install]
+
+<span class="kw">- name</span>: <span class="st">Copy plugin JARs to deploy directory</span>
+  <span class="kw">ansible.builtin.copy</span>:
+    <span class="nm">src</span>: <span class="st">"plugins/{{ item }}"</span>
+    <span class="nm">dest</span>: <span class="st">"{{ pf_deploy_dir }}/{{ item }}"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0640'</span>
+  <span class="kw">loop</span>: <span class="st">"{{ pf_plugins }}"</span>
+  <span class="kw">when</span>: pf_plugins | length > 0
+  <span class="nm">tags</span>: [install, plugins]
+
+<span class="kw">- name</span>: <span class="st">Clean up temp directory</span>
+  <span class="kw">ansible.builtin.file</span>:
+    <span class="nm">path</span>: <span class="st">"{{ pf_tmp_dir }}"</span>
+    <span class="nm">state</span>: absent
+  <span class="nm">tags</span>: [install, cleanup]</pre>
+  </div>
+
+  <h3 id="s5-engine">roles/pingfederate/tasks/configure.yml</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">roles/pingfederate/tasks/configure.yml — Templates &amp; Config</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# configure.yml — Deploy all configuration files via Jinja2 templates</span>
+
+<span class="kw">- name</span>: <span class="st">Deploy run.properties from template</span>
+  <span class="kw">ansible.builtin.template</span>:
+    <span class="nm">src</span>: run.properties.j2
+    <span class="nm">dest</span>: <span class="st">"{{ pf_home }}/bin/run.properties"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0640'</span>
+    <span class="nm">backup</span>: <span class="kw">true</span>        <span class="cm"># keep .backup file on change — useful for rollback</span>
+  <span class="kw">notify</span>: restart pingfederate
+  <span class="nm">tags</span>: [configure, run_properties]
+
+<span class="kw">- name</span>: <span class="st">Deploy tcp.xml (JGroups cluster config)</span>
+  <span class="kw">ansible.builtin.template</span>:
+    <span class="nm">src</span>: tcp.xml.j2
+    <span class="nm">dest</span>: <span class="st">"{{ pf_conf_dir }}/tcp.xml"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0640'</span>
+    <span class="nm">backup</span>: <span class="kw">true</span>
+  <span class="kw">notify</span>: restart pingfederate
+  <span class="nm">tags</span>: [configure, cluster]
+
+<span class="kw">- name</span>: <span class="st">Deploy JVM environment file</span>
+  <span class="kw">ansible.builtin.template</span>:
+    <span class="nm">src</span>: pingfederate.env.j2
+    <span class="nm">dest</span>: <span class="st">"/etc/default/pingfederate"</span>
+    <span class="nm">owner</span>: root
+    <span class="nm">group</span>: root
+    <span class="nm">mode</span>: <span class="st">'0644'</span>
+  <span class="kw">notify</span>: restart pingfederate
+  <span class="nm">tags</span>: [configure, jvm]
+
+<span class="kw">- name</span>: <span class="st">Ensure log directory exists with correct permissions</span>
+  <span class="kw">ansible.builtin.file</span>:
+    <span class="nm">path</span>: <span class="st">"{{ pf_log_dir }}"</span>
+    <span class="nm">state</span>: directory
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0750'</span>
+  <span class="nm">tags</span>: [configure]
+
+<span class="kw">- name</span>: <span class="st">Set admin password in admin-users.xml (admin node only)</span>
+  <span class="kw">ansible.builtin.template</span>:
+    <span class="nm">src</span>: admin-users.xml.j2
+    <span class="nm">dest</span>: <span class="st">"{{ pf_data_dir }}/config-store/admin-users.xml"</span>
+    <span class="nm">owner</span>: <span class="st">"{{ pf_user }}"</span>
+    <span class="nm">group</span>: <span class="st">"{{ pf_group }}"</span>
+    <span class="nm">mode</span>: <span class="st">'0600'</span>
+  <span class="kw">when</span>: pf_operational_mode == "CLUSTERED_CONSOLE"
+  <span class="kw">no_log</span>: <span class="kw">true</span>      <span class="cm"># never log task output — contains admin password hash</span>
+  <span class="nm">tags</span>: [configure, admin, security]</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 6 — PLAYBOOKS
+═══════════════════════════════════════════════ -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">06</span><span class="sl">plays</span></div>
+    <div class="sec-title">
+      <h2>Playbooks</h2>
+      <p>Master playbook, targeted admin install, engine install, and rolling upgrade playbook.</p>
+    </div>
+  </div>
+
+  <h3 id="s6-site">site.yml — Master Playbook</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">site.yml — Full Cluster Deploy</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# site.yml — Full PingFederate cluster deployment
+# Run: ansible-playbook site.yml --ask-vault-pass
+# Dry run: ansible-playbook site.yml --check --diff --ask-vault-pass</span>
+
+<span class="kw">- name</span>: <span class="st">Phase 1 — Common OS preparation (all PF hosts)</span>
+  <span class="kw">hosts</span>: pf_all
+  <span class="nm">gather_facts</span>: <span class="kw">true</span>
+  <span class="nm">roles</span>:
+    - role: common
+      <span class="nm">tags</span>: [common]
+
+<span class="kw">- name</span>: <span class="st">Phase 2 — Install Java 17 (all PF hosts)</span>
+  <span class="kw">hosts</span>: pf_all
+  <span class="nm">gather_facts</span>: <span class="kw">false</span>
+  <span class="nm">roles</span>:
+    - role: java
+      <span class="nm">tags</span>: [java]
+
+<span class="kw">- name</span>: <span class="st">Phase 3 — Install and configure PingFederate ADMIN node</span>
+  <span class="kw">hosts</span>: pf_admin
+  <span class="nm">gather_facts</span>: <span class="kw">false</span>
+  <span class="nm">serial</span>: 1                  <span class="cm"># always run one at a time (there's only one admin)</span>
+  <span class="nm">roles</span>:
+    - role: pingfederate
+      <span class="nm">tags</span>: [pingfederate, admin]
+  <span class="nm">post_tasks</span>:
+    <span class="kw">- name</span>: <span class="st">Wait for admin node to be fully up before proceeding to engines</span>
+      <span class="kw">ansible.builtin.uri</span>:
+        <span class="nm">url</span>: <span class="st">"https://{{ ansible_host }}:{{ pf_admin_port }}/pingfederate/app"</span>
+        <span class="nm">validate_certs</span>: <span class="kw">false</span>
+        <span class="nm">status_code</span>: [200, 302]
+      <span class="nm">register</span>: admin_up
+      <span class="nm">until</span>: admin_up.status in [200, 302]
+      <span class="nm">retries</span>: <span class="vl">30</span>
+      <span class="nm">delay</span>: <span class="vl">10</span>
+      <span class="nm">tags</span>: [verify, admin]
+
+<span class="kw">- name</span>: <span class="st">Phase 4 — Install and configure PingFederate ENGINE nodes (parallel)</span>
+  <span class="kw">hosts</span>: pf_engines
+  <span class="nm">gather_facts</span>: <span class="kw">false</span>
+  <span class="nm">serial</span>: <span class="st">"50%"</span>             <span class="cm"># deploy to 50% at a time for rolling installs</span>
+  <span class="nm">roles</span>:
+    - role: pingfederate
+      <span class="nm">tags</span>: [pingfederate, engine]
+
+<span class="kw">- name</span>: <span class="st">Phase 5 — Final cluster verification</span>
+  <span class="kw">hosts</span>: pf_admin
+  <span class="nm">gather_facts</span>: <span class="kw">false</span>
+  <span class="nm">tasks</span>:
+    <span class="kw">- name</span>: <span class="st">Check cluster node count via Admin API</span>
+      <span class="kw">ansible.builtin.uri</span>:
+        <span class="nm">url</span>: <span class="st">"https://{{ ansible_host }}:{{ pf_admin_port }}/pf-admin-api/v1/cluster/status"</span>
+        <span class="nm">method</span>: GET
+        <span class="nm">user</span>: <span class="st">"{{ pf_admin_user }}"</span>
+        <span class="nm">password</span>: <span class="st">"{{ pf_admin_password }}"</span>
+        <span class="nm">force_basic_auth</span>: <span class="kw">true</span>
+        <span class="nm">validate_certs</span>: <span class="kw">false</span>
+        <span class="nm">headers</span>:
+          X-XSRF-Header: PingFederate
+      <span class="nm">register</span>: cluster_status
+      <span class="nm">tags</span>: [verify]
+
+    <span class="kw">- name</span>: <span class="st">Print cluster status</span>
+      <span class="kw">ansible.builtin.debug</span>:
+        <span class="nm">msg</span>: <span class="st">"Cluster status: {{ cluster_status.json }}"</span>
+      <span class="nm">tags</span>: [verify]</pre>
+  </div>
+
+  <h3 id="s6-admin">install-admin.yml</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">install-admin.yml — Targeted Admin Node Deploy</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# install-admin.yml — Deploy only the admin node
+# Use this to: (1) set up admin first in a fresh cluster
+#              (2) upgrade admin independently
+#              (3) rebuild admin from scratch after failure
+# Run: ansible-playbook install-admin.yml --ask-vault-pass</span>
+
+<span class="kw">- name</span>: <span class="st">Deploy PingFederate Admin Node</span>
+  <span class="kw">hosts</span>: pf_admin
+  <span class="nm">gather_facts</span>: <span class="kw">true</span>
+  <span class="nm">vars</span>:
+    <span class="nm">pf_operational_mode</span>: CLUSTERED_CONSOLE
+  <span class="nm">pre_tasks</span>:
+    <span class="kw">- name</span>: <span class="st">Confirm this is the admin inventory group</span>
+      <span class="kw">ansible.builtin.assert</span>:
+        <span class="nm">that</span>: <span class="st">"groups['pf_admin'] | length == 1"</span>
+        <span class="nm">fail_msg</span>: <span class="st">"pf_admin group must have exactly one host"</span>
+  <span class="nm">roles</span>:
+    - common
+    - java
+    - pingfederate
+  <span class="nm">post_tasks</span>:
+    <span class="kw">- name</span>: <span class="st">Verify admin heartbeat</span>
+      <span class="kw">ansible.builtin.uri</span>:
+        <span class="nm">url</span>: <span class="st">"https://{{ ansible_host }}:{{ pf_admin_port }}/pingfederate/app"</span>
+        <span class="nm">validate_certs</span>: <span class="kw">false</span>
+        <span class="nm">status_code</span>: [200, 302]
+      <span class="nm">retries</span>: <span class="vl">20</span>
+      <span class="nm">delay</span>: <span class="vl">10</span>
+      <span class="nm">tags</span>: [verify]</pre>
+  </div>
+
+  <h3 id="s6-engine">Rolling Upgrade Playbook</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">upgrade.yml — Zero-Downtime Rolling Engine Upgrade</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# upgrade.yml — Rolling upgrade of engine nodes with zero downtime
+# Prerequisites:
+#   1. Set pf_version to the NEW version in group_vars
+#   2. Place the new ZIP in roles/pingfederate/files/
+#   3. Admin node must already be upgraded and running
+# Run: ansible-playbook upgrade.yml --ask-vault-pass -e pf_version=12.1.1</span>
+
+<span class="kw">- name</span>: <span class="st">Rolling upgrade of PingFederate engine nodes</span>
+  <span class="kw">hosts</span>: pf_engines
+  <span class="nm">gather_facts</span>: <span class="kw">true</span>
+  <span class="nm">serial</span>: 1                   <span class="cm"># upgrade one engine at a time for zero downtime</span>
+  <span class="nm">max_fail_percentage</span>: 0       <span class="cm"># abort entire play if any engine fails</span>
+
+  <span class="nm">tasks</span>:
+    <span class="kw">- name</span>: <span class="st">Remove engine from load balancer (if LB managed by Ansible)</span>
+      <span class="kw">ansible.builtin.debug</span>:
+        <span class="nm">msg</span>: <span class="st">"Draining {{ inventory_hostname }} from LB — implement per your LB type"</span>
+      <span class="cm"># Example for AWS ALB: use community.aws.elb_target module
+      # Example for HAProxy: community.general.haproxy module</span>
+      <span class="nm">tags</span>: [upgrade, drain]
+
+    <span class="kw">- name</span>: <span class="st">Wait for in-flight requests to drain (grace period)</span>
+      <span class="kw">ansible.builtin.pause</span>:
+        <span class="nm">seconds</span>: <span class="vl">30</span>
+      <span class="nm">tags</span>: [upgrade, drain]
+
+    <span class="kw">- name</span>: <span class="st">Stop PingFederate service</span>
+      <span class="kw">ansible.builtin.service</span>:
+        <span class="nm">name</span>: pingfederate
+        <span class="nm">state</span>: stopped
+      <span class="nm">tags</span>: [upgrade]
+
+    <span class="kw">- name</span>: <span class="st">Backup current PF installation</span>
+      <span class="kw">ansible.builtin.archive</span>:
+        <span class="nm">path</span>: <span class="st">"{{ pf_home }}"</span>
+        <span class="nm">dest</span>: <span class="st">"{{ pf_install_dir }}/pingfederate-{{ pf_version }}.BACKUP.tar.gz"</span>
+        <span class="nm">format</span>: gz
+      <span class="nm">tags</span>: [upgrade, backup]
+
+    <span class="kw">- name</span>: <span class="st">Install new PingFederate version</span>
+      <span class="kw">ansible.builtin.include_role</span>:
+        <span class="nm">name</span>: pingfederate
+        <span class="nm">tasks_from</span>: install
+      <span class="nm">tags</span>: [upgrade]
+
+    <span class="kw">- name</span>: <span class="st">Apply configuration templates (new version may have new config keys)</span>
+      <span class="kw">ansible.builtin.include_role</span>:
+        <span class="nm">name</span>: pingfederate
+        <span class="nm">tasks_from</span>: configure
+      <span class="nm">tags</span>: [upgrade]
+
+    <span class="kw">- name</span>: <span class="st">Start PingFederate service</span>
+      <span class="kw">ansible.builtin.service</span>:
+        <span class="nm">name</span>: pingfederate
+        <span class="nm">state</span>: started
+      <span class="nm">tags</span>: [upgrade]
+
+    <span class="kw">- name</span>: <span class="st">Wait for engine to come up and join cluster</span>
+      <span class="kw">ansible.builtin.uri</span>:
+        <span class="nm">url</span>: <span class="st">"https://{{ ansible_host }}:{{ pf_https_port }}/pf/heartbeat.ping"</span>
+        <span class="nm">validate_certs</span>: <span class="kw">false</span>
+        <span class="nm">status_code</span>: 200
+      <span class="nm">register</span>: hb
+      <span class="nm">until</span>: hb.status == 200
+      <span class="nm">retries</span>: <span class="vl">20</span>
+      <span class="nm">delay</span>: <span class="vl">10</span>
+      <span class="nm">tags</span>: [upgrade, verify]
+
+    <span class="kw">- name</span>: <span class="st">Re-add engine to load balancer</span>
+      <span class="kw">ansible.builtin.debug</span>:
+        <span class="nm">msg</span>: <span class="st">"Returning {{ inventory_hostname }} to LB pool"</span>
+      <span class="nm">tags</span>: [upgrade, drain]
+
+    <span class="kw">- name</span>: <span class="st">Wait between engines (let traffic stabilize)</span>
+      <span class="kw">ansible.builtin.pause</span>:
+        <span class="nm">seconds</span>: <span class="vl">15</span>
+      <span class="nm">tags</span>: [upgrade]</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 7 — JINJA2 TEMPLATES
+═══════════════════════════════════════════════ -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">07</span><span class="sl">templates</span></div>
+    <div class="sec-title">
+      <h2>Jinja2 Templates</h2>
+      <p>The configuration file templates that drive all node-specific settings.</p>
+    </div>
+  </div>
+
+  <h3 id="s7-run">run.properties.j2</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">jinja2</span><span class="cb-title">templates/run.properties.j2</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">{# run.properties.j2 — PingFederate runtime configuration
+   Rendered per-host with host-specific variables from inventory/group_vars #}</span>
+
+<span class="cm"># ── Operational Mode (CLUSTERED_CONSOLE | CLUSTERED_ENGINE | STANDALONE)</span>
+<span class="nm">pf.operational.mode</span>=<span class="kw">{{ pf_operational_mode }}</span>
+
+<span class="cm"># ── Ports</span>
+<span class="nm">pf.https.port</span>=<span class="kw">{{ pf_https_port }}</span>
+<span class="nm">pf.admin.https.port</span>=<span class="kw">{{ pf_admin_port }}</span>
+<span class="kw">{% if pf_operational_mode == 'CLUSTERED_ENGINE' %}</span>
+<span class="nm">pf.admin.hostname</span>=<span class="kw">{{ pf_admin_host }}</span>
+<span class="nm">pf.admin.https.port</span>=<span class="kw">{{ pf_admin_port }}</span>
+<span class="kw">{% endif %}</span>
+
+<span class="cm"># ── Host Identity</span>
+<span class="nm">pf.host.name</span>=<span class="kw">{{ ansible_fqdn }}</span>
+<span class="nm">pf.server.default.dir</span>=<span class="kw">{{ pf_home }}</span>/server/default
+
+<span class="cm"># ── Base URLs</span>
+<span class="nm">pf.engine.prefer.external.base.url</span>=false
+<span class="kw">{% if pf_operational_mode == 'CLUSTERED_CONSOLE' %}</span>
+<span class="nm">pf.admin.base.url</span>=<span class="kw">{{ pf_admin_base_url }}</span>
+<span class="kw">{% endif %}</span>
+
+<span class="cm"># ── TLS</span>
+<span class="nm">pf.ssl.protocols</span>=<span class="kw">{{ pf_ssl_protocols }}</span>
+
+<span class="cm"># ── Cluster</span>
+<span class="nm">pf.cluster.bind.address</span>=<span class="kw">{{ pf_cluster_bind_address }}</span>
+<span class="nm">pf.cluster.bind.port</span>=<span class="kw">{{ pf_cluster_port }}</span>
+<span class="nm">pf.cluster.failure.detection.bind.port</span>=<span class="kw">{{ pf_cluster_failure_detection_port }}</span>
+<span class="nm">pf.cluster.adaptive</span>=true
+<span class="nm">pf.cluster.auth.pwd</span>=<span class="kw">{{ vault_pf_admin_password | default('changeme') | hash('sha1') }}</span>
+
+<span class="cm"># ── Logging</span>
+<span class="nm">pf.log.dir</span>=<span class="kw">{{ pf_log_dir }}</span>
+<span class="nm">pf.log.level</span>=INFO
+
+<span class="cm"># ── Hardening</span>
+<span class="nm">pf.disable.request.headers.logging</span>=true
+<span class="nm">pf.admin.host.allow.list</span>=<span class="kw">{{ groups['pf_admin'] | map('extract', hostvars, 'ansible_host') | join(',') }}</span>
+<span class="kw">{# ^ Restricts admin API access to only the admin node's IP — extra hardening #}</span></pre>
+  </div>
+
+  <h3 id="s7-tcp">tcp.xml.j2 — JGroups Cluster Discovery</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">jinja2</span><span class="cb-title">templates/tcp.xml.j2 — Handles TCPPING (on-prem) and S3_PING (AWS)</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">{# tcp.xml.j2 — JGroups cluster discovery configuration
+   Supports: TCPPING (static IPs) and S3_PING (AWS auto-discovery) #}</span>
+&lt;config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="schema/tcp.xsd"&gt;
+
+  &lt;TCP bind_addr="<span class="kw">{{ pf_cluster_bind_address }}</span>"
+       bind_port="<span class="kw">{{ pf_cluster_port }}</span>"
+       recv_buf_size="130000"
+       send_buf_size="130000"
+       sock_conn_timeout="3000"
+       timer_type="new"
+       timer.min_threads="4"
+       timer.max_threads="10"
+       timer.keep_alive_time="3000"
+       timer.queue_max_size="500"
+       thread_pool.enabled="true"
+       thread_pool.min_threads="2"
+       thread_pool.max_threads="30"
+       thread_pool.keep_alive_time="60000"
+       loopback="true"/&gt;
+
+<span class="kw">{% if pf_cluster_discovery == 's3ping' %}</span>
+  <span class="cm">&lt;!-- AWS S3_PING: engines register in S3 bucket, discover peers automatically --&gt;</span>
+  &lt;S3_PING region_name="<span class="kw">{{ pf_s3ping_region }}</span>"
+           bucket_name="<span class="kw">{{ pf_s3ping_bucket }}</span>"
+<span class="kw">{% if vault_pf_s3ping_access_key is defined and vault_pf_s3ping_access_key %}</span>
+           access_key="<span class="kw">{{ vault_pf_s3ping_access_key }}</span>"
+           secret_access_key="<span class="kw">{{ vault_pf_s3ping_secret_key }}</span>"
+<span class="kw">{% endif %}</span>
+           /&gt;
+<span class="kw">{% elif pf_cluster_discovery == 'tcpping' %}</span>
+  <span class="cm">&lt;!-- TCPPING: static list of all cluster members (admin + all engines) --&gt;</span>
+  &lt;TCPPING timeout="3000"
+           initial_hosts="<span class="kw">{{ pf_cluster_initial_hosts | join(',') }}</span>"
+           port_range="1"
+           num_initial_members="<span class="kw">{{ pf_cluster_initial_hosts | length }}</span>"/&gt;
+<span class="kw">{% else %}</span>
+  <span class="cm">&lt;!-- Auto-detect: use initial_hosts built from inventory --&gt;</span>
+  &lt;TCPPING timeout="3000"
+           initial_hosts="<span class="kw">{{
+             (groups['pf_admin'] + groups['pf_engines'])
+             | map('extract', hostvars, 'pf_cluster_bind_address')
+             | map('regex_replace', '$', '[' + pf_cluster_port | string + ']')
+             | join(',')
+           }}</span>"
+           port_range="1"
+           num_initial_members="<span class="kw">{{ (groups['pf_admin'] + groups['pf_engines']) | length }}</span>"/&gt;
+<span class="kw">{% endif %}</span>
+
+  &lt;MERGE3 min_interval="10000" max_interval="30000"/&gt;
+  &lt;FD_SOCK/&gt;
+  &lt;FD_ALL timeout="60000" interval="15000" timeout_check_interval="5000"/&gt;
+  &lt;VERIFY_SUSPECT timeout="1500"/&gt;
+  &lt;BARRIER/&gt;
+  &lt;pbcast.NAKACK2 xmit_interval="500"
+                  xmit_table_num_rows="100"
+                  xmit_table_msgs_per_row="2000"
+                  xmit_table_max_compaction_time="30000"
+                  max_msg_batch_size="500"
+                  use_mcast_xmit="false"
+                  discard_delivered_msgs="true"/&gt;
+  &lt;UNICAST3 timeout="300,600,1200"/&gt;
+  &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" max_bytes="4m"/&gt;
+  &lt;pbcast.GMS print_local_addr="true" join_timeout="3000" view_bundling="true"/&gt;
+  &lt;MFC max_credits="2m" min_threshold="0.4"/&gt;
+  &lt;FRAG2 frag_size="60000"/&gt;
+&lt;/config&gt;</pre>
+  </div>
+
+  <h3 id="s7-service">pingfederate.service.j2 — Systemd Unit File</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">jinja2</span><span class="cb-title">templates/pingfederate.service.j2</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">{# pingfederate.service.j2 — systemd unit file for PingFederate #}</span>
+[Unit]
+Description=PingFederate IAM Server (<span class="kw">{{ pf_operational_mode }}</span>)
+Documentation=https://docs.pingidentity.com
+After=network-online.target syslog.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<span class="kw">{{ pf_user }}</span>
+Group=<span class="kw">{{ pf_group }}</span>
+WorkingDirectory=<span class="kw">{{ pf_home }}</span>
+
+<span class="cm"># Load JVM options from environment file (so they can be changed without editing unit)</span>
+EnvironmentFile=-/etc/default/pingfederate
+
+ExecStart=<span class="kw">{{ java_home }}</span>/bin/java \
+  ${PF_JVM_OPTS} \
+  -cp "<span class="kw">{{ pf_home }}</span>/bin/pf-startup.jar" \
+  com.pingidentity.appserver.jetty.PFStandaloneMain
+
+ExecStop=/bin/kill -TERM $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+
+<span class="cm"># Restart policy</span>
+Restart=on-failure
+RestartSec=10s
+StartLimitIntervalSec=120s
+StartLimitBurst=3
+
+<span class="cm"># Security hardening</span>
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=<span class="kw">{{ pf_log_dir }}</span> <span class="kw">{{ pf_data_dir }}</span> /tmp
+ProtectHome=true
+
+<span class="cm"># Resource limits (match pam_limits)</span>
+LimitNOFILE=<span class="kw">{{ pf_nofile_limit }}</span>
+LimitNPROC=<span class="kw">{{ pf_nproc_limit }}</span>
+
+TimeoutStartSec=180
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">jinja2</span><span class="cb-title">templates/pingfederate.env.j2 — JVM Options Environment File</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">{# pingfederate.env.j2 — loaded as EnvironmentFile by systemd unit
+   Edit /etc/default/pingfederate to tune JVM without modifying the unit file #}</span>
+
+<span class="nm">JAVA_HOME</span>=<span class="kw">{{ java_home }}</span>
+
+<span class="nm">PF_JVM_OPTS</span>="-server \
+  -Xms<span class="kw">{{ pf_jvm_xms }}</span> \
+  -Xmx<span class="kw">{{ pf_jvm_xmx }}</span> \
+  -XX:+Use<span class="kw">{{ pf_jvm_gc }}</span> \
+  -XX:MaxGCPauseMillis=200 \
+  -XX:InitiatingHeapOccupancyPercent=45 \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=<span class="kw">{{ pf_log_dir }}</span>/heap.hprof \
+  -Dfile.encoding=UTF-8 \
+  -Djava.awt.headless=true \
+  -Dpf.home=<span class="kw">{{ pf_home }}</span> \
+  -Dpf.server.default.dir=<span class="kw">{{ pf_home }}</span>/server/default \
+  -Dpf.operational.mode=<span class="kw">{{ pf_operational_mode }}</span> \
+<span class="kw">{% if pf_operational_mode == 'CLUSTERED_ENGINE' %}</span>
+  -Dpf.admin.hostname=<span class="kw">{{ pf_admin_host }}</span> \
+<span class="kw">{% endif %}</span>
+  <span class="kw">{{ pf_jvm_extra_args }}</span>"</pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 8 — HANDLERS & VERIFICATION
+═══════════════════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="sec-badge"><span class="sn">08</span><span class="sl">ops</span></div>
+    <div class="sec-title">
+      <h2>Handlers, Verification &amp; Operational Notes</h2>
+      <p>Handlers that react to config changes, post-install verification tasks, idempotency design, and Ansible tags reference.</p>
+    </div>
+  </div>
+
+  <h3 id="s8-handlers">roles/pingfederate/handlers/main.yml</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">roles/pingfederate/handlers/main.yml</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# Handlers fire when notified by tasks — used for service restarts
+# after config file changes. Ansible deduplicates multiple notifications:
+# even if 3 tasks notify "restart pingfederate", it restarts only ONCE.</span>
+
+<span class="kw">- name</span>: <span class="st">restart pingfederate</span>
+  <span class="kw">ansible.builtin.systemd</span>:
+    <span class="nm">name</span>: pingfederate
+    <span class="nm">state</span>: restarted
+    <span class="nm">daemon_reload</span>: <span class="kw">true</span>
+  <span class="kw">listen</span>: restart pingfederate
+
+<span class="kw">- name</span>: <span class="st">reload pingfederate</span>
+  <span class="kw">ansible.builtin.systemd</span>:
+    <span class="nm">name</span>: pingfederate
+    <span class="nm">state</span>: reloaded
+  <span class="kw">listen</span>: reload pingfederate
+
+<span class="kw">- name</span>: <span class="st">reload firewalld</span>
+  <span class="kw">ansible.builtin.service</span>:
+    <span class="nm">name</span>: firewalld
+    <span class="nm">state</span>: reloaded
+  <span class="kw">listen</span>: reload firewalld
+
+<span class="kw">- name</span>: <span class="st">reload systemd daemon</span>
+  <span class="kw">ansible.builtin.systemd</span>:
+    <span class="nm">daemon_reload</span>: <span class="kw">true</span>
+  <span class="kw">listen</span>: reload systemd daemon</pre>
+  </div>
+
+  <h3 id="s8-verify">roles/pingfederate/tasks/verify.yml</h3>
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">yaml</span><span class="cb-title">roles/pingfederate/tasks/verify.yml — Post-Install Checks</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm">---
+# verify.yml — Run after service starts to confirm healthy deployment</span>
+
+<span class="kw">- name</span>: <span class="st">Wait for PingFederate to initialize (poll heartbeat endpoint)</span>
+  <span class="kw">ansible.builtin.uri</span>:
+    <span class="nm">url</span>: <span class="st">"https://{{ ansible_host }}:{{ pf_https_port }}/pf/heartbeat.ping"</span>
+    <span class="nm">validate_certs</span>: <span class="kw">false</span>
+    <span class="nm">status_code</span>: 200
+  <span class="nm">register</span>: heartbeat
+  <span class="nm">until</span>: heartbeat.status == 200
+  <span class="nm">retries</span>: <span class="st">"{{ pf_startup_retries }}"</span>
+  <span class="nm">delay</span>: <span class="st">"{{ pf_startup_delay }}"</span>
+  <span class="nm">tags</span>: [verify]
+
+<span class="kw">- name</span>: <span class="st">Verify heartbeat response contains OK status</span>
+  <span class="kw">ansible.builtin.assert</span>:
+    <span class="nm">that</span>: <span class="st">"'OK' in heartbeat.content or heartbeat.status == 200"</span>
+    <span class="nm">fail_msg</span>: <span class="st">"Heartbeat returned unexpected response: {{ heartbeat.content }}"</span>
+  <span class="nm">tags</span>: [verify]
+
+<span class="kw">- name</span>: <span class="st">Verify PingFederate version via Admin API (admin node only)</span>
+  <span class="kw">ansible.builtin.uri</span>:
+    <span class="nm">url</span>: <span class="st">"https://{{ ansible_host }}:{{ pf_admin_port }}/pf-admin-api/v1/version"</span>
+    <span class="nm">method</span>: GET
+    <span class="nm">user</span>: <span class="st">"{{ pf_admin_user }}"</span>
+    <span class="nm">password</span>: <span class="st">"{{ pf_admin_password }}"</span>
+    <span class="nm">force_basic_auth</span>: <span class="kw">true</span>
+    <span class="nm">validate_certs</span>: <span class="kw">false</span>
+    <span class="nm">headers</span>: { X-XSRF-Header: PingFederate }
+  <span class="nm">register</span>: pf_version_response
+  <span class="kw">when</span>: pf_operational_mode == "CLUSTERED_CONSOLE"
+  <span class="nm">tags</span>: [verify]
+
+<span class="kw">- name</span>: <span class="st">Assert deployed version matches target version</span>
+  <span class="kw">ansible.builtin.assert</span>:
+    <span class="nm">that</span>: <span class="st">"pf_version in pf_version_response.json.version"</span>
+    <span class="nm">fail_msg</span>: <span class="st">"Version mismatch. Expected {{ pf_version }}, got {{ pf_version_response.json.version }}"</span>
+    <span class="nm">success_msg</span>: <span class="st">"PingFederate {{ pf_version_response.json.version }} installed and running ✓"</span>
+  <span class="kw">when</span>: pf_operational_mode == "CLUSTERED_CONSOLE"
+  <span class="nm">tags</span>: [verify]
+
+<span class="kw">- name</span>: <span class="st">Check server.log for startup errors</span>
+  <span class="kw">ansible.builtin.shell</span>: |
+    grep -iE "ERROR|FATAL|Exception" \
+      <span class="st">"{{ pf_log_dir }}/server.log"</span> \
+      --include="*.log" | tail -20 || true
+  <span class="nm">register</span>: log_errors
+  <span class="nm">changed_when</span>: <span class="kw">false</span>
+  <span class="nm">tags</span>: [verify, logs]
+
+<span class="kw">- name</span>: <span class="st">Warn if startup errors found in server.log</span>
+  <span class="kw">ansible.builtin.debug</span>:
+    <span class="nm">msg</span>: <span class="st">"⚠ Errors found in server.log:\n{{ log_errors.stdout }}"</span>
+  <span class="kw">when</span>: log_errors.stdout | length > 0
+  <span class="nm">tags</span>: [verify, logs]
+
+<span class="kw">- name</span>: <span class="st">Verify systemd service is enabled and running</span>
+  <span class="kw">ansible.builtin.service_facts</span>:
+<span class="kw">- name</span>: <span class="st">Assert PF service is active</span>
+  <span class="kw">ansible.builtin.assert</span>:
+    <span class="nm">that</span>:
+      - <span class="st">"ansible_facts.services['pingfederate.service'] is defined"</span>
+      - <span class="st">"ansible_facts.services['pingfederate.service'].state == 'running'"</span>
+      - <span class="st">"ansible_facts.services['pingfederate.service'].status == 'enabled'"</span>
+    <span class="nm">fail_msg</span>: <span class="st">"PingFederate service is not running or not enabled for boot"</span>
+    <span class="nm">success_msg</span>: <span class="st">"Service pingfederate is running and enabled ✓"</span>
+  <span class="nm">tags</span>: [verify]</pre>
+  </div>
+
+  <h3 id="s8-idempotent">Idempotency Design</h3>
+  <div class="callout tip">
+    <span class="callout-icon">♻</span>
+    <div class="callout-body"><strong>Every task is safe to re-run</strong> The role uses Ansible's built-in idempotency mechanisms throughout. The <code>unarchive</code> module uses <code>creates:</code> so extraction is skipped if already done. The <code>copy</code> and <code>template</code> modules only trigger the restart handler when the file content actually changes. Re-running the playbook on a healthy cluster makes zero changes and does not restart PingFederate.</div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Pattern Used</th><th>Task</th><th>Idempotency Mechanism</th></tr></thead>
+      <tbody>
+        <tr><td><strong>creates:</strong></td><td>Extract ZIP</td><td>Skip extraction if <code>run.sh</code> already exists</td></tr>
+        <tr><td><strong>state: present</strong></td><td>User/group/package</td><td>Module checks existence before creating</td></tr>
+        <tr><td><strong>changed_when: false</strong></td><td>Version check, log scan</td><td>Read-only tasks never report changed</td></tr>
+        <tr><td><strong>notify + handler</strong></td><td>Config file changes</td><td>Restart only fires if file content changed</td></tr>
+        <tr><td><strong>stat + when</strong></td><td>Conditional tasks</td><td>Skip tasks whose outcome already matches desired state</td></tr>
+        <tr><td><strong>lineinfile regexp:</strong></td><td>JAVA_HOME in /etc/environment</td><td>Replace existing line rather than appending</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="s8-tags">Ansible Tags Reference</h3>
+  <p>Tags allow running specific subsets of the playbook without executing all tasks:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tag</th><th>What it runs</th><th>Example Command</th></tr></thead>
+      <tbody>
+        <tr><td><code>setup</code></td><td>User/group creation, directory setup</td><td><code>ansible-playbook site.yml --tags setup</code></td></tr>
+        <tr><td><code>java</code></td><td>Java installation and verification</td><td><code>ansible-playbook site.yml --tags java</code></td></tr>
+        <tr><td><code>install</code></td><td>PF extraction, license, plugins</td><td><code>ansible-playbook site.yml --tags install</code></td></tr>
+        <tr><td><code>configure</code></td><td>All config file templates (triggers restart if changed)</td><td><code>ansible-playbook site.yml --tags configure</code></td></tr>
+        <tr><td><code>cluster</code></td><td>JGroups tcp.xml only</td><td><code>ansible-playbook site.yml --tags cluster</code></td></tr>
+        <tr><td><code>run_properties</code></td><td>run.properties only</td><td><code>ansible-playbook site.yml --tags run_properties</code></td></tr>
+        <tr><td><code>firewall</code></td><td>Firewall port rules only</td><td><code>ansible-playbook site.yml --tags firewall</code></td></tr>
+        <tr><td><code>verify</code></td><td>All health check and assertion tasks</td><td><code>ansible-playbook site.yml --tags verify</code></td></tr>
+        <tr><td><code>upgrade</code></td><td>Upgrade flow only (use upgrade.yml)</td><td><code>ansible-playbook upgrade.yml --tags upgrade</code></td></tr>
+        <tr><td><code>never</code></td><td>Destructive tasks (add to tasks you want explicit opt-in for)</td><td><code>ansible-playbook site.yml --tags never,cleanup</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="code-block">
+    <div class="cb-header">
+      <div class="cb-left"><div class="cb-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></div>
+      <span class="cb-lang">bash</span><span class="cb-title">Common Ansible Run Commands — Copy-Paste Ready</span></div>
+      <button class="copy-btn" onclick="cpBtn(this)">Copy</button>
+    </div>
+    <pre><span class="cm"># ── Full deployment (first time)</span>
+ansible-playbook site.yml \
+  -i inventory/prod/hosts.yml \
+  --ask-vault-pass \
+  --diff
+
+<span class="cm"># ── Dry run (see what would change)</span>
+ansible-playbook site.yml \
+  -i inventory/prod/hosts.yml \
+  --ask-vault-pass \
+  --check --diff
+
+<span class="cm"># ── Deploy to specific host only</span>
+ansible-playbook site.yml \
+  -i inventory/prod/hosts.yml \
+  --ask-vault-pass \
+  --limit pf-engine01.corp.example.com
+
+<span class="cm"># ── Re-run only configuration templates (e.g., after changing a variable)</span>
+ansible-playbook site.yml \
+  -i inventory/prod/hosts.yml \
+  --ask-vault-pass \
+  --tags configure
+
+<span class="cm"># ── Run verification checks only (confirm a live cluster is healthy)</span>
+ansible-playbook site.yml \
+  -i inventory/prod/hosts.yml \
+  --ask-vault-pass \
+  --tags verify
+
+<span class="cm"># ── Upgrade all engine nodes to new version</span>
+ansible-playbook upgrade.yml \
+  -i inventory/prod/hosts.yml \
+  --ask-vault-pass \
+  -e "pf_version=12.1.1" \
+  --diff
+
+<span class="cm"># ── Use AWS dynamic inventory (production AWS)</span>
+ansible-playbook site.yml \
+  -i inventory/aws/aws_ec2.yml \
+  --ask-vault-pass \
+  --diff
+
+<span class="cm"># ── Verbose output for debugging</span>
+ansible-playbook site.yml \
+  -i inventory/prod/hosts.yml \
+  --ask-vault-pass \
+  -vvv 2>&amp;1 | tee /tmp/ansible-$(date +%Y%m%d-%H%M%S).log
+
+<span class="cm"># ── List all tasks without running them</span>
+ansible-playbook site.yml --list-tasks
+
+<span class="cm"># ── List all hosts that would be affected</span>
+ansible-playbook site.yml -i inventory/prod/hosts.yml --list-hosts</pre>
+  </div>
+
+  <div class="callout success">
+    <span class="callout-icon">✅</span>
+    <div class="callout-body"><strong>Post-Deployment Checklist</strong>
+      <br><br>After the playbook completes successfully, manually confirm:
+      <ul style="margin-top:8px;font-size:13.5px">
+        <li>Admin Console accessible at <code>https://[admin-host]:9999/pingfederate/app</code></li>
+        <li>System → Server → Cluster Management shows all expected engine nodes</li>
+        <li>Engine heartbeat returns HTTP 200: <code>https://[engine-host]:9031/pf/heartbeat.ping</code></li>
+        <li>No ERROR entries in <code>server.log</code> for the past 5 minutes</li>
+        <li>Load balancer health checks green for all engines</li>
+        <li>Test an SP-initiated SSO flow end-to-end with a test SP connection</li>
+        <li>Admin port 9999 is NOT reachable from the public internet</li>
+        <li>PingFederate service enabled: <code>systemctl is-enabled pingfederate</code> → <code>enabled</code></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</main>
+</div><!-- /layout -->
+
+<footer>
+  <strong>PingFederate — Ansible Installation Guide</strong><br>
+  <span style="display:block;margin-top:6px">On-Premises &amp; AWS EC2 · Admin + Engine Cluster · RHEL / Amazon Linux 2023 · Java 17 · PingFederate 12.x</span>
+  <span style="display:block;margin-top:6px;color:var(--text4)">Verify against official Ping Identity documentation for your specific version — docs.pingidentity.com</span>
+</footer>
+
+<script>
+/* ── Copy buttons ── */
+function cpBtn(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+/* ── Active nav scroll spy ── */
+const secs = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.top-bar-nav a');
+const tocLinks = document.querySelectorAll('.toc-link');
+
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = '#' + e.target.id;
+      navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === id));
+      tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === id));
+    }
+  });
+}, { rootMargin: '-15% 0px -75% 0px' });
+
+secs.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

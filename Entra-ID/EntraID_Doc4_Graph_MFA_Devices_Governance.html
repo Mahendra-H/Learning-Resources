@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft Graph — MFA API, Devices, Audit &amp; Production Governance</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Epilogue:wght@300;400;500;600;700;800&family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #080608;
+  --bg1:     #0E0A0C;
+  --bg2:     #150F12;
+  --bgc:     #1B1318;
+  --bgh:     #221820;
+  --ruby:    #E8506A;
+  --ruby-d:  rgba(232,80,106,0.10);
+  --ruby-g:  rgba(232,80,106,0.30);
+  --gold:    #D4A842;
+  --gold-d:  rgba(212,168,66,0.10);
+  --gold-g:  rgba(212,168,66,0.30);
+  --sage:    #7EC8A4;
+  --sage-d:  rgba(126,200,164,0.10);
+  --violet:  #A78BFA;
+  --violet-d:rgba(167,139,250,0.10);
+  --sky:     #60B8E0;
+  --sky-d:   rgba(96,184,224,0.10);
+  --border:  rgba(212,168,66,0.10);
+  --border2: rgba(212,168,66,0.20);
+  --t1:      #F2EDE8;
+  --t2:      #8A7A70;
+  --t3:      #3D3028;
+  --fd:      'Cormorant Garamond', serif;
+  --fb:      'Epilogue', sans-serif;
+  --fm:      'Inconsolata', monospace;
+  --nw:      275px;
+  --r:       8px;
+  --rl:      14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--t1);
+  font-family:var(--fb);
+  font-size:16px;
+  line-height:1.85;
+  overflow-x:hidden;
+}
+
+/* Warm noise-like grain overlay */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    radial-gradient(ellipse 800px 600px at 20% 50%, rgba(212,168,66,0.025) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 800px at 80% 20%, rgba(232,80,106,0.02) 0%, transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+/* ─── SIDEBAR ─── */
+.nav{
+  position:fixed;left:0;top:0;bottom:0;
+  width:var(--nw);
+  background:var(--bg1);
+  border-right:1px solid var(--border);
+  overflow-y:auto;z-index:100;
+  display:flex;flex-direction:column;
+}
+.nav::-webkit-scrollbar{width:3px}
+.nav::-webkit-scrollbar-thumb{background:var(--border2)}
+
+.nlogo{padding:22px 18px 18px;border-bottom:1px solid var(--border)}
+.nseries{font-family:var(--fm);font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.ntitle{font-family:var(--fb);font-size:12px;font-weight:700;color:var(--t1);line-height:1.45}
+.nbadge{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:9px;background:var(--gold-d);
+  border:1px solid var(--border);color:var(--gold);
+  font-family:var(--fm);font-size:8.5px;padding:3px 9px;border-radius:3px;
+}
+.nbadge::before{content:'★';font-size:8px}
+
+.nlbl{font-family:var(--fm);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--t3);padding:14px 18px 5px}
+
+.na{display:flex;align-items:flex-start;gap:8px;padding:7px 18px;border-left:2px solid transparent;text-decoration:none;transition:all .18s}
+.na:hover,.na.on{background:var(--gold-d);border-left-color:var(--gold)}
+.nn{font-family:var(--fm);font-size:9px;color:var(--gold);opacity:.5;min-width:16px;padding-top:2px}
+.nt{font-family:var(--fb);font-size:11.5px;font-weight:600;color:var(--t2);line-height:1.4}
+.na:hover .nt,.na.on .nt{color:var(--t1)}
+
+.nfoot{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border)}
+.plbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+.pbar{height:2px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden}
+.pfill{height:100%;border-radius:2px;width:0%;background:linear-gradient(90deg,var(--gold),var(--ruby));transition:width .3s}
+
+/* ─── MAIN ─── */
+.main{margin-left:var(--nw);min-height:100vh;position:relative;z-index:1}
+
+/* ─── HERO ─── */
+.hero{
+  padding:70px 58px 54px;border-bottom:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:'FINAL';
+  position:absolute;right:52px;top:62px;
+  font-family:var(--fd);font-size:120px;font-weight:700;
+  color:rgba(212,168,66,0.04);pointer-events:none;
+  line-height:1;letter-spacing:.1em;
+}
+.htag{font-family:var(--fm);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:9px}
+.htag::before{content:'';width:24px;height:1px;background:var(--gold)}
+.hero h1{font-family:var(--fd);font-size:clamp(30px,3.8vw,52px);line-height:1.1;color:var(--t1);margin-bottom:12px;font-weight:700}
+.hero h1 em{font-style:italic;color:var(--gold)}
+.hsub{font-size:16.5px;color:var(--t2);max-width:560px;margin-bottom:26px;font-weight:300;line-height:1.65}
+.hpills{display:flex;gap:9px;flex-wrap:wrap}
+.hpill{display:flex;align-items:center;gap:6px;background:var(--bgc);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-family:var(--fm);font-size:9.5px;color:var(--t2)}
+.hdot{width:5px;height:5px;border-radius:50%}
+
+/* ─── CONTENT ─── */
+.cnt{padding:0 58px 80px}
+.ch{padding-top:66px;border-top:1px solid var(--border);margin-top:66px}
+.ch:first-child{border-top:none;margin-top:0}
+
+.chd{display:flex;align-items:flex-start;gap:14px;margin-bottom:32px}
+.cnum{font-family:var(--fm);font-size:9.5px;color:var(--gold);background:var(--gold-d);border:1px solid var(--border);padding:3px 8px;border-radius:3px;margin-top:5px;white-space:nowrap;letter-spacing:.1em}
+.ch h2{font-family:var(--fd);font-size:clamp(24px,2.8vw,42px);color:var(--t1);line-height:1.12;font-weight:700}
+.ch h2 .a{color:var(--gold);font-style:italic}
+
+.intro{font-size:17px;color:var(--t2);font-style:italic;font-weight:300;border-left:3px solid var(--gold);padding-left:16px;margin-bottom:28px;line-height:1.75;font-family:var(--fd)}
+.ch h3{font-family:var(--fb);font-size:18px;font-weight:700;color:var(--t1);margin:36px 0 13px;display:flex;align-items:center;gap:8px}
+.ch h3::before{content:'';width:3px;height:17px;background:linear-gradient(180deg,var(--gold),var(--ruby));border-radius:2px;flex-shrink:0}
+.ch h4{font-family:var(--fb);font-size:14.5px;font-weight:700;color:var(--gold);margin:22px 0 9px}
+p{margin-bottom:14px}
+strong{color:var(--gold);font-weight:600}
+code{font-family:var(--fm);font-size:12px;color:var(--gold);background:var(--gold-d);padding:1px 5px;border-radius:3px}
+
+/* ─── CALLOUTS ─── */
+.bx{border-radius:var(--r);padding:17px 20px;margin:20px 0;font-size:15px}
+.bx::before{display:block;font-family:var(--fm);font-size:8px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:8px}
+.bx-a{background:var(--gold-d);border:1px solid rgba(212,168,66,.18);border-left:3px solid var(--gold)}
+.bx-a::before{content:'💡 REAL-WORLD ANALOGY';color:var(--gold)}
+.bx-p{background:var(--sky-d);border:1px solid rgba(96,184,224,.15);border-left:3px solid var(--sky)}
+.bx-p::before{content:'🔄 PINGFEDERATE / LDAP LENS';color:var(--sky)}
+.bx-j{background:var(--sage-d);border:1px solid rgba(126,200,164,.15);border-left:3px solid var(--sage)}
+.bx-j::before{content:'🏗️ REAL PROJECT SCENARIO';color:var(--sage)}
+.bx-w{background:var(--ruby-d);border:1px solid rgba(232,80,106,.15);border-left:3px solid var(--ruby)}
+.bx-w::before{content:'⚠️ GOTCHA / WATCH OUT';color:var(--ruby)}
+.bx-t{background:var(--violet-d);border:1px solid rgba(167,139,250,.15);border-left:3px solid var(--violet)}
+.bx-t::before{content:'🎯 IAM ARCHITECT TIP';color:var(--violet)}
+.bx-c{background:rgba(30,20,25,.6);border:1px solid rgba(212,168,66,.12);border-left:3px solid var(--sage)}
+.bx-c::before{content:'✅ PRODUCTION CHECKLIST';color:var(--sage)}
+
+/* ─── TABLES ─── */
+.tbl{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.tbl th{padding:9px 13px;font-family:var(--fm);font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;text-align:left;border-bottom:2px solid}
+.tbl th.tg{color:var(--gold);border-color:var(--gold);background:var(--gold-d)}
+.tbl th.tr{color:var(--ruby);border-color:var(--ruby);background:var(--ruby-d)}
+.tbl th.ts{color:var(--sage);border-color:var(--sage);background:var(--sage-d)}
+.tbl th.tn{color:var(--t2);border-color:var(--border)}
+.tbl td{padding:9px 13px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.55}
+.tbl tr:hover td{background:rgba(255,255,255,.012)}
+.cg{color:#C8A050} .cr{color:#C85070} .cs{color:#6DAA8A}
+
+/* ─── DIAGRAM ─── */
+.dbox{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);padding:26px;margin:26px 0;overflow-x:auto}
+.dtitle{font-family:var(--fm);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.dtitle::before{content:'';width:16px;height:1px;background:var(--gold)}
+
+/* ─── CODE ─── */
+.code{background:#040208;border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;font-family:var(--fm);font-size:12.5px;color:#C8B89A;overflow-x:auto;margin:13px 0;line-height:1.7}
+.cc{color:var(--t3);font-style:italic}
+.ck{color:var(--gold)}
+.cv{color:#E8956A}
+.cs2{color:var(--sage)}
+.cr2{color:var(--ruby)}
+
+/* ─── EXPANDABLE ─── */
+details.dd{background:var(--bgc);border:1px solid var(--border);border-radius:var(--r);margin:16px 0;overflow:hidden}
+details.dd summary{padding:13px 17px;cursor:pointer;font-family:var(--fb);font-size:13px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:8px;list-style:none;user-select:none;transition:background .16s}
+details.dd summary:hover{background:var(--gold-d)}
+details.dd summary::before{content:'▶';font-size:9px;transition:transform .2s}
+details.dd[open] summary::before{transform:rotate(90deg)}
+details.dd summary::-webkit-details-marker{display:none}
+.ddb{padding:17px 20px;border-top:1px solid var(--border);font-size:14.5px}
+
+/* ─── GRID ─── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:13px;margin:20px 0}
+.card{background:var(--bgc);border:1px solid var(--border);border-radius:var(--r);padding:17px;transition:all .18s}
+.card:hover{border-color:var(--gold);background:var(--bgh);transform:translateY(-2px);box-shadow:0 5px 18px rgba(212,168,66,.06)}
+.ci{font-size:20px;margin-bottom:7px}
+.ct{font-family:var(--fb);font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.cd{font-size:12px;color:var(--t2);line-height:1.5}
+
+/* ─── ANATOMY ─── */
+.anat{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin:20px 0}
+.anath{padding:12px 18px;background:var(--gold-d);border-bottom:1px solid var(--border);font-family:var(--fm);font-size:10.5px;color:var(--gold);display:flex;align-items:center;gap:7px}
+.anatg{display:grid;grid-template-columns:1fr 1fr}
+.af{padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:9px;font-size:12px}
+.af:nth-child(odd){border-right:1px solid var(--border)}
+.ak{font-family:var(--fm);color:var(--gold);font-size:11px;min-width:180px;flex-shrink:0}
+.av{font-family:var(--fm);color:#E8956A;font-size:11px}
+.ad{color:var(--t2);font-size:12px}
+
+/* ─── METHOD CARDS ─── */
+.method-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin:20px 0}
+.method-card{
+  background:var(--bgc);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  transition:all .18s;
+}
+.method-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.mc-hd{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.mc-icon{font-size:18px}
+.mc-name{font-family:var(--fb);font-size:13px;font-weight:700;color:var(--t1)}
+.mc-type{font-family:var(--fm);font-size:9px;color:var(--t2);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+.mc-body{padding:12px 16px}
+.mc-endpoint{font-family:var(--fm);font-size:10.5px;color:var(--gold);margin-bottom:6px;word-break:break-all}
+.mc-perm{font-family:var(--fm);font-size:10px;color:var(--ruby);margin-bottom:6px}
+.mc-desc{font-size:12px;color:var(--t2);line-height:1.5}
+.mc-badge{
+  display:inline-block;font-family:var(--fm);font-size:8.5px;
+  padding:1px 6px;border-radius:3px;margin-top:5px;margin-right:3px;
+}
+.mb-r{background:var(--ruby-d);color:var(--ruby);border:1px solid rgba(232,80,106,.2)}
+.mb-g{background:var(--sage-d);color:var(--sage);border:1px solid rgba(126,200,164,.2)}
+.mb-y{background:var(--gold-d);color:var(--gold);border:1px solid rgba(212,168,66,.2)}
+
+/* ─── TAGS ─── */
+.tag{display:inline-block;font-family:var(--fm);font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:.06em;margin:2px}
+.tg{background:var(--gold-d);color:var(--gold);border:1px solid rgba(212,168,66,.2)}
+.tr{background:var(--ruby-d);color:var(--ruby);border:1px solid rgba(232,80,106,.2)}
+.ts{background:var(--sage-d);color:var(--sage);border:1px solid rgba(126,200,164,.2)}
+.tv{background:var(--violet-d);color:var(--violet);border:1px solid rgba(167,139,250,.2)}
+
+/* ─── CHECKLIST ─── */
+.checklist{list-style:none;margin:14px 0}
+.checklist li{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:8px 0;border-bottom:1px solid var(--border);
+  font-size:14.5px;line-height:1.55;
+}
+.checklist li:last-child{border-bottom:none}
+.checklist li::before{
+  content:'☐';font-family:var(--fm);font-size:14px;
+  color:var(--gold);margin-top:1px;flex-shrink:0;
+}
+.checklist li.done::before{content:'☑';color:var(--sage)}
+
+/* ─── STEPS ─── */
+.steps{display:flex;flex-direction:column;gap:0;margin:20px 0}
+.step{display:flex;gap:16px;padding:15px 0;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none}
+.snum{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:var(--gold-d);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;color:var(--gold);margin-top:2px}
+.stitle{font-family:var(--fb);font-size:13.5px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.sdesc{font-size:13px;color:var(--t2);line-height:1.55}
+
+/* ─── SERIES COMPLETE BANNER ─── */
+.complete-banner{
+  margin-top:72px;padding:48px;
+  background:linear-gradient(135deg,var(--bgc) 0%,var(--bg2) 100%);
+  border:1px solid var(--border2);border-radius:var(--rl);
+  text-align:center;position:relative;overflow:hidden;
+}
+.complete-banner::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 400px 300px at 50% 50%,rgba(212,168,66,0.06),transparent);
+  pointer-events:none;
+}
+
+@media(max-width:860px){
+  .nav{transform:translateX(-100%)}
+  .main{margin-left:0}
+  .hero,.cnt{padding-left:18px;padding-right:18px}
+  .anatg,.method-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="nav">
+  <div class="nlogo">
+    <div class="nseries">Microsoft Entra ID Series — Final Doc</div>
+    <div class="ntitle">Graph: MFA API, Devices, Audit &amp; Production Governance</div>
+    <span class="nbadge">DOC 4 OF 4</span>
+  </div>
+
+  <div class="nlbl">Chapters</div>
+  <a class="na on" href="#ch1"><span class="nn">01</span><span class="nt">Authentication Methods API</span></a>
+  <a class="na" href="#ch2"><span class="nn">02</span><span class="nt">MFA Inventory at Scale</span></a>
+  <a class="na" href="#ch3"><span class="nn">03</span><span class="nt">Device Management via Graph</span></a>
+  <a class="na" href="#ch4"><span class="nn">04</span><span class="nt">Audit &amp; Sign-in Logs</span></a>
+  <a class="na" href="#ch5"><span class="nn">05</span><span class="nt">Reports &amp; Registration Data</span></a>
+  <a class="na" href="#ch6"><span class="nn">06</span><span class="nt">Security &amp; Least Privilege</span></a>
+  <a class="na" href="#ch7"><span class="nn">07</span><span class="nt">Production Governance Patterns</span></a>
+  <a class="na" href="#ch8"><span class="nn">08</span><span class="nt">Monitoring &amp; Troubleshooting</span></a>
+
+  <div class="nlbl">Quick Ref</div>
+  <a class="na" href="#ch1"><span class="nn">◈</span><span class="nt">Auth Methods Architecture</span></a>
+  <a class="na" href="#ch3"><span class="nn">◈</span><span class="nt">Device Inventory Diagram</span></a>
+  <a class="na" href="#ch7"><span class="nn">◈</span><span class="nt">Governance Checklist</span></a>
+
+  <div class="nfoot">
+    <div class="plbl">Series Progress</div>
+    <div class="pbar"><div class="pfill" id="pf"></div></div>
+  </div>
+</aside>
+
+<!-- ═══════ MAIN ═══════ -->
+<main class="main">
+
+<section class="hero">
+  <div class="htag">Doc 4 of 4 · Final · Microsoft Entra ID Learning Series</div>
+  <h1>Graph: MFA API, Devices,<br>Audit &amp; <em>Production Governance</em></h1>
+  <p class="hsub">The capstone. Authentication Methods API in full depth, device inventory at scale, sign-in log analysis, and the governance patterns that separate a deployed Entra ID integration from a production-grade one.</p>
+  <div class="hpills">
+    <div class="hpill"><span class="hdot" style="background:var(--gold);box-shadow:0 0 5px var(--gold)"></span>8 Chapters</div>
+    <div class="hpill"><span class="hdot" style="background:var(--ruby);box-shadow:0 0 5px var(--ruby)"></span>6 Diagrams + Checklists</div>
+    <div class="hpill"><span class="hdot" style="background:var(--sage);box-shadow:0 0 5px var(--sage)"></span>Series Complete</div>
+    <div class="hpill"><span class="hdot" style="background:var(--violet);box-shadow:0 0 5px var(--violet)"></span>Full API Reference</div>
+  </div>
+</section>
+
+<div class="cnt">
+
+<!-- ══════════════════════════════════════════════
+     CH 1 — AUTHENTICATION METHODS API
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch1">
+  <div class="chd"><span class="cnum">CH 01</span>
+    <h2>Authentication<br><span class="a">Methods API</span></h2>
+  </div>
+  <p class="intro">The Authentication Methods API is your programmatic window into every user's MFA registration state across your entire tenant. It's the API that answers the questions that used to require portal screenshots or CSV exports: Who has MFA registered? Who's using FIDO2? Who hasn't registered anything? Who still has SMS?</p>
+
+  <h3>API Architecture Overview</h3>
+
+  <div class="dbox">
+    <div class="dtitle">Authentication Methods API — Full Endpoint Map</div>
+    <svg viewBox="0 0 820 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#D4A842" opacity=".7"/></marker>
+        <marker id="a2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#E8506A" opacity=".7"/></marker>
+        <marker id="a3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#7EC8A4" opacity=".7"/></marker>
+      </defs>
+      <rect width="820" height="520" fill="#080608" rx="8"/>
+
+      <!-- Top: User context -->
+      <rect x="280" y="14" width="260" height="44" rx="6" fill="#1B1318" stroke="#D4A842" stroke-width="1.5"/>
+      <text x="410" y="34" font-family="Epilogue,sans-serif" font-size="12" font-weight="700" fill="#F2EDE8" text-anchor="middle">GET /users/{userId}</text>
+      <text x="410" y="50" font-family="Inconsolata,monospace" font-size="9" fill="#D4A842" text-anchor="middle">/authentication</text>
+
+      <!-- Arrow down to methods -->
+      <line x1="410" y1="58" x2="410" y2="90" stroke="#D4A842" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#a1)"/>
+
+      <!-- Central methods node -->
+      <rect x="250" y="90" width="320" height="48" rx="6" fill="#1B1318" stroke="#D4A842" stroke-width="2"/>
+      <text x="410" y="111" font-family="Epilogue,sans-serif" font-size="13" font-weight="700" fill="#D4A842" text-anchor="middle">/authentication/methods</text>
+      <text x="410" y="128" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">Unified collection — all method types for a user</text>
+
+      <!-- Left branch: read-only methods -->
+      <text x="160" y="178" font-family="Inconsolata,monospace" font-size="8.5" fill="#D4A842" text-anchor="middle" letter-spacing="1.5">READ + WRITE METHODS</text>
+
+      <!-- Authenticator -->
+      <line x1="280" y1="138" x2="172" y2="212" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#a1)"/>
+      <rect x="50" y="212" width="244" height="54" rx="5" fill="#150F12" stroke="#D4A842" stroke-width="1.2"/>
+      <text x="172" y="231" font-family="Inconsolata,monospace" font-size="10" fill="#D4A842" text-anchor="middle">/microsoftAuthenticatorMethods</text>
+      <text x="172" y="247" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">📱 Authenticator app registrations</text>
+      <text x="172" y="260" font-family="Inconsolata,monospace" font-size="8.5" fill="#7EC8A4" text-anchor="middle">R: UserAuthMethod.Read.All  W: .ReadWrite.All</text>
+
+      <!-- FIDO2 -->
+      <line x1="295" y1="138" x2="172" y2="282" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#a1)"/>
+      <rect x="50" y="282" width="244" height="54" rx="5" fill="#150F12" stroke="#E8506A" stroke-width="1.2"/>
+      <text x="172" y="301" font-family="Inconsolata,monospace" font-size="10" fill="#E8506A" text-anchor="middle">/fido2Methods</text>
+      <text x="172" y="317" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">🔑 FIDO2 security key registrations</text>
+      <text x="172" y="330" font-family="Inconsolata,monospace" font-size="8.5" fill="#7EC8A4" text-anchor="middle">R+W: UserAuthMethod.ReadWrite.All</text>
+
+      <!-- Phone -->
+      <line x1="310" y1="138" x2="172" y2="352" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#a1)"/>
+      <rect x="50" y="352" width="244" height="54" rx="5" fill="#150F12" stroke="#8A7A70" stroke-width="1.2"/>
+      <text x="172" y="371" font-family="Inconsolata,monospace" font-size="10" fill="#8A7A70" text-anchor="middle">/phoneMethods</text>
+      <text x="172" y="387" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">📞 SMS / Voice call (legacy)</text>
+      <text x="172" y="400" font-family="Inconsolata,monospace" font-size="8.5" fill="#E8506A" text-anchor="middle">⚠️ Vulnerable to SIM-swap — migrate away</text>
+
+      <!-- Right branch -->
+      <text x="648" y="178" font-family="Inconsolata,monospace" font-size="8.5" fill="#D4A842" text-anchor="middle" letter-spacing="1.5">ADDITIONAL METHODS</text>
+
+      <!-- TAP -->
+      <line x1="540" y1="138" x2="648" y2="212" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#a1)"/>
+      <rect x="526" y="212" width="244" height="54" rx="5" fill="#150F12" stroke="#A78BFA" stroke-width="1.2"/>
+      <text x="648" y="231" font-family="Inconsolata,monospace" font-size="10" fill="#A78BFA" text-anchor="middle">/temporaryAccessPassMethods</text>
+      <text x="648" y="247" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">🎟 Temp passcode for onboarding</text>
+      <text x="648" y="260" font-family="Inconsolata,monospace" font-size="8.5" fill="#7EC8A4" text-anchor="middle">R+W: UserAuthMethod.ReadWrite.All</text>
+
+      <!-- Email -->
+      <line x1="525" y1="138" x2="648" y2="282" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#a1)"/>
+      <rect x="526" y="282" width="244" height="54" rx="5" fill="#150F12" stroke="#60B8E0" stroke-width="1.2"/>
+      <text x="648" y="301" font-family="Inconsolata,monospace" font-size="10" fill="#60B8E0" text-anchor="middle">/emailMethods</text>
+      <text x="648" y="317" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">📧 Email OTP (SSPR / B2B guests)</text>
+      <text x="648" y="330" font-family="Inconsolata,monospace" font-size="8.5" fill="#7EC8A4" text-anchor="middle">R+W: UserAuthMethod.ReadWrite.All</text>
+
+      <!-- Password -->
+      <line x1="510" y1="138" x2="648" y2="352" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#a1)"/>
+      <rect x="526" y="352" width="244" height="54" rx="5" fill="#150F12" stroke="#8A7A70" stroke-width="1.2"/>
+      <text x="648" y="371" font-family="Inconsolata,monospace" font-size="10" fill="#8A7A70" text-anchor="middle">/passwordMethods</text>
+      <text x="648" y="387" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">🔒 Password registration state</text>
+      <text x="648" y="400" font-family="Inconsolata,monospace" font-size="8.5" fill="#D4A842" text-anchor="middle">Read-only via this endpoint</text>
+
+      <!-- Bottom: CBA + WHfB -->
+      <line x1="380" y1="138" x2="260" y2="432" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".3" marker-end="url(#a1)"/>
+      <rect x="50" y="432" width="244" height="54" rx="5" fill="#150F12" stroke="#7EC8A4" stroke-width="1.2"/>
+      <text x="172" y="451" font-family="Inconsolata,monospace" font-size="10" fill="#7EC8A4" text-anchor="middle">/windowsHelloForBusinessMethods</text>
+      <text x="172" y="467" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">🏢 Windows Hello for Business</text>
+      <text x="172" y="480" font-family="Inconsolata,monospace" font-size="8.5" fill="#7EC8A4" text-anchor="middle">Phishing-resistant · Read only</text>
+
+      <line x1="440" y1="138" x2="560" y2="432" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".3" marker-end="url(#a1)"/>
+      <rect x="526" y="432" width="244" height="54" rx="5" fill="#150F12" stroke="#7EC8A4" stroke-width="1.2"/>
+      <text x="648" y="451" font-family="Inconsolata,monospace" font-size="10" fill="#7EC8A4" text-anchor="middle">/certificateBasedAuthMethods</text>
+      <text x="648" y="467" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">🪪 Smart card / PKI cert (CBA)</text>
+      <text x="648" y="480" font-family="Inconsolata,monospace" font-size="8.5" fill="#7EC8A4" text-anchor="middle">Phishing-resistant · Read only</text>
+
+      <!-- Footer note -->
+      <text x="410" y="510" font-family="Inconsolata,monospace" font-size="8.5" fill="#3D3028" text-anchor="middle">All endpoints under: GET /users/{id}/authentication/{methodType}  ·  @odata.type distinguishes method in unified /methods response</text>
+    </svg>
+  </div>
+
+  <h3>Method-by-Method API Reference</h3>
+
+  <div class="method-grid">
+    <div class="method-card">
+      <div class="mc-hd"><span class="mc-icon">📱</span><div><div class="mc-name">Microsoft Authenticator</div><div class="mc-type">Push · Passwordless · TOTP</div></div></div>
+      <div class="mc-body">
+        <div class="mc-endpoint">/users/{id}/authentication/microsoftAuthenticatorMethods</div>
+        <div class="mc-perm">R: UserAuthenticationMethod.Read.All<br>W: UserAuthenticationMethod.ReadWrite.All</div>
+        <div class="mc-desc">Returns each registered Authenticator device. Key fields: <code>id</code>, <code>displayName</code> (device name), <code>deviceTag</code>, <code>phoneAppVersion</code>, <code>authenticationMethod</code> (Notification vs. NotificationAndCode).</div>
+        <span class="mc-badge mb-g">READ ✓</span><span class="mc-badge mb-g">WRITE ✓</span><span class="mc-badge mb-g">DELETE ✓</span>
+      </div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-hd"><span class="mc-icon">🔑</span><div><div class="mc-name">FIDO2 Security Keys</div><div class="mc-type">Phishing-Resistant</div></div></div>
+      <div class="mc-body">
+        <div class="mc-endpoint">/users/{id}/authentication/fido2Methods</div>
+        <div class="mc-perm">R+W: UserAuthenticationMethod.ReadWrite.All</div>
+        <div class="mc-desc">Returns registered FIDO2 keys. Key fields: <code>id</code>, <code>displayName</code>, <code>aaGuid</code> (authenticator model ID), <code>model</code>, <code>createdDateTime</code>, <code>attestationLevel</code>. aaGuid lets you identify which YubiKey model was registered.</div>
+        <span class="mc-badge mb-g">READ ✓</span><span class="mc-badge mb-r">WRITE* ✗</span><span class="mc-badge mb-g">DELETE ✓</span>
+        <div style="font-size:11px;color:var(--t2);margin-top:5px">* Keys must be registered by the user — can't be remotely added via API</div>
+      </div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-hd"><span class="mc-icon">🎟</span><div><div class="mc-name">Temporary Access Pass</div><div class="mc-type">Time-limited Onboarding Passcode</div></div></div>
+      <div class="mc-body">
+        <div class="mc-endpoint">/users/{id}/authentication/temporaryAccessPassMethods</div>
+        <div class="mc-perm">R+W: UserAuthenticationMethod.ReadWrite.All</div>
+        <div class="mc-desc">Create, read, delete TAPs. <strong>TAP value is only visible at creation time</strong> — subsequent GETs don't return the passcode. Key fields: <code>temporaryAccessPass</code> (only on POST response), <code>startDateTime</code>, <code>lifetimeInMinutes</code>, <code>isUsableOnce</code>, <code>isUsable</code>.</div>
+        <span class="mc-badge mb-g">READ ✓</span><span class="mc-badge mb-g">CREATE ✓</span><span class="mc-badge mb-g">DELETE ✓</span>
+      </div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-hd"><span class="mc-icon">📞</span><div><div class="mc-name">Phone Methods</div><div class="mc-type">SMS / Voice — Legacy</div></div></div>
+      <div class="mc-body">
+        <div class="mc-endpoint">/users/{id}/authentication/phoneMethods</div>
+        <div class="mc-perm">R+W: UserAuthenticationMethod.ReadWrite.All</div>
+        <div class="mc-desc">Read or remove registered phone numbers. <code>phoneType</code>: mobile, alternateMobile, office. Note: the actual phone number is returned in plain text — handle with care in logs and exports. Governance use: find all users still using SMS and target them for migration to Authenticator.</div>
+        <span class="mc-badge mb-g">READ ✓</span><span class="mc-badge mb-y">WRITE ✓</span><span class="mc-badge mb-g">DELETE ✓</span>
+      </div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-hd"><span class="mc-icon">🏢</span><div><div class="mc-name">Windows Hello for Business</div><div class="mc-type">Device-bound Biometric/PIN</div></div></div>
+      <div class="mc-body">
+        <div class="mc-endpoint">/users/{id}/authentication/windowsHelloForBusinessMethods</div>
+        <div class="mc-perm">R: UserAuthenticationMethod.Read.All</div>
+        <div class="mc-desc">Read-only. Returns WHfB registrations per device. <code>keyStrength</code>: normal, weak, unknown. Presence of this method means the user has a phishing-resistant credential on at least one Windows device. Cannot be remotely provisioned or deleted via API.</div>
+        <span class="mc-badge mb-g">READ ✓</span><span class="mc-badge mb-r">WRITE ✗</span><span class="mc-badge mb-r">DELETE ✗</span>
+      </div>
+    </div>
+
+    <div class="method-card">
+      <div class="mc-hd"><span class="mc-icon">📧</span><div><div class="mc-name">Email Methods</div><div class="mc-type">OTP to Email (SSPR / B2B)</div></div></div>
+      <div class="mc-body">
+        <div class="mc-endpoint">/users/{id}/authentication/emailMethods</div>
+        <div class="mc-perm">R+W: UserAuthenticationMethod.ReadWrite.All</div>
+        <div class="mc-desc">Used primarily for SSPR (password reset) and B2B guest authentication. Returns the registered email address. Can be updated via API. Not a strong second factor — treat as identity recovery, not MFA.</div>
+        <span class="mc-badge mb-g">READ ✓</span><span class="mc-badge mb-g">WRITE ✓</span><span class="mc-badge mb-g">DELETE ✓</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>The Unified /methods Endpoint — Reading Everything in One Call</h3>
+  <div class="code">
+<span class="cc"># Get ALL registered authentication methods for a user in one call</span>
+<span class="ck">GET</span> <span class="cs2">/users/{userId}/authentication/methods</span>
+
+<span class="cc"># Sample response — note @odata.type distinguishes method type</span>
+{
+  <span class="ck">"value"</span>: [
+    {
+      <span class="ck">"@odata.type"</span>: <span class="cv">"#microsoft.graph.microsoftAuthenticatorAuthenticationMethod"</span>,
+      <span class="ck">"id"</span>:            <span class="cv">"3b0f7c3e-..."</span>,
+      <span class="ck">"displayName"</span>:    <span class="cv">"John's iPhone"</span>,
+      <span class="ck">"deviceTag"</span>:      <span class="cv">"softwareOneTimePasscode"</span>
+    },
+    {
+      <span class="ck">"@odata.type"</span>: <span class="cv">"#microsoft.graph.passwordAuthenticationMethod"</span>,
+      <span class="ck">"id"</span>:            <span class="cv">"28c10230-..."</span>,
+      <span class="ck">"createdDateTime"</span>: <span class="cv">null</span>   <span class="cc">// password exists but no creation timestamp stored</span>
+    },
+    {
+      <span class="ck">"@odata.type"</span>: <span class="cv">"#microsoft.graph.fido2AuthenticationMethod"</span>,
+      <span class="ck">"id"</span>:            <span class="cv">"d0f9a2b1-..."</span>,
+      <span class="ck">"displayName"</span>:    <span class="cv">"YubiKey 5 NFC"</span>,
+      <span class="ck">"aaGuid"</span>:         <span class="cv">"2fc0579f-8113-47ea-b116-bb5a8db9202a"</span>,
+      <span class="ck">"attestationLevel"</span>: <span class="cv">"attested"</span>
+    }
+  ]
+}
+<span class="cc"># Presence of passwordAuthenticationMethod ≠ MFA registered</span>
+<span class="cc"># Every user has a password method — check for OTHER methods to determine MFA registration</span>
+  </div>
+
+  <div class="bx bx-w">
+    <strong>The password method trap:</strong> Every user in Entra ID has a <code>passwordAuthenticationMethod</code> entry. When scanning for "users with no MFA registered," you must filter out the password method and check whether any OTHER method types exist. A user with <em>only</em> the password method has zero MFA registered. This is the most common mistake in tenant MFA audit scripts.
+  </div>
+
+  <h3>Creating a Temporary Access Pass via API</h3>
+  <div class="code">
+<span class="cc"># Create a TAP for a new hire — for Authenticator bootstrapping</span>
+<span class="ck">POST</span> <span class="cs2">/users/{userId}/authentication/temporaryAccessPassMethods</span>
+Authorization: Bearer <span class="cv">{token_with_UserAuthMethod.ReadWrite.All}</span>
+Content-Type: application/json
+
+{
+  <span class="ck">"startDateTime"</span>:      <span class="cv">"2024-06-15T09:00:00Z"</span>,    <span class="cc">// when it becomes valid</span>
+  <span class="ck">"lifetimeInMinutes"</span>:  <span class="cv">480</span>,                          <span class="cc">// 8 hours — enough for Day 1</span>
+  <span class="ck">"isUsableOnce"</span>:       <span class="cv">false</span>                         <span class="cc">// false = can use until expiry</span>
+}
+
+<span class="cc"># CRITICAL: The TAP passcode is ONLY in the POST response — capture it immediately</span>
+<span class="cc"># Response:</span>
+{
+  <span class="ck">"id"</span>:                   <span class="cv">"a1b2c3d4-..."</span>,
+  <span class="ck">"temporaryAccessPass"</span>: <span class="cv">"47829163"</span>,   <span class="cc">← THIS IS THE PASSCODE — store securely, send to user</span>
+  <span class="ck">"startDateTime"</span>:       <span class="cv">"2024-06-15T09:00:00Z"</span>,
+  <span class="ck">"lifetimeInMinutes"</span>:   <span class="cv">480</span>,
+  <span class="ck">"isUsable"</span>:            <span class="cv">true</span>,
+  <span class="ck">"isUsableOnce"</span>:        <span class="cv">false</span>
+}
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CH 2 — MFA INVENTORY AT SCALE
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch2">
+  <div class="chd"><span class="cnum">CH 02</span>
+    <h2>MFA Inventory<br><span class="a">at Scale</span></h2>
+  </div>
+  <p class="intro">Building a tenant-wide MFA registration report is one of the most common tasks an IAM engineer faces. Done naively it's slow and throttle-prone. Done right it's fast, complete, and the foundation of your security posture reporting.</p>
+
+  <h3>The Right Architecture for Bulk MFA Queries</h3>
+
+  <div class="bx bx-a">
+    Querying MFA methods for 10,000 users one-by-one is like calling each employee in a 10,000-person company to ask if they have a badge. You'd be on the phone for days and the receptionist (API throttle) would cut you off. The smarter approach: use the <strong>credential user registration details report</strong> — a pre-computed report that Microsoft generates for your tenant, answering "who has what MFA methods" for all users in a single API call. It's eventually consistent (up to a few hours lag) but far more efficient for reporting than per-user method queries. Reserve per-user method queries for real-time lookups on individual users.
+  </div>
+
+  <h3>Option 1: Pre-Built Registration Report (Recommended for Bulk)</h3>
+  <div class="code">
+<span class="cc"># The single most useful MFA reporting endpoint</span>
+<span class="cc"># Returns pre-computed auth method registration state for ALL users</span>
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/userRegistrationDetails</span>
+<span class="cc">Required permission: UserAuthenticationMethod.Read.All (Application)</span>
+
+<span class="cc"># Sample response entry:</span>
+{
+  <span class="ck">"id"</span>:                               <span class="cv">"87a3f21c-..."</span>,
+  <span class="ck">"userPrincipalName"</span>:               <span class="cv">"john@contoso.com"</span>,
+  <span class="ck">"userDisplayName"</span>:                 <span class="cv">"John Smith"</span>,
+  <span class="ck">"isMfaRegistered"</span>:                 <span class="cv">true</span>,             <span class="cc">// Has ANY MFA method</span>
+  <span class="ck">"isMfaCapable"</span>:                    <span class="cv">true</span>,             <span class="cc">// Can perform MFA right now</span>
+  <span class="ck">"isPasswordlessCapable"</span>:           <span class="cv">false</span>,            <span class="cc">// Has passwordless method</span>
+  <span class="ck">"isSsprRegistered"</span>:                <span class="cv">true</span>,             <span class="cc">// Can do self-service password reset</span>
+  <span class="ck">"isSsprEnabled"</span>:                   <span class="cv">true</span>,             <span class="cc">// SSPR policy applies to this user</span>
+  <span class="ck">"isSsprCapable"</span>:                   <span class="cv">true</span>,             <span class="cc">// Registered AND enabled</span>
+  <span class="ck">"isSystemPreferredAuthenticationMethodEnabled"</span>: <span class="cv">true</span>,
+  <span class="ck">"methodsRegistered"</span>: [
+    <span class="cv">"microsoftAuthenticatorPush"</span>,
+    <span class="cv">"softwareOneTimePasscode"</span>,
+    <span class="cv">"email"</span>
+  ],
+  <span class="ck">"defaultMfaMethod"</span>:               <span class="cv">"microsoftAuthenticatorPush"</span>
+}
+  </div>
+
+  <h3>Option 2: Per-User Method Query + Batch (For Detailed Audits)</h3>
+  <div class="code">
+<span class="cc"># For detailed method-level data (device names, FIDO2 key models, creation dates)</span>
+<span class="cc"># Step 1: Get all user IDs</span>
+<span class="ck">GET</span> <span class="cs2">/users?$select=id,userPrincipalName,displayName,accountEnabled&$top=999</span>
+
+<span class="cc"># Step 2: Batch method queries — 20 per batch request</span>
+<span class="ck">POST</span> <span class="cs2">/$batch</span>
+{
+  <span class="ck">"requests"</span>: [
+    { <span class="ck">"id"</span>: <span class="cv">"1"</span>, <span class="ck">"method"</span>: <span class="cv">"GET"</span>, <span class="ck">"url"</span>: <span class="cv">"/users/user1-id/authentication/methods"</span> },
+    { <span class="ck">"id"</span>: <span class="cv">"2"</span>, <span class="ck">"method"</span>: <span class="cv">"GET"</span>, <span class="ck">"url"</span>: <span class="cv">"/users/user2-id/authentication/methods"</span> }
+    <span class="cc">// ... up to 20 users per batch</span>
+  ]
+}
+
+<span class="cc"># For 10,000 users: 10,000 / 20 = 500 batch requests</span>
+<span class="cc"># With retry-after handling: completes in minutes vs. hours for sequential calls</span>
+  </div>
+
+  <h3>MFA Reporting Use Cases — Real Queries</h3>
+
+  <h4>Find All Users With No MFA Registered</h4>
+  <div class="code">
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/userRegistrationDetails?$filter=isMfaRegistered eq false&$select=id,userPrincipalName,isMfaRegistered,methodsRegistered</span>
+<span class="cc"># Returns users with zero MFA methods — your highest-risk population</span>
+  </div>
+
+  <h4>Find Users Still Using SMS as Only MFA</h4>
+  <div class="code">
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/userRegistrationDetails?$filter=methodsRegistered/any(m:m eq 'mobilePhone') and not(methodsRegistered/any(m:m eq 'microsoftAuthenticatorPush'))&$select=id,userPrincipalName,methodsRegistered</span>
+<span class="cc"># Users who registered SMS but NOT Authenticator — migration candidates</span>
+  </div>
+
+  <h4>Find Users With Passwordless Capability</h4>
+  <div class="code">
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/userRegistrationDetails?$filter=isPasswordlessCapable eq true&$select=id,userPrincipalName,methodsRegistered,defaultMfaMethod</span>
+<span class="cc"># Track passwordless adoption progress over time</span>
+  </div>
+
+  <h4>Count by Method Type (Summary Statistics)</h4>
+  <div class="code">
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/usersRegisteredByMethod</span>
+<span class="cc"># Returns aggregate counts — how many users registered each method type</span>
+<span class="cc"># No per-user data — just counts. Great for executive dashboards.</span>
+{
+  <span class="ck">"userRegistrationMethodCounts"</span>: [
+    { <span class="ck">"authenticationMethod"</span>: <span class="cv">"microsoftAuthenticatorPush"</span>, <span class="ck">"userCount"</span>: <span class="cs2">8423</span> },
+    { <span class="ck">"authenticationMethod"</span>: <span class="cv">"fido2"</span>,                       <span class="ck">"userCount"</span>: <span class="cs2">312</span> },
+    { <span class="ck">"authenticationMethod"</span>: <span class="cv">"mobilePhone"</span>,                  <span class="ck">"userCount"</span>: <span class="cs2">1205</span> }
+  ]
+}
+  </div>
+
+  <div class="bx bx-j">
+    <strong>Governance Automation Scenario (Company A context):</strong> You need a monthly MFA compliance report for your CISO — percentage of users with MFA registered, breakdown by method, list of non-compliant users. Build a scheduled Graph API job (Azure Function, GitHub Actions, or a simple Node.js script with MSAL): (1) Query <code>/reports/authenticationMethods/userRegistrationDetails</code> for all users; (2) Filter non-registered users; (3) Cross-reference with active users only (exclude disabled accounts); (4) Output to CSV or push to a SharePoint list; (5) Email the summary to the security team. Runtime for 10,000 users: under 2 minutes with the pre-built report endpoint. This replaces a manual portal export that used to take an analyst 30 minutes.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CH 3 — DEVICE MANAGEMENT VIA GRAPH
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch3">
+  <div class="chd"><span class="cnum">CH 03</span>
+    <h2>Device Management<br><span class="a">via Graph</span></h2>
+  </div>
+  <p class="intro">Device objects in Entra ID are first-class directory citizens. The Graph API gives you complete visibility into your device fleet — join types, compliance state, ownership, staleness — and the ability to manage device lifecycle without touching the portal.</p>
+
+  <h3>Device Object Anatomy</h3>
+
+  <div class="anat">
+    <div class="anath">💻 Device Object — Key Graph API Properties</div>
+    <div class="anatg">
+      <div class="af"><span class="ak">id</span><span class="ad">Entra ID object ID (GUID) — the Graph API identifier</span></div>
+      <div class="af"><span class="ak">deviceId</span><span class="ad">Device's own unique GUID — used in token claims and Intune</span></div>
+      <div class="af"><span class="ak">displayName</span><span class="ad">Computer name as registered</span></div>
+      <div class="af"><span class="ak">trustType</span><span class="av">"Workplace" | "AzureAd" | "ServerAd"</span></div>
+      <div class="af"><span class="ak">operatingSystem</span><span class="ad">Windows / iOS / Android / macOS / Linux</span></div>
+      <div class="af"><span class="ak">operatingSystemVersion</span><span class="ad">OS version string — useful for patching compliance</span></div>
+      <div class="af"><span class="ak">isCompliant</span><span class="av">true | false | null</span></div>
+      <div class="af"><span class="ak">isManaged</span><span class="av">true | false — Intune-managed device</span></div>
+      <div class="af"><span class="ak">accountEnabled</span><span class="ad">Whether the device object is enabled in Entra ID</span></div>
+      <div class="af"><span class="ak">registrationDateTime</span><span class="ad">When the device joined/registered</span></div>
+      <div class="af"><span class="ak">approximateLastSignInDateTime</span><span class="ad">Last time device token was refreshed — staleness indicator</span></div>
+      <div class="af"><span class="ak">managementType</span><span class="av">"MDM" | "EAS" | null — only present with Intune</span></div>
+      <div class="af"><span class="ak">onPremisesSyncEnabled</span><span class="ad">true if synced from on-prem AD (Hybrid joined)</span></div>
+      <div class="af"><span class="ak">profileType</span><span class="av">"RegisteredDevice" | "SecureVM" | "Printer"</span></div>
+    </div>
+  </div>
+
+  <h3>trustType — The Most Important Device Field</h3>
+
+  <table class="tbl">
+    <thead><tr><th class="tn">trustType Value</th><th class="tg">Join Type</th><th class="tn">Auth Capability</th><th class="tn">Typical Use Case</th></tr></thead>
+    <tbody>
+      <tr><td><code>Workplace</code></td><td class="cg">Entra Registered (BYOD)</td><td>Limited — user's personal device, restricted access</td><td>Personal phones, home laptops accessing work email via browser</td></tr>
+      <tr><td><code>AzureAd</code></td><td class="cg">Entra ID Joined</td><td>PRT — full cloud SSO, no Kerberos</td><td>Cloud-first Windows devices, VDI, remote workers without on-prem need</td></tr>
+      <tr><td><code>ServerAd</code></td><td class="cg">Hybrid AD Joined</td><td>PRT + Kerberos — both cloud and on-prem SSO</td><td>Corporate Windows PCs managed by both Group Policy and Intune</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Device Inventory Architecture</h3>
+
+  <div class="dbox">
+    <div class="dtitle">Device Inventory via Graph — Query Flow &amp; Data Model</div>
+    <svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;">
+      <defs>
+        <marker id="d1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#D4A842" opacity=".7"/></marker>
+        <marker id="d2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#7EC8A4" opacity=".7"/></marker>
+        <marker id="d3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#E8506A" opacity=".7"/></marker>
+      </defs>
+      <rect width="820" height="400" fill="#080608" rx="8"/>
+
+      <!-- Your Script/App -->
+      <rect x="20" y="40" width="155" height="60" rx="6" fill="#1B1318" stroke="#D4A842" stroke-width="1.5"/>
+      <text x="97" y="65" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">Your Script / App</text>
+      <text x="97" y="82" font-family="Inconsolata,monospace" font-size="9" fill="#D4A842" text-anchor="middle">Device.Read.All token</text>
+
+      <!-- Arrow to Graph -->
+      <line x1="175" y1="70" x2="240" y2="70" stroke="#D4A842" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#d1)"/>
+      <text x="207" y="63" font-family="Inconsolata,monospace" font-size="8" fill="#D4A842" text-anchor="middle">GET /devices</text>
+
+      <!-- Graph -->
+      <rect x="240" y="40" width="160" height="60" rx="6" fill="#1B1318" stroke="#D4A842" stroke-width="2"/>
+      <text x="320" y="65" font-family="Epilogue,sans-serif" font-size="12" font-weight="700" fill="#D4A842" text-anchor="middle">Microsoft Graph</text>
+      <text x="320" y="82" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">graph.microsoft.com/v1.0</text>
+
+      <!-- Entra ID -->
+      <line x1="400" y1="70" x2="466" y2="70" stroke="#D4A842" stroke-width="1.5" stroke-opacity=".5" marker-end="url(#d1)"/>
+      <rect x="466" y="40" width="160" height="60" rx="6" fill="#1B1318" stroke="#8A7A70" stroke-width="1"/>
+      <text x="546" y="65" font-family="Epilogue,sans-serif" font-size="12" font-weight="700" fill="#F2EDE8" text-anchor="middle">Entra ID</text>
+      <text x="546" y="82" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">Device Directory</text>
+
+      <!-- Intune -->
+      <line x1="626" y1="70" x2="686" y2="70" stroke="#7EC8A4" stroke-width="1.5" stroke-opacity=".4" marker-end="url(#d2)"/>
+      <rect x="686" y="40" width="114" height="60" rx="6" fill="#1B1318" stroke="#7EC8A4" stroke-width="1"/>
+      <text x="743" y="65" font-family="Epilogue,sans-serif" font-size="12" font-weight="700" fill="#F2EDE8" text-anchor="middle">Intune</text>
+      <text x="743" y="82" font-family="Inconsolata,monospace" font-size="9" fill="#7EC8A4" text-anchor="middle">isCompliant</text>
+
+      <!-- Device collections below Graph -->
+      <line x1="280" y1="100" x2="180" y2="155" stroke="#D4A842" stroke-width="1" stroke-opacity=".4" marker-end="url(#d1)"/>
+      <rect x="30" y="155" width="200" height="60" rx="5" fill="#150F12" stroke="#E8506A" stroke-width="1.2"/>
+      <text x="130" y="178" font-family="Inconsolata,monospace" font-size="10" fill="#E8506A" text-anchor="middle">trustType: Workplace</text>
+      <text x="130" y="194" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">BYOD — Entra Registered</text>
+      <text x="130" y="208" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">Personal device, limited trust</text>
+
+      <line x1="320" y1="100" x2="320" y2="155" stroke="#D4A842" stroke-width="1" stroke-opacity=".4" marker-end="url(#d1)"/>
+      <rect x="240" y="155" width="200" height="60" rx="5" fill="#150F12" stroke="#D4A842" stroke-width="1.2"/>
+      <text x="340" y="178" font-family="Inconsolata,monospace" font-size="10" fill="#D4A842" text-anchor="middle">trustType: AzureAd</text>
+      <text x="340" y="194" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">Entra ID Joined</text>
+      <text x="340" y="208" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">Cloud-first, PRT auth</text>
+
+      <line x1="360" y1="100" x2="460" y2="155" stroke="#D4A842" stroke-width="1" stroke-opacity=".4" marker-end="url(#d1)"/>
+      <rect x="450" y="155" width="200" height="60" rx="5" fill="#150F12" stroke="#7EC8A4" stroke-width="1.2"/>
+      <text x="550" y="178" font-family="Inconsolata,monospace" font-size="10" fill="#7EC8A4" text-anchor="middle">trustType: ServerAd</text>
+      <text x="550" y="194" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">Hybrid AD Joined</text>
+      <text x="550" y="208" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">Both Kerberos + PRT</text>
+
+      <!-- Ownership queries -->
+      <text x="410" y="258" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">Device Ownership &amp; Relationships</text>
+      <line x1="130" y1="215" x2="130" y2="275" stroke="#E8506A" stroke-width="1" stroke-opacity=".3" marker-end="url(#d3)"/>
+      <rect x="30" y="275" width="200" height="50" rx="4" fill="#0E0A0C" stroke="#E8506A" stroke-width="1" stroke-opacity=".4"/>
+      <text x="130" y="296" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">/devices/{id}/registeredOwners</text>
+      <text x="130" y="312" font-family="Inconsolata,monospace" font-size="9" fill="#E8506A" text-anchor="middle">Who registered this device</text>
+
+      <line x1="340" y1="215" x2="340" y2="275" stroke="#D4A842" stroke-width="1" stroke-opacity=".3" marker-end="url(#d1)"/>
+      <rect x="240" y="275" width="200" height="50" rx="4" fill="#0E0A0C" stroke="#D4A842" stroke-width="1" stroke-opacity=".4"/>
+      <text x="340" y="296" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">/devices/{id}/registeredUsers</text>
+      <text x="340" y="312" font-family="Inconsolata,monospace" font-size="9" fill="#D4A842" text-anchor="middle">All users of this device</text>
+
+      <line x1="550" y1="215" x2="550" y2="275" stroke="#7EC8A4" stroke-width="1" stroke-opacity=".3" marker-end="url(#d2)"/>
+      <rect x="450" y="275" width="200" height="50" rx="4" fill="#0E0A0C" stroke="#7EC8A4" stroke-width="1" stroke-opacity=".4"/>
+      <text x="550" y="296" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">/users/{id}/ownedDevices</text>
+      <text x="550" y="312" font-family="Inconsolata,monospace" font-size="9" fill="#7EC8A4" text-anchor="middle">Devices owned by a user</text>
+
+      <!-- Staleness indicator -->
+      <rect x="690" y="155" width="110" height="170" rx="5" fill="#150F12" stroke="#A78BFA" stroke-width="1.2"/>
+      <text x="745" y="178" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#A78BFA" text-anchor="middle">Staleness</text>
+      <text x="745" y="197" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">approxLastSignIn</text>
+      <text x="745" y="215" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">&gt; 90 days</text>
+      <text x="745" y="233" font-family="Inconsolata,monospace" font-size="8.5" fill="#E8506A" text-anchor="middle">→ Stale device</text>
+      <text x="745" y="253" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">isCompliant</text>
+      <text x="745" y="271" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">= false / null</text>
+      <text x="745" y="289" font-family="Inconsolata,monospace" font-size="8.5" fill="#E8506A" text-anchor="middle">→ CA risk signal</text>
+      <text x="745" y="309" font-family="Inconsolata,monospace" font-size="8.5" fill="#8A7A70" text-anchor="middle">accountEnabled</text>
+      <text x="745" y="325" font-family="Inconsolata,monospace" font-size="8.5" fill="#D4A842" text-anchor="middle">= false → Disabled</text>
+    </svg>
+  </div>
+
+  <h3>Device Queries — Production Cookbook</h3>
+
+  <div class="code">
+<span class="cc">─────── INVENTORY QUERIES ───────</span>
+
+<span class="cc"># All corporate Windows devices (Entra ID Joined or Hybrid)</span>
+<span class="ck">GET</span> <span class="cs2">/devices?$filter=(trustType eq 'AzureAd' or trustType eq 'ServerAd') and operatingSystem eq 'Windows'
+  &$select=id,deviceId,displayName,trustType,operatingSystem,operatingSystemVersion,isCompliant,approximateLastSignInDateTime
+  &$top=999</span>
+
+<span class="cc"># Find stale devices (no sign-in in 90 days)</span>
+<span class="ck">GET</span> <span class="cs2">/devices?$filter=approximateLastSignInDateTime le 2024-03-01T00:00:00Z and accountEnabled eq true
+  &$select=id,displayName,trustType,approximateLastSignInDateTime,registrationDateTime
+  &$orderby=approximateLastSignInDateTime asc</span>
+ConsistencyLevel: eventual
+
+<span class="cc"># Find non-compliant devices (requires Intune)</span>
+<span class="ck">GET</span> <span class="cs2">/devices?$filter=isCompliant eq false and accountEnabled eq true
+  &$select=id,displayName,operatingSystem,isCompliant,isManaged,approximateLastSignInDateTime</span>
+
+<span class="cc"># Get devices owned by a specific user</span>
+<span class="ck">GET</span> <span class="cs2">/users/{userId}/ownedDevices?$select=id,displayName,trustType,operatingSystem,isCompliant</span>
+
+<span class="cc">─────── LIFECYCLE OPERATIONS ───────</span>
+
+<span class="cc"># Disable a device (keeps it in directory but blocks token acquisition)</span>
+<span class="ck">PATCH</span> <span class="cs2">/devices/{id}</span>
+{ <span class="ck">"accountEnabled"</span>: <span class="cv">false</span> }
+
+<span class="cc"># Delete a device (permanently removes from Entra ID)</span>
+<span class="ck">DELETE</span> <span class="cs2">/devices/{id}</span>
+<span class="cc"># Note: Deletion is soft — device goes to deletedItems, recoverable for 30 days</span>
+
+<span class="cc"># Required permissions for write operations: Device.ReadWrite.All</span>
+  </div>
+
+  <div class="bx bx-j">
+    <strong>Stale Device Cleanup Automation (Governance Pattern):</strong> Build a monthly cleanup job: (1) Query all devices with <code>approximateLastSignInDateTime</code> older than 90 days AND <code>accountEnabled eq true</code>; (2) Cross-reference with Intune enrollment state; (3) Disable (not delete) devices older than 90 days; (4) After 30-day grace period with no re-activation, delete them. The 30-day soft-delete recovery window gives you a safety net. Log all operations to Azure Monitor. Add an exception list for service VMs and shared kiosk devices that have legitimate reasons for infrequent sign-ins. This pattern reduces your device sprawl by 15–30% in the first run for most mature tenants.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CH 4 — AUDIT & SIGN-IN LOGS
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch4">
+  <div class="chd"><span class="cnum">CH 04</span>
+    <h2>Audit &amp; Sign-in<br><span class="a">Logs via Graph</span></h2>
+  </div>
+  <p class="intro">Entra ID's audit and sign-in logs are your forensic record for every identity event in your tenant. Graph gives you programmatic access to pull, filter, and correlate these logs — essential for SIEM integration, incident response, and compliance reporting.</p>
+
+  <h3>Sign-In Logs — The Most Valuable Dataset</h3>
+  <div class="code">
+<span class="cc"># Full sign-in log query with IAM-relevant fields</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=createdDateTime ge 2024-06-01T00:00:00Z
+  &$select=id,createdDateTime,userPrincipalName,userId,appDisplayName,appId,
+    ipAddress,location,status,riskLevelAggregated,riskLevelDuringSignIn,
+    conditionalAccessStatus,authenticationRequirement,mfaDetail,
+    clientAppUsed,deviceDetail,appliedConditionalAccessPolicies
+  &$top=999&$orderby=createdDateTime desc</span>
+<span class="cc">Required permission: AuditLog.Read.All</span>
+  </div>
+
+  <div class="anat">
+    <div class="anath">📊 Sign-In Log Entry — Key Fields for IAM Engineers</div>
+    <div class="anatg">
+      <div class="af"><span class="ak">status.errorCode</span><span class="av">0 = success. Non-zero = failure. errorCode 50076 = MFA required.</span></div>
+      <div class="af"><span class="ak">conditionalAccessStatus</span><span class="av">"success" | "failure" | "notApplied" | "unknownFutureValue"</span></div>
+      <div class="af"><span class="ak">authenticationRequirement</span><span class="av">"singleFactorAuthentication" | "multiFactorAuthentication"</span></div>
+      <div class="af"><span class="ak">mfaDetail.authMethod</span><span class="ad">Which MFA method was used: PhoneAppNotification, FIDO2, etc.</span></div>
+      <div class="af"><span class="ak">riskLevelAggregated</span><span class="av">"none" | "low" | "medium" | "high" | "hidden"</span></div>
+      <div class="af"><span class="ak">riskLevelDuringSignIn</span><span class="ad">Real-time risk at the moment of sign-in (vs. user's aggregate risk)</span></div>
+      <div class="af"><span class="ak">deviceDetail.trustType</span><span class="ad">AzureAd / ServerAd / Workplace — device join type at sign-in time</span></div>
+      <div class="af"><span class="ak">appliedConditionalAccessPolicies</span><span class="ad">Array — each CA policy that evaluated, with result (success/failure/notApplied)</span></div>
+      <div class="af"><span class="ak">clientAppUsed</span><span class="av">"Browser" | "Mobile Apps and Desktop clients" | "Exchange ActiveSync"</span></div>
+      <div class="af"><span class="ak">location</span><span class="ad">city, state, countryOrRegion — derived from IP. Not guaranteed accurate.</span></div>
+      <div class="af"><span class="ak">tokenIssuerType</span><span class="av">"AzureAD" | "ADFederationServices" | "AzureADBackupAuth"</span></div>
+      <div class="af"><span class="ak">incomingTokenType</span><span class="av">"none" | "primaryRefreshToken" | "saml11" | "saml20" | "unknownFutureValue"</span></div>
+    </div>
+  </div>
+
+  <h3>Targeted Sign-In Queries for Incident Response</h3>
+  <div class="code">
+<span class="cc"># All failed sign-ins for a specific user in last 24 hours</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=userPrincipalName eq 'john@contoso.com'
+  and status/errorCode ne 0
+  and createdDateTime ge 2024-06-14T00:00:00Z
+  &$select=createdDateTime,ipAddress,status,riskLevelAggregated,location,appDisplayName</span>
+
+<span class="cc"># High-risk sign-ins across entire tenant</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=riskLevelAggregated eq 'high'
+  and createdDateTime ge 2024-06-01T00:00:00Z
+  &$select=userPrincipalName,createdDateTime,ipAddress,location,riskEventTypesV2,appDisplayName</span>
+
+<span class="cc"># Sign-ins where CA policy FAILED (potential policy misconfiguration signal)</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=conditionalAccessStatus eq 'failure'
+  and createdDateTime ge 2024-06-14T00:00:00Z</span>
+
+<span class="cc"># Legacy auth sign-ins (modern auth is blocked by CA — these indicate bypass risk)</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=clientAppUsed eq 'Exchange ActiveSync'
+  or clientAppUsed eq 'Other clients'
+  &$select=userPrincipalName,appDisplayName,clientAppUsed,createdDateTime,ipAddress</span>
+  </div>
+
+  <h3>Directory Audit Logs — Change Tracking</h3>
+  <div class="code">
+<span class="cc"># All user-related changes in last 7 days</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/directoryAudits?$filter=category eq 'User'
+  and activityDateTime ge 2024-06-08T00:00:00Z
+  &$select=activityDateTime,activityDisplayName,initiatedBy,targetResources,result
+  &$orderby=activityDateTime desc</span>
+
+<span class="cc"># All admin role assignment changes (critical for privilege monitoring)</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/directoryAudits?$filter=category eq 'RoleManagement'
+  &$select=activityDateTime,activityDisplayName,initiatedBy,targetResources,result</span>
+
+<span class="cc"># Changes to a specific user's authentication methods</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/directoryAudits?$filter=category eq 'UserManagement'
+  and activityDisplayName eq 'User registered security info'
+  and targetResources/any(t:t/id eq '{userId}')</span>
+
+<span class="cc"># App permission consent events (watch for suspicious OAuth grants)</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/directoryAudits?$filter=activityDisplayName eq 'Consent to application'
+  and activityDateTime ge 2024-06-01T00:00:00Z
+  &$select=activityDateTime,initiatedBy,targetResources,result</span>
+  </div>
+
+  <div class="bx bx-w">
+    <strong>Log retention limits:</strong> Entra ID P1/P2 retains sign-in logs for <strong>30 days</strong> and audit logs for <strong>30 days</strong>. Free tenants get 7 days. If your compliance requirements need longer retention (SOC2, ISO27001 often require 90+ days), you MUST stream logs to an external store: Azure Monitor Log Analytics, Azure Event Hub → SIEM, or a third-party solution. Set this up before your 30-day window closes after any incident — log loss is the single most painful operational gap in post-incident investigations.
+  </div>
+
+  <h3>SIEM Integration Pattern — Continuous Log Streaming</h3>
+  <div class="code">
+<span class="cc"># Efficient continuous pull pattern using delta queries on sign-in logs</span>
+<span class="cc"># Run every 5 minutes — only pulls new events since last run</span>
+
+<span class="cc"># First run: get initial batch + deltaLink</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns/delta?$filter=createdDateTime ge {start_time}&$select={minimal_fields}&$top=999</span>
+
+<span class="cc"># Store deltaLink. Every subsequent run:</span>
+<span class="ck">GET</span> <span class="cs2">{stored_deltaLink}</span>
+<span class="cc"># Returns only new sign-in events since last poll</span>
+<span class="cc"># No duplicate events, no missed events, minimal API calls</span>
+<span class="cc"># Process events → push to SIEM (Sentinel, Splunk, QRadar, etc.)</span>
+<span class="cc"># Store new deltaLink for next run</span>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CH 5 — REPORTS & REGISTRATION DATA
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch5">
+  <div class="chd"><span class="cnum">CH 05</span>
+    <h2>Reports &amp;<span class="a"> Registration Data</span></h2>
+  </div>
+  <p class="intro">Beyond real-time logs, Entra ID provides pre-built report endpoints that give you aggregated, pre-computed views of your tenant's security posture — without the query complexity and performance overhead of building them from raw data.</p>
+
+  <h3>The Reports Endpoint Family</h3>
+  <div class="code">
+<span class="cc">─────── AUTHENTICATION METHOD REPORTS ───────</span>
+
+<span class="cc"># Summary counts by method type</span>
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/usersRegisteredByMethod</span>
+
+<span class="cc"># Summary counts by feature (MFA, SSPR, passwordless)</span>
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/usersRegisteredByFeature</span>
+
+<span class="cc"># Per-user registration details (covered in Ch 2)</span>
+<span class="ck">GET</span> <span class="cs2">/reports/authenticationMethods/userRegistrationDetails</span>
+
+<span class="cc">─────── CREDENTIAL ACTIVITY REPORTS ───────</span>
+
+<span class="cc"># Users who recently registered or reset credentials</span>
+<span class="ck">GET</span> <span class="cs2">/reports/credentialUserRegistrationDetails</span>  <span class="cc">← legacy, use userRegistrationDetails instead</span>
+
+<span class="cc"># SSPR activity report — password reset events</span>
+<span class="ck">GET</span> <span class="cs2">/reports/userCredentialUsageDetails?$filter=feature eq 'registration'</span>
+
+<span class="cc">─────── USAGE REPORTS ───────</span>
+
+<span class="cc"># Microsoft 365 app usage (which apps users are actually using)</span>
+<span class="ck">GET</span> <span class="cs2">/reports/getOffice365ActiveUserDetail(period='D30')</span>
+
+<span class="cc"># Sign-in activity summary (counts, not individual events)</span>
+<span class="ck">GET</span> <span class="cs2">/reports/getAzureADUserCount(period='D30')</span>
+
+<span class="cc">─────── RISKY USERS (Identity Protection) ───────</span>
+
+<span class="cc"># All currently risky users</span>
+<span class="ck">GET</span> <span class="cs2">/identityProtection/riskyUsers?$filter=riskLevel eq 'high' or riskLevel eq 'medium'
+  &$select=id,userPrincipalName,riskLevel,riskState,riskLastUpdatedDateTime,riskDetail</span>
+<span class="cc">Required: IdentityRiskyUser.Read.All</span>
+
+<span class="cc"># Risk events (detections) for a specific user</span>
+<span class="ck">GET</span> <span class="cs2">/identityProtection/riskDetections?$filter=userId eq '{userId}'
+  &$select=id,riskEventType,riskLevel,detectedDateTime,additionalInfo,ipAddress</span>
+  </div>
+
+  <h3>Building an Executive Security Dashboard — The Data Model</h3>
+  <div class="bx bx-j">
+    <strong>Monthly CISO Dashboard Pattern:</strong> Combine these five endpoints into a single report that runs on the 1st of each month:<br><br>
+    1. <code>/reports/authenticationMethods/usersRegisteredByFeature</code> → % users with MFA, SSPR, passwordless<br>
+    2. <code>/reports/authenticationMethods/userRegistrationDetails?$filter=isMfaRegistered eq false</code> → count + list of unprotected users<br>
+    3. <code>/identityProtection/riskyUsers?$filter=riskLevel eq 'high'</code> → currently high-risk users requiring remediation<br>
+    4. <code>/auditLogs/directoryAudits?$filter=category eq 'RoleManagement'</code> (last 30 days) → admin privilege changes<br>
+    5. <code>/devices?$filter=isCompliant eq false and accountEnabled eq true</code> → non-compliant active devices<br><br>
+    Automate as an Azure Function, output to a SharePoint page or Power BI. The CISO gets a consistent, data-driven monthly security posture snapshot without manual portal work.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CH 6 — SECURITY & LEAST PRIVILEGE
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch6">
+  <div class="chd"><span class="cnum">CH 06</span>
+    <h2>Security &amp;<span class="a"> Least Privilege</span></h2>
+  </div>
+  <p class="intro">The permissions model for Graph API integrations is where well-intentioned engineers create the most security debt. This chapter lays out the principles, anti-patterns, and concrete architectural decisions that define a production-grade Graph integration.</p>
+
+  <h3>The Permission Hygiene Hierarchy</h3>
+
+  <div class="steps">
+    <div class="step">
+      <div class="snum">1</div>
+      <div>
+        <div class="stitle">Use Managed Identity if running on Azure infrastructure</div>
+        <div class="sdesc">Azure VMs, App Service, Functions, AKS — all support Managed Identity. No credentials. No rotation. No leakage risk. The Azure platform handles token acquisition. <strong>Always preferred over any credential-based approach.</strong></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">2</div>
+      <div>
+        <div class="stitle">Use certificate-based auth if Managed Identity isn't available</div>
+        <div class="sdesc">Client certificate assertion means no secret to leak. Store private key in Azure Key Vault with auto-rotation. The app never handles the key directly — Key Vault signs the JWT assertion. Asymmetric cryptography: even if an attacker gets your App Registration details, they can't authenticate without the private key.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">3</div>
+      <div>
+        <div class="stitle">Use client secrets only as a last resort — with mandatory rotation</div>
+        <div class="sdesc">If you must use a client secret: max 1-year expiry (never 2-year), store in Key Vault (never in code or config files), alert on expiry 60 days before, rotate quarterly. Treat client secrets like database passwords — the same operational discipline applies.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">4</div>
+      <div>
+        <div class="stitle">Request minimum required permissions — scope to read-only when possible</div>
+        <div class="sdesc"><code>User.Read.All</code> for a reporting tool. <code>User.ReadWrite.All</code> only for provisioning tools. <code>UserAuthenticationMethod.Read.All</code> for audit scripts. <code>UserAuthenticationMethod.ReadWrite.All</code> only for tools that actually create TAPs or delete methods. Wrong permissions = blast radius multiplier if credentials are compromised.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">5</div>
+      <div>
+        <div class="stitle">One App Registration per logical service — never share</div>
+        <div class="sdesc">Sharing an App Registration across multiple tools means a compromised credential gives access to everything that service does. Separate App Registrations = separate blast radius, separate audit trail, independent rotation. Clean audit logs that show exactly which service called which API.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Permission Reference for Common IAM Operations</h3>
+  <table class="tbl">
+    <thead><tr><th class="tn">Operation</th><th class="tg">Minimum Permission</th><th class="tn">Type</th><th class="tn">Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Read all users' basic profile</td><td class="cg">User.Read.All</td><td>App or Delegated</td><td>Standard reporting and audit</td></tr>
+      <tr><td>Create/update/delete users</td><td class="cg">User.ReadWrite.All</td><td>Application</td><td>Provisioning automation</td></tr>
+      <tr><td>Read group membership</td><td class="cg">GroupMember.Read.All</td><td>App or Delegated</td><td>Access review, entitlement reports</td></tr>
+      <tr><td>Add/remove group members</td><td class="cg">GroupMember.ReadWrite.All</td><td>Application</td><td>Provisioning, leaver workflows</td></tr>
+      <tr><td>Read auth methods (MFA status)</td><td class="cg">UserAuthenticationMethod.Read.All</td><td>Application</td><td>MFA inventory, compliance reports</td></tr>
+      <tr><td>Create TAP / delete methods</td><td class="cg">UserAuthenticationMethod.ReadWrite.All</td><td>Application</td><td>Onboarding automation, helpdesk tools</td></tr>
+      <tr><td>Read sign-in logs</td><td class="cg">AuditLog.Read.All</td><td>Application</td><td>SIEM integration, incident response</td></tr>
+      <tr><td>Read directory audit logs</td><td class="cg">AuditLog.Read.All</td><td>Application</td><td>Change tracking, compliance</td></tr>
+      <tr><td>Read device objects</td><td class="cg">Device.Read.All</td><td>Application</td><td>Device inventory, stale device reports</td></tr>
+      <tr><td>Disable/delete devices</td><td class="cg">Device.ReadWrite.All</td><td>Application</td><td>Device lifecycle automation</td></tr>
+      <tr><td>Read risky users</td><td class="cg">IdentityRiskyUser.Read.All</td><td>Application</td><td>Identity Protection reporting</td></tr>
+      <tr><td>Read CA policies</td><td class="cg">Policy.Read.All</td><td>Application</td><td>Policy audit, config management</td></tr>
+      <tr><td>Read service principals &amp; apps</td><td class="cg">Application.Read.All</td><td>Application</td><td>App permission audits</td></tr>
+    </tbody>
+  </table>
+
+  <div class="bx bx-w">
+    <strong>Never request Directory.Read.All or Directory.ReadWrite.All.</strong> These are broad permissions that grant access to nearly everything in the directory. They exist for legacy compatibility. Use specific permissions instead — <code>User.Read.All</code> + <code>Group.Read.All</code> + <code>Device.Read.All</code> is always better than <code>Directory.Read.All</code>. Specific permissions are clearer in admin consent, easier to audit, and narrower in blast radius. If a vendor's documentation says "we need Directory.Read.All" — push back and ask why they can't use specific permissions.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CH 7 — PRODUCTION GOVERNANCE PATTERNS
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch7">
+  <div class="chd"><span class="cnum">CH 07</span>
+    <h2>Production<span class="a"> Governance Patterns</span></h2>
+  </div>
+  <p class="intro">This chapter ties together everything from across all four docs — the governance patterns, operational checklists, and integration architectures that define a mature Entra ID deployment. This is the "from learning to production" chapter.</p>
+
+  <h3>The Production Entra ID Integration Checklist</h3>
+
+  <div class="bx bx-c">
+    <ul class="checklist">
+      <li>Break-glass accounts created (2 minimum), credentials stored in physical safe, excluded from ALL CA policies, monitored with SIEM alerts on any sign-in</li>
+      <li>Baseline CA policies deployed: MFA for all users, phishing-resistant MFA for admin roles, block legacy auth, require compliant device for sensitive apps</li>
+      <li>Authentication Methods Policy configured — legacy per-user MFA disabled for all users (migrated to CA-driven MFA)</li>
+      <li>Password Hash Sync (or PTA) configured with Seamless SSO — ADFS retired or scheduled for retirement</li>
+      <li>UPN strategy validated — all users have routable UPN suffix matching a verified Entra ID domain (no .local or .internal)</li>
+      <li>All App Registrations audited — no client secrets expiring within 60 days, certificate-based auth preferred</li>
+      <li>Service principal permission audit complete — no overprivileged apps with Directory.ReadWrite.All or equivalent</li>
+      <li>Sign-in and audit logs streaming to SIEM with 90+ day retention (Azure Monitor or external)</li>
+      <li>Device cleanup job scheduled — stale devices (90+ days) identified and disabled monthly</li>
+      <li>Access Reviews scheduled — admin roles monthly, sensitive groups quarterly, all apps semi-annual</li>
+      <li>PIM configured for all Entra ID directory roles — no standing Global Admin except break-glass</li>
+      <li>Entitlement Management catalogs created for all major application bundles — no more email-based access requests</li>
+      <li>Lifecycle Workflows connected to HR system — automated joiner/mover/leaver</li>
+      <li>MFA registration campaign active — target 100% registration before enforcing MFA</li>
+      <li>Named Locations defined — corporate office IPs and VPN egress IPs as trusted locations</li>
+      <li>Conditional Access in Report-Only mode for 2 weeks before enabling — impact analysis complete</li>
+    </ul>
+  </div>
+
+  <h3>The IAM Automation Stack — Entra ID + Your Tools</h3>
+
+  <div class="dbox">
+    <div class="dtitle">Enterprise IAM Architecture — Entra ID Integration with Your Stack</div>
+    <svg viewBox="0 0 820 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:820px;">
+      <defs>
+        <marker id="e1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#D4A842" opacity=".7"/></marker>
+        <marker id="e2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#7EC8A4" opacity=".7"/></marker>
+        <marker id="e3" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#E8506A" opacity=".7"/></marker>
+      </defs>
+      <rect width="820" height="460" fill="#080608" rx="8"/>
+
+      <!-- Top: Identity Sources -->
+      <text x="410" y="22" font-family="Inconsolata,monospace" font-size="9" fill="#3D3028" text-anchor="middle" letter-spacing="2">IDENTITY SOURCES</text>
+      <rect x="30" y="34" width="140" height="46" rx="5" fill="#1B1318" stroke="#D4A842" stroke-width="1.2"/>
+      <text x="100" y="55" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">HR System</text>
+      <text x="100" y="71" font-family="Inconsolata,monospace" font-size="9" fill="#D4A842" text-anchor="middle">Workday / SAP</text>
+
+      <rect x="190" y="34" width="140" height="46" rx="5" fill="#1B1318" stroke="#8A7A70" stroke-width="1.2"/>
+      <text x="260" y="55" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">Active Directory</text>
+      <text x="260" y="71" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">On-Premises</text>
+
+      <rect x="340" y="34" width="140" height="46" rx="5" fill="#1B1318" stroke="#7EC8A4" stroke-width="1.2"/>
+      <text x="410" y="55" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">CyberArk</text>
+      <text x="410" y="71" font-family="Inconsolata,monospace" font-size="9" fill="#7EC8A4" text-anchor="middle">PAM / Vault</text>
+
+      <rect x="490" y="34" width="140" height="46" rx="5" fill="#1B1318" stroke="#A78BFA" stroke-width="1.2"/>
+      <text x="560" y="55" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">Saviynt</text>
+      <text x="560" y="71" font-family="Inconsolata,monospace" font-size="9" fill="#A78BFA" text-anchor="middle">IGA Orchestrator</text>
+
+      <rect x="648" y="34" width="140" height="46" rx="5" fill="#1B1318" stroke="#60B8E0" stroke-width="1.2"/>
+      <text x="718" y="55" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">PingFederate</text>
+      <text x="718" y="71" font-family="Inconsolata,monospace" font-size="9" fill="#60B8E0" text-anchor="middle">Legacy / Hybrid Fed</text>
+
+      <!-- Center: Entra ID -->
+      <rect x="260" y="148" width="300" height="80" rx="8" fill="#1B1318" stroke="#D4A842" stroke-width="2"/>
+      <text x="410" y="180" font-family="Cormorant Garamond,serif" font-size="18" font-weight="700" fill="#D4A842" text-anchor="middle">Microsoft Entra ID</text>
+      <text x="410" y="200" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70" text-anchor="middle">Directory · Auth · CA · Governance · Graph API</text>
+      <text x="410" y="218" font-family="Inconsolata,monospace" font-size="9" fill="#D4A842" text-anchor="middle">graph.microsoft.com</text>
+
+      <!-- Arrows from sources to Entra ID -->
+      <line x1="100" y1="80" x2="310" y2="148" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e1)"/>
+      <text x="185" y="115" font-family="Inconsolata,monospace" font-size="8" fill="#D4A842" opacity=".7">SCIM Provisioning</text>
+      <line x1="260" y1="80" x2="370" y2="148" stroke="#8A7A70" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e1)"/>
+      <text x="285" y="118" font-family="Inconsolata,monospace" font-size="8" fill="#8A7A70" opacity=".7">AD Connect / Cloud Sync</text>
+      <line x1="410" y1="80" x2="410" y2="148" stroke="#7EC8A4" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e2)"/>
+      <line x1="560" y1="80" x2="480" y2="148" stroke="#A78BFA" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e1)"/>
+      <text x="530" y="110" font-family="Inconsolata,monospace" font-size="8" fill="#A78BFA" opacity=".7">Graph API R/W</text>
+      <line x1="718" y1="80" x2="530" y2="148" stroke="#60B8E0" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e1)"/>
+      <text x="648" y="108" font-family="Inconsolata,monospace" font-size="8" fill="#60B8E0" opacity=".7">SAML/OIDC Federation</text>
+
+      <!-- Bottom: Consumers -->
+      <text x="410" y="268" font-family="Inconsolata,monospace" font-size="9" fill="#3D3028" text-anchor="middle" letter-spacing="2">CONSUMERS / INTEGRATIONS</text>
+
+      <rect x="30" y="278" width="160" height="54" rx="5" fill="#1B1318" stroke="#E8506A" stroke-width="1.2"/>
+      <text x="110" y="300" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">CIPHER / IAM Agent</text>
+      <text x="110" y="318" font-family="Inconsolata,monospace" font-size="8.5" fill="#E8506A" text-anchor="middle">Automation · App Permissions</text>
+
+      <rect x="210" y="278" width="140" height="54" rx="5" fill="#1B1318" stroke="#7EC8A4" stroke-width="1.2"/>
+      <text x="280" y="300" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">SIEM / Sentinel</text>
+      <text x="280" y="318" font-family="Inconsolata,monospace" font-size="8.5" fill="#7EC8A4" text-anchor="middle">Log streaming</text>
+
+      <rect x="370" y="278" width="140" height="54" rx="5" fill="#1B1318" stroke="#D4A842" stroke-width="1.2"/>
+      <text x="440" y="300" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">SaaS Apps</text>
+      <text x="440" y="318" font-family="Inconsolata,monospace" font-size="8.5" fill="#D4A842" text-anchor="middle">SAML / OIDC SSO</text>
+
+      <rect x="530" y="278" width="140" height="54" rx="5" fill="#1B1318" stroke="#A78BFA" stroke-width="1.2"/>
+      <text x="600" y="300" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">Power BI / Reports</text>
+      <text x="600" y="318" font-family="Inconsolata,monospace" font-size="8.5" fill="#A78BFA" text-anchor="middle">MFA / Device dashboards</text>
+
+      <rect x="690" y="278" width="110" height="54" rx="5" fill="#1B1318" stroke="#60B8E0" stroke-width="1.2"/>
+      <text x="745" y="300" font-family="Epilogue,sans-serif" font-size="11" font-weight="700" fill="#F2EDE8" text-anchor="middle">Azure Services</text>
+      <text x="745" y="318" font-family="Inconsolata,monospace" font-size="8.5" fill="#60B8E0" text-anchor="middle">Managed Identity</text>
+
+      <!-- Arrows from Entra to consumers -->
+      <line x1="350" y1="228" x2="155" y2="278" stroke="#E8506A" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e3)"/>
+      <line x1="380" y1="228" x2="290" y2="278" stroke="#7EC8A4" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e2)"/>
+      <line x1="410" y1="228" x2="440" y2="278" stroke="#D4A842" stroke-width="1.2" stroke-opacity=".4" marker-end="url(#e1)"/>
+      <line x1="450" y1="228" x2="580" y2="278" stroke="#A78BFA" stroke-width="1.2" stroke-opacity=".3" marker-end="url(#e1)"/>
+      <line x1="480" y1="228" x2="710" y2="278" stroke="#60B8E0" stroke-width="1.2" stroke-opacity=".3" marker-end="url(#e1)"/>
+
+      <!-- Bottom note -->
+      <rect x="20" y="358" width="780" height="82" rx="6" fill="#0E0A0C" stroke="#D4A842" stroke-width="1" stroke-opacity=".2"/>
+      <text x="36" y="378" font-family="Inconsolata,monospace" font-size="8.5" fill="#D4A842" letter-spacing="1.5">PERMISSION LAYERS</text>
+      <text x="36" y="396" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70">Saviynt → Graph API (User.ReadWrite.All, GroupMember.ReadWrite.All) — IGA orchestration of Entra ID objects</text>
+      <text x="36" y="412" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70">CIPHER Agent → Graph API (targeted permissions per function) — IAM automation actions</text>
+      <text x="36" y="428" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70">CyberArk → handles on-prem PAM; Entra ID PIM handles cloud admin role elevation — complementary, not overlapping</text>
+      <text x="36" y="444" font-family="Inconsolata,monospace" font-size="9" fill="#8A7A70">PingFederate → SAML/OIDC federation partner for legacy apps that can't integrate with Entra ID natively</text>
+    </svg>
+  </div>
+
+  <h3>The Migration Path: PingFederate → Entra ID SSO</h3>
+  <div class="bx bx-p">
+    <strong>When to move an SP connection from PingFederate to Entra ID:</strong><br><br>
+    <strong>Move to Entra ID native SSO when:</strong> The app supports modern OIDC/SAML, is used by cloud users (not requiring on-prem data), and doesn't require complex attribute transformations that PingFederate's scripting handles. Standard SaaS apps (Salesforce, ServiceNow, Workday, Jira Cloud) all have pre-built Entra ID gallery connectors — migration is a configuration exercise, not an engineering project.<br><br>
+    <strong>Keep on PingFederate when:</strong> The app requires complex claims transformations (JavaScript logic in PF adapters), depends on LDAP-sourced attributes not flowing through Entra ID, needs PingDirectory as the authoritative identity store, or is a legacy protocol app (Kerberos-constrained delegation, WS-Trust). PingFederate as a federation broker in front of Entra ID (federated IdP) is also a valid hybrid pattern for these cases.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     CH 8 — MONITORING & TROUBLESHOOTING
+══════════════════════════════════════════════ -->
+<section class="ch" id="ch8">
+  <div class="chd"><span class="cnum">CH 08</span>
+    <h2>Monitoring &amp;<span class="a"> Troubleshooting</span></h2>
+  </div>
+  <p class="intro">The final chapter. Production readiness isn't just architecture — it's knowing what breaks, why it breaks, and how to fix it fast. These are the real-world failure patterns and diagnostic approaches for Entra ID and Graph API integrations.</p>
+
+  <h3>Common Error Codes — IAM Engineer's Reference</h3>
+  <table class="tbl">
+    <thead><tr><th class="tn">Error Code</th><th class="tr">Meaning</th><th class="tn">Root Cause / Fix</th></tr></thead>
+    <tbody>
+      <tr><td><code>AADSTS50076</code></td><td class="cr">MFA Required</td><td>CA policy requires MFA — user was prompted and didn't complete. Check if MFA method is registered.</td></tr>
+      <tr><td><code>AADSTS50055</code></td><td class="cr">Expired password</td><td>User's password expired. SSPR or admin reset needed.</td></tr>
+      <tr><td><code>AADSTS50126</code></td><td class="cr">Invalid credentials</td><td>Wrong password. Check for account lockout (Smart Lockout). LDAP equivalent: invalidCredentials.</td></tr>
+      <tr><td><code>AADSTS50053</code></td><td class="cr">Account locked</td><td>Smart Lockout triggered after failed attempts. Unlock in portal or wait for lockout period.</td></tr>
+      <tr><td><code>AADSTS50057</code></td><td class="cr">Account disabled</td><td><code>accountEnabled = false</code> on the user object.</td></tr>
+      <tr><td><code>AADSTS700016</code></td><td class="cr">App not found in tenant</td><td>App Registration doesn't exist in this tenant. Wrong tenant ID in request, or app not provisioned.</td></tr>
+      <tr><td><code>AADSTS65001</code></td><td class="cr">Consent required</td><td>User has not consented to the app's delegated permissions, or admin consent wasn't granted for app permissions.</td></tr>
+      <tr><td><code>AADSTS50020</code></td><td class="cr">User account from identity provider doesn't exist in tenant</td><td>Guest user not provisioned, or UPN mismatch. Common after M&A tenant changes.</td></tr>
+      <tr><td><code>AADSTS90002</code></td><td class="cr">Tenant not found</td><td>Tenant ID in URL is wrong or tenant doesn't exist. Check tenantId in request.</td></tr>
+      <tr><td><code>Authorization_RequestDenied</code></td><td class="cr">Graph 403 — Insufficient permissions</td><td>App doesn't have the required Graph permission. Check App Registration API permissions AND confirm admin consent was granted.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Graph API Troubleshooting Flow</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="snum">1</div>
+      <div>
+        <div class="stitle">Reproduce in Graph Explorer first</div>
+        <div class="sdesc">Before debugging code, run the exact same query in Graph Explorer with the same user/app context. If it works in Graph Explorer but not your code — the issue is in token acquisition or request construction. If it fails in Graph Explorer — the issue is permissions, data, or the endpoint itself.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">2</div>
+      <div>
+        <div class="stitle">Decode the access token and verify claims</div>
+        <div class="sdesc">Paste your access token into <a href="https://jwt.ms" style="color:var(--gold)">jwt.ms</a>. Check: <code>aud</code> is the correct resource, <code>tid</code> is your tenant, <code>scp</code> or <code>roles</code> contains the required permission. A token with wrong audience or missing permission will fail before Graph even processes the request.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">3</div>
+      <div>
+        <div class="stitle">Check if admin consent was actually granted</div>
+        <div class="sdesc">Navigate to the Enterprise Application (Service Principal) → Permissions blade. The "Admin consent" column shows whether each permission was consented. A common mistake: adding a permission to the App Registration but forgetting to grant admin consent. The permission appears requested but not granted.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">4</div>
+      <div>
+        <div class="stitle">Check sign-in logs for the service principal</div>
+        <div class="sdesc">Filter <code>/auditLogs/signIns</code> by <code>appId</code> or <code>servicePrincipalId</code>. See exact error codes, CA policy results, and authentication details for every token acquisition attempt your app made. This gives you the full picture including CA failures that your app-level error handling may obscure.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="snum">5</div>
+      <div>
+        <div class="stitle">For throttling: respect Retry-After, don't retry immediately</div>
+        <div class="sdesc">HTTP 429 responses include a <code>Retry-After</code> header specifying how many seconds to wait. Ignoring this and retrying immediately makes the throttle worse and digs a deeper hole. Implement exponential backoff with Retry-After as the floor. Log all 429s to identify which operations are generating the most load.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Monitoring Your Entra ID Integration Health</h3>
+  <div class="code">
+<span class="cc"># Daily health check queries — run as a scheduled job, alert on anomalies</span>
+
+<span class="cc"># 1. Service principal sign-in failure rate (your automation apps)</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=servicePrincipalId eq '{your-sp-id}' and status/errorCode ne 0 and createdDateTime ge {yesterday}</span>
+<span class="cc">Alert if: failure count > 5 in last hour → credential or permission issue</span>
+
+<span class="cc"># 2. Admin role change alert</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/directoryAudits?$filter=category eq 'RoleManagement' and activityDateTime ge {last-15-min}</span>
+<span class="cc">Alert if: any result → unexpected privilege escalation indicator</span>
+
+<span class="cc"># 3. Break-glass account sign-in alert</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=userId eq '{breakglass-user-id}' and createdDateTime ge {last-15-min}</span>
+<span class="cc">Alert if: any result → immediate incident response required</span>
+
+<span class="cc"># 4. High-risk user count (should be near zero in healthy tenant)</span>
+<span class="ck">GET</span> <span class="cs2">/identityProtection/riskyUsers/$count?$filter=riskLevel eq 'high' and riskState eq 'atRisk'</span>
+ConsistencyLevel: eventual
+<span class="cc">Alert if: count increases day-over-day → investigate risk detections</span>
+
+<span class="cc"># 5. CA policy block spike (could indicate attack or misconfiguration)</span>
+<span class="ck">GET</span> <span class="cs2">/auditLogs/signIns?$filter=conditionalAccessStatus eq 'failure' and createdDateTime ge {last-hour}&$count=true</span>
+ConsistencyLevel: eventual
+<span class="cc">Alert if: count > baseline_average * 2 → investigate blocked sign-ins</span>
+  </div>
+
+  <div class="bx bx-t">
+    <strong>Final architecture principle — the one thing to remember from this entire series:</strong> Entra ID is not a product you configure once and forget. It's a living platform. Microsoft releases new features every month. Deprecations happen. Your organization's security posture needs to evolve with it. Build your Graph API integrations to be observable (log every call and its result), maintainable (one service per App Registration, certificates not secrets, minimal permissions), and adaptable (use the v1.0 endpoint, subscribe to deprecation notices, test beta features before they ship). The IAM engineer who treats Entra ID as infrastructure to maintain — not a checkbox to tick — is the one whose systems don't fail at 2 AM.
+  </div>
+
+</section>
+
+<!-- ══════════════ SERIES COMPLETE ══════════════ -->
+<div class="complete-banner">
+  <div style="font-family:var(--fm);font-size:9px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;margin-bottom:16px;position:relative">
+    ★ &nbsp; Series Complete &nbsp; ★
+  </div>
+  <h2 style="font-family:var(--fd);font-size:clamp(24px,3vw,42px);color:var(--t1);margin-bottom:14px;font-weight:700;position:relative">
+    Microsoft Entra ID &amp; Microsoft Graph<br><em style="color:var(--gold)">IAM Engineer's Complete Learning Series</em>
+  </h2>
+  <p style="color:var(--t2);max-width:600px;margin:0 auto 28px;font-weight:300;font-size:16px;position:relative;line-height:1.7">
+    Four documents. Everything from tenant architecture and hybrid identity to MFA API, device inventory, audit logs, and production governance — all through the lens of an IAM engineer who already knows PingFederate, LDAP, and OAuth.
+  </p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;max-width:780px;margin:0 auto;position:relative">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:left">
+      <div style="font-family:var(--fm);font-size:8.5px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px">Doc 1</div>
+      <div style="font-family:var(--fb);font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:4px">Identity Architecture &amp; Directory Model</div>
+      <div style="font-size:11.5px;color:var(--t2)">Tenant · Directory · Users · Groups · Auth · Hybrid Identity</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:left">
+      <div style="font-family:var(--fm);font-size:8.5px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px">Doc 2</div>
+      <div style="font-family:var(--fb);font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:4px">Security, Governance &amp; App Platform</div>
+      <div style="font-size:11.5px;color:var(--t2)">MFA · CA · App Model · OAuth/SAML · RBAC · IGA</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:left">
+      <div style="font-family:var(--fm);font-size:8.5px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px">Doc 3</div>
+      <div style="font-family:var(--fb);font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:4px">Graph Architecture, Auth &amp; Queries</div>
+      <div style="font-size:11.5px;color:var(--t2)">Graph model · Permissions · Tokens · OData · Core queries</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:16px;text-align:left">
+      <div style="font-family:var(--fm);font-size:8.5px;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px">Doc 4 ★</div>
+      <div style="font-family:var(--fb);font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:4px">MFA API, Devices, Audit &amp; Governance</div>
+      <div style="font-size:11.5px;color:var(--t2)">Auth Methods API · Device mgmt · Logs · Production patterns</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /cnt -->
+</main>
+
+<script>
+function upP(){
+  const s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('pf').style.width=Math.min((s/h)*100,100)+'%';
+}
+window.addEventListener('scroll',upP,{passive:true});
+
+const chs=document.querySelectorAll('.ch');
+const navs=document.querySelectorAll('.na');
+const ob=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const id=e.target.id;
+      navs.forEach(n=>n.classList.toggle('on',n.getAttribute('href')==='#'+id));
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+chs.forEach(c=>ob.observe(c));
+
+const cards=document.querySelectorAll('.card,.method-card');
+const co=new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{
+    if(e.isIntersecting){
+      setTimeout(()=>{e.target.style.opacity='1';e.target.style.transform='translateY(0)'},i*60);
+    }
+  });
+},{threshold:.05});
+cards.forEach(c=>{
+  c.style.opacity='0';c.style.transform='translateY(12px)';
+  c.style.transition='all .32s ease';co.observe(c);
+});
+</script>
+</body>
+</html>

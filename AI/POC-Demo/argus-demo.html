@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Argus — Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080a0f; --bg2:#0e1219; --bg3:#141820; --bg4:#1b2030;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.1); --border3:rgba(255,255,255,0.15);
+  --text:#f0f4ff; --muted:#8a96b0; --muted2:#b0bdd0;
+  --blue:#4f9cf9; --blue-d:rgba(79,156,249,0.12); --blue-b:rgba(79,156,249,0.2);
+  --green:#3ecf8e; --green-d:rgba(62,207,142,0.1); --green-b:rgba(62,207,142,0.2);
+  --amber:#f59e0b; --amber-d:rgba(245,158,11,0.1); --amber-b:rgba(245,158,11,0.22);
+  --purple:#a78bfa; --purple-d:rgba(167,139,250,0.1); --purple-b:rgba(167,139,250,0.2);
+  --red:#f87171; --red-d:rgba(248,113,113,0.1); --red-b:rgba(248,113,113,0.2);
+  --teal:#2dd4bf; --teal-d:rgba(45,212,191,0.08);
+  --coral:#fb923c; --coral-d:rgba(251,146,60,0.1);
+  --sidebar:220px; --topbar:52px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;font-size:13px}
+.grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(79,156,249,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(79,156,249,0.022) 1px,transparent 1px);background-size:44px 44px}
+.app{display:grid;grid-template-columns:var(--sidebar) 1fr;grid-template-rows:var(--topbar) 1fr;height:100vh;position:relative;z-index:1}
+.topbar{grid-column:1/-1;grid-row:1;background:rgba(8,10,15,0.95);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:0;z-index:50;backdrop-filter:blur(12px)}
+.brand{font-size:18px;font-weight:800;letter-spacing:-0.5px;color:var(--text);margin-right:1.5rem}
+.brand span{color:var(--blue)}
+.brand-tag{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-right:auto;letter-spacing:0.5px}
+.audience-toggle{display:flex;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:3px;gap:2px;margin-right:1rem}
+.aud-btn{padding:4px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all 0.2s;letter-spacing:0.3px}
+.aud-btn.active{background:var(--blue);color:#fff}
+.top-clock{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-right:1rem}
+.top-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green)}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(62,207,142,0.4)}50%{opacity:0.8;box-shadow:0 0 0 4px rgba(62,207,142,0)}}
+.sidebar{grid-column:1;grid-row:2;background:rgba(8,10,15,0.92);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;backdrop-filter:blur(8px)}
+.nav-section{padding:1rem 0.75rem 0.25rem;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;margin:1px 6px;border-radius:8px;cursor:pointer;transition:all 0.15s;color:var(--muted2);font-size:12px;font-weight:500;border:1px solid transparent}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--blue-d);border-color:var(--blue-b);color:var(--blue)}
+.nav-item .nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red-d);color:var(--red);border:1px solid var(--red-b);border-radius:20px;padding:1px 7px;font-size:10px;font-family:'JetBrains Mono',monospace}
+.nav-badge.green{background:var(--green-d);color:var(--green);border-color:var(--green-b)}
+.sidebar-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
+.sdk-snippet{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted2);line-height:1.7}
+.sdk-snippet .kw{color:var(--blue)}.sdk-snippet .str{color:var(--green)}.sdk-snippet .fn{color:var(--amber)}
+.main{grid-column:2;grid-row:2;overflow-y:auto;position:relative}
+.screen{display:none;padding:1.5rem;min-height:calc(100vh - var(--topbar));animation:fadeIn 0.25s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:1.5rem}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px}
+.page-sub{color:var(--muted2);font-size:13px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:0.3px}
+.tag-green{background:var(--green-d);color:var(--green);border:1px solid var(--green-b)}
+.tag-red{background:var(--red-d);color:var(--red);border:1px solid var(--red-b)}
+.tag-amber{background:var(--amber-d);color:var(--amber);border:1px solid var(--amber-b)}
+.tag-blue{background:var(--blue-d);color:var(--blue);border:1px solid var(--blue-b)}
+.tag-purple{background:var(--purple-d);color:var(--purple);border:1px solid var(--purple-b)}
+.tag-gray{background:rgba(255,255,255,0.04);color:var(--muted2);border:1px solid var(--border)}
+.tag-teal{background:var(--teal-d);color:var(--teal);border:1px solid rgba(45,212,191,0.2)}
+.btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all 0.15s;font-family:'Syne',sans-serif;letter-spacing:0.2px}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#3d8de8}
+.btn-danger{background:var(--red-d);color:var(--red);border-color:var(--red-b)}
+.btn-danger:hover{background:rgba(248,113,113,0.2)}
+.btn-ghost{background:transparent;color:var(--muted2);border-color:var(--border2)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-success{background:var(--green-d);color:var(--green);border-color:var(--green-b)}
+.btn-success:hover{background:rgba(62,207,142,0.18)}
+.metric-val{font-size:26px;font-weight:700;letter-spacing:-0.5px}
+.metric-label{font-size:11px;color:var(--muted2);margin-top:2px}
+.divider{border:none;border-top:1px solid var(--border);margin:1rem 0}
+.tech-only{display:none}.exec-only{display:none}
+body.tech-mode .tech-only{display:block}
+body.exec-mode .exec-only{display:block}
+.toast{position:fixed;top:64px;right:20px;background:var(--bg3);border:1px solid var(--green-b);border-radius:10px;padding:10px 16px;font-size:12px;color:var(--green);z-index:999;display:flex;align-items:center;gap:8px;transform:translateX(120%);transition:transform 0.3s ease;max-width:320px}
+.toast.show{transform:translateX(0)}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.blue::before{background:var(--blue)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.amber::before{background:var(--amber)}
+.stat-card.red::before{background:var(--red)}
+.market-strip{background:linear-gradient(135deg,rgba(248,113,113,0.06),rgba(245,158,11,0.06));border:1px solid rgba(248,113,113,0.15);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:grid;grid-template-columns:auto 1fr 1fr 1fr;align-items:center;gap:1.5rem}
+.market-strip .strip-label{font-size:11px;color:var(--red);font-weight:600;letter-spacing:0.5px}
+.market-strip .strip-item{text-align:center}
+.market-strip .strip-num{font-size:20px;font-weight:700;color:var(--amber)}
+.market-strip .strip-desc{font-size:10px;color:var(--muted2);margin-top:2px}
+.agent-list{display:flex;flex-direction:column;gap:8px}
+.agent-row-mini{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;transition:background 0.1s;cursor:pointer}
+.agent-row-mini:hover{background:var(--bg3)}
+.agent-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.agent-dot.active{background:var(--green);animation:pulse 2.5s infinite}
+.agent-dot.anomaly{background:var(--red);animation:pulse 1s infinite}
+.agent-dot.suspended{background:var(--amber)}
+.agent-name{font-weight:600;font-size:12px;flex:1}
+.agent-owner{color:var(--muted2);font-size:11px;flex:1}
+.telemetry-bar{flex:1;max-width:120px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.telemetry-fill{height:100%;border-radius:2px;transition:width 0.8s ease}
+.events-feed{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto}
+.event-item{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:11px}
+.event-time{color:var(--muted);font-family:'JetBrains Mono',monospace;flex-shrink:0;padding-top:1px}
+.event-dot-sm{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.registry-table{width:100%;border-collapse:collapse}
+.registry-table th{text-align:left;padding:8px 14px;color:var(--muted);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border2);font-family:'JetBrains Mono',monospace}
+.registry-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px}
+.registry-table tr:last-child td{border-bottom:none}
+.registry-table tr.expandable{cursor:pointer;transition:background 0.1s}
+.registry-table tr.expandable:hover td{background:rgba(255,255,255,0.015)}
+.sdk-badge{display:inline-flex;align-items:center;gap:3px;background:var(--blue-d);color:var(--blue);border:1px solid var(--blue-b);border-radius:4px;padding:1px 6px;font-size:9px;font-family:'JetBrains Mono',monospace}
+.expanded-panel{background:var(--bg3);border-bottom:1px solid var(--border2)}
+.expanded-panel td{padding:0}
+.expanded-inner{padding:1rem 1.25rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.exp-section h4{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.exp-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)}
+.exp-row:last-child{border-bottom:none}
+.exp-key{color:var(--muted2)}
+.exp-val{color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px}
+.lifecycle-flow{display:flex;align-items:center;gap:6px;margin-top:8px}
+.lf-step{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600}
+.lf-arrow{color:var(--muted);font-size:10px}
+.chart-container{position:relative;height:200px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;overflow:hidden;margin-bottom:1rem}
+.telemetry-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.tm-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.875rem}
+.tm-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.tm-label{font-size:10px;color:var(--muted2);margin-top:2px}
+.tm-delta{font-size:10px;margin-top:4px}
+.response-timeline{display:flex;flex-direction:column;gap:0}
+.response-step{display:grid;grid-template-columns:180px 2px 1fr;gap:0 1.25rem;margin-bottom:0}
+.rs-label{text-align:right;padding:0 0 1.5rem;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-end;gap:4px;padding-top:2px}
+.rs-label .rs-name{font-size:12px;font-weight:600}
+.rs-label .rs-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+.rs-line{background:var(--border2);position:relative}
+.rs-line::before{content:'';position:absolute;top:4px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;border:2px solid var(--bg);background:var(--muted);transition:background 0.3s}
+.rs-line.done::before{background:var(--green)}
+.rs-line.active-step::before{background:var(--blue);animation:pulse 1s infinite}
+.rs-content{padding:0 0 1.5rem}
+.rs-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.875rem 1rem;transition:all 0.4s;opacity:0.35}
+.rs-card.done{opacity:1;border-color:var(--green-b);background:rgba(62,207,142,0.04)}
+.rs-card.active-step{opacity:1;border-color:var(--blue-b);background:var(--blue-d)}
+.rs-card h4{font-size:12px;font-weight:600;margin-bottom:4px}
+.rs-card p{font-size:11px;color:var(--muted2);line-height:1.5}
+.rs-card .rs-action{font-family:'JetBrains Mono',monospace;font-size:10px;margin-top:6px;padding:4px 8px;background:var(--bg3);border-radius:4px;display:inline-block}
+.identity-fanout{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:1rem 0}
+.ift-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.875rem;transition:all 0.5s;opacity:0.3;text-align:center}
+.ift-card.fired{opacity:1;animation:cardFire 0.5s ease}
+.ift-card.fired.vault{border-color:var(--red-b);background:var(--red-d)}
+.ift-card.fired.keycloak{border-color:var(--purple-b);background:var(--purple-d)}
+.ift-card.fired.ory{border-color:rgba(45,212,191,0.2);background:rgba(45,212,191,0.06)}
+.ift-card.fired.authentik{border-color:rgba(251,146,60,0.2);background:rgba(251,146,60,0.07)}
+@keyframes cardFire{0%{transform:scale(0.96)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+.ift-tool{font-size:11px;font-weight:700;margin-bottom:3px}
+.ift-equiv{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.ift-action{font-size:10px;color:var(--muted2)}
+.ift-status{font-size:10px;margin-top:4px;font-weight:600}
+.response-controls{display:flex;gap:10px;align-items:center;margin-bottom:1.25rem}
+.severity-badge{padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.5px}
+.sev-high{background:var(--red-d);color:var(--red);border:1px solid var(--red-b)}
+.sev-medium{background:var(--amber-d);color:var(--amber);border:1px solid var(--amber-b)}
+.sev-low{background:var(--green-d);color:var(--green);border:1px solid var(--green-b)}
+.progress-bar{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:var(--blue);border-radius:2px;width:0;transition:width 0.4s ease}
+.approval-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:10px;transition:all 0.3s}
+.approval-item.resolved{opacity:0.5;border-color:var(--green-b)}
+.approval-item.rejected{opacity:0.5;border-color:var(--red-b)}
+.approval-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.approval-body{font-size:12px;color:var(--muted2);margin-bottom:12px;line-height:1.6}
+.approval-meta{display:flex;gap:16px;font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'JetBrains Mono',monospace;flex-wrap:wrap}
+.approval-actions{display:flex;gap:8px;align-items:center}
+.approval-result{font-size:12px;font-weight:600;margin-left:auto}
+.audit-filters{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.filter-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted2);font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;transition:all 0.15s}
+.filter-btn.active{background:var(--blue-d);border-color:var(--blue-b);color:var(--blue)}
+.audit-table{width:100%;border-collapse:collapse}
+.audit-table th{text-align:left;padding:8px 12px;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.audit-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;vertical-align:middle}
+.audit-table tr:hover td{background:rgba(255,255,255,0.015)}
+.audit-table tr:last-child td{border-bottom:none}
+.event-type-pill{padding:2px 8px;border-radius:4px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:500}
+.code-block{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:1.25rem;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.8;overflow-x:auto}
+.cb-comment{color:var(--muted)}.cb-kw{color:var(--blue)}.cb-str{color:var(--green)}.cb-fn{color:var(--amber)}.cb-type{color:var(--purple)}.cb-val{color:var(--coral)}
+.pattern-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.pattern-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem}
+.pattern-name{font-size:12px;font-weight:700;margin-bottom:3px}
+.pattern-desc{font-size:11px;color:var(--muted2);line-height:1.5}
+.stack-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.stack-row:last-child{border-bottom:none}
+.roadmap-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:1rem}
+.roadmap-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem;border-top:2px solid var(--green)}
+.roadmap-card h4{font-size:12px;font-weight:600;margin-bottom:4px;color:var(--green)}
+.roadmap-card p{font-size:11px;color:var(--muted2);line-height:1.5}
+.no-replace-box{background:linear-gradient(135deg,var(--blue-d),var(--green-d));border:1px solid var(--blue-b);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem}
+.no-replace-box p{font-size:13px;line-height:1.6}
+.sdd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sdd-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem}
+.sdd-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:1px}
+.sdd-title{font-size:12px;font-weight:600;margin-bottom:4px}
+.sdd-desc{font-size:11px;color:var(--muted2);line-height:1.5}
+</style>
+</head>
+<body class="exec-mode">
+<div class="grid-bg"></div>
+<div class="app">
+
+<header class="topbar">
+  <div class="brand">Arg<span>us</span></div>
+  <div class="brand-tag">AI AGENT SECURITY PLATFORM &nbsp;·&nbsp; LIVE DEMO v0.1</div>
+  <div class="audience-toggle">
+    <button class="aud-btn active" onclick="setAudience('exec')">Executive</button>
+    <button class="aud-btn" onclick="setAudience('tech')">Technical</button>
+  </div>
+  <div class="top-clock" id="clock">--:--:--</div>
+  <div class="top-status"><div class="pulse"></div>System live</div>
+</header>
+
+<nav class="sidebar">
+  <div class="nav-section">Platform</div>
+  <div class="nav-item active" onclick="showScreen('s1')"><span class="nav-icon">⬡</span> Command centre <span class="nav-badge" id="alert-badge">1</span></div>
+  <div class="nav-item" onclick="showScreen('s2')"><span class="nav-icon">◫</span> Agent registry <span class="nav-badge green">4</span></div>
+  <div class="nav-item" onclick="showScreen('s3')"><span class="nav-icon">〜</span> Live telemetry</div>
+  <div class="nav-section">Security</div>
+  <div class="nav-item" onclick="showScreen('s4')"><span class="nav-icon">⚡</span> Anomaly → response</div>
+  <div class="nav-item" onclick="showScreen('s5')"><span class="nav-icon">✓</span> Approval queue <span class="nav-badge" id="approval-badge">2</span></div>
+  <div class="nav-section">Governance</div>
+  <div class="nav-item" onclick="showScreen('s6')"><span class="nav-icon">≡</span> Audit log</div>
+  <div class="nav-section">Developer</div>
+  <div class="nav-item" onclick="showScreen('s7')"><span class="nav-icon">&lt;/&gt;</span> SDK + Architecture</div>
+  <div class="sidebar-footer">
+    <div class="sdk-snippet">
+      <span class="kw">import</span> { <span class="fn">ArgusSDK</span> } <span class="kw">from</span> <span class="str">'argus-sdk'</span><br>
+      <span class="kw">const</span> a = <span class="kw">new</span> <span class="fn">ArgusSDK</span>({ agentId: <span class="str">'crm-01'</span> })<br>
+      a.<span class="fn">observe</span>(myAgent)
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- S1: COMMAND CENTRE -->
+<div class="screen active" id="s1">
+  <div class="page-header">
+    <div class="page-title">Command centre</div>
+    <div class="page-sub">Real-time overview of all AI agents, security posture, and system health</div>
+  </div>
+  <div class="market-strip exec-only">
+    <div class="strip-label">⚠ WHY NOW</div>
+    <div class="strip-item"><div class="strip-num">47%</div><div class="strip-desc">of CISOs observed unauthorised AI agent behaviour in 2025</div></div>
+    <div class="strip-item"><div class="strip-num">4.2 hrs</div><div class="strip-desc">average detection time without Argus</div></div>
+    <div class="strip-item"><div class="strip-num" style="color:var(--green)">8 sec</div><div class="strip-desc">full cross-stack response time with Argus</div></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card blue">
+      <div class="metric-label">Agents monitored</div>
+      <div class="metric-val">4</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted2)">3 active · 1 suspended</div>
+    </div>
+    <div class="stat-card red">
+      <div class="metric-label exec-only">Agents at risk</div>
+      <div class="metric-label tech-only">Active anomalies</div>
+      <div class="metric-val" style="color:var(--red)">1</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--red)">crm-reader-01 · HIGH</div>
+    </div>
+    <div class="stat-card green">
+      <div class="metric-label exec-only">Compliance posture</div>
+      <div class="metric-label tech-only">Telemetry events/min</div>
+      <div class="metric-val exec-only" style="color:var(--green)">94%</div>
+      <div class="metric-val tech-only" id="events-counter" style="color:var(--green)">142</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted2)" class="exec-only">SOC2 · ISO27001 · EU AI Act</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted2)" class="tech-only">Redis Streams · 30s window</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="metric-label exec-only">Last incident resolved</div>
+      <div class="metric-label tech-only">Secret rotations today</div>
+      <div class="metric-val exec-only">2h ago</div>
+      <div class="metric-val tech-only">7</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted2)">orchestrator-04 suspended</div>
+    </div>
+  </div>
+  <div class="grid2" style="gap:14px">
+    <div>
+      <div class="section-label">Agent health</div>
+      <div class="agent-list">
+        <div class="agent-row-mini" onclick="showScreen('s3')">
+          <div class="agent-dot anomaly"></div>
+          <div class="agent-name">crm-reader-01</div>
+          <div class="agent-owner">Sales team</div>
+          <span class="tag tag-red">ANOMALY</span>
+          <div class="telemetry-bar"><div class="telemetry-fill" style="width:98%;background:var(--red)"></div></div>
+        </div>
+        <div class="agent-row-mini">
+          <div class="agent-dot active"></div>
+          <div class="agent-name">research-agent-02</div>
+          <div class="agent-owner">Product team</div>
+          <span class="tag tag-green">ACTIVE</span>
+          <div class="telemetry-bar"><div class="telemetry-fill" style="width:44%;background:var(--green)"></div></div>
+        </div>
+        <div class="agent-row-mini">
+          <div class="agent-dot active"></div>
+          <div class="agent-name">code-review-03</div>
+          <div class="agent-owner">Engineering</div>
+          <span class="tag tag-green">ACTIVE</span>
+          <div class="telemetry-bar"><div class="telemetry-fill" style="width:18%;background:var(--green)"></div></div>
+        </div>
+        <div class="agent-row-mini">
+          <div class="agent-dot suspended"></div>
+          <div class="agent-name">orchestrator-04</div>
+          <div class="agent-owner">Platform team</div>
+          <span class="tag tag-amber">SUSPENDED</span>
+          <div class="telemetry-bar"><div class="telemetry-fill" style="width:0%;background:var(--amber)"></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Event feed <span style="color:var(--green);font-size:9px">● live</span></div>
+      <div class="events-feed">
+        <div class="event-item"><div class="event-dot-sm" style="background:var(--red)"></div><div class="event-time">14:32:18</div><div><span style="color:var(--red);font-weight:600">ANOMALY</span> · crm-reader-01 · 9,800% deviation</div></div>
+        <div class="event-item"><div class="event-dot-sm" style="background:var(--amber)"></div><div class="event-time">14:32:19</div><div>Vault secret rotation initiated · crm-reader-01</div></div>
+        <div class="event-item"><div class="event-dot-sm" style="background:var(--blue)"></div><div class="event-time">14:31:44</div><div>Approval requested · orchestrator-04 reinstatement</div></div>
+        <div class="event-item"><div class="event-dot-sm" style="background:var(--green)"></div><div class="event-time">14:28:05</div><div>Baseline updated · research-agent-02</div></div>
+        <div class="event-item"><div class="event-dot-sm" style="background:var(--green)"></div><div class="event-time">14:22:11</div><div>Agent registered · code-review-03</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S2: REGISTRY -->
+<div class="screen" id="s2">
+  <div class="page-header">
+    <div class="page-title">Agent registry</div>
+    <div class="page-sub">Single source of truth · Every agent has a named owner · Click a row to expand</div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="registry-table">
+      <thead><tr><th>Agent ID</th><th>Owner</th><th>Status</th><th>Baseline</th><th>Last seen</th><th class="tech-only">Vault path</th><th>SDK</th></tr></thead>
+      <tbody>
+        <tr class="expandable" onclick="toggleExpand('exp1',this)">
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</span></td>
+          <td>priya@sales.co</td><td><span class="tag tag-red">⬤ ANOMALY</span></td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">50 rec/hr</span></td>
+          <td style="color:var(--muted2)">just now</td>
+          <td class="tech-only" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2)">secret/agents/crm-01</td>
+          <td><span class="sdk-badge">✓ instrumented</span></td>
+        </tr>
+        <tr class="expanded-panel" id="exp1" style="display:none"><td colspan="7"><div class="expanded-inner">
+          <div class="exp-section"><h4>Identity</h4>
+            <div class="exp-row"><span class="exp-key">UUID</span><span class="exp-val">agt-8f2a-9c1d</span></div>
+            <div class="exp-row"><span class="exp-key">Keycloak client</span><span class="exp-val">crm-reader-01</span></div>
+            <div class="exp-row"><span class="exp-key">Owner</span><span class="exp-val">priya@sales.co</span></div>
+            <div class="exp-row"><span class="exp-key">Created</span><span class="exp-val">2025-12-01</span></div>
+          </div>
+          <div class="exp-section"><h4>Secret binding <span style="color:var(--red);font-size:9px">⚠ rotating</span></h4>
+            <div class="exp-row"><span class="exp-key">Vault path</span><span class="exp-val">secret/agents/crm-01</span></div>
+            <div class="exp-row"><span class="exp-key">TTL</span><span class="exp-val">24h</span></div>
+            <div class="exp-row"><span class="exp-key">Shared keys?</span><span class="exp-val" style="color:var(--green)">✗ None</span></div>
+            <div class="exp-row"><span class="exp-key">Rotation trigger</span><span class="exp-val" style="color:var(--red)">ANOMALY</span></div>
+          </div>
+          <div class="exp-section"><h4>Entitlements</h4>
+            <div class="exp-row"><span class="exp-key">Allowed APIs</span><span class="exp-val">read, list</span></div>
+            <div class="exp-row"><span class="exp-key">Rate limit</span><span class="exp-val">50 rec/hr</span></div>
+            <div class="exp-row"><span class="exp-key">Time window</span><span class="exp-val">08:00–20:00</span></div>
+            <div class="exp-row"><span class="exp-key">Status</span><span class="exp-val" style="color:var(--red)">SUSPENDED</span></div>
+          </div>
+        </div></td></tr>
+        <tr class="expandable" onclick="toggleExpand('exp2',this)">
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">research-agent-02</span></td>
+          <td>raj@product.co</td><td><span class="tag tag-green">⬤ ACTIVE</span></td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">200 calls/hr</span></td>
+          <td style="color:var(--muted2)">12s ago</td>
+          <td class="tech-only" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2)">secret/agents/res-02</td>
+          <td><span class="sdk-badge">✓ instrumented</span></td>
+        </tr>
+        <tr class="expanded-panel" id="exp2" style="display:none"><td colspan="7"><div class="expanded-inner">
+          <div class="exp-section"><h4>Identity</h4>
+            <div class="exp-row"><span class="exp-key">UUID</span><span class="exp-val">agt-3b7c-2e4f</span></div>
+            <div class="exp-row"><span class="exp-key">Owner</span><span class="exp-val">raj@product.co</span></div>
+          </div>
+          <div class="exp-section"><h4>Secret binding</h4>
+            <div class="exp-row"><span class="exp-key">Vault path</span><span class="exp-val">secret/agents/res-02</span></div>
+            <div class="exp-row"><span class="exp-key">Shared keys?</span><span class="exp-val" style="color:var(--green)">✗ None</span></div>
+          </div>
+          <div class="exp-section"><h4>Entitlements</h4>
+            <div class="exp-row"><span class="exp-key">Allowed APIs</span><span class="exp-val">read, search, write</span></div>
+            <div class="exp-row"><span class="exp-key">Status</span><span class="exp-val" style="color:var(--green)">ACTIVE</span></div>
+          </div>
+        </div></td></tr>
+        <tr class="expandable" onclick="toggleExpand('exp3',this)">
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">code-review-03</span></td>
+          <td>dev@eng.co</td><td><span class="tag tag-green">⬤ ACTIVE</span></td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">12 reviews/hr</span></td>
+          <td style="color:var(--muted2)">2m ago</td>
+          <td class="tech-only" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2)">secret/agents/cr-03</td>
+          <td><span class="sdk-badge">✓ instrumented</span></td>
+        </tr>
+        <tr class="expanded-panel" id="exp3" style="display:none"><td colspan="7"><div class="expanded-inner">
+          <div class="exp-section"><h4>Identity</h4>
+            <div class="exp-row"><span class="exp-key">UUID</span><span class="exp-val">agt-5d1e-7a3b</span></div>
+            <div class="exp-row"><span class="exp-key">Owner</span><span class="exp-val">dev@eng.co</span></div>
+          </div>
+          <div class="exp-section"><h4>Secret binding</h4>
+            <div class="exp-row"><span class="exp-key">Vault path</span><span class="exp-val">secret/agents/cr-03</span></div>
+            <div class="exp-row"><span class="exp-key">Shared keys?</span><span class="exp-val" style="color:var(--green)">✗ None</span></div>
+          </div>
+          <div class="exp-section"><h4>Entitlements</h4>
+            <div class="exp-row"><span class="exp-key">Rate limit</span><span class="exp-val">12 reviews/hr</span></div>
+            <div class="exp-row"><span class="exp-key">Status</span><span class="exp-val" style="color:var(--green)">ACTIVE</span></div>
+          </div>
+        </div></td></tr>
+        <tr class="expandable" onclick="toggleExpand('exp4',this)">
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">orchestrator-04</span></td>
+          <td>platform@co</td><td><span class="tag tag-amber">⬤ SUSPENDED</span></td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">8 spawns/hr</span></td>
+          <td style="color:var(--muted2)">2h ago</td>
+          <td class="tech-only" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2)">secret/agents/orch-04</td>
+          <td><span class="sdk-badge" style="opacity:0.5">✓ instrumented</span></td>
+        </tr>
+        <tr class="expanded-panel" id="exp4" style="display:none"><td colspan="7"><div class="expanded-inner">
+          <div class="exp-section"><h4>Identity</h4>
+            <div class="exp-row"><span class="exp-key">UUID</span><span class="exp-val">agt-9f4a-1c8e</span></div>
+            <div class="exp-row"><span class="exp-key">Owner</span><span class="exp-val">platform@co</span></div>
+          </div>
+          <div class="exp-section"><h4>Suspension reason</h4>
+            <div class="exp-row"><span class="exp-key">Reason</span><span class="exp-val" style="color:var(--amber)">Spawning anomaly</span></div>
+            <div class="exp-row"><span class="exp-key">Suspended by</span><span class="exp-val">Auto · Policy #3</span></div>
+            <div class="exp-row"><span class="exp-key">Reinstate</span><span class="exp-val" style="color:var(--blue)">Pending approval</span></div>
+          </div>
+          <div class="exp-section"><h4>Lifecycle state</h4>
+            <div class="lifecycle-flow">
+              <div class="lf-step" style="background:var(--green-d);color:var(--green)">Active</div>
+              <div class="lf-arrow">→</div>
+              <div class="lf-step" style="background:var(--amber-d);color:var(--amber);border:1px solid var(--amber-b)">Suspended ●</div>
+              <div class="lf-arrow">→</div>
+              <div class="lf-step" style="background:var(--bg3);color:var(--muted2)">Decommission</div>
+            </div>
+          </div>
+        </div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- S3: TELEMETRY -->
+<div class="screen" id="s3">
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div><div class="page-title">Live telemetry</div><div class="page-sub">crm-reader-01 · Baseline: 50 records/hr</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-danger" onclick="triggerAnomaly()">⚡ Trigger anomaly</button>
+        <button class="btn btn-ghost" onclick="resetTelemetry()">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="telemetry-metrics">
+    <div class="tm-card"><div class="tm-label">Records/hr</div><div class="tm-val" id="tm-records" style="color:var(--green)">47</div><div class="tm-delta" style="color:var(--green)">▲ normal</div></div>
+    <div class="tm-card"><div class="tm-label">API calls/min</div><div class="tm-val" id="tm-api" style="color:var(--green)">3</div><div class="tm-delta" style="color:var(--green)">▲ normal</div></div>
+    <div class="tm-card"><div class="tm-label">Tokens used</div><div class="tm-val" id="tm-tokens" style="color:var(--green)">1.2k</div><div class="tm-delta" style="color:var(--green)">▲ normal</div></div>
+    <div class="tm-card"><div class="tm-label">Deviation</div><div class="tm-val" id="tm-deviation" style="color:var(--green)">6%</div><div class="tm-delta" style="color:var(--muted2)">threshold: 150%</div></div>
+  </div>
+  <div class="card" style="padding:1rem;margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="section-label">Records/hr over time</div>
+      <div style="display:flex;gap:12px;font-size:10px"><span style="color:var(--amber)">— baseline (50)</span><span style="color:var(--blue)">— actual</span></div>
+    </div>
+    <canvas id="telemetry-chart" height="160"></canvas>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="section-label">Baseline config</div>
+      <div class="stack-row"><span style="color:var(--muted2)">Max records/hr</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">50</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Anomaly threshold</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">150% deviation</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Rolling window</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">30 seconds</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Auto-learn</span><span style="color:var(--green);font-size:11px">Enabled (7 days)</span></div>
+    </div>
+    <div class="card">
+      <div class="section-label exec-only">Detection method</div>
+      <div class="section-label tech-only">Redis Streams pipeline</div>
+      <div class="stack-row exec-only"><span style="color:var(--muted2)">Method</span><span style="font-size:11px">Statistical deviation</span></div>
+      <div class="stack-row exec-only"><span style="color:var(--muted2)">Per-agent baselines</span><span style="color:var(--green);font-size:11px">Yes</span></div>
+      <div class="stack-row exec-only"><span style="color:var(--muted2)">Alert latency</span><span style="font-size:11px">&lt; 30 seconds</span></div>
+      <div class="stack-row exec-only"><span style="color:var(--muted2)">Human review</span><span style="font-size:11px">HIGH severity only</span></div>
+      <div class="stack-row tech-only"><span style="color:var(--muted2)">Stream key</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">argus:telemetry</span></div>
+      <div class="stack-row tech-only"><span style="color:var(--muted2)">Consumer group</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">baseline-engine</span></div>
+      <div class="stack-row tech-only"><span style="color:var(--muted2)">Pattern</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">Observer + Pub/Sub</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- S4: ANOMALY RESPONSE -->
+<div class="screen" id="s4">
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="page-title">Anomaly → response</div>
+        <div class="page-sub exec-only">Automated cross-stack security response · Detection to full lockdown in seconds</div>
+        <div class="page-sub tech-only">BullMQ fan-out · Strategy pattern · 4-tool simultaneous response</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="severity-badge sev-high">HIGH SEVERITY</span>
+        <button class="btn btn-primary" id="play-btn" onclick="startResponse()">▶ Play response</button>
+        <button class="btn btn-ghost" id="reset-btn" onclick="resetResponse()" style="display:none">↺ Reset &amp; replay</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:1rem;padding:1rem 1.25rem">
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.8px">Agent</div><div style="font-size:13px;font-weight:700;color:var(--blue)">crm-reader-01</div></div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.8px">Trigger</div><div style="font-size:13px;font-weight:600">9,800% above baseline</div></div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.8px">Detected at</div><div style="font-size:13px;font-family:'JetBrains Mono',monospace">14:32:18.441</div></div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.8px">Policy</div><div style="font-size:13px">HIGH → full response + notify owner</div></div>
+      <div style="margin-left:auto"><div id="total-time" style="font-size:11px;color:var(--muted);display:none">Total: <span id="response-time-val" style="color:var(--green);font-weight:700"></span></div></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="main-progress"></div></div>
+  </div>
+  <div class="response-timeline">
+    <div class="response-step">
+      <div class="rs-label"><div class="rs-name">Baseline engine</div><div class="rs-time" id="t-detect">—</div></div>
+      <div class="rs-line" id="line-detect"></div>
+      <div class="rs-content"><div class="rs-card" id="card-detect">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h4>Anomaly detected</h4><span class="tag tag-blue tech-only">Observer pattern</span></div>
+        <p>crm-reader-01 reading 5,000 records/hr against baseline of 50. Deviation: 9,800%. Severity: HIGH.</p>
+        <div class="rs-action tech-only">AnomalyEvent { agentId, deviation: 9800, severity: 'HIGH' }</div>
+      </div></div>
+    </div>
+    <div class="response-step">
+      <div class="rs-label"><div class="rs-name">Policy engine</div><div class="rs-time" id="t-policy">—</div></div>
+      <div class="rs-line" id="line-policy"></div>
+      <div class="rs-content"><div class="rs-card" id="card-policy">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h4>Response policy evaluated</h4><span class="tag tag-purple tech-only">Chain of Responsibility</span></div>
+        <p>Policy #1 matched: HIGH → rotate_secret + suspend_entitlement + revoke_token + raise_risk + notify_owner.</p>
+        <div class="rs-action tech-only">YAML policy → BullMQ job → fan-out to 4 workers</div>
+      </div></div>
+    </div>
+    <div class="response-step">
+      <div class="rs-label"><div class="rs-name">BullMQ orchestrator</div><div class="rs-time" id="t-fanout">—</div></div>
+      <div class="rs-line" id="line-fanout"></div>
+      <div class="rs-content"><div class="rs-card" id="card-fanout">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h4>Fan-out executing</h4><span class="tag tag-red tech-only">Strategy pattern</span></div>
+        <p>All four identity systems responding simultaneously. Not sequential — all four at once. This is the Argus difference.</p>
+        <div class="identity-fanout">
+          <div class="ift-card vault" id="ift-vault"><div class="ift-tool" style="color:var(--red)">HashiCorp Vault</div><div class="ift-equiv">≡ CyberArk</div><div class="ift-action">Rotating API secret</div><div class="ift-status" id="vault-status" style="color:var(--muted)">— waiting</div></div>
+          <div class="ift-card keycloak" id="ift-keycloak"><div class="ift-tool" style="color:var(--purple)">Keycloak</div><div class="ift-equiv">≡ Saviynt</div><div class="ift-action">Revoking entitlements</div><div class="ift-status" id="keycloak-status" style="color:var(--muted)">— waiting</div></div>
+          <div class="ift-card ory" id="ift-ory"><div class="ift-tool" style="color:var(--teal)">Ory Hydra</div><div class="ift-equiv">≡ Ping Identity</div><div class="ift-action">Raising risk score</div><div class="ift-status" id="ory-status" style="color:var(--muted)">— waiting</div></div>
+          <div class="ift-card authentik" id="ift-authentik"><div class="ift-tool" style="color:var(--coral)">Authentik</div><div class="ift-equiv">≡ EntraID</div><div class="ift-action">Revoking tokens</div><div class="ift-status" id="authentik-status" style="color:var(--muted)">— waiting</div></div>
+        </div>
+      </div></div>
+    </div>
+    <div class="response-step">
+      <div class="rs-label"><div class="rs-name">Complete</div><div class="rs-time" id="t-complete">—</div></div>
+      <div class="rs-line" id="line-complete"></div>
+      <div class="rs-content"><div class="rs-card" id="card-complete">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h4>Agent fully isolated</h4><span class="tag tag-green" id="complete-badge" style="display:none">✓ Complete</span></div>
+        <p>crm-reader-01 credentials rotated, entitlements revoked, tokens invalidated, risk score raised. Owner notified. Audit log updated.</p>
+        <div class="rs-action tech-only">AuditLog.append({ event: 'RESPONSE_COMPLETE', agentId, duration, actions: [...] })</div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- S5: APPROVAL QUEUE -->
+<div class="screen" id="s5">
+  <div class="page-header"><div class="page-title">Approval queue</div><div class="page-sub">High-impact actions require human sign-off · You stay in control</div></div>
+  <div class="grid3" style="margin-bottom:1.25rem">
+    <div class="stat-card red"><div class="metric-label">Pending approval</div><div class="metric-val" id="pending-count">2</div></div>
+    <div class="stat-card green"><div class="metric-label">Approved today</div><div class="metric-val">5</div></div>
+    <div class="stat-card amber"><div class="metric-label">Avg. response time</div><div class="metric-val">4.2m</div></div>
+  </div>
+  <div id="approval-list">
+    <div class="approval-item" id="appr-1">
+      <div class="approval-header"><span class="severity-badge sev-high">HIGH</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</span><span style="font-size:11px;color:var(--muted2)">Auto-response requires confirmation</span><span style="margin-left:auto;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">14:32:18</span></div>
+      <div class="approval-body">Anomaly detected — 9,800% deviation. Proposed: <strong>Rotate Vault secret + Revoke Keycloak entitlements + Invalidate Authentik tokens + Raise Ory risk score.</strong> Owner notified via Slack.</div>
+      <div class="approval-meta"><span>Agent: agt-8f2a-9c1d</span><span>Policy: #1 HIGH</span><span>Owner: priya@sales.co</span></div>
+      <div class="approval-actions">
+        <button class="btn btn-success" onclick="approveItem('appr-1','approved')">✓ Approve &amp; execute</button>
+        <button class="btn btn-danger" onclick="approveItem('appr-1','rejected')">✗ Reject</button>
+        <span class="approval-result" id="result-appr-1"></span>
+      </div>
+    </div>
+    <div class="approval-item" id="appr-2">
+      <div class="approval-header"><span class="severity-badge sev-medium">MEDIUM</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">orchestrator-04</span><span style="font-size:11px;color:var(--muted2)">Reinstatement request</span><span style="margin-left:auto;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">12:28:05</span></div>
+      <div class="approval-body">orchestrator-04 was suspended 2 hours ago due to a spawning anomaly. Team requests reinstatement with reduced spawn limits (4/hr from 8/hr).</div>
+      <div class="approval-meta"><span>Agent: agt-9f4a-1c8e</span><span>Policy: #3 MEDIUM reinstate</span><span>Owner: platform@co</span></div>
+      <div class="approval-actions">
+        <button class="btn btn-success" onclick="approveItem('appr-2','approved')">✓ Approve reinstatement</button>
+        <button class="btn btn-danger" onclick="approveItem('appr-2','rejected')">✗ Reject</button>
+        <span class="approval-result" id="result-appr-2"></span>
+      </div>
+    </div>
+    <div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:12px;display:none" id="queue-empty">All items resolved. Queue is clear.</div>
+  </div>
+</div>
+
+<!-- S6: AUDIT LOG -->
+<div class="screen" id="s6">
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div><div class="page-title">Audit log</div><div class="page-sub">Immutable event record · Every action timestamped · Event sourcing pattern</div></div>
+      <button class="btn btn-ghost" style="font-size:11px">↓ Export JSON</button>
+    </div>
+  </div>
+  <div class="audit-filters">
+    <button class="filter-btn active" onclick="filterAudit(this)">All events</button>
+    <button class="filter-btn" onclick="filterAudit(this)">Anomaly</button>
+    <button class="filter-btn" onclick="filterAudit(this)">Rotation</button>
+    <button class="filter-btn" onclick="filterAudit(this)">Revocation</button>
+    <button class="filter-btn" onclick="filterAudit(this)">Approvals</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="audit-table">
+      <thead><tr><th>Timestamp</th><th>Event type</th><th>Agent</th><th>Actor</th><th>Action</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2);white-space:nowrap">14:32:18.441</td><td><span class="event-type-pill" style="background:var(--red-d);color:var(--red)">ANOMALY</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</td><td style="color:var(--muted2)">Baseline engine</td><td style="color:var(--muted2)">Anomaly detected · 9,800% deviation</td><td><span class="tag tag-red">TRIGGERED</span></td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2)">14:32:18.892</td><td><span class="event-type-pill" style="background:var(--amber-d);color:var(--amber)">ROTATION</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</td><td style="color:var(--muted2)">Vault facade</td><td style="color:var(--muted2)">Secret rotated · secret/agents/crm-01</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2)">14:32:19.103</td><td><span class="event-type-pill" style="background:var(--purple-d);color:var(--purple)">REVOCATION</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</td><td style="color:var(--muted2)">Keycloak facade</td><td style="color:var(--muted2)">Entitlements suspended · SCIM PATCH</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2)">14:32:19.287</td><td><span class="event-type-pill" style="background:var(--teal-d);color:var(--teal)">RISK</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</td><td style="color:var(--muted2)">Ory facade</td><td style="color:var(--muted2)">Risk score raised to CRITICAL</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2)">14:32:19.401</td><td><span class="event-type-pill" style="background:var(--coral-d);color:var(--coral)">TOKEN</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</td><td style="color:var(--muted2)">Authentik facade</td><td style="color:var(--muted2)">All active tokens revoked</td><td><span class="tag tag-green">SUCCESS</span></td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2)">14:32:19.509</td><td><span class="event-type-pill" style="background:var(--blue-d);color:var(--blue)">NOTIFY</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">crm-reader-01</td><td style="color:var(--muted2)">Notification svc</td><td style="color:var(--muted2)">Owner notified · priya@sales.co · Slack</td><td><span class="tag tag-green">DELIVERED</span></td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2)">14:31:44.001</td><td><span class="event-type-pill" style="background:var(--blue-d);color:var(--blue)">APPROVAL</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">orchestrator-04</td><td style="color:var(--muted2)">System</td><td style="color:var(--muted2)">Reinstatement approval requested</td><td><span class="tag tag-amber">PENDING</span></td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;color:var(--muted2)">12:28:05.112</td><td><span class="event-type-pill" style="background:var(--amber-d);color:var(--amber)">SUSPEND</span></td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)">orchestrator-04</td><td style="color:var(--muted2)">Auto · Policy #3</td><td style="color:var(--muted2)">Spawning anomaly · suspended</td><td><span class="tag tag-amber">SUSPENDED</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="grid2" style="margin-top:1rem">
+    <div class="card exec-only">
+      <div class="section-label">Compliance coverage</div>
+      <div class="stack-row"><span style="color:var(--muted2)">SOC2 Type II</span><span class="tag tag-green">✓ Covered</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">ISO 27001</span><span class="tag tag-green">✓ Covered</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">EU AI Act</span><span class="tag tag-green">✓ Covered</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">DORA</span><span class="tag tag-amber">Partial</span></div>
+    </div>
+    <div class="card tech-only">
+      <div class="section-label">Event sourcing pattern</div>
+      <div class="stack-row"><span style="color:var(--muted2)">Storage</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">PostgreSQL append-only</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Mutation policy</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">INSERT only, no UPDATE</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Export</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">JSON · CSV</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Retention</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">90 days (configurable)</span></div>
+    </div>
+    <div class="card">
+      <div class="section-label">Statistics</div>
+      <div class="stack-row"><span style="color:var(--muted2)">Events today</span><span style="font-weight:600">247</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Anomalies detected</span><span style="font-weight:600;color:var(--red)">2</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Auto-responses fired</span><span style="font-weight:600">8</span></div>
+      <div class="stack-row"><span style="color:var(--muted2)">Human approvals</span><span style="font-weight:600">3</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- S7: SDK + ARCHITECTURE -->
+<div class="screen" id="s7">
+  <div class="page-header"><div class="page-title">SDK + Architecture</div>
+    <div class="page-sub exec-only">Works alongside your existing stack · No rip-and-replace · Open source · Self-hostable</div>
+    <div class="page-sub tech-only">Observer · Decorator · Pub/Sub · Repository · Strategy · Chain of Responsibility · Facade · Event Sourcing</div>
+  </div>
+  <div class="no-replace-box"><p><strong>Argus does not replace Vault, Keycloak, Ory, or Authentik.</strong> It is a neutral orchestration bridge — connecting the behavioural anomaly signal to a coordinated security response across all four tools simultaneously.</p></div>
+  <div class="grid2" style="margin-bottom:1.25rem">
+    <div>
+      <div class="section-label">argus-sdk · 3-line instrumentation</div>
+      <div class="code-block">
+<span class="cb-comment">// Install</span><br>
+npm install <span class="cb-str">argus-sdk</span><br><br>
+<span class="cb-kw">import</span> { <span class="cb-fn">ArgusSDK</span> } <span class="cb-kw">from</span> <span class="cb-str">'argus-sdk'</span><br><br>
+<span class="cb-kw">const</span> argus = <span class="cb-kw">new</span> <span class="cb-fn">ArgusSDK</span>({<br>
+&nbsp;&nbsp;agentId: <span class="cb-str">'crm-reader-01'</span>,<br>
+&nbsp;&nbsp;owner: <span class="cb-str">'priya@sales.co'</span><br>
+})<br><br>
+<span class="cb-comment">// Works with LangChain, custom agents, any Node.js process</span><br>
+argus.<span class="cb-fn">observe</span>(myLangChainAgent)<br><br>
+<span class="cb-comment">// Telemetry streaming. Done.</span>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Identity stack (open-source equivalents)</div>
+      <div class="card" style="padding:0.875rem">
+        <div class="stack-row"><span style="color:var(--muted2)">HashiCorp Vault</span><span style="font-size:11px">Secret rotation &nbsp;<span style="color:var(--muted);font-family:'JetBrains Mono',monospace">≡ CyberArk</span></span></div>
+        <div class="stack-row"><span style="color:var(--muted2)">Keycloak</span><span style="font-size:11px">Identity lifecycle &nbsp;<span style="color:var(--muted);font-family:'JetBrains Mono',monospace">≡ Saviynt</span></span></div>
+        <div class="stack-row"><span style="color:var(--muted2)">Ory Hydra + Kratos</span><span style="font-size:11px">OAuth2 / risk &nbsp;<span style="color:var(--muted);font-family:'JetBrains Mono',monospace">≡ Ping</span></span></div>
+        <div class="stack-row"><span style="color:var(--muted2)">Authentik</span><span style="font-size:11px">Tokens / app reg &nbsp;<span style="color:var(--muted);font-family:'JetBrains Mono',monospace">≡ EntraID</span></span></div>
+      </div>
+      <div class="card" style="margin-top:10px;padding:0.875rem">
+        <div class="section-label">Full stack</div>
+        <div class="stack-row"><span style="color:var(--muted2)">Language</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue)">TypeScript only</span></div>
+        <div class="stack-row"><span style="color:var(--muted2)">Queue</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">BullMQ + Redis</span></div>
+        <div class="stack-row"><span style="color:var(--muted2)">Database</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px">PostgreSQL + Prisma</span></div>
+        <div class="stack-row"><span style="color:var(--muted2)">Deploy</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">docker compose up</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="tech-only" style="margin-bottom:1.25rem">
+    <div class="section-label">Design patterns</div>
+    <div class="pattern-grid">
+      <div class="pattern-card"><div class="pattern-name" style="color:var(--blue)">Observer + Decorator (SDK)</div><div class="pattern-desc">Wraps any agent without modifying it. Intercepts every call transparently. Emits to Redis Streams every 30s.</div></div>
+      <div class="pattern-card"><div class="pattern-name" style="color:var(--purple)">Chain of Responsibility (Policy)</div><div class="pattern-desc">Anomaly passes through severity handlers — LOW logs, MEDIUM alerts, HIGH responds, CRITICAL pauses for human approval.</div></div>
+      <div class="pattern-card"><div class="pattern-name" style="color:var(--red)">Strategy + Facade (Response)</div><div class="pattern-desc">Each tool action is a Strategy. Each tool's REST API hidden behind a clean Facade. Swappable without changing the orchestrator.</div></div>
+      <div class="pattern-card"><div class="pattern-name" style="color:var(--green)">Event Sourcing (Audit)</div><div class="pattern-desc">Append-only PostgreSQL. Every state change is an immutable event. No UPDATEs. Full replay and forensic investigation.</div></div>
+    </div>
+  </div>
+  <div class="tech-only" style="margin-bottom:1.25rem">
+    <div class="section-label">Spec driven development</div>
+    <div class="sdd-grid">
+      <div class="sdd-card"><div class="sdd-num">LEVEL 01 · PROJECT SPEC</div><div class="sdd-title">00-project-spec.md</div><div class="sdd-desc">Written once before any code. All technology decisions locked. Claude's north star document.</div></div>
+      <div class="sdd-card"><div class="sdd-num">LEVEL 02 · MODULE SPEC</div><div class="sdd-title">01-agent-registry.md …</div><div class="sdd-desc">One per feature. Data + API contracts. Written before building. Claude's context per session.</div></div>
+      <div class="sdd-card"><div class="sdd-num">LEVEL 03 · TASK SPEC</div><div class="sdd-title">Session-level prompt</div><div class="sdd-desc">Per coding session. Precise I/O contracts. Review = does code match spec? Yes/No.</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="section-label" style="color:var(--green)">Phase 2 roadmap</div>
+    <div class="roadmap-strip">
+      <div class="roadmap-card"><h4>CRM reader agent</h4><p>LangChain · reads mock DB · 50 rec/hr baseline · the live demo subject.</p></div>
+      <div class="roadmap-card"><h4>Research agent</h4><p>Web search + summarise via Claude tool use · variable API patterns.</p></div>
+      <div class="roadmap-card"><h4>Code review agent</h4><p>Accepts code diff · structured review · low-frequency contrast agent.</p></div>
+      <div class="roadmap-card"><h4>Multi-agent orchestrator</h4><p>LangGraph supervisor · spawns sub-agents · agent-spawning-agent monitoring.</p></div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<div class="toast" id="toast"><span>📬</span><span id="toast-msg"></span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// CLOCK
+function updateClock(){var n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('en-GB');}
+setInterval(updateClock,1000);updateClock();
+
+// AUDIENCE
+function setAudience(mode){
+  document.body.className=mode==='exec'?'exec-mode':'tech-mode';
+  document.querySelectorAll('.aud-btn').forEach(function(b,i){b.classList.toggle('active',(mode==='exec'&&i===0)||(mode==='tech'&&i===1));});
+}
+
+// NAV
+var fromAnomaly=false;
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  var nav=document.querySelector('.nav-item[onclick="showScreen(\''+id+'\')"]');
+  if(nav) nav.classList.add('active');
+  if(id==='s4'&&fromAnomaly){fromAnomaly=false;setTimeout(function(){startResponse();},1800);}
+  if(id==='s3') setTimeout(initChart,100);
+}
+
+// LIVE COUNTER
+var evCount=142;
+setInterval(function(){
+  evCount+=Math.floor(Math.random()*4)+1;
+  var el=document.getElementById('events-counter');
+  if(el) el.textContent=evCount;
+},2000);
+
+// EXPAND ROWS
+function toggleExpand(id,row){
+  var panel=document.getElementById(id);
+  var isOpen=panel.style.display!=='none';
+  document.querySelectorAll('.expanded-panel').forEach(function(p){p.style.display='none';});
+  document.querySelectorAll('.registry-table tr.expandable').forEach(function(r){r.style.background='';});
+  if(!isOpen){panel.style.display='table-row';row.style.background='rgba(79,156,249,0.04)';}
+}
+
+// CHART
+var telChart=null;
+function initChart(){
+  if(telChart){telChart.destroy();telChart=null;}
+  var data=[];
+  for(var i=0;i<20;i++) data.push(Math.round(44+Math.random()*12));
+  var ctx=document.getElementById('telemetry-chart');
+  if(!ctx) return;
+  var labels=data.map(function(_,i){return i===19?'now':'-'+(20-i)*30+'s';});
+  telChart=new Chart(ctx,{
+    type:'line',
+    data:{labels:labels,datasets:[
+      {label:'records/hr',data:data,borderColor:'#4f9cf9',backgroundColor:'rgba(79,156,249,0.08)',borderWidth:2,pointRadius:2,pointBackgroundColor:'#4f9cf9',tension:0.4,fill:true},
+      {label:'baseline',data:Array(20).fill(50),borderColor:'rgba(245,158,11,0.6)',backgroundColor:'transparent',borderWidth:1,borderDash:[4,4],pointRadius:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:400},
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#8a96b0',font:{size:9}}},
+              y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#8a96b0',font:{size:9}},min:0}}}
+  });
+}
+setTimeout(initChart,300);
+
+function triggerAnomaly(){
+  if(!telChart) initChart();
+  var spike=[];
+  for(var i=0;i<16;i++) spike.push(Math.round(44+Math.random()*12));
+  for(var j=16;j<20;j++) spike.push(Math.round(4800+Math.random()*400));
+  telChart.data.datasets[0].data=spike;
+  telChart.data.datasets[0].borderColor='#f87171';
+  telChart.data.datasets[0].backgroundColor='rgba(248,113,113,0.08)';
+  telChart.data.datasets[0].pointBackgroundColor=spike.map(function(v){return v>500?'#f87171':'#4f9cf9';});
+  telChart.update();
+  document.getElementById('tm-records').textContent='5,000';document.getElementById('tm-records').style.color='var(--red)';
+  document.getElementById('tm-api').textContent='847';document.getElementById('tm-api').style.color='var(--red)';
+  document.getElementById('tm-tokens').textContent='94k';document.getElementById('tm-tokens').style.color='var(--red)';
+  document.getElementById('tm-deviation').textContent='9,800%';document.getElementById('tm-deviation').style.color='var(--red)';
+  showToast('🚨 ANOMALY · crm-reader-01 · 9,800% deviation · Owner notified via Slack');
+  fromAnomaly=true;
+  setTimeout(function(){showScreen('s4');},3200);
+}
+
+function resetTelemetry(){
+  document.getElementById('tm-records').textContent='47';document.getElementById('tm-records').style.color='var(--green)';
+  document.getElementById('tm-api').textContent='3';document.getElementById('tm-api').style.color='var(--green)';
+  document.getElementById('tm-tokens').textContent='1.2k';document.getElementById('tm-tokens').style.color='var(--green)';
+  document.getElementById('tm-deviation').textContent='6%';document.getElementById('tm-deviation').style.color='var(--green)';
+  if(telChart){telChart.destroy();telChart=null;}
+  initChart();
+}
+
+// RESPONSE SEQUENCE
+var responseRunning=false;
+function startResponse(){
+  if(responseRunning) return;
+  responseRunning=true;
+  document.getElementById('play-btn').style.display='none';
+  var prog=document.getElementById('main-progress');
+  var steps=['detect','policy','fanout','complete'];
+  var delays=[0,1200,2400,5800];
+  var progVals=[10,30,60,100];
+  var now=new Date();
+  function fmt(ms){var t=new Date(now.getTime()+ms);return t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0')+':'+t.getSeconds().toString().padStart(2,'0')+'.'+t.getMilliseconds().toString().padStart(3,'0');}
+  steps.forEach(function(s,i){
+    setTimeout(function(){
+      if(i>0){
+        document.getElementById('line-'+steps[i-1]).classList.remove('active-step');
+        document.getElementById('line-'+steps[i-1]).classList.add('done');
+        document.getElementById('card-'+steps[i-1]).classList.remove('active-step');
+        document.getElementById('card-'+steps[i-1]).classList.add('done');
+      }
+      document.getElementById('line-'+s).classList.add('active-step');
+      document.getElementById('card-'+s).classList.add('active-step');
+      document.getElementById('t-'+s).textContent=fmt(delays[i]);
+      prog.style.width=progVals[i]+'%';
+      if(s==='fanout') fireFanout();
+    },delays[i]);
+  });
+  setTimeout(function(){
+    document.getElementById('line-complete').classList.remove('active-step');
+    document.getElementById('line-complete').classList.add('done');
+    document.getElementById('card-complete').classList.remove('active-step');
+    document.getElementById('card-complete').classList.add('done');
+    document.getElementById('complete-badge').style.display='inline-flex';
+    document.getElementById('total-time').style.display='block';
+    document.getElementById('response-time-val').textContent='7.9 seconds';
+    document.getElementById('reset-btn').style.display='inline-flex';
+    responseRunning=false;
+  },7400);
+}
+
+function fireFanout(){
+  var tools=['vault','keycloak','ory','authentik'];
+  var labels=['✓ Secret rotated','✓ Entitlements revoked','✓ Risk: CRITICAL','✓ Tokens revoked'];
+  tools.forEach(function(t,i){
+    setTimeout(function(){
+      document.getElementById('ift-'+t).classList.add('fired');
+      var s=document.getElementById(t+'-status');
+      s.textContent=labels[i];s.style.color='var(--green)';
+    },i*400);
+  });
+}
+
+function resetResponse(){
+  responseRunning=false;
+  document.getElementById('play-btn').style.display='inline-flex';
+  document.getElementById('reset-btn').style.display='none';
+  document.getElementById('main-progress').style.width='0';
+  document.getElementById('total-time').style.display='none';
+  document.getElementById('complete-badge').style.display='none';
+  ['detect','policy','fanout','complete'].forEach(function(s){
+    document.getElementById('line-'+s).className='rs-line';
+    document.getElementById('card-'+s).className='rs-card';
+    document.getElementById('t-'+s).textContent='—';
+  });
+  ['vault','keycloak','ory','authentik'].forEach(function(t){
+    document.getElementById('ift-'+t).className='ift-card '+t;
+    var s=document.getElementById(t+'-status');
+    s.textContent='— waiting';s.style.color='var(--muted)';
+  });
+}
+
+// APPROVALS
+var resolved=0;
+function approveItem(id,action){
+  var item=document.getElementById(id);
+  var result=document.getElementById('result-'+id);
+  item.querySelectorAll('button').forEach(function(b){b.disabled=true;});
+  if(action==='approved'){item.classList.add('resolved');result.style.color='var(--green)';result.textContent='✓ Approved — executing';showToast('✓ Response approved and executing');}
+  else{item.classList.add('rejected');result.style.color='var(--red)';result.textContent='✗ Rejected';}
+  resolved++;
+  var pending=Math.max(0,2-resolved);
+  document.getElementById('pending-count').textContent=pending;
+  document.getElementById('approval-badge').textContent=pending||'0';
+  if(resolved>=2) document.getElementById('queue-empty').style.display='block';
+}
+
+// AUDIT FILTER
+function filterAudit(btn){
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+}
+
+// TOAST
+function showToast(msg){
+  var t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},4000);
+}
+</script>
+</body>
+</html>
