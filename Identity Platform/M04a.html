@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M04a · MFA, Passwordless & Adaptive Authentication | IAM Architect Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+:root{
+  --bg-void:#0B0E14;--bg-s1:#111520;--bg-s2:#181D2A;--bg-s3:#1F2535;
+  --border:#1E2636;--border-b:#2E3A52;
+  --teal:#00E5C3;--teal-glow:rgba(0,229,195,0.12);--teal-dim:#00B89A;
+  --copper:#E8873A;--copper-glow:rgba(232,135,58,0.14);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.12);
+  --rose:#FF5F7E;--rose-dim:#E04060;--rose-glow:rgba(255,95,126,0.15);
+  --jade:#3ECFA0;--jade-glow:rgba(62,207,160,0.13);
+  --violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.14);
+  --amber:#F5C542;--amber-glow:rgba(245,197,66,0.13);
+  --text-p:#E8EDF5;--text-s:#8A95A8;--text-t:#6B7A8F;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --r-sm:4px;--r-md:8px;--r-lg:12px;--r-xl:16px;--r-pill:999px;
+  --sh-card:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  /* M04a: Rose-Coral primary, Violet secondary */
+  --phase:#FF5F7E;--phase-glow:rgba(255,95,126,0.16);--phase-dim:#E04060;
+  --accent2:#9B7FFF;--accent2-glow:rgba(155,127,255,0.15);
+  --grad-head:linear-gradient(95deg,#FF5F7E 0%,#9B7FFF 100%);
+}
+body{background:var(--bg-void);color:var(--text-p);font-family:var(--fb);line-height:1.7;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:var(--r-pill)}
+::selection{background:rgba(255,95,126,.18);color:var(--rose)}
+a{color:var(--sapphire);text-decoration:none;transition:color .15s}a:hover{color:var(--rose)}
+code{font-family:var(--fm);font-size:.85em;background:var(--bg-s3);border:1px solid var(--border);color:var(--rose);padding:1px 6px;border-radius:var(--r-sm)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.95);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--border);padding:0 40px}
+.nav-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:20px}
+.nav-logo{font-family:var(--fd);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.nav-logo span{color:var(--text-t);font-weight:400}
+.nav-div{width:1px;height:18px;background:var(--border-b);flex-shrink:0}
+.nav-progress{flex:1;display:flex;align-items:center;gap:10px}
+.progress-track{flex:1;height:2px;background:var(--border);border-radius:var(--r-pill);overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--rose),var(--violet));border-radius:var(--r-pill);width:25%}
+.progress-label{font-family:var(--fm);font-size:12px;color:var(--text-s);white-space:nowrap}
+.nav-badge{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--r-pill);background:var(--rose-glow);border:1px solid var(--rose);color:var(--rose);white-space:nowrap}
+.nav-home{font-family:var(--fm);font-size:12px;color:var(--text-s);padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border-b);transition:all .15s;text-decoration:none}
+.nav-home:hover{color:var(--text-p);border-color:var(--rose);background:var(--rose-glow)}
+
+/* SHELL */
+.shell{max-width:1100px;margin:0 auto;padding:0 40px}
+
+/* HERO */
+.hero{position:relative;padding:72px 0 56px;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 55% 50% at 8% 35%,rgba(255,95,126,0.12) 0%,transparent 55%),
+  radial-gradient(ellipse 45% 40% at 92% 65%,rgba(155,127,255,0.09) 0%,transparent 55%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse 85% 65% at 18% 50%,black 0%,transparent 75%);opacity:.28;pointer-events:none}
+.hero-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--rose),var(--violet) 60%,transparent);pointer-events:none}
+.hero-content{position:relative;z-index:1}
+.hero-phase{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--rose);margin-bottom:16px}
+.phase-dot{width:7px;height:7px;border-radius:50%;background:var(--rose);box-shadow:0 0 12px var(--rose);animation:pdot 2s ease-in-out infinite}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 12px var(--rose)}50%{opacity:.4;box-shadow:0 0 3px var(--rose)}}
+.hero-title{font-family:var(--fd);font-size:clamp(32px,4.5vw,54px);font-weight:800;line-height:1.07;letter-spacing:-.025em;color:var(--text-p);max-width:820px;margin-bottom:18px}
+.hero-title .ac{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:17px;font-weight:300;color:var(--text-s);max-width:640px;line-height:1.75;margin-bottom:28px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 11px;border-radius:var(--r-pill)}
+.badge-phase{background:var(--rose-glow);border:1px solid var(--rose);color:var(--rose)}
+.badge-violet{background:var(--violet-glow);border:1px solid rgba(155,127,255,.4);color:var(--violet)}
+.badge-effort{background:var(--copper-glow);border:1px solid rgba(232,135,58,.35);color:var(--copper)}
+.badge-prereq{background:var(--bg-s2);border:1px solid var(--border-b);color:var(--text-s)}
+.badge-teal{background:var(--teal-glow);border:1px solid rgba(0,229,195,.35);color:var(--teal)}
+.badge-jade{background:var(--jade-glow);border:1px solid rgba(62,207,160,.35);color:var(--jade)}
+
+/* ORIENTATION */
+.orient{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:56px;position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--rose) 0%,var(--violet) 55%,transparent 100%)}
+.orient-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;margin-bottom:20px}
+.orient-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:5px}
+.orient-val{font-size:14px;font-weight:500;color:var(--text-p)}
+.orient-val.ac{color:var(--rose)}
+.orient-val.done{color:var(--jade)}
+.journey-row{display:flex;gap:5px;flex-wrap:wrap;padding-top:18px;border-top:1px solid var(--border)}
+.jdot{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;font-weight:500;transition:all .2s}
+.jdot-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.jdot-cur{background:var(--rose-glow);border:1px solid var(--rose);color:var(--rose);box-shadow:0 0 16px rgba(255,95,126,.2)}
+.jdot-future{background:var(--bg-s2);border:1px solid var(--border);color:var(--text-s)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:48px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.sidebar{position:sticky;top:72px}
+
+/* SECTIONS */
+.section{margin-bottom:60px}
+.sec-label{display:flex;align-items:center;gap:10px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--rose);margin-bottom:18px}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--rose) 0%,transparent 100%);opacity:.35}
+.sec-title{font-family:var(--fd);font-size:26px;font-weight:700;color:var(--text-p);margin-bottom:6px;line-height:1.2}
+.sec-title-wrap{margin-bottom:20px}
+.sec-title-wrap .underbar{height:3px;width:60px;background:linear-gradient(90deg,var(--rose),var(--violet));border-radius:var(--r-pill);margin-top:6px}
+.sec-body{font-size:15px;color:var(--text-s);line-height:1.8}
+.sec-body p{margin-bottom:14px}.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text-p);font-weight:500}
+.sec-body em{color:var(--rose);font-style:normal;font-weight:500}
+
+/* DIAGRAM WRAP */
+.diag-wrap{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin:24px 0;overflow-x:auto}
+.diag-label{font-family:var(--fm);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-s);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.diag-label::before{content:'◈';color:var(--rose);font-size:14px}
+
+/* CONCEPTS */
+.concept{border-left:3px solid var(--rose);padding:16px 20px;background:var(--rose-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-term{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--rose);margin-bottom:6px}
+.concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-def strong{color:var(--text-p);font-weight:500}
+.concept-v{border-left:3px solid var(--violet);padding:16px 20px;background:var(--violet-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-v .concept-term{color:var(--violet)}
+.concept-v .concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-v .concept-def strong{color:var(--text-p);font-weight:500}
+
+/* GOTCHA */
+.gotcha{background:var(--bg-s1);border:1px solid rgba(245,197,66,.3);border-radius:var(--r-lg);padding:18px 20px;margin:20px 0;position:relative;overflow:hidden}
+.gotcha::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--amber)}
+.gotcha-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.gotcha-icon{font-size:16px}
+.gotcha-label{font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);background:var(--amber-glow);border:1px solid rgba(245,197,66,.3);padding:2px 8px;border-radius:var(--r-pill)}
+.gotcha-title{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text-p)}
+.gotcha-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.gotcha-body strong{color:var(--amber)}
+
+/* CARDS */
+.card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--border-b);box-shadow:var(--sh-card)}
+.card-rose{border-left:3px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-s1) 60%)}
+.card-violet{border-left:3px solid var(--violet);background:linear-gradient(135deg,var(--violet-glow) 0%,var(--bg-s1) 60%)}
+.card-teal{border-left:3px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-s1) 60%)}
+.card-jade{border-left:3px solid var(--jade);background:linear-gradient(135deg,var(--jade-glow) 0%,var(--bg-s1) 60%)}
+.card-copper{border-left:3px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-s1) 60%)}
+.card-amber{border-left:3px solid var(--amber);background:linear-gradient(135deg,var(--amber-glow) 0%,var(--bg-s1) 60%)}
+.card-sapp{border-left:3px solid var(--sapphire);background:linear-gradient(135deg,var(--sapphire-glow) 0%,var(--bg-s1) 60%)}
+.card-label{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:8px}
+.card-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p);margin-bottom:8px}
+.card-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.card-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+
+/* FACTOR STRENGTH BARS */
+.factor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin:20px 0}
+.factor-card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:all .2s}
+.factor-card:hover{border-color:var(--border-b)}
+.factor-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.factor-name{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text-p)}
+.factor-aal{font-family:var(--fm);font-size:10px;padding:2px 7px;border-radius:var(--r-pill);margin-left:auto;white-space:nowrap}
+.factor-desc{font-size:13px;color:var(--text-s);line-height:1.6;margin-bottom:10px}
+.factor-bar-wrap{display:flex;flex-direction:column;gap:4px}
+.factor-bar-row{display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--fm)}
+.factor-bar-label{color:var(--text-t);width:90px;flex-shrink:0}
+.factor-bar-track{flex:1;height:6px;background:var(--border);border-radius:var(--r-pill);overflow:hidden}
+.factor-bar-fill{height:100%;border-radius:var(--r-pill)}
+
+/* COMPARE TABLE */
+.tbl-wrap{overflow-x:auto;margin:16px 0}
+table.compare{width:100%;border-collapse:collapse;font-size:14px}
+.compare th{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);padding:10px 14px;border-bottom:1px solid var(--border-b);text-align:left;background:var(--bg-s2);white-space:nowrap}
+.compare th:first-child{color:var(--rose)}
+.compare td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-s);vertical-align:top;line-height:1.6}
+.compare td:first-child{font-weight:600;color:var(--text-p);font-family:var(--fm);font-size:13px}
+.compare tr:hover td{background:var(--bg-s2)}
+.compare tr:last-child td{border-bottom:none}
+.tag-y{color:var(--jade);font-weight:600}
+.tag-n{color:var(--rose);font-weight:600}
+.tag-m{color:var(--amber);font-weight:600}
+
+/* FLOW SEQUENCE */
+.flow{display:flex;flex-direction:column;margin:20px 0}
+.flow-step{display:flex;gap:14px;align-items:flex-start}
+.flow-conn{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:36px}
+.flow-num{width:36px;height:36px;border-radius:50%;background:var(--bg-s2);border:1px solid var(--rose);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:12px;font-weight:600;color:var(--rose);flex-shrink:0;z-index:1}
+.flow-line{width:1px;flex:1;min-height:20px;background:linear-gradient(var(--rose),rgba(255,95,126,.08))}
+.flow-step:last-child .flow-line{display:none}
+.flow-body{padding-bottom:22px;padding-top:5px;flex:1}
+.flow-title{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--text-p);margin-bottom:4px}
+.flow-desc{font-size:14px;color:var(--text-s);line-height:1.65}
+.flow-detail{font-size:12px;font-family:var(--fm);color:var(--text-t);margin-top:6px;padding:6px 10px;background:var(--bg-s2);border-radius:var(--r-sm);border-left:2px solid var(--rose)}
+
+/* KNOWLEDGE CHECK */
+.kc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin:10px 0}
+.kc-q{padding:16px 20px;font-size:15px;font-weight:500;color:var(--text-p);display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s;user-select:none}
+.kc-q:hover{background:var(--bg-s2)}
+.kc-icon{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--rose);background:var(--rose-glow);border:1px solid var(--rose);border-radius:4px;padding:2px 7px;flex-shrink:0;margin-top:2px}
+.kc-chev{margin-left:auto;flex-shrink:0;color:var(--text-s);transition:transform .2s;font-size:13px}
+.kc.open .kc-chev{transform:rotate(180deg)}
+.kc-a{display:none;padding:16px 20px;background:var(--bg-s2);border-top:1px solid var(--border);font-size:14px;color:var(--text-s);line-height:1.75}
+.kc.open .kc-a{display:block}
+.kc-a strong{color:var(--text-p);font-weight:500}
+
+/* TAKEAWAY */
+.takeaway{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin:28px 0;position:relative;overflow:hidden}
+.takeaway::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--rose),var(--violet))}
+.takeaway-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.takeaway-icon{width:36px;height:36px;border-radius:var(--r-sm);background:var(--rose-glow);border:1px solid var(--rose);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.takeaway-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p)}
+.takeaway-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.takeaway-list li{font-size:14px;color:var(--text-s);display:flex;align-items:flex-start;gap:10px;line-height:1.65}
+.takeaway-list li::before{content:'◆';color:var(--rose);font-size:9px;flex-shrink:0;margin-top:5px}
+
+/* ARCHITECT REVIEW */
+.arch-review{background:var(--bg-s1);border:1px solid rgba(232,135,58,.35);border-radius:var(--r-lg);overflow:hidden;margin:28px 0}
+.arch-review-head{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.arch-badge{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:3px 10px;border-radius:var(--r-pill)}
+.arch-title{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--text-p)}
+.arch-list{list-style:none;padding:4px 20px 8px}
+.arch-list li{font-size:14px;color:var(--text-s);display:flex;gap:12px;align-items:flex-start;line-height:1.7;padding:14px 0;border-bottom:1px solid var(--border)}
+.arch-list li:last-child{border-bottom:none}
+.arch-num{font-family:var(--fm);font-size:13px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:24px;font-weight:700}
+
+/* DEP MAP */
+.dep-map{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:16px;background:var(--bg-s2);border-radius:var(--r-md);border:1px solid var(--border);margin:14px 0}
+.dep-node{font-family:var(--fm);font-size:12px;padding:5px 12px;border-radius:var(--r-pill)}
+.dep-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.dep-cur{background:var(--rose-glow);border:1px solid var(--rose);color:var(--rose);font-weight:600;box-shadow:0 0 10px rgba(255,95,126,.15)}
+.dep-future{background:var(--bg-s3);border:1px solid var(--border-b);color:var(--text-s)}
+.dep-arr{color:var(--text-s);font-size:16px;flex-shrink:0}
+
+/* BRIDGE */
+.bridge{margin-top:64px;padding-top:48px;border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-s1) 0%,var(--bg-s2) 100%);border:1px solid var(--border-b);border-radius:var(--r-xl);padding:36px;position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--rose),var(--violet),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(155,127,255,.07);pointer-events:none}
+.bridge-eyebrow{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px}
+.bridge-title{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--text-p);margin-bottom:16px}
+.bridge-title span{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.bridge-body{font-size:15px;color:var(--text-s);line-height:1.8;max-width:600px;margin-bottom:24px}
+.bridge-body strong{color:var(--text-p);font-weight:500}
+.bridge-concepts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.bridge-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(90deg,var(--rose),var(--violet));color:var(--bg-void);font-family:var(--fd);font-size:14px;font-weight:700;padding:13px 28px;border-radius:var(--r-pill);border:none;cursor:pointer;text-decoration:none;transition:all .2s}
+.bridge-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(255,95,126,.25);color:var(--bg-void)}
+
+/* SIDEBAR */
+.toc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.toc-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.toc-item{display:block;padding:6px 10px;font-size:13px;color:var(--text-s);border-radius:var(--r-sm);transition:all .15s;cursor:pointer;border-left:2px solid transparent;text-decoration:none}
+.toc-item:hover{background:var(--bg-s2);color:var(--text-p);border-left-color:var(--border-b)}
+.toc-item.active{background:var(--bg-s2);color:var(--rose);border-left-color:var(--rose)}
+.toc-sub{padding-left:20px;font-size:12px}
+.qref{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.qref-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.qref-item{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.qref-item:last-child{border-bottom:none}
+.qref-term{font-family:var(--fm);font-size:12px;color:var(--rose);white-space:nowrap;flex-shrink:0;font-weight:500}
+.qref-def{color:var(--text-s);line-height:1.55;font-size:13px}
+.footer{border-top:1px solid var(--border);padding:28px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:40px}
+.footer-left{font-family:var(--fm);font-size:12px;color:var(--text-s)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fadeUp .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
+@media(max-width:768px){.shell{padding:0 20px}.nav{padding:0 20px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">IAM<span>·</span>PORTAL</div>
+    <div class="nav-div"></div>
+    <div class="nav-progress">
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <span class="progress-label">M04a / 20</span>
+    </div>
+    <a href="INDEX.html" class="nav-home">← Index</a>
+    <span class="nav-badge">M04a · Phase 1</span>
+  </div>
+</nav>
+
+<div class="shell">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero-bar"></div>
+  <div class="hero-content">
+    <div class="hero-phase"><div class="phase-dot"></div>Phase 1 · Core Protocols — Module 4a of 20</div>
+    <h1 class="hero-title">MFA, Passwordless &amp;<br><span class="ac">Adaptive Authentication</span></h1>
+    <p class="hero-sub">Authentication protocols define the envelope. This module defines what goes inside it — the factors, the assurance levels, the risk signals, and the architecture of enterprise MFA systems that are actually phishing-resistant.</p>
+    <div class="hero-meta">
+      <span class="badge badge-phase">Phase 1 · Core Protocols</span>
+      <span class="badge badge-violet">FIDO2 · PingID · Adaptive</span>
+      <span class="badge badge-effort">⬛⬛⬛☐☐ 5–7 hrs</span>
+      <span class="badge badge-prereq">↳ M03a OAuth · M03b SAML</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="orient-grid">
+    <div><div class="orient-label">Current module</div><div class="orient-val ac">M04a · MFA &amp; Adaptive Auth</div></div>
+    <div><div class="orient-label">Learning track</div><div class="orient-val">Core Protocols</div></div>
+    <div><div class="orient-label">Current phase</div><div class="orient-val">Phase 1 of 4</div></div>
+    <div><div class="orient-label">Overall progress</div><div class="orient-val">5 of 20 modules</div></div>
+    <div><div class="orient-label">What came before</div><div class="orient-val done">✓ M01 M02 M03a M03b — Ecosystem, Fundamentals, OAuth, SAML</div></div>
+    <div><div class="orient-label">What comes next</div><div class="orient-val">M04b · Directory Services &amp; Identity Stores</div></div>
+  </div>
+  <div class="journey-row">
+    <div class="jdot jdot-done">M01</div><div class="jdot jdot-done">M02</div>
+    <div class="jdot jdot-done">M03a</div><div class="jdot jdot-done">M03b</div>
+    <div class="jdot jdot-cur" title="M04a — You are here">M04a</div>
+    <div class="jdot jdot-future">M04b</div><div class="jdot jdot-future">M05</div>
+    <div class="jdot jdot-future">M06</div><div class="jdot jdot-future">M07</div><div class="jdot jdot-future">M08</div>
+    <div class="jdot jdot-future">M09a</div><div class="jdot jdot-future">M09b</div><div class="jdot jdot-future">M10</div>
+    <div class="jdot jdot-future">M11</div><div class="jdot jdot-future">M12</div><div class="jdot jdot-future">M13</div>
+    <div class="jdot jdot-future">M14</div><div class="jdot jdot-future">M15</div><div class="jdot jdot-future">M16</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="content-main">
+
+<!-- S1: WHY -->
+<section class="section afu d3" id="why">
+  <div class="sec-label">Why this module matters</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Protocols are envelopes. Factors are what go inside.</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>M03a and M03b taught you how identity assertions travel between systems. But neither OAuth nor SAML specifies how strongly the identity must be proven before the assertion is issued. That is the job of the authentication layer — and it is where most enterprise identity breaches occur.</p>
+    <p>Attackers do not break OAuth. They phish credentials. They steal session cookies. They fatigue users with push notification floods. They compromise TOTP seeds. <strong>The protocol is not the vulnerability — the authentication factor is.</strong></p>
+    <p>This module covers the architecture of MFA systems from the ground up: factor types and their actual security properties (not marketing claims), FIDO2/WebAuthn at protocol depth, PingID's architecture, adaptive risk engines, and the only migration path to phishing-resistant enterprise authentication that actually works at scale.</p>
+  </div>
+</section>
+
+<!-- S2: FACTOR TAXONOMY -->
+<section class="section" id="factors">
+  <div class="sec-label">Factor taxonomy</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">MFA factors — real security properties, not marketing</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Not all MFA is equal. The security industry spent a decade saying "any MFA is better than no MFA" — which was true then. Now attackers have adapted. Real-time phishing proxies (EvilProxy, Modlishka) defeat password + TOTP in seconds. MFA fatigue attacks bypassed Uber and Microsoft. Architects must distinguish between <em>MFA that reduces friction</em> and <em>MFA that is actually phishing-resistant</em>.</p>
+  </div>
+
+  <div class="factor-grid">
+    <!-- Password -->
+    <div class="factor-card" style="border-top:2px solid var(--rose)">
+      <div class="factor-header">
+        <div class="factor-name">Password (SYK)</div>
+        <span class="factor-aal" style="background:var(--rose-glow);color:var(--rose);border:1px solid rgba(255,95,126,.3)">AAL1 only</span>
+      </div>
+      <div class="factor-desc">Something you know. The weakest factor — reused, guessed, phished, breached, and sold. The only correct use is as one factor in a multi-factor system, never alone for sensitive resources.</div>
+      <div class="factor-bar-wrap">
+        <div class="factor-bar-row"><span class="factor-bar-label">Phish-resistant</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:5%;background:var(--rose)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Usability</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:70%;background:var(--jade)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Deploy cost</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:10%;background:var(--sapphire)"></div></div></div>
+      </div>
+    </div>
+
+    <!-- TOTP -->
+    <div class="factor-card" style="border-top:2px solid var(--amber)">
+      <div class="factor-header">
+        <div class="factor-name">TOTP (Authenticator App)</div>
+        <span class="factor-aal" style="background:var(--amber-glow);color:var(--amber);border:1px solid rgba(245,197,66,.3)">AAL2</span>
+      </div>
+      <div class="factor-desc">Time-based one-time passwords (RFC 6238). The seed is shared between the authenticator app and the server. Real-time phishing proxies capture and replay TOTP codes within the 30-second window — this is fully automated with off-the-shelf toolkits. Not phishing-resistant.</div>
+      <div class="factor-bar-wrap">
+        <div class="factor-bar-row"><span class="factor-bar-label">Phish-resistant</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:20%;background:var(--amber)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Usability</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:60%;background:var(--jade)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Deploy cost</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:20%;background:var(--sapphire)"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Push -->
+    <div class="factor-card" style="border-top:2px solid var(--amber)">
+      <div class="factor-header">
+        <div class="factor-name">Push Notification (PingID)</div>
+        <span class="factor-aal" style="background:var(--amber-glow);color:var(--amber);border:1px solid rgba(245,197,66,.3)">AAL2</span>
+      </div>
+      <div class="factor-desc">App-based approval on a registered mobile device. Better UX than TOTP. Vulnerable to MFA fatigue attacks — sending a flood of push notifications until the user approves one accidentally or in frustration. Mitigated by number matching (user must enter a code shown on screen) and additional context in the push notification.</div>
+      <div class="factor-bar-wrap">
+        <div class="factor-bar-row"><span class="factor-bar-label">Phish-resistant</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:30%;background:var(--amber)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Usability</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:85%;background:var(--jade)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Deploy cost</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:35%;background:var(--sapphire)"></div></div></div>
+      </div>
+    </div>
+
+    <!-- FIDO2/Passkey -->
+    <div class="factor-card" style="border-top:2px solid var(--jade)">
+      <div class="factor-header">
+        <div class="factor-name">FIDO2 / Passkey</div>
+        <span class="factor-aal" style="background:var(--jade-glow);color:var(--jade);border:1px solid rgba(62,207,160,.3)">AAL2/3 ✓</span>
+      </div>
+      <div class="factor-desc">Hardware-bound public key cryptography. No shared secret — the private key never leaves the authenticator. The credential is domain-bound (origin-bound) — a credential created for company.com cannot be used on evil-company.com. Cryptographically impossible to phish. The only mass-market phishing-resistant option.</div>
+      <div class="factor-bar-wrap">
+        <div class="factor-bar-row"><span class="factor-bar-label">Phish-resistant</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:100%;background:var(--jade)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Usability</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:90%;background:var(--jade)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Deploy cost</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:60%;background:var(--sapphire)"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Smart Card / Cert -->
+    <div class="factor-card" style="border-top:2px solid var(--teal)">
+      <div class="factor-header">
+        <div class="factor-name">Certificate (PIV / Smart Card)</div>
+        <span class="factor-aal" style="background:var(--teal-glow);color:var(--teal);border:1px solid rgba(0,229,195,.3)">AAL3 ✓</span>
+      </div>
+      <div class="factor-desc">X.509 certificate stored on hardware (smart card, USB token, TPM). Proven in US Federal government (PIV), DoD (CAC), and financial services for decades. Private key is non-exportable hardware-bound. Phishing-resistant. Highest assurance level. Enterprise deployment requires PKI infrastructure, card management, and reader hardware.</div>
+      <div class="factor-bar-wrap">
+        <div class="factor-bar-row"><span class="factor-bar-label">Phish-resistant</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:100%;background:var(--teal)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Usability</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:40%;background:var(--jade)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Deploy cost</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:90%;background:var(--sapphire)"></div></div></div>
+      </div>
+    </div>
+
+    <!-- SMS OTP -->
+    <div class="factor-card" style="border-top:2px solid var(--rose)">
+      <div class="factor-header">
+        <div class="factor-name">SMS OTP</div>
+        <span class="factor-aal" style="background:var(--rose-glow);color:var(--rose);border:1px solid rgba(255,95,126,.3)">AAL2 (barely)</span>
+      </div>
+      <div class="factor-desc">One-time code delivered via SMS. Vulnerable to SIM swapping (telco social engineering), SS7 attacks (telecom protocol interception), and real-time phishing proxies. NIST 800-63B deprecated SMS OTP as a standalone second factor for AAL2. Use only when no better option exists; migrate users away as soon as possible.</div>
+      <div class="factor-bar-wrap">
+        <div class="factor-bar-row"><span class="factor-bar-label">Phish-resistant</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:10%;background:var(--rose)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Usability</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:75%;background:var(--jade)"></div></div></div>
+        <div class="factor-bar-row"><span class="factor-bar-label">Deploy cost</span><div class="factor-bar-track"><div class="factor-bar-fill" style="width:15%;background:var(--sapphire)"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gotcha">
+    <div class="gotcha-head"><span class="gotcha-icon">⚠️</span><span class="gotcha-label">Critical distinction</span><span class="gotcha-title">MFA compliance ≠ phishing-resistant MFA — these are two different security postures</span></div>
+    <div class="gotcha-body">Many enterprises meet "MFA compliance" by deploying TOTP or push notifications and checking the box. This satisfies auditors. It does not prevent real-time phishing attacks. <strong>The 2022 Uber breach and the 2022 Twilio breach both bypassed MFA</strong> — one via MFA fatigue (push flooding), one via a real-time phishing proxy that captured and replayed TOTP codes. Architects designing MFA architectures must distinguish between "MFA deployed" and "phishing-resistant MFA deployed" — and document this distinction explicitly in security design documents.</div>
+  </div>
+</section>
+
+<!-- S3: FIDO2 DEEP DIVE -->
+<section class="section" id="fido2">
+  <div class="sec-label">FIDO2 &amp; WebAuthn</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">FIDO2 architecture — why it is cryptographically unphishable</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>FIDO2 is a set of two specifications: W3C WebAuthn (the browser API) and CTAP2 (the Client-to-Authenticator Protocol). Together they enable hardware-bound, phishing-resistant authentication without passwords or shared secrets. Understanding the cryptographic basis is essential — it's not just "more secure MFA"; it's a fundamentally different trust model.</p>
+  </div>
+
+  <!-- DIAGRAM 1: FIDO2 Registration + Authentication -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 1 — FIDO2/WebAuthn: Registration flow (left) &amp; Authentication flow (right)</div>
+    <svg viewBox="0 0 920 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:920px;display:block" role="img" aria-label="FIDO2 WebAuthn registration and authentication sequence diagrams side by side">
+      <title>FIDO2 WebAuthn Registration and Authentication Flows</title>
+      <rect width="920" height="560" fill="#0B0E14" rx="8"/>
+      <defs>
+        <marker id="f1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8A95A8"/></marker>
+        <marker id="f-rose" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#FF5F7E"/></marker>
+        <marker id="f-jade" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+        <marker id="f-vio" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#9B7FFF"/></marker>
+      </defs>
+
+      <!-- DIVIDER -->
+      <line x1="460" y1="16" x2="460" y2="544" stroke="#2E3A52" stroke-width="1" stroke-dasharray="6,4"/>
+      <text x="230" y="34" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#FF5F7E" font-weight="700" letter-spacing="1">REGISTRATION</text>
+      <text x="690" y="34" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="700" letter-spacing="1">AUTHENTICATION</text>
+
+      <!-- ═══ REGISTRATION SIDE (left) ═══ -->
+      <!-- Actors -->
+      <rect x="18" y="46" width="100" height="44" rx="5" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="68" y="64" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">Browser</text>
+      <text x="68" y="80" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">+ JS App</text>
+
+      <rect x="158" y="46" width="100" height="44" rx="5" fill="#111520" stroke="#FF5F7E" stroke-width="1.5"/>
+      <text x="208" y="64" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#FF5F7E">Authenticator</text>
+      <text x="208" y="80" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Platform / Hardware</text>
+
+      <rect x="338" y="46" width="100" height="44" rx="5" fill="#111520" stroke="#9B7FFF" stroke-width="1.5"/>
+      <text x="388" y="64" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#9B7FFF">Relying Party</text>
+      <text x="388" y="80" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Server / IdP</text>
+
+      <!-- Lifelines -->
+      <line x1="68" y1="90" x2="68" y2="530" stroke="#1E2636" stroke-width="1" stroke-dasharray="3,4"/>
+      <line x1="208" y1="90" x2="208" y2="530" stroke="#1E2636" stroke-width="1" stroke-dasharray="3,4"/>
+      <line x1="388" y1="90" x2="388" y2="530" stroke="#1E2636" stroke-width="1" stroke-dasharray="3,4"/>
+
+      <!-- R1: RP sends challenge -->
+      <line x1="372" y1="112" x2="84" y2="112" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#f-vio)"/>
+      <text x="228" y="104" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">1. challenge + rpId + userId</text>
+
+      <!-- R2: Browser calls navigator.credentials.create() -->
+      <rect x="18" y="120" width="140" height="34" rx="3" fill="#181D2A" stroke="#FF5F7E" stroke-width="1"/>
+      <text x="88" y="134" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#FF5F7E">2. navigator.credentials</text>
+      <text x="88" y="148" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#FF5F7E">.create(options)</text>
+
+      <!-- R3: Browser → Authenticator -->
+      <line x1="158" y1="162" x2="84" y2="162" stroke="#FF5F7E" stroke-width="1.5" marker-end="url(#f-rose)" stroke-dasharray="4,2"/>
+      <text x="128" y="154" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#FF5F7E">3. CTAP2 makeCredential</text>
+
+      <!-- R4: Authenticator generates key pair -->
+      <rect x="160" y="172" width="140" height="60" rx="3" fill="rgba(255,95,126,0.06)" stroke="#FF5F7E" stroke-width="1"/>
+      <text x="230" y="192" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#FF5F7E" font-weight="600">4. Generate key pair</text>
+      <text x="230" y="208" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#8A95A8">privateKey → stays in HW</text>
+      <text x="230" y="222" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#8A95A8">pubKey → returned</text>
+
+      <!-- R5: Biometric / PIN verification -->
+      <rect x="160" y="240" width="140" height="34" rx="3" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="230" y="254" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#8A95A8">5. User verifies</text>
+      <text x="230" y="268" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">biometric / PIN / touch</text>
+
+      <!-- R6: Authenticator returns credential -->
+      <line x1="158" y1="292" x2="84" y2="292" stroke="#FF5F7E" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="128" y="284" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#8A95A8">attestation object</text>
+
+      <!-- R7: Browser sends to RP -->
+      <line x1="338" y1="314" x2="84" y2="314" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#f-vio)" style="transform:scaleX(-1)"/>
+      <line x1="84" y1="314" x2="336" y2="314" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#f-vio)"/>
+      <text x="210" y="305" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">7. attestationObject + clientDataJSON</text>
+
+      <!-- R8: RP stores public key -->
+      <rect x="338" y="322" width="110" height="48" rx="3" fill="rgba(155,127,255,0.08)" stroke="#9B7FFF" stroke-width="1"/>
+      <text x="393" y="340" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF" font-weight="600">8. Store credentialId</text>
+      <text x="393" y="356" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">+ publicKey</text>
+      <text x="393" y="368" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">NO SECRET stored</text>
+
+      <!-- KEY INSIGHT box -->
+      <rect x="18" y="390" width="430" height="44" rx="4" fill="rgba(62,207,160,0.06)" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="233" y="408" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="700">REGISTRATION COMPLETE</text>
+      <text x="233" y="424" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Server stores only a public key — nothing that can be leaked and used to authenticate</text>
+
+      <!-- ═══ AUTHENTICATION SIDE (right) ═══ -->
+      <!-- Actors -->
+      <rect x="478" y="46" width="100" height="44" rx="5" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="528" y="64" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">Browser</text>
+      <text x="528" y="80" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">+ JS App</text>
+
+      <rect x="618" y="46" width="100" height="44" rx="5" fill="#111520" stroke="#3ECFA0" stroke-width="1.5"/>
+      <text x="668" y="64" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">Authenticator</text>
+      <text x="668" y="80" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Platform / Hardware</text>
+
+      <rect x="798" y="46" width="100" height="44" rx="5" fill="#111520" stroke="#9B7FFF" stroke-width="1.5"/>
+      <text x="848" y="64" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#9B7FFF">Relying Party</text>
+      <text x="848" y="80" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Server / IdP</text>
+
+      <!-- Auth lifelines -->
+      <line x1="528" y1="90" x2="528" y2="530" stroke="#1E2636" stroke-width="1" stroke-dasharray="3,4"/>
+      <line x1="668" y1="90" x2="668" y2="530" stroke="#1E2636" stroke-width="1" stroke-dasharray="3,4"/>
+      <line x1="848" y1="90" x2="848" y2="530" stroke="#1E2636" stroke-width="1" stroke-dasharray="3,4"/>
+
+      <!-- A1: RP sends challenge -->
+      <line x1="832" y1="112" x2="544" y2="112" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#f-vio)"/>
+      <text x="688" y="104" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">1. challenge (random, one-time)</text>
+
+      <!-- A2: navigator.credentials.get() -->
+      <rect x="478" y="120" width="140" height="34" rx="3" fill="#181D2A" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="548" y="134" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">2. navigator.credentials</text>
+      <text x="548" y="148" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">.get(options)</text>
+
+      <!-- A3: CTAP2 authenticatorGetAssertion -->
+      <line x1="618" y1="162" x2="544" y2="162" stroke="#3ECFA0" stroke-width="1.5" marker-end="url(#f-jade)" stroke-dasharray="4,2"/>
+      <text x="588" y="154" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">3. CTAP2 getAssertion</text>
+
+      <!-- A4: User verifies + sign -->
+      <rect x="620" y="172" width="140" height="76" rx="3" fill="rgba(62,207,160,0.06)" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="690" y="192" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">4. User verifies</text>
+      <text x="690" y="208" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#8A95A8">biometric / PIN / touch</text>
+      <text x="690" y="226" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">Sign assertion</text>
+      <text x="690" y="242" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#8A95A8">sign(challenge + origin + rpIdHash)</text>
+
+      <!-- A5: Return signature -->
+      <line x1="618" y1="260" x2="544" y2="260" stroke="#3ECFA0" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="588" y="252" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#8A95A8">authenticatorData + sig</text>
+
+      <!-- A6: Browser sends assertion to RP -->
+      <line x1="544" y1="280" x2="796" y2="280" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#f-vio)"/>
+      <text x="670" y="271" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">6. clientDataJSON + authenticatorData + signature</text>
+
+      <!-- A7: RP verifies -->
+      <rect x="800" y="290" width="110" height="80" rx="3" fill="rgba(155,127,255,0.08)" stroke="#9B7FFF" stroke-width="1"/>
+      <text x="855" y="308" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF" font-weight="600">7. Verify</text>
+      <text x="855" y="324" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">① origin == expected</text>
+      <text x="855" y="340" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">② rpIdHash match</text>
+      <text x="855" y="356" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">③ sig verify w/ pubKey</text>
+      <text x="855" y="370" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">④ counter increment</text>
+
+      <!-- A8: Auth succeeds -->
+      <line x1="800" y1="390" x2="544" y2="390" stroke="#3ECFA0" stroke-width="2" marker-end="url(#f-jade)"/>
+      <text x="672" y="382" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">8. Authentication successful → issue token</text>
+
+      <!-- WHY UNPHISHABLE box -->
+      <rect x="478" y="412" width="430" height="56" rx="4" fill="rgba(62,207,160,0.06)" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="693" y="432" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="700">WHY THIS IS UNPHISHABLE</text>
+      <text x="693" y="450" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">The signature includes the origin (domain). A phishing site (evil.com) gets a signature bound to evil.com.</text>
+      <text x="693" y="464" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">The RP (company.com) verifies origin == company.com → signature rejected. Attack fails cryptographically.</text>
+    </svg>
+  </div>
+
+  <div class="concept-v">
+    <div class="concept-term">The origin-binding property — the cryptographic phishing defence</div>
+    <div class="concept-def">
+      When the authenticator signs the assertion, it includes <code>rpIdHash</code> (the SHA-256 hash of the relying party's domain) and the <code>origin</code> (the exact URL where the credential was created). The signature covers these values.
+      <br><br>
+      A phishing site at <code>evil-company.com</code> can display an identical login page. When the user is redirected there and tries to authenticate, the authenticator creates a signature bound to <code>evil-company.com</code> — not <code>company.com</code>. When that signature arrives at the real RP server, the <code>rpIdHash</code> verification fails. <strong>The attack is defeated cryptographically — not by user vigilance.</strong> The user does not need to spot the fake domain. The authenticator enforces it.
+    </div>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">Passkeys — FIDO2 for the enterprise mainstream</div>
+    <div class="concept-def">
+      Passkeys are FIDO2 credentials that are synced across devices via the platform's cloud keychain (Apple iCloud Keychain, Google Password Manager, Microsoft Hello for Business). Unlike hardware security keys (YubiKey), passkeys are software-managed and device-portable — providing phishing resistance without the friction of carrying a physical token.
+      <br><br>
+      <strong>Enterprise deployment model:</strong> Managed passkeys (bound to device management — MDM/Intune/Jamf) provide stronger assurance than synced passkeys because the private key is bound to a specific managed device's TPM/Secure Enclave, not synced to a cloud keychain. Architects designing enterprise passkey deployments must define the policy boundary between managed passkeys (hardware-bound) and synced passkeys (cloud-synced) and which resource tiers each is acceptable for.
+    </div>
+  </div>
+</section>
+
+<!-- S4: PINGID ARCHITECTURE -->
+<section class="section" id="pingid">
+  <div class="sec-label">PingID architecture</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">PingID — your current MFA platform at architectural depth</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>You work with PingID daily. This section covers how it is architecturally designed — the components, the integration patterns, and the capabilities that go beyond the default push notification flow most operators know.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-rose">
+      <div class="card-label">PingID core architecture</div>
+      <div class="card-title">Cloud-brokered MFA service</div>
+      <div class="card-body">
+        PingID is a cloud-hosted MFA service. PingFederate integrates with PingID via the PingID adapter (a PingFederate IdP adapter plugin). The authentication flow: user authenticates with password at PingFederate → PingFederate calls PingID API to initiate MFA → PingID sends the factor challenge (push/TOTP/SMS) → user responds → PingID returns success/failure to PingFederate → PingFederate issues the token/assertion.
+        <br><br>
+        PingFederate never sees the MFA response — PingID validates it and returns a simple allow/deny signal. This separation means PingID can be updated (new factor types, new security policies) without changing PingFederate configuration.
+      </div>
+    </div>
+    <div class="card card-violet">
+      <div class="card-label">RADIUS integration</div>
+      <div class="card-title">PingID for infrastructure MFA</div>
+      <div class="card-body">
+        PingID integrates with RADIUS via the PingID RADIUS PCV (Pluggable Credential Validator) or PingID Integration Kit for RADIUS. This enables MFA for VPN authentication, network device access (via TACACS+ bridge), and legacy systems that only speak RADIUS.
+        <br><br>
+        Flow: User connects to VPN → VPN sends RADIUS Access-Request to PingID RADIUS proxy → PingID RADIUS proxy validates password against AD, triggers PingID MFA → User approves push → RADIUS Access-Accept returned to VPN → User gets access. This is the pattern that extends PingID MFA to infrastructure that predates web-based auth.
+      </div>
+    </div>
+    <div class="card card-teal">
+      <div class="card-label">Factor capabilities</div>
+      <div class="card-title">What PingID supports today</div>
+      <div class="card-body">
+        <strong>Push notification</strong> (with number matching — mitigates fatigue attacks)<br>
+        <strong>TOTP</strong> (via PingID mobile app)<br>
+        <strong>SMS/voice OTP</strong> (deprecated for high-assurance)<br>
+        <strong>FIDO2/WebAuthn</strong> (passkeys and hardware keys)<br>
+        <strong>Biometric</strong> (device biometric as local verification before push)<br>
+        <strong>Offline OTP</strong> (TOTP when push unavailable)<br>
+        <strong>Email OTP</strong> (for low-assurance scenarios)
+      </div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">Policies &amp; adaptive integration</div>
+      <div class="card-title">PingID authentication policies</div>
+      <div class="card-body">
+        PingID supports authentication policies that determine which factor is required based on: user group, application risk level, device trust (managed vs unmanaged), network location (on-corp vs external), and time of day.
+        <br><br>
+        Integration with PingOne Risk (PingID's risk engine) enables fully adaptive authentication — step up to a stronger factor when the risk score exceeds a threshold. Risk signals: geolocation anomaly, new device, impossible travel, known malicious IP, behaviour deviation from baseline.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S5: ADAPTIVE AUTH -->
+<section class="section" id="adaptive">
+  <div class="sec-label">Adaptive authentication</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Risk-based adaptive authentication engine design</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Adaptive authentication — also called risk-based authentication — applies the minimum authentication friction required for the assessed risk level. Low-risk logins (known device, corporate network, normal time, familiar location) get SSO with no second factor. High-risk logins (new device, foreign country, off-hours, anomalous behaviour) get strong MFA or are blocked entirely. The challenge is designing the risk engine correctly.</p>
+  </div>
+
+  <!-- DIAGRAM 2: Adaptive Auth Risk Engine -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 2 — Adaptive authentication risk engine decision flow</div>
+    <svg viewBox="0 0 880 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;display:block" role="img" aria-label="Adaptive authentication risk engine showing signal collection, scoring and decision outcomes">
+      <title>Adaptive Authentication Risk Engine</title>
+      <rect width="880" height="560" fill="#0B0E14" rx="8"/>
+      <defs>
+        <marker id="aa1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8A95A8"/></marker>
+        <marker id="aa-rose" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#FF5F7E"/></marker>
+        <marker id="aa-jade" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+        <marker id="aa-amb" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#F5C542"/></marker>
+      </defs>
+
+      <!-- AUTH REQUEST input -->
+      <rect x="20" y="240" width="130" height="60" rx="6" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="85" y="264" text-anchor="middle" font-size="13" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">Auth</text>
+      <text x="85" y="280" text-anchor="middle" font-size="13" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">Request</text>
+      <text x="85" y="296" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">user + credentials</text>
+      <line x1="150" y1="270" x2="188" y2="270" stroke="#8A95A8" stroke-width="2" marker-end="url(#aa1)"/>
+
+      <!-- SIGNAL COLLECTION -->
+      <rect x="188" y="50" width="190" height="440" rx="8" fill="#111520" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="283" y="78" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="700" letter-spacing="1">SIGNAL COLLECTION</text>
+
+      <!-- Signal boxes -->
+      <rect x="200" y="92" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="107" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">📍 Geolocation</text>
+      <text x="283" y="123" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">country · city · IP reputation</text>
+
+      <rect x="200" y="140" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="155" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">💻 Device fingerprint</text>
+      <text x="283" y="171" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">known/new · managed/unmanaged</text>
+
+      <rect x="200" y="188" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="203" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">✈️ Impossible travel</text>
+      <text x="283" y="219" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">distance vs time since last auth</text>
+
+      <rect x="200" y="236" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="251" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">🕐 Time pattern</text>
+      <text x="283" y="267" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">normal hours vs anomalous</text>
+
+      <rect x="200" y="284" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="299" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">🌐 Network</text>
+      <text x="283" y="315" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">VPN · Tor · corporate net</text>
+
+      <rect x="200" y="332" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="347" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">🔴 Threat intel</text>
+      <text x="283" y="363" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">known malicious IP / ASN</text>
+
+      <rect x="200" y="380" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="395" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">📊 Behaviour baseline</text>
+      <text x="283" y="411" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">access pattern deviation</text>
+
+      <rect x="200" y="428" width="166" height="38" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="283" y="443" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">🛡️ Identity risk score</text>
+      <text x="283" y="459" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">ISPM / AD risky sign-in</text>
+
+      <!-- Arrow signals → scorer -->
+      <line x1="378" y1="270" x2="418" y2="270" stroke="#8A95A8" stroke-width="2" marker-end="url(#aa1)"/>
+
+      <!-- RISK SCORER -->
+      <rect x="418" y="200" width="160" height="140" rx="8" fill="rgba(255,95,126,0.07)" stroke="#FF5F7E" stroke-width="1.5"/>
+      <text x="498" y="228" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#FF5F7E" font-weight="700">RISK</text>
+      <text x="498" y="246" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#FF5F7E" font-weight="700">SCORER</text>
+      <text x="498" y="268" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Weighted ML model</text>
+      <text x="498" y="286" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">0–100 risk score</text>
+      <text x="498" y="306" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Configurable thresholds:</text>
+      <text x="498" y="324" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">LOW &lt;30 · MED 30–70 · HIGH &gt;70</text>
+
+      <!-- Scorer → Decision -->
+      <line x1="578" y1="270" x2="618" y2="270" stroke="#FF5F7E" stroke-width="2" marker-end="url(#aa-rose)"/>
+
+      <!-- POLICY DECISION ENGINE -->
+      <rect x="618" y="200" width="180" height="140" rx="8" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="708" y="228" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="700">POLICY</text>
+      <text x="708" y="246" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="700">DECISION</text>
+      <text x="708" y="270" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">LOW risk →</text>
+      <text x="708" y="286" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#F5C542">MEDIUM risk →</text>
+      <text x="708" y="302" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#FF5F7E">HIGH risk →</text>
+      <text x="708" y="322" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#FF5F7E">CRITICAL →</text>
+
+      <!-- OUTCOMES -->
+      <!-- LOW: SSO -->
+      <rect x="820" y="108" width="50" height="36" rx="4" fill="rgba(62,207,160,0.12)" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="845" y="122" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="700">ALLOW</text>
+      <text x="845" y="136" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">no step-up</text>
+      <line x1="798" y1="264" x2="848" y2="144" stroke="#3ECFA0" stroke-width="1.5" marker-end="url(#aa-jade)"/>
+
+      <!-- MED: Step-up MFA -->
+      <rect x="820" y="238" width="50" height="36" rx="4" fill="rgba(245,197,66,0.12)" stroke="#F5C542" stroke-width="1"/>
+      <text x="845" y="252" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#F5C542" font-weight="700">STEP-UP</text>
+      <text x="845" y="266" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">push / TOTP</text>
+      <line x1="798" y1="278" x2="820" y2="256" stroke="#F5C542" stroke-width="1.5" marker-end="url(#aa-amb)"/>
+
+      <!-- HIGH: Strong MFA -->
+      <rect x="820" y="348" width="50" height="36" rx="4" fill="rgba(255,95,126,0.12)" stroke="#FF5F7E" stroke-width="1"/>
+      <text x="845" y="362" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#FF5F7E" font-weight="700">STRONG</text>
+      <text x="845" y="378" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">FIDO2 / cert</text>
+      <line x1="798" y1="302" x2="820" y2="366" stroke="#FF5F7E" stroke-width="1.5" marker-end="url(#aa-rose)"/>
+
+      <!-- CRITICAL: Block -->
+      <rect x="820" y="460" width="50" height="36" rx="4" fill="rgba(255,95,126,0.2)" stroke="#FF5F7E" stroke-width="1.5"/>
+      <text x="845" y="474" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#FF5F7E" font-weight="700">BLOCK</text>
+      <text x="845" y="490" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">+ alert SOC</text>
+      <line x1="798" y1="318" x2="820" y2="478" stroke="#FF5F7E" stroke-width="2" marker-end="url(#aa-rose)"/>
+
+      <!-- Legend bottom -->
+      <rect x="20" y="502" width="838" height="44" rx="4" fill="#181D2A"/>
+      <text x="36" y="520" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">LOW (&lt;30):</text>
+      <text x="106" y="520" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">Known device, corporate network, normal hours, familiar location → SSO passthrough, no additional factor</text>
+      <text x="36" y="538" font-size="11" font-family="IBM Plex Mono" fill="#F5C542">MED (30–70):</text>
+      <text x="116" y="538" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">New device OR unusual location → step up to push/TOTP  |  HIGH (&gt;70): anomalous → FIDO2 or cert required  |  CRITICAL: Block + SOC alert</text>
+    </svg>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">Adaptive auth design principle — calibrate false positive rate, not just false negative rate</div>
+    <div class="concept-def">Most risk engine discussions focus on false negatives (legitimate threats not caught). But false positives (legitimate users incorrectly challenged or blocked) are equally damaging — they destroy user trust in the system and create pressure to lower thresholds. <strong>The architect's job is to calibrate the engine for both.</strong> Monitor: (1) step-up rate per user group (should be &lt;5% for low-risk users), (2) challenge bypass rate (users abandoning sessions on challenge — should be &lt;2%), (3) false positive reports from help desk. Use these metrics to tune thresholds continuously, not set-and-forget.</div>
+  </div>
+</section>
+
+<!-- S6: STEP-UP AUTH -->
+<section class="section" id="stepup">
+  <div class="sec-label">Step-up authentication</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Step-up flows — elevating authentication within a session</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Step-up authentication is the pattern of requiring stronger authentication mid-session when a user attempts a sensitive action — without requiring them to log out and back in. It bridges the OAuth/OIDC protocol layer with the risk engine.</p>
+  </div>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">1</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">User authenticates normally (AAL1 or AAL2)</div>
+        <div class="flow-desc">User logs in with password + push notification. IdP issues an access token with <code>acr: urn:mace:incommon:iap:silver</code> (AAL2). The token is valid for normal operations.</div>
+        <div class="flow-detail">OIDC acr_values: "urn:mace:incommon:iap:silver" — moderate assurance</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">2</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">User attempts sensitive action (financial transfer, admin action)</div>
+        <div class="flow-desc">The resource server checks the access token's <code>acr</code> claim. The action requires <code>urn:mace:incommon:iap:gold</code> (AAL3 — hardware-bound MFA). Current token is insufficient.</div>
+        <div class="flow-detail">RS returns HTTP 401 with WWW-Authenticate: Bearer error="insufficient_user_authentication", acr_values="gold"</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">3</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">Application initiates step-up re-authorization</div>
+        <div class="flow-desc">The client redirects to the authorization server with <code>acr_values=urn:mace:incommon:iap:gold</code> and <code>prompt=login</code>. The IdP recognizes the existing session but requires additional authentication to meet the requested ACR.</div>
+        <div class="flow-detail">GET /authorize?acr_values=gold&prompt=login&scope=payment:write&max_age=0</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">4</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">IdP challenges for the stronger factor</div>
+        <div class="flow-desc">PingFederate/PingID presents the FIDO2 or hardware certificate challenge. User taps their security key or uses biometric. The IdP verifies the higher-assurance factor.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">5</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">New access token issued with elevated ACR</div>
+        <div class="flow-desc">IdP issues a new access token with <code>acr: gold</code> and the specific scope required for the sensitive action. The new token is short-lived (5–10 minutes) — privilege elevation should never be long-lived.</div>
+        <div class="flow-detail">access_token: { acr: "gold", scope: "payment:write", exp: now+300, auth_time: now }</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gotcha">
+    <div class="gotcha-head"><span class="gotcha-icon">⚠️</span><span class="gotcha-label">Design gotcha</span><span class="gotcha-title">Step-up tokens must be short-lived — elevated assurance should not persist</span></div>
+    <div class="gotcha-body">A step-up token issued for a payment operation with a 1-hour expiry means the elevated assurance is valid for an hour — the user could initiate multiple high-risk actions without re-authenticating. <strong>Design step-up tokens with 5–15 minute TTLs at most, scoped to the specific sensitive operation.</strong> The inconvenience of re-authenticating for each high-value action is the point — it is both a security control and an implicit confirmation that the user is intentionally performing the action.</div>
+  </div>
+</section>
+
+<!-- S7: PASSWORDLESS MIGRATION -->
+<section class="section" id="passwordless">
+  <div class="sec-label">Passwordless rollout</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Enterprise passwordless migration — the realistic path</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Every enterprise wants passwordless authentication. Most attempts fail because they try to eliminate passwords overnight. The realistic path is a phased migration that progressively moves users to stronger factors while maintaining backward compatibility for systems that cannot support FIDO2.</p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Phase</th><th>What changes</th><th>End state</th><th>Who is ready</th><th>Timeline</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Phase 0 — Baseline</td>
+          <td>Audit current factor usage. Identify FIDO2-capable devices. Map apps to auth requirements.</td>
+          <td>Complete inventory — no user-facing change</td>
+          <td>Architecture team</td>
+          <td>Month 1–2</td>
+        </tr>
+        <tr>
+          <td>Phase 1 — Register passkeys</td>
+          <td>Enable passkey registration alongside existing MFA. Users optionally register a passkey on their managed device.</td>
+          <td>Passkey registered, password + push still works</td>
+          <td>Early adopters, IT staff</td>
+          <td>Month 2–4</td>
+        </tr>
+        <tr>
+          <td>Phase 2 — Passkey preferred</td>
+          <td>IdP policy: if passkey available, use it by default. Password + TOTP is fallback for passkey-less devices.</td>
+          <td>Most modern-device users authenticate passwordlessly</td>
+          <td>General workforce</td>
+          <td>Month 4–8</td>
+        </tr>
+        <tr>
+          <td>Phase 3 — Password optional</td>
+          <td>Users with registered passkeys can delete their password. IdP policy enforces passkey for FIDO2-capable clients.</td>
+          <td>No password for modern device users</td>
+          <td>FIDO2 device users only</td>
+          <td>Month 8–14</td>
+        </tr>
+        <tr>
+          <td>Phase 4 — Legacy handling</td>
+          <td>RADIUS + certificate for infra. Legacy SAML apps get passkey via SAML authn context mapping.</td>
+          <td>End-to-end passwordless for all but irreplaceable legacy systems</td>
+          <td>Architects + platform team</td>
+          <td>Month 12–24</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">The account recovery problem — the hardest passwordless design challenge</div>
+    <div class="concept-def">
+      In a password-based system, account recovery is "reset your password via email." In a passwordless system, this fallback reintroduces the exact vulnerability you eliminated. <strong>Account recovery is the most commonly overlooked design challenge in passwordless deployments.</strong>
+      <br><br>
+      Enterprise solutions: (1) Multiple passkeys per user (laptop passkey + hardware key as backup), (2) HR-verified identity recovery process (in-person verification with helpdesk, not email), (3) Temporary access code with immediate passkey re-enrollment requirement, (4) Recovery codes printed and stored in physical safe (for privileged accounts). The design of account recovery is a risk-based decision — the recovery path's security determines the floor of the entire passwordless system's assurance level.
+    </div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="section" id="kc">
+  <div class="sec-label">Knowledge check</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Test your MFA architecture depth</h2><div class="underbar"></div></div>
+
+  <div class="kc" id="kc1">
+    <div class="kc-q" onclick="toggleKC('kc1')">
+      <span class="kc-icon">Q1</span>
+      Your CISO says "we have MFA — all users use push notifications via PingID." A red team just demonstrated bypassing this MFA using a phishing kit. Explain what happened technically and design a remediation roadmap.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>What happened — two possible attacks:</strong><br><br>
+      <strong>Option A — Real-time phishing proxy:</strong> The attacker deployed a reverse proxy (EvilProxy, Modlishka) in front of your login page. The user enters credentials on the phishing page → proxy forwards them to the real PingFederate → PingFederate triggers a PingID push → user approves on their phone (they think they're logging in) → proxy captures the session cookie from the real server → attacker has an authenticated session. The push notification was approved because the user thought the login was legitimate.<br><br>
+      <strong>Option B — MFA fatigue:</strong> Attacker obtained valid credentials (phishing or breached list). They repeatedly attempt login, triggering push notifications. Eventually the user taps Approve to stop the notifications, or taps accidentally during off-hours.<br><br>
+      <strong>Remediation roadmap:</strong><br>
+      <strong>Immediate (week 1):</strong> Enable number matching in PingID push notifications — user must type a code shown on the login screen into the push notification. This defeats real-time proxies (the code is tied to the session). Enable "additional context" — show IP address and location in push notification.<br>
+      <strong>Short-term (month 1–3):</strong> Enable PingOne Risk adaptive authentication — impossible travel and new device detections will catch proxy-sourced authentication attempts. Implement FIDO2 registration for all IT staff and privileged users.<br>
+      <strong>Strategic (month 3–18):</strong> Migrate general workforce to passkeys via the phased migration approach. Passkeys are origin-bound — the phishing proxy cannot obtain a valid credential even if the user is deceived, because the signature is cryptographically bound to the real domain.
+    </div>
+  </div>
+
+  <div class="kc" id="kc2">
+    <div class="kc-q" onclick="toggleKC('kc2')">
+      <span class="kc-icon">Q2</span>
+      Design the MFA architecture for a financial services application that requires: (a) normal employee access at AAL2, (b) payment approval operations at AAL3, (c) system admin access at AAL3, (d) VPN access for remote employees, and (e) API access from backend services.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>(a) Normal employee access — AAL2:</strong> Password + PingID push with number matching. TOTP as backup for offline scenarios. Managed device trust elevates the implicit risk score, reducing step-up frequency. OIDC flow with acr_values="silver".<br><br>
+      <strong>(b) Payment approval — AAL3 step-up:</strong> FIDO2 hardware security key (YubiKey) or managed device passkey (hardware-bound TPM passkey, not synced). Short-lived step-up token (5 min TTL) scoped specifically to payment:approve. The acr_values="gold" OIDC parameter triggers step-up from the resource server when a payment operation is attempted.<br><br>
+      <strong>(c) System admin access — AAL3:</strong> Certificate-based authentication via PIV smart card or hardware-bound certificate on managed device. CyberArk PSM session recording for all privileged sessions. JIT access via PAM — admin role not permanently assigned. PingID FIDO2 as alternative where smart card infrastructure is not deployed.<br><br>
+      <strong>(d) VPN — AAL2 with device trust:</strong> PingID RADIUS integration on the VPN concentrator. Username/password + PingID push with number matching. Device compliance check via MDM (Intune/Jamf) — non-compliant devices blocked regardless of correct credentials. RADIUS Access-Accept only issued when both factors and device posture are validated.<br><br>
+      <strong>(e) API backend services — no MFA (M2M):</strong> Client credentials grant with mTLS client certificate. No user factor possible — this is machine identity. Service accounts stored in CyberArk, rotated on schedule. Scope limited to minimum required API surface. Audit all client credential grants quarterly.
+    </div>
+  </div>
+
+  <div class="kc" id="kc3">
+    <div class="kc-q" onclick="toggleKC('kc3')">
+      <span class="kc-icon">Q3</span>
+      Explain why a FIDO2 credential registered on company.com cannot be used on evil-company.com, even if the phishing page looks identical. Walk through the cryptographic mechanism.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>The origin-binding mechanism — step by step:</strong><br><br>
+      <strong>During registration:</strong> When the passkey was created on company.com, the browser included the <code>rpId</code> (Relying Party ID = "company.com") and the <code>origin</code> ("https://company.com") in the <code>clientDataJSON</code>. The authenticator stored the key pair bound to this rpId. The private key is only accessible to the authenticator when the browser confirms the correct origin is requesting authentication.<br><br>
+      <strong>During the phishing attack:</strong> The user navigates to https://evil-company.com. The phishing page calls <code>navigator.credentials.get()</code> requesting authentication. The browser creates a new <code>clientDataJSON</code> with <code>origin: "https://evil-company.com"</code>. The browser passes this to the authenticator via CTAP2.<br><br>
+      <strong>The cryptographic rejection:</strong> The authenticator will only sign using a key if the rpIdHash matches a stored credential's rpId. The rpIdHash in the authentication request = SHA256("evil-company.com"). The stored credential's rpIdHash = SHA256("company.com"). These do not match. The authenticator either returns no credential (the passkey for company.com is not shown as an option) or explicitly rejects the request.<br><br>
+      <strong>Even if somehow a signature was produced:</strong> If a malformed authenticator signed with the wrong rpId, the relying party server verification would fail — it checks that the rpIdHash in authenticatorData matches SHA256(expected_rpId). A mismatch fails verification.<br><br>
+      <strong>The result:</strong> The phishing site cannot obtain a valid FIDO2 assertion for company.com. It is not user vigilance that prevents the attack — it is a cryptographic property enforced by the authenticator and verified by the server.
+    </div>
+  </div>
+
+  <div class="kc" id="kc4">
+    <div class="kc-q" onclick="toggleKC('kc4')">
+      <span class="kc-icon">Q4</span>
+      Your adaptive auth engine has a 15% step-up rate — 15% of all logins trigger an additional factor challenge. Business users are complaining about friction. How do you diagnose the problem and what do you tune?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>15% step-up is too high for a well-calibrated adaptive auth engine</strong> — target for most enterprise deployments is 2–5% for the general workforce. Here is the diagnostic and tuning process:<br><br>
+      <strong>Step 1 — Segment the step-up data:</strong> Break down the 15% by: which signal is triggering challenges most frequently (device fingerprint? geolocation? time pattern?), which user populations are being challenged most (frequent travelers? field workers? executives?), what time patterns dominate (Monday morning surges? VPN logins?).<br><br>
+      <strong>Most common causes of inflated step-up rates:</strong><br>
+      (1) <strong>Device fingerprint sensitivity:</strong> Browser updates, clearing cookies, or private/incognito mode all change the fingerprint → tune device trust to use MDM enrollment status as primary signal rather than browser fingerprint alone.<br>
+      (2) <strong>IP reputation overreach:</strong> If your corporate VPN IPs are classified as "suspicious" by the threat intel feed, or users are on hotel WiFi that shares ranges with known bad actors → tune IP reputation weight down, rely more on device trust.<br>
+      (3) <strong>Time pattern miscalibration:</strong> Employees working across time zones, flextime workers, or on-call staff all show "anomalous" time patterns → feed shift schedules into the engine or widen the acceptable window.<br>
+      (4) <strong>New device threshold:</strong> If every new corporate device triggers a step-up before MDM enrollment completes → integrate MDM enrollment status so enrolled devices are trusted immediately on first auth.<br><br>
+      <strong>Tuning approach:</strong> Use a dry-run mode — log what would have been challenged without actually challenging users. Review the distribution. Adjust signal weights. Re-evaluate after 2 weeks. Target: &lt;5% step-up for managed-device users, &lt;15% for BYOD.
+    </div>
+  </div>
+</section>
+
+<!-- TAKEAWAYS -->
+<div class="takeaway">
+  <div class="takeaway-head">
+    <div class="takeaway-icon">🔐</div>
+    <div class="takeaway-title">Key takeaways — M04a · MFA, Passwordless &amp; Adaptive Auth</div>
+  </div>
+  <ul class="takeaway-list">
+    <li><strong style="color:var(--text-p)">Not all MFA is equal — there is a critical distinction between "MFA deployed" and "phishing-resistant MFA deployed."</strong> TOTP and push notifications are phishable via real-time proxy attacks. Only FIDO2/WebAuthn and certificate-based authentication are cryptographically phishing-resistant.</li>
+    <li><strong style="color:var(--text-p)">FIDO2 is unphishable because credentials are origin-bound.</strong> The private key is hardware-bound and never leaves the authenticator. The signature covers the rpIdHash (domain hash) — a phishing site on a different domain cannot produce a valid assertion for the real domain.</li>
+    <li><strong style="color:var(--text-p)">PingID architecture:</strong> Cloud-brokered MFA adapter for PingFederate. Integrates with RADIUS for infrastructure MFA. Supports push with number matching, TOTP, FIDO2, biometric, and SMS. Number matching mitigates MFA fatigue attacks.</li>
+    <li><strong style="color:var(--text-p)">Adaptive authentication calibrates friction to risk.</strong> The risk engine collects signals (geolocation, device fingerprint, impossible travel, threat intel, behaviour baseline), scores them, and applies policy — SSO for low risk, step-up for medium, strong MFA for high, block for critical. Tune for both false negatives (missed threats) and false positives (annoyed legitimate users).</li>
+    <li><strong style="color:var(--text-p)">Step-up authentication elevates assurance mid-session without logout.</strong> OIDC <code>acr_values</code> requests a specific assurance level; the IdP challenges for the appropriate factor. Step-up tokens must be short-lived (5–15 min) and scoped to the specific sensitive operation.</li>
+    <li><strong style="color:var(--text-p)">Passwordless migration requires a phased approach</strong> — register passkeys alongside existing factors, make passkeys preferred, then optional password removal. Account recovery design is the hardest challenge and determines the floor assurance of the entire passwordless system.</li>
+  </ul>
+</div>
+
+<!-- ARCHITECT REVIEW -->
+<div class="arch-review">
+  <div class="arch-review-head">
+    <span class="arch-badge">Architect Review</span>
+    <span class="arch-title">Senior-level MFA design challenges</span>
+  </div>
+  <ul class="arch-list">
+    <li>
+      <span class="arch-num">01</span>
+      A 12,000-user financial services enterprise wants to achieve NIST AAL3 for all privileged access (approximately 800 admin accounts) within 6 months. They have PingFederate + PingID today with push notification MFA. Design the complete AAL3 architecture: factor selection (why hardware security keys vs smart cards vs hardware-bound passkeys), deployment logistics, PAM integration, RADIUS infrastructure MFA, and the exceptions process for the 15 legacy systems that cannot support FIDO2.
+    </li>
+    <li>
+      <span class="arch-num">02</span>
+      Design a risk engine configuration for a global bank where: investment bankers frequently travel internationally and work unusual hours; call center staff always work from known office locations; remote engineers use personal devices (BYOD) from home. Each population has completely different "normal" behaviour baselines. How do you configure the risk engine to avoid generating 40% step-up rates for traveling bankers while maintaining strong controls for anomalous access patterns?
+    </li>
+    <li>
+      <span class="arch-num">03</span>
+      Your enterprise's SAML federation (M03b) uses <code>AuthnContextClassRef</code> to assert the authentication level achieved. Your OIDC federation (M03a) uses <code>acr</code> claims. You now have adaptive auth producing different assurance levels dynamically. Design the complete architecture for how the adaptive auth engine's risk decision propagates into SAML AuthnContextClassRef values and OIDC acr claims, ensuring downstream SPs and resource servers correctly enforce minimum assurance requirements.
+    </li>
+  </ul>
+</div>
+
+<!-- DEP MAP -->
+<section class="section" id="dep">
+  <div class="sec-label">Knowledge dependency map</div>
+  <div class="dep-map">
+    <span class="dep-node dep-done">M01</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-done">M02</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-done">M03a OAuth</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-done">M03b SAML</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-cur">M04a MFA ← here</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M04b Directories</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M11 Identity Security</span>
+  </div>
+</section>
+
+<!-- BRIDGE -->
+<div class="bridge" id="bridge">
+  <div class="sec-label">Bridge to next module</div>
+  <div class="bridge-card">
+    <div class="bridge-eyebrow">What you mastered · What comes next</div>
+    <h2 class="bridge-title">Protocols + factors = authentication.<br>Now: <span>where is identity stored?</span></h2>
+    <p class="bridge-body">
+      M03a, M03b, and M04a together cover the complete authentication stack: how identity is federated across systems (OAuth, OIDC, SAML), and how it is proven (factors, FIDO2, adaptive risk engines). The protocols are the envelope; the factors are the evidence; the risk engine is the judge.
+      <br><br>
+      Module M04b covers <strong>directory services</strong> — the identity stores that every authentication system depends on. When PingFederate validates credentials, it queries Active Directory. When the adaptive auth engine looks up user attributes, it queries LDAP. When SCIM provisions a new user, it writes to PingDirectory. <strong>Directories are the substrate on which everything else runs.</strong>
+      <br><br>
+      M04b covers Active Directory architecture (forests, trusts, Kerberos), Microsoft Entra ID hybrid topology, PingDirectory, LDAP protocol depth, SCIM provisioning, and directory synchronization patterns. After M04b, you will understand how identity data is stored, queried, and synchronized across every system in your enterprise.
+    </p>
+    <div class="bridge-concepts">
+      <span class="badge badge-phase">Active Directory forests &amp; trusts</span>
+      <span class="badge badge-violet">Entra ID hybrid topology</span>
+      <span class="badge badge-teal">PingDirectory &amp; LDAP depth</span>
+      <span class="badge badge-jade">SCIM provisioning architecture</span>
+    </div>
+    <a href="M04b.html" class="bridge-btn">Continue to M04b · Directory Services →</a>
+  </div>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="toc">
+    <div class="toc-label">In this module</div>
+    <a class="toc-item" href="#why">Why this module matters</a>
+    <a class="toc-item" href="#factors">Factor taxonomy (6 types)</a>
+    <a class="toc-item toc-sub" href="#factors">Security bar charts</a>
+    <a class="toc-item" href="#fido2">FIDO2 &amp; WebAuthn</a>
+    <a class="toc-item toc-sub" href="#fido2">Registration flow diagram</a>
+    <a class="toc-item toc-sub" href="#fido2">Authentication flow diagram</a>
+    <a class="toc-item toc-sub" href="#fido2">Why it's unphishable</a>
+    <a class="toc-item" href="#pingid">PingID architecture</a>
+    <a class="toc-item" href="#adaptive">Adaptive auth engine</a>
+    <a class="toc-item toc-sub" href="#adaptive">Risk engine diagram</a>
+    <a class="toc-item" href="#stepup">Step-up auth flows</a>
+    <a class="toc-item" href="#passwordless">Passwordless migration</a>
+    <a class="toc-item" href="#kc">Knowledge check (×4)</a>
+    <a class="toc-item" href="#bridge">Bridge to M04b</a>
+  </div>
+
+  <div class="qref">
+    <div class="qref-label">Quick reference</div>
+    <div class="qref-item"><span class="qref-term">AAL1/2/3</span><span class="qref-def">NIST authenticator assurance levels — password / MFA / hardware-bound</span></div>
+    <div class="qref-item"><span class="qref-term">FIDO2</span><span class="qref-def">WebAuthn + CTAP2 — hardware-bound phishing-resistant auth</span></div>
+    <div class="qref-item"><span class="qref-term">Passkey</span><span class="qref-def">Synced FIDO2 credential — phishing-resistant, device-portable</span></div>
+    <div class="qref-item"><span class="qref-term">rpId</span><span class="qref-def">Relying Party ID — domain bound to FIDO2 credential</span></div>
+    <div class="qref-item"><span class="qref-term">acr_values</span><span class="qref-def">OIDC param requesting minimum authentication assurance</span></div>
+    <div class="qref-item"><span class="qref-term">Step-up</span><span class="qref-def">Re-authenticate mid-session for elevated assurance</span></div>
+    <div class="qref-item"><span class="qref-term">MFA fatigue</span><span class="qref-def">Push flood attack — mitigated by number matching</span></div>
+    <div class="qref-item"><span class="qref-term">Number matching</span><span class="qref-def">User types displayed code in push — defeats proxy attacks</span></div>
+    <div class="qref-item"><span class="qref-term">CTAP2</span><span class="qref-def">Client-to-Authenticator Protocol — browser ↔ hardware key</span></div>
+    <div class="qref-item"><span class="qref-term">PIV/CAC</span><span class="qref-def">Smart card standards (US federal) — AAL3 certificate MFA</span></div>
+  </div>
+
+  <div class="card card-amber" style="margin-bottom:12px">
+    <div class="card-label">⚠️ Critical insight</div>
+    <div class="card-title">MFA ≠ phishing-resistant</div>
+    <div class="card-body">TOTP and push MFA are phishable via real-time proxy toolkits. Only FIDO2/WebAuthn and certificate-based auth are cryptographically phishing-resistant. Document this distinction in every security design review.</div>
+  </div>
+
+  <div class="card card-rose" style="margin-bottom:12px">
+    <div class="card-label">M04a colour personality</div>
+    <div class="card-title">Rose-Coral + Violet</div>
+    <div class="card-body">Rose for the security urgency of the MFA domain — the attack layer. Violet for the cryptographic elegance of FIDO2. Factor strength bars use jade (safe) to rose (vulnerable) progression.</div>
+  </div>
+
+  <div class="card card-jade">
+    <div class="card-label">PingID tip</div>
+    <div class="card-title">Enable number matching now</div>
+    <div class="card-body">If your PingID deployment uses push notifications without number matching, this is one configuration change that immediately eliminates MFA fatigue attacks and significantly raises the bar for real-time phishing proxies. Highest-ROI security improvement in your current stack.</div>
+  </div>
+</aside>
+</div><!-- /layout -->
+
+<footer class="footer">
+  <div class="footer-left">IAM Architect Portal · M04a of 20 · Phase 1: Core Protocols</div>
+  <div style="display:flex;gap:8px">
+    <a href="M03b.html" class="badge badge-prereq" style="text-decoration:none">← M03b</a>
+    <a href="M04b.html" class="badge badge-phase" style="text-decoration:none">M04b →</a>
+  </div>
+</footer>
+</div><!-- /shell -->
+
+<script>
+function toggleKC(id){document.getElementById(id).classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.toc-item');
+  const targets=[];
+  items.forEach(a=>{const href=a.getAttribute('href');if(href&&href.startsWith('#')){const el=document.querySelector(href);if(el)targets.push({el,a});}});
+  window.addEventListener('scroll',()=>{
+    let cur=null;
+    targets.forEach(({el})=>{if(window.scrollY>=el.offsetTop-90)cur=el});
+    targets.forEach(({el,a})=>a.classList.toggle('active',el===cur));
+  },{passive:true});
+})();
+(function(){
+  const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.06});
+  document.querySelectorAll('.section,.card,.factor-card,.kc,.takeaway,.arch-review,.concept,.concept-v,.gotcha,.flow-step').forEach(el=>{
+    el.style.opacity='0';el.style.transform='translateY(12px)';
+    el.style.transition='opacity .45s ease,transform .45s ease';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

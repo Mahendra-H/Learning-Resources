@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M03b · SAML 2.0, Federation Patterns & Modern Credentials | IAM Architect Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+:root{
+  --bg-void:#0B0E14;--bg-s1:#111520;--bg-s2:#181D2A;--bg-s3:#1F2535;--bg-s4:#252D40;
+  --border:#1E2636;--border-b:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);
+  --copper:#E8873A;--copper-dim:#C06820;--copper-glow:rgba(232,135,58,0.15);
+  --sapphire:#4A9EFF;--sapphire-dim:#2A7EE0;--sapphire-glow:rgba(74,158,255,0.15);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.13);
+  --jade:#3ECFA0;--jade-glow:rgba(62,207,160,0.13);
+  --violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.13);
+  --amber:#F5C542;--amber-glow:rgba(245,197,66,0.12);
+  --text-p:#E8EDF5;--text-s:#8A95A8;--text-t:#6B7A8F;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --r-sm:4px;--r-md:8px;--r-lg:12px;--r-xl:16px;--r-pill:999px;
+  --sh-card:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  /* M03b: Deep Sapphire primary, Copper secondary */
+  --phase:#4A9EFF;--phase-glow:rgba(74,158,255,0.16);--phase-dim:#2A7EE0;
+  --accent2:#E8873A;--accent2-glow:rgba(232,135,58,0.16);
+  --grad-head:linear-gradient(95deg,#4A9EFF 0%,#E8873A 100%);
+}
+body{background:var(--bg-void);color:var(--text-p);font-family:var(--fb);line-height:1.7;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:var(--r-pill)}
+::selection{background:rgba(74,158,255,.18);color:var(--sapphire)}
+a{color:var(--sapphire);text-decoration:none;transition:color .15s}a:hover{color:var(--copper)}
+code{font-family:var(--fm);font-size:.85em;background:var(--bg-s3);border:1px solid var(--border);color:var(--sapphire);padding:1px 6px;border-radius:var(--r-sm)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.95);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--border);padding:0 40px}
+.nav-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:20px}
+.nav-logo{font-family:var(--fd);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.nav-logo span{color:var(--text-t);font-weight:400}
+.nav-div{width:1px;height:18px;background:var(--border-b);flex-shrink:0}
+.nav-progress{flex:1;display:flex;align-items:center;gap:10px}
+.progress-track{flex:1;height:2px;background:var(--border);border-radius:var(--r-pill);overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--sapphire),var(--copper));border-radius:var(--r-pill);width:20%}
+.progress-label{font-family:var(--fm);font-size:12px;color:var(--text-s);white-space:nowrap}
+.nav-badge{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--r-pill);background:var(--sapphire-glow);border:1px solid var(--sapphire);color:var(--sapphire);white-space:nowrap}
+.nav-home{font-family:var(--fm);font-size:12px;color:var(--text-s);padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border-b);transition:all .15s;text-decoration:none}
+.nav-home:hover{color:var(--text-p);border-color:var(--sapphire);background:var(--sapphire-glow)}
+
+/* SHELL */
+.shell{max-width:1100px;margin:0 auto;padding:0 40px}
+
+/* HERO — M03b: sapphire + copper diagonal glow */
+.hero{position:relative;padding:72px 0 56px;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 55% 50% at 8% 35%,rgba(74,158,255,0.13) 0%,transparent 55%),
+  radial-gradient(ellipse 45% 40% at 92% 65%,rgba(232,135,58,0.10) 0%,transparent 55%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse 85% 65% at 18% 50%,black 0%,transparent 75%);opacity:.28;pointer-events:none}
+/* M03b: sapphire top bar fading to copper */
+.hero-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--sapphire),var(--copper) 60%,transparent);pointer-events:none}
+.hero-content{position:relative;z-index:1}
+.hero-phase{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--sapphire);margin-bottom:16px}
+.phase-dot{width:7px;height:7px;border-radius:50%;background:var(--sapphire);box-shadow:0 0 12px var(--sapphire);animation:pdot 2s ease-in-out infinite}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 12px var(--sapphire)}50%{opacity:.4;box-shadow:0 0 3px var(--sapphire)}}
+.hero-title{font-family:var(--fd);font-size:clamp(32px,4.5vw,54px);font-weight:800;line-height:1.07;letter-spacing:-.025em;color:var(--text-p);max-width:820px;margin-bottom:18px}
+.hero-title .ac{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:17px;font-weight:300;color:var(--text-s);max-width:640px;line-height:1.75;margin-bottom:28px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 11px;border-radius:var(--r-pill)}
+.badge-phase{background:var(--sapphire-glow);border:1px solid var(--sapphire);color:var(--sapphire)}
+.badge-copper{background:var(--copper-glow);border:1px solid rgba(232,135,58,.4);color:var(--copper)}
+.badge-effort{background:var(--copper-glow);border:1px solid rgba(232,135,58,.35);color:var(--copper)}
+.badge-prereq{background:var(--bg-s2);border:1px solid var(--border-b);color:var(--text-s)}
+.badge-teal{background:var(--teal-glow);border:1px solid rgba(0,229,195,.35);color:var(--teal)}
+
+/* ORIENTATION */
+.orient{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:56px;position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--sapphire) 0%,var(--copper) 55%,transparent 100%)}
+.orient-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;margin-bottom:20px}
+.orient-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:5px}
+.orient-val{font-size:14px;font-weight:500;color:var(--text-p)}
+.orient-val.ac{color:var(--sapphire)}
+.orient-val.done{color:var(--jade)}
+.journey-row{display:flex;gap:5px;flex-wrap:wrap;padding-top:18px;border-top:1px solid var(--border)}
+.jdot{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;font-weight:500;transition:all .2s}
+.jdot-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.jdot-cur{background:var(--sapphire-glow);border:1px solid var(--sapphire);color:var(--sapphire);box-shadow:0 0 16px rgba(74,158,255,.2)}
+.jdot-future{background:var(--bg-s2);border:1px solid var(--border);color:var(--text-s)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:48px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.sidebar{position:sticky;top:72px}
+
+/* SECTIONS */
+.section{margin-bottom:60px}
+.sec-label{display:flex;align-items:center;gap:10px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--sapphire);margin-bottom:18px}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--sapphire) 0%,transparent 100%);opacity:.35}
+/* M03b: copper underline bar under titles */
+.sec-title{font-family:var(--fd);font-size:26px;font-weight:700;color:var(--text-p);margin-bottom:6px;line-height:1.2}
+.sec-title-wrap{margin-bottom:20px}
+.sec-title-wrap .underbar{height:3px;width:60px;background:linear-gradient(90deg,var(--copper),var(--sapphire));border-radius:var(--r-pill);margin-top:6px}
+.sec-body{font-size:15px;color:var(--text-s);line-height:1.8}
+.sec-body p{margin-bottom:14px}.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text-p);font-weight:500}
+.sec-body em{color:var(--sapphire);font-style:normal;font-weight:500}
+
+/* DIAGRAM WRAP */
+.diag-wrap{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin:24px 0;overflow-x:auto}
+.diag-label{font-family:var(--fm);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-s);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.diag-label::before{content:'◈';color:var(--sapphire);font-size:14px}
+
+/* CONCEPT BLOCKS — M03b: sapphire */
+.concept{border-left:3px solid var(--sapphire);padding:16px 20px;background:var(--sapphire-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-term{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--sapphire);margin-bottom:6px}
+.concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-def strong{color:var(--text-p);font-weight:500}
+/* copper variant */
+.concept-cop{border-left:3px solid var(--copper);padding:16px 20px;background:var(--copper-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-cop .concept-term{color:var(--copper)}
+.concept-cop .concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-cop .concept-def strong{color:var(--text-p);font-weight:500}
+
+/* GOTCHA */
+.gotcha{background:var(--bg-s1);border:1px solid rgba(255,95,126,.35);border-radius:var(--r-lg);padding:18px 20px;margin:20px 0;position:relative;overflow:hidden}
+.gotcha::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--rose)}
+.gotcha-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.gotcha-icon{font-size:16px}
+.gotcha-label{font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rose);background:var(--rose-glow);border:1px solid rgba(255,95,126,.3);padding:2px 8px;border-radius:var(--r-pill)}
+.gotcha-title{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text-p)}
+.gotcha-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.gotcha-body strong{color:var(--rose)}
+
+/* CARDS */
+.card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--border-b);box-shadow:var(--sh-card)}
+.card-sapp{border-left:3px solid var(--sapphire);background:linear-gradient(135deg,var(--sapphire-glow) 0%,var(--bg-s1) 60%)}
+.card-copper{border-left:3px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-s1) 60%)}
+.card-teal{border-left:3px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-s1) 60%)}
+.card-rose{border-left:3px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-s1) 60%)}
+.card-jade{border-left:3px solid var(--jade);background:linear-gradient(135deg,var(--jade-glow) 0%,var(--bg-s1) 60%)}
+.card-violet{border-left:3px solid var(--violet);background:linear-gradient(135deg,var(--violet-glow) 0%,var(--bg-s1) 60%)}
+.card-amber{border-left:3px solid var(--amber);background:linear-gradient(135deg,var(--amber-glow) 0%,var(--bg-s1) 60%)}
+.card-label{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:8px}
+.card-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p);margin-bottom:8px}
+.card-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.card-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+
+/* COMPARE TABLE */
+.tbl-wrap{overflow-x:auto;margin:16px 0}
+table.compare{width:100%;border-collapse:collapse;font-size:14px}
+.compare th{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);padding:10px 14px;border-bottom:1px solid var(--border-b);text-align:left;background:var(--bg-s2);white-space:nowrap}
+.compare th:first-child{color:var(--sapphire)}
+.compare td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-s);vertical-align:top;line-height:1.6}
+.compare td:first-child{font-weight:600;color:var(--text-p);font-family:var(--fm);font-size:13px}
+.compare tr:hover td{background:var(--bg-s2)}
+.compare tr:last-child td{border-bottom:none}
+.tag-y{color:var(--jade);font-weight:600}
+.tag-n{color:var(--rose);font-weight:600}
+.tag-m{color:var(--amber);font-weight:600}
+.tag-sapp{color:var(--sapphire);font-weight:600}
+.tag-cop{color:var(--copper);font-weight:600}
+
+/* BINDING CARDS */
+.binding-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin:20px 0}
+.binding-card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;transition:all .2s}
+.binding-card:hover{border-color:var(--border-b)}
+.binding-name{font-family:var(--fm);font-size:13px;font-weight:600;margin-bottom:8px}
+.binding-desc{font-size:13px;color:var(--text-s);line-height:1.6;margin-bottom:8px}
+.binding-use{font-size:12px;font-family:var(--fm);color:var(--text-t);padding:5px 10px;background:var(--bg-s2);border-radius:var(--r-sm)}
+.binding-use span{color:var(--sapphire)}
+
+/* KNOWLEDGE CHECK */
+.kc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin:10px 0}
+.kc-q{padding:16px 20px;font-size:15px;font-weight:500;color:var(--text-p);display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s;user-select:none}
+.kc-q:hover{background:var(--bg-s2)}
+.kc-icon{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--sapphire);background:var(--sapphire-glow);border:1px solid var(--sapphire);border-radius:4px;padding:2px 7px;flex-shrink:0;margin-top:2px}
+.kc-chev{margin-left:auto;flex-shrink:0;color:var(--text-s);transition:transform .2s;font-size:13px}
+.kc.open .kc-chev{transform:rotate(180deg)}
+.kc-a{display:none;padding:16px 20px;background:var(--bg-s2);border-top:1px solid var(--border);font-size:14px;color:var(--text-s);line-height:1.75}
+.kc.open .kc-a{display:block}
+.kc-a strong{color:var(--text-p);font-weight:500}
+
+/* TAKEAWAY */
+.takeaway{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin:28px 0;position:relative;overflow:hidden}
+.takeaway::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--sapphire),var(--copper))}
+.takeaway-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.takeaway-icon{width:36px;height:36px;border-radius:var(--r-sm);background:var(--sapphire-glow);border:1px solid var(--sapphire);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.takeaway-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p)}
+.takeaway-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.takeaway-list li{font-size:14px;color:var(--text-s);display:flex;align-items:flex-start;gap:10px;line-height:1.65}
+.takeaway-list li::before{content:'◆';color:var(--sapphire);font-size:9px;flex-shrink:0;margin-top:5px}
+
+/* ARCHITECT REVIEW */
+.arch-review{background:var(--bg-s1);border:1px solid rgba(232,135,58,.35);border-radius:var(--r-lg);overflow:hidden;margin:28px 0}
+.arch-review-head{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.arch-badge{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:3px 10px;border-radius:var(--r-pill)}
+.arch-title{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--text-p)}
+.arch-list{list-style:none;padding:4px 20px 8px}
+.arch-list li{font-size:14px;color:var(--text-s);display:flex;gap:12px;align-items:flex-start;line-height:1.7;padding:14px 0;border-bottom:1px solid var(--border)}
+.arch-list li:last-child{border-bottom:none}
+.arch-num{font-family:var(--fm);font-size:13px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:24px;font-weight:700}
+
+/* DEP MAP */
+.dep-map{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:16px;background:var(--bg-s2);border-radius:var(--r-md);border:1px solid var(--border);margin:14px 0}
+.dep-node{font-family:var(--fm);font-size:12px;padding:5px 12px;border-radius:var(--r-pill)}
+.dep-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.dep-cur{background:var(--sapphire-glow);border:1px solid var(--sapphire);color:var(--sapphire);font-weight:600;box-shadow:0 0 10px rgba(74,158,255,.15)}
+.dep-future{background:var(--bg-s3);border:1px solid var(--border-b);color:var(--text-s)}
+.dep-arr{color:var(--text-s);font-size:16px;flex-shrink:0}
+
+/* BRIDGE */
+.bridge{margin-top:64px;padding-top:48px;border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-s1) 0%,var(--bg-s2) 100%);border:1px solid var(--border-b);border-radius:var(--r-xl);padding:36px;position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--sapphire),var(--copper),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(232,135,58,.07);pointer-events:none}
+.bridge-eyebrow{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px}
+.bridge-title{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--text-p);margin-bottom:16px}
+.bridge-title span{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.bridge-body{font-size:15px;color:var(--text-s);line-height:1.8;max-width:600px;margin-bottom:24px}
+.bridge-body strong{color:var(--text-p);font-weight:500}
+.bridge-concepts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.bridge-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(90deg,var(--sapphire),var(--copper));color:var(--bg-void);font-family:var(--fd);font-size:14px;font-weight:700;padding:13px 28px;border-radius:var(--r-pill);border:none;cursor:pointer;text-decoration:none;transition:all .2s}
+.bridge-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(74,158,255,.25);color:var(--bg-void)}
+
+/* SIDEBAR */
+.toc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.toc-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.toc-item{display:block;padding:6px 10px;font-size:13px;color:var(--text-s);border-radius:var(--r-sm);transition:all .15s;cursor:pointer;border-left:2px solid transparent;text-decoration:none}
+.toc-item:hover{background:var(--bg-s2);color:var(--text-p);border-left-color:var(--border-b)}
+.toc-item.active{background:var(--bg-s2);color:var(--sapphire);border-left-color:var(--sapphire)}
+.toc-sub{padding-left:20px;font-size:12px}
+.qref{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.qref-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.qref-item{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.qref-item:last-child{border-bottom:none}
+.qref-term{font-family:var(--fm);font-size:12px;color:var(--sapphire);white-space:nowrap;flex-shrink:0;font-weight:500}
+.qref-def{color:var(--text-s);line-height:1.55;font-size:13px}
+
+/* FOOTER */
+.footer{border-top:1px solid var(--border);padding:28px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:40px}
+.footer-left{font-family:var(--fm);font-size:12px;color:var(--text-s)}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fadeUp .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
+@media(max-width:768px){.shell{padding:0 20px}.nav{padding:0 20px}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">IAM<span>·</span>PORTAL</div>
+    <div class="nav-div"></div>
+    <div class="nav-progress">
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <span class="progress-label">M03b / 20</span>
+    </div>
+    <a href="INDEX.html" class="nav-home">← Index</a>
+    <span class="nav-badge">M03b · Phase 1</span>
+  </div>
+</nav>
+
+<div class="shell">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero-bar"></div>
+  <div class="hero-content">
+    <div class="hero-phase"><div class="phase-dot"></div>Phase 1 · Core Protocols — Module 3b of 20</div>
+    <h1 class="hero-title">SAML 2.0 &amp;<br><span class="ac">Federation Patterns</span></h1>
+    <p class="hero-sub">The protocol that runs enterprise SSO for thousands of SaaS integrations. SAML is older than OAuth but far from obsolete — and understanding it at architectural depth is what separates IAM architects from product operators.</p>
+    <div class="hero-meta">
+      <span class="badge badge-phase">Phase 1 · Core Protocols</span>
+      <span class="badge badge-copper">SAML 2.0 · Federation · Ping</span>
+      <span class="badge badge-effort">⬛⬛⬛⬛☐ 6–9 hrs</span>
+      <span class="badge badge-prereq">↳ M03a OAuth &amp; OIDC</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="orient-grid">
+    <div><div class="orient-label">Current module</div><div class="orient-val ac">M03b · SAML 2.0 &amp; Federation</div></div>
+    <div><div class="orient-label">Learning track</div><div class="orient-val">Core Protocols</div></div>
+    <div><div class="orient-label">Current phase</div><div class="orient-val">Phase 1 of 4</div></div>
+    <div><div class="orient-label">Overall progress</div><div class="orient-val">4 of 20 modules</div></div>
+    <div><div class="orient-label">What came before</div><div class="orient-val done">✓ M01 · M02 · M03a OAuth &amp; OIDC</div></div>
+    <div><div class="orient-label">What comes next</div><div class="orient-val">M04a · MFA, Passwordless &amp; Adaptive Auth</div></div>
+  </div>
+  <div class="journey-row">
+    <div class="jdot jdot-done">M01</div><div class="jdot jdot-done">M02</div><div class="jdot jdot-done">M03a</div>
+    <div class="jdot jdot-cur" title="M03b — You are here">M03b</div>
+    <div class="jdot jdot-future">M04a</div><div class="jdot jdot-future">M04b</div>
+    <div class="jdot jdot-future">M05</div><div class="jdot jdot-future">M06</div><div class="jdot jdot-future">M07</div>
+    <div class="jdot jdot-future">M08</div><div class="jdot jdot-future">M09a</div><div class="jdot jdot-future">M09b</div>
+    <div class="jdot jdot-future">M10</div><div class="jdot jdot-future">M11</div><div class="jdot jdot-future">M12</div>
+    <div class="jdot jdot-future">M13</div><div class="jdot jdot-future">M14</div><div class="jdot jdot-future">M15</div>
+    <div class="jdot jdot-future">M16</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+<div class="content-main">
+
+<!-- S1: WHY -->
+<section class="section afu d3" id="why">
+  <div class="sec-label">Why this module matters</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">SAML is not legacy — it is the dominant enterprise protocol</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Every large enterprise has hundreds of SAML integrations. Salesforce, Workday, ServiceNow, GitHub Enterprise, AWS SSO, Azure applications — all support SAML as a first-class integration. When an enterprise buys a new SaaS application, the first question from IT is almost always: "Does it support SAML?" not "Does it support OIDC?"</p>
+    <p>SAML was standardized in 2005. OAuth was designed in 2010. By the time OAuth became enterprise-ready, every major SaaS application already had SAML support baked in. <strong>This is why SAML will outlive every "SAML is dead" prediction by another decade.</strong> Architects who dismiss SAML as legacy cannot design real enterprise identity ecosystems.</p>
+    <p>This module covers SAML 2.0 at depth — assertion anatomy, binding mechanics, federation patterns, and PingFederate's role as a federation hub. It closes with the definitive <em>SAML vs OAuth decision framework</em> — the most common architectural question you will face.</p>
+  </div>
+</section>
+
+<!-- S2: SAML FUNDAMENTALS -->
+<section class="section" id="fundamentals">
+  <div class="sec-label">SAML fundamentals</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">What SAML 2.0 actually is</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>SAML 2.0 (Security Assertion Markup Language) is an XML-based open standard for exchanging authentication and authorization data between an Identity Provider and a Service Provider. It defines three things: the assertion format, the protocols for requesting and receiving assertions, and the bindings for transporting those protocols over HTTP.</p>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">The three SAML components — assertions, protocols, bindings</div>
+    <div class="concept-def">
+      <strong>Assertions</strong> are the payload — XML documents containing statements about a subject. Three assertion types: AuthnStatement (the user authenticated at time T using method M), AttributeStatement (the user has attributes email=alice@corp.com, role=admin), AuthzDecisionStatement (the user is/isn't permitted to access resource R — rarely used in practice, authorization is handled at the application layer).
+      <br><br>
+      <strong>Protocols</strong> define the request/response message formats — the Authentication Request Protocol (AuthnRequest from SP to IdP), the Single Logout Protocol (SLO — coordinated session termination), and the Artifact Resolution Protocol.
+      <br><br>
+      <strong>Bindings</strong> define how protocols are transported over HTTP — HTTP-Redirect (parameters in URL), HTTP-POST (assertions in HTML form), HTTP-Artifact (a reference exchanged by back-channel). The binding choice has significant security and performance implications.
+    </div>
+  </div>
+
+  <!-- ASSERTION ANATOMY -->
+  <div class="diag-wrap">
+    <div class="diag-label">SAML Assertion anatomy — the XML payload an IdP sends to a Service Provider</div>
+    <svg viewBox="0 0 880 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;display:block" role="img" aria-label="SAML 2.0 assertion XML structure showing the three statement types and their key attributes">
+      <title>SAML 2.0 Assertion Anatomy</title>
+      <rect width="880" height="500" fill="#0B0E14" rx="8"/>
+
+      <!-- Outer assertion wrapper -->
+      <rect x="20" y="20" width="840" height="460" rx="6" fill="#111520" stroke="#4A9EFF" stroke-width="1.5"/>
+      <rect x="20" y="20" width="840" height="32" rx="6" fill="rgba(74,158,255,0.12)"/>
+      <text x="36" y="42" font-size="13" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="700">&lt;saml:Assertion</text>
+      <text x="260" y="42" font-size="13" font-family="IBM Plex Mono" fill="#8A95A8">ID="_abc123" Version="2.0" IssueInstant="2025-01-15T09:00:00Z"&gt;</text>
+
+      <!-- Issuer -->
+      <rect x="36" y="62" width="808" height="28" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="52" y="81" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">&lt;saml:Issuer&gt;</text>
+      <text x="200" y="81" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0">https://idp.company.com/saml</text>
+      <text x="520" y="81" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">&lt;/saml:Issuer&gt;</text>
+      <text x="730" y="81" font-size="11" font-family="IBM Plex Mono" fill="#4A5568">← IdP identifier</text>
+
+      <!-- Signature -->
+      <rect x="36" y="98" width="808" height="28" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="52" y="117" font-size="12" font-family="IBM Plex Mono" fill="#E8873A">&lt;ds:Signature&gt;</text>
+      <text x="200" y="117" font-size="12" font-family="IBM Plex Sans" fill="#8A95A8">XML digital signature over the entire assertion</text>
+      <text x="590" y="117" font-size="12" font-family="IBM Plex Mono" fill="#E8873A">&lt;/ds:Signature&gt;</text>
+      <text x="730" y="117" font-size="11" font-family="IBM Plex Mono" fill="#4A5568">← RS256/SHA256</text>
+
+      <!-- Subject -->
+      <rect x="36" y="134" width="808" height="48" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="52" y="153" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">&lt;saml:Subject&gt;</text>
+      <text x="52" y="173" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F" x="72">  &lt;saml:NameID Format="urn:oasis:...:emailAddress"&gt;</text>
+      <text x="500" y="173" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0">alice@company.com</text>
+      <text x="700" y="173" font-size="11" font-family="IBM Plex Mono" fill="#4A5568">← Subject identifier</text>
+
+      <!-- Conditions -->
+      <rect x="36" y="190" width="808" height="48" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="52" y="209" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">&lt;saml:Conditions</text>
+      <text x="220" y="209" font-size="12" font-family="IBM Plex Mono" fill="#9B7FFF">NotBefore="09:00:00Z" NotOnOrAfter="09:05:00Z"</text>
+      <text x="690" y="209" font-size="11" font-family="IBM Plex Mono" fill="#4A5568">← 5-min window</text>
+      <text x="52" y="229" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">  &lt;saml:AudienceRestriction&gt;&lt;saml:Audience&gt;</text>
+      <text x="490" y="229" font-size="12" font-family="IBM Plex Mono" fill="#9B7FFF">https://sp.saasapp.com/saml</text>
+      <text x="718" y="229" font-size="11" font-family="IBM Plex Mono" fill="#4A5568">← SP entity ID</text>
+
+      <!-- AuthnStatement -->
+      <rect x="36" y="246" width="808" height="56" rx="4" fill="rgba(74,158,255,0.06)" stroke="#4A9EFF" stroke-width="1"/>
+      <text x="52" y="265" font-size="12" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="600">&lt;saml:AuthnStatement  AuthnInstant="09:00:00Z"  SessionIndex="_session456"&gt;</text>
+      <text x="52" y="283" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">  &lt;saml:AuthnContext&gt;&lt;saml:AuthnContextClassRef&gt;</text>
+      <text x="490" y="283" font-size="12" font-family="IBM Plex Mono" fill="#4A9EFF">PasswordProtectedTransport</text>
+      <text x="52" y="298" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">  ← Describes HOW the user authenticated (password, MFA, certificate, etc.)</text>
+
+      <!-- AttributeStatement -->
+      <rect x="36" y="310" width="808" height="90" rx="4" fill="rgba(232,135,58,0.06)" stroke="#E8873A" stroke-width="1"/>
+      <text x="52" y="329" font-size="12" font-family="IBM Plex Mono" fill="#E8873A" font-weight="600">&lt;saml:AttributeStatement&gt;</text>
+      <text x="52" y="347" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">  &lt;saml:Attribute Name="email"&gt;&lt;saml:AttributeValue&gt;</text>
+      <text x="520" y="347" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0">alice@company.com</text>
+      <text x="52" y="365" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">  &lt;saml:Attribute Name="groups"&gt;&lt;saml:AttributeValue&gt;</text>
+      <text x="520" y="365" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0">Finance, Reporting-Read</text>
+      <text x="52" y="383" font-size="12" font-family="IBM Plex Mono" fill="#6B7A8F">  &lt;saml:Attribute Name="department"&gt;&lt;saml:AttributeValue&gt;</text>
+      <text x="540" y="383" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0">Finance</text>
+      <text x="52" y="396" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">  ← These attributes drive authorization decisions in the SP application</text>
+
+      <!-- Closing tag -->
+      <rect x="36" y="408" width="808" height="28" rx="4" fill="#181D2A" stroke="#2E3A52" stroke-width="1"/>
+      <text x="52" y="427" font-size="13" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="700">&lt;/saml:Assertion&gt;</text>
+
+      <!-- Annotations -->
+      <rect x="36" y="444" width="808" height="28" rx="4" fill="rgba(0,0,0,0)"/>
+      <text x="52" y="462" font-size="11" font-family="IBM Plex Mono" fill="#4A9EFF">■ AuthnStatement</text>
+      <text x="220" y="462" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Who authenticated + how + when</text>
+      <text x="440" y="462" font-size="11" font-family="IBM Plex Mono" fill="#E8873A">■ AttributeStatement</text>
+      <text x="620" y="462" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Claims about the subject</text>
+    </svg>
+  </div>
+
+  <div class="concept-cop">
+    <div class="concept-term">The assertion validity window — why 5 minutes matters architecturally</div>
+    <div class="concept-def">The <code>NotBefore</code> / <code>NotOnOrAfter</code> window in SAML Conditions is typically 5 minutes. This is a replay attack defence — a stolen assertion can only be replayed within this window. The SP must also track the assertion's <code>ID</code> attribute in a replay cache and reject any assertion with a previously seen ID, even within the validity window. <strong>Architects designing high-security SAML deployments must ensure SPs implement this replay cache</strong> — many do not by default.</div>
+  </div>
+</section>
+
+<!-- S3: BINDINGS -->
+<section class="section" id="bindings">
+  <div class="sec-label">SAML bindings</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">How assertions travel — the three HTTP bindings</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>SAML bindings define how SAML protocol messages are transported over HTTP. The choice of binding affects security, performance, and the size of data you can transmit. Most enterprises use HTTP-POST for assertions and HTTP-Redirect for authentication requests.</p>
+  </div>
+
+  <div class="binding-grid">
+    <div class="binding-card" style="border-top:2px solid var(--sapphire)">
+      <div class="binding-name" style="color:var(--sapphire)">HTTP-Redirect Binding</div>
+      <div class="binding-desc">The SAML message is Base64-encoded, deflated (compressed), and sent as a URL query parameter. The user's browser performs a GET redirect. Typically used for the <code>AuthnRequest</code> (SP → IdP) because request payloads are small. The URL is signed by the SP's private key (separate from the XML signature).</div>
+      <div class="binding-use"><span>Use for:</span> AuthnRequest from SP to IdP. Small payloads only — URL length limits (~2KB). Fast; no form submission.</div>
+    </div>
+    <div class="binding-card" style="border-top:2px solid var(--copper)">
+      <div class="binding-name" style="color:var(--copper)">HTTP-POST Binding</div>
+      <div class="binding-desc">The SAML message is Base64-encoded (not compressed) and embedded in a hidden HTML form field. The browser auto-submits the form via POST. Used for the SAML Response (IdP → SP) because assertions can be large (many attribute values). The XML assertion itself is digitally signed.</div>
+      <div class="binding-use"><span>Use for:</span> SAML Response (assertion) from IdP to SP. Large payloads. The standard binding for all assertion delivery. Content not visible in browser URL bar.</div>
+    </div>
+    <div class="binding-card" style="border-top:2px solid var(--jade)">
+      <div class="binding-name" style="color:var(--jade)">HTTP-Artifact Binding</div>
+      <div class="binding-desc">Instead of the full assertion, the IdP sends a short "artifact" (opaque reference) to the SP via browser redirect. The SP then calls the IdP's Artifact Resolution Service directly (back-channel SOAP call) to exchange the artifact for the real assertion. The assertion never passes through the browser.</div>
+      <div class="binding-use"><span>Use for:</span> High-security scenarios where assertion must not touch browser. Financial services. Situations where very large assertions would break HTTP-POST. Requires SP to make direct network call to IdP.</div>
+    </div>
+  </div>
+
+  <div class="gotcha">
+    <div class="gotcha-head"><span class="gotcha-icon">⚠️</span><span class="gotcha-label">Gotcha</span><span class="gotcha-title">HTTP-Redirect assertions — not a thing. Only requests use Redirect binding.</span></div>
+    <div class="gotcha-body">A common misconfiguration: configuring an SP to expect the assertion via HTTP-Redirect binding. SAML assertions cannot reliably be delivered via HTTP-Redirect — they are too large for URL parameters and XML signatures embedded in URL query strings are fragile. <strong>The correct combination: AuthnRequest via HTTP-Redirect, SAML Response (containing the assertion) via HTTP-POST.</strong> Any SP or IdP configuration that delivers assertions via redirect should be treated as a misconfiguration.</div>
+  </div>
+</section>
+
+<!-- S4: SP vs IdP INITIATED FLOWS -->
+<section class="section" id="flows">
+  <div class="sec-label">Authentication flows</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">SP-initiated vs IdP-initiated — the architectural difference</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>SAML supports two flow directions. The choice between them has significant security implications that most practitioners don't fully appreciate.</p>
+  </div>
+
+  <!-- DIAGRAM 1: SP-initiated SSO full flow -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 1 — SP-initiated SAML SSO full sequence (the secure flow)</div>
+    <svg viewBox="0 0 920 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:920px;display:block" role="img" aria-label="SAML SP-initiated SSO sequence showing all steps from unauthenticated access through assertion delivery and session creation">
+      <title>SAML SP-Initiated SSO Flow</title>
+      <rect width="920" height="580" fill="#0B0E14" rx="8"/>
+      <defs>
+        <marker id="sa1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8A95A8"/></marker>
+        <marker id="sa-sapp" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4A9EFF"/></marker>
+        <marker id="sa-cop" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#E8873A"/></marker>
+        <marker id="sa-jade" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+      </defs>
+
+      <!-- ACTORS -->
+      <rect x="20" y="16" width="120" height="50" rx="6" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="80" y="38" text-anchor="middle" font-size="13" font-family="IBM Plex Mono" fill="#E8EDF5" font-weight="600">User</text>
+      <text x="80" y="56" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Browser</text>
+
+      <rect x="330" y="16" width="160" height="50" rx="6" fill="#111520" stroke="#E8873A" stroke-width="1.5"/>
+      <text x="410" y="38" text-anchor="middle" font-size="13" font-family="IBM Plex Mono" fill="#E8873A" font-weight="600">Service Provider</text>
+      <text x="410" y="56" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Salesforce · ServiceNow</text>
+
+      <rect x="680" y="16" width="160" height="50" rx="6" fill="#111520" stroke="#4A9EFF" stroke-width="1.5"/>
+      <text x="760" y="38" text-anchor="middle" font-size="13" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="600">Identity Provider</text>
+      <text x="760" y="56" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">PingFederate · Okta · Entra</text>
+
+      <!-- Lifelines -->
+      <line x1="80" y1="66" x2="80" y2="565" stroke="#1E2636" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="410" y1="66" x2="410" y2="565" stroke="#1E2636" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="760" y1="66" x2="760" y2="565" stroke="#1E2636" stroke-width="1" stroke-dasharray="4,4"/>
+
+      <!-- Step 1: User accesses SP resource -->
+      <line x1="96" y1="98" x2="328" y2="98" stroke="#8A95A8" stroke-width="2" marker-end="url(#sa1)"/>
+      <text x="212" y="88" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">1. GET /resource (unauthenticated)</text>
+
+      <!-- Step 2: SP creates AuthnRequest -->
+      <rect x="330" y="110" width="160" height="46" rx="4" fill="#181D2A" stroke="#E8873A" stroke-width="1"/>
+      <text x="410" y="130" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#E8873A" font-weight="600">2. Create AuthnRequest</text>
+      <text x="410" y="148" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">ID, IssueInstant, AssertionConsumerServiceURL</text>
+
+      <!-- Step 3: SP redirects browser to IdP -->
+      <line x1="328" y1="168" x2="96" y2="168" stroke="#E8873A" stroke-width="2" marker-end="url(#sa-cop)"/>
+      <text x="212" y="158" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#E8873A">3. 302 → IdP?SAMLRequest=&lt;encoded&gt;&amp;SigAlg=&amp;Signature=</text>
+
+      <!-- Step 4: Browser follows redirect to IdP -->
+      <line x1="96" y1="192" x2="742" y2="192" stroke="#8A95A8" stroke-width="2" marker-end="url(#sa1)"/>
+      <text x="420" y="182" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">4. GET /sso/idp?SAMLRequest=... (HTTP-Redirect binding)</text>
+
+      <!-- Step 5: IdP authenticates user -->
+      <rect x="682" y="204" width="156" height="58" rx="4" fill="#181D2A" stroke="#4A9EFF" stroke-width="1"/>
+      <text x="760" y="224" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="600">5. Authenticate user</text>
+      <text x="760" y="240" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Validate credentials vs directory</text>
+      <text x="760" y="254" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Apply MFA if required by policy</text>
+
+      <!-- Step 6: IdP builds SAML Response -->
+      <rect x="682" y="272" width="156" height="58" rx="4" fill="#181D2A" stroke="#4A9EFF" stroke-width="1"/>
+      <text x="760" y="292" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="600">6. Build SAML Response</text>
+      <text x="760" y="308" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Create signed Assertion with claims</text>
+      <text x="760" y="322" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Set AudienceRestriction = SP EntityID</text>
+
+      <!-- Step 7: IdP sends HTML autosubmit form -->
+      <line x1="742" y1="344" x2="96" y2="344" stroke="#4A9EFF" stroke-width="2" marker-end="url(#sa-sapp)"/>
+      <text x="420" y="334" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#4A9EFF">7. 200 HTML page with &lt;form method="POST" action="SP_ACS"&gt;SAMLResponse=&lt;b64&gt;</text>
+
+      <!-- Step 8: Browser auto-POSTs to SP ACS -->
+      <line x1="96" y1="368" x2="328" y2="368" stroke="#8A95A8" stroke-width="2" marker-end="url(#sa1)"/>
+      <text x="212" y="358" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">8. POST /acs  {SAMLResponse: &lt;base64-encoded assertion&gt;} (HTTP-POST binding)</text>
+
+      <!-- Step 9: SP validates assertion -->
+      <rect x="330" y="380" width="160" height="72" rx="4" fill="#181D2A" stroke="#E8873A" stroke-width="1"/>
+      <text x="410" y="400" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#E8873A" font-weight="600">9. Validate assertion</text>
+      <text x="410" y="416" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">① Verify XML signature (IdP cert)</text>
+      <text x="410" y="432" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">② Check NotBefore / NotOnOrAfter</text>
+      <text x="410" y="448" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">③ Verify AudienceRestriction = self</text>
+
+      <!-- Step 10: SP creates session, returns resource -->
+      <line x1="328" y1="466" x2="96" y2="466" stroke="#3ECFA0" stroke-width="2" marker-end="url(#sa-jade)"/>
+      <text x="212" y="456" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">10. 302 → /resource  (Set-Cookie: SP_SESSION)</text>
+
+      <!-- Step 11: User accesses resource with session -->
+      <line x1="96" y1="488" x2="328" y2="488" stroke="#3ECFA0" stroke-width="2" marker-end="url(#sa-jade)"/>
+      <text x="212" y="500" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">11. GET /resource (Cookie: SP_SESSION) → 200 OK ✓</text>
+
+      <!-- Labels -->
+      <rect x="20" y="514" width="880" height="52" rx="4" fill="#181D2A"/>
+      <text x="36" y="532" font-size="11" font-family="IBM Plex Mono" fill="#4A9EFF">■ Steps 1–3</text><text x="110" y="532" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">SP detects unauthenticated user, creates signed AuthnRequest, redirects browser to IdP</text>
+      <text x="36" y="552" font-size="11" font-family="IBM Plex Mono" fill="#E8873A">■ Steps 4–7</text><text x="110" y="552" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">IdP authenticates user, builds signed SAML Response with assertion, delivers via auto-POST form</text>
+      <text x="36" y="566" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">■ Steps 8–11</text><text x="110" y="566" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">SP validates assertion, establishes local session, grants access to requested resource</text>
+    </svg>
+  </div>
+
+  <div class="card-grid-2" style="margin:24px 0">
+    <div class="card card-sapp">
+      <div class="card-label">SP-initiated (recommended)</div>
+      <div class="card-title">User → SP → IdP → SP</div>
+      <div class="card-body">The user starts at the SP (the application). The SP generates and signs an <code>AuthnRequest</code>, preserves the original resource URL (RelayState), and redirects to the IdP. After authentication, the IdP sends the assertion back to the SP's Assertion Consumer Service (ACS). The SP can validate the <code>InResponseTo</code> attribute against the original request ID. <strong>This correlation check prevents assertion injection attacks.</strong> Always prefer SP-initiated flows.</div>
+    </div>
+    <div class="card card-rose">
+      <div class="card-label">IdP-initiated (use with caution)</div>
+      <div class="card-title">User → IdP → SP</div>
+      <div class="card-body">The user starts at the IdP (e.g., an enterprise portal). The IdP creates an unsolicited assertion and POSTs it to the SP's ACS — without a prior AuthnRequest. There is no <code>InResponseTo</code> attribute to validate. <strong>This means the SP cannot verify the assertion was generated in response to a legitimate request</strong> — a stolen assertion can be replayed at the SP. IdP-initiated SSO is a known SAML vulnerability. Use only when operationally required and implement replay cache + IP binding compensating controls.</div>
+    </div>
+  </div>
+</section>
+
+<!-- S5: FEDERATION HUB -->
+<section class="section" id="federation-hub">
+  <div class="sec-label">Federation architecture</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">PingFederate as a federation hub</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>In large enterprises, the naive approach is to create a direct SAML trust relationship between the enterprise IdP and each Service Provider. With 500 SaaS applications, that means 500 bilateral trust relationships — each with separate metadata, certificates, and attribute mapping configurations. This is the <strong>N×N integration problem</strong>, and it is the primary reason federation hubs exist.</p>
+  </div>
+
+  <!-- DIAGRAM 2: Federation Hub Architecture -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 2 — Federation Hub-and-Spoke architecture with PingFederate</div>
+    <svg viewBox="0 0 880 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:880px;display:block" role="img" aria-label="Federation hub and spoke architecture showing PingFederate as the central hub connecting enterprise identity sources to multiple service providers">
+      <title>Federation Hub-and-Spoke Architecture</title>
+      <rect width="880" height="520" fill="#0B0E14" rx="8"/>
+      <defs>
+        <marker id="fh1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4A9EFF"/></marker>
+        <marker id="fh2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#E8873A"/></marker>
+        <marker id="fh3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+      </defs>
+
+      <!-- IDENTITY SOURCES — left side -->
+      <text x="26" y="34" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F" letter-spacing="1" font-weight="600">IDENTITY SOURCES</text>
+
+      <rect x="20" y="46" width="160" height="58" rx="6" fill="#111520" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="100" y="70" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">Active Directory</text>
+      <text x="100" y="88" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">On-premises employees</text>
+      <text x="100" y="100" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Kerberos · LDAP</text>
+
+      <rect x="20" y="130" width="160" height="58" rx="6" fill="#111520" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="100" y="154" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">PingDirectory</text>
+      <text x="100" y="172" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Consumer identities</text>
+      <text x="100" y="184" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Customer data</text>
+
+      <rect x="20" y="214" width="160" height="58" rx="6" fill="#111520" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="100" y="238" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">External IdP</text>
+      <text x="100" y="256" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Partner org SAML IdP</text>
+      <text x="100" y="268" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">B2B federation</text>
+
+      <rect x="20" y="298" width="160" height="58" rx="6" fill="#111520" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="100" y="322" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">Social IdP</text>
+      <text x="100" y="340" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">Google · LinkedIn</text>
+      <text x="100" y="352" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">OAuth/OIDC IdPs</text>
+
+      <!-- Arrows LEFT → HUB -->
+      <line x1="180" y1="75" x2="310" y2="240" stroke="#4A9EFF" stroke-width="1.5" marker-end="url(#fh1)" opacity="0.7"/>
+      <line x1="180" y1="159" x2="310" y2="255" stroke="#4A9EFF" stroke-width="1.5" marker-end="url(#fh1)" opacity="0.7"/>
+      <line x1="180" y1="243" x2="310" y2="270" stroke="#4A9EFF" stroke-width="1.5" marker-end="url(#fh1)" opacity="0.7"/>
+      <line x1="180" y1="327" x2="310" y2="285" stroke="#4A9EFF" stroke-width="1.5" marker-end="url(#fh1)" opacity="0.7"/>
+
+      <!-- PINGFEDERATE HUB — center -->
+      <ellipse cx="400" cy="270" rx="90" ry="70" fill="rgba(74,158,255,0.08)" stroke="#4A9EFF" stroke-width="2"/>
+      <text x="400" y="252" text-anchor="middle" font-size="14" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="700">Ping</text>
+      <text x="400" y="270" text-anchor="middle" font-size="14" font-family="IBM Plex Mono" fill="#4A9EFF" font-weight="700">Federate</text>
+      <text x="400" y="288" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">Federation Hub</text>
+      <text x="400" y="306" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Protocol translation</text>
+      <text x="400" y="320" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Attribute mapping</text>
+
+      <!-- SERVICE PROVIDERS — right side -->
+      <text x="600" y="34" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F" letter-spacing="1" font-weight="600">SERVICE PROVIDERS</text>
+
+      <!-- SaaS apps -->
+      <rect x="700" y="46" width="160" height="46" rx="5" fill="#181D2A" stroke="#E8873A" stroke-width="1"/>
+      <text x="780" y="66" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#E8873A" font-weight="600">Salesforce</text>
+      <text x="780" y="82" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">SAML 2.0 SP</text>
+
+      <rect x="700" y="108" width="160" height="46" rx="5" fill="#181D2A" stroke="#E8873A" stroke-width="1"/>
+      <text x="780" y="128" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#E8873A" font-weight="600">ServiceNow</text>
+      <text x="780" y="144" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">SAML 2.0 SP</text>
+
+      <rect x="700" y="170" width="160" height="46" rx="5" fill="#181D2A" stroke="#E8873A" stroke-width="1"/>
+      <text x="780" y="190" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#E8873A" font-weight="600">Workday</text>
+      <text x="780" y="206" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">SAML 2.0 SP</text>
+
+      <rect x="700" y="232" width="160" height="46" rx="5" fill="#181D2A" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="780" y="252" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">Internal App</text>
+      <text x="780" y="268" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">OIDC RP (modern)</text>
+
+      <rect x="700" y="294" width="160" height="46" rx="5" fill="#181D2A" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="780" y="314" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">AWS SSO</text>
+      <text x="780" y="330" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">SAML 2.0 SP</text>
+
+      <rect x="700" y="356" width="160" height="46" rx="5" fill="#181D2A" stroke="#9B7FFF" stroke-width="1"/>
+      <text x="780" y="376" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#9B7FFF" font-weight="600">GitHub Enterprise</text>
+      <text x="780" y="392" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">SAML 2.0 SP</text>
+
+      <!-- Arrows HUB → RIGHT SPs -->
+      <line x1="490" y1="240" x2="700" y2="69" stroke="#E8873A" stroke-width="1.5" marker-end="url(#fh2)" opacity="0.7"/>
+      <line x1="490" y1="252" x2="700" y2="131" stroke="#E8873A" stroke-width="1.5" marker-end="url(#fh2)" opacity="0.7"/>
+      <line x1="490" y1="262" x2="700" y2="193" stroke="#E8873A" stroke-width="1.5" marker-end="url(#fh2)" opacity="0.7"/>
+      <line x1="490" y1="270" x2="700" y2="255" stroke="#3ECFA0" stroke-width="1.5" marker-end="url(#fh3)" opacity="0.7"/>
+      <line x1="490" y1="278" x2="700" y2="317" stroke="#E8873A" stroke-width="1.5" marker-end="url(#fh2)" opacity="0.7"/>
+      <line x1="490" y1="290" x2="700" y2="379" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#fh1)" opacity="0.7"/>
+
+      <!-- Legend -->
+      <rect x="20" y="430" width="840" height="76" rx="5" fill="#181D2A" stroke="#1E2636"/>
+      <text x="36" y="452" font-size="11" font-family="IBM Plex Mono" fill="#4A9EFF">■</text>
+      <text x="50" y="452" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">IdP-side trust: PingFederate integrates with each identity source via LDAP, Kerberos, SAML, or OIDC. New sources require only ONE new integration with the hub.</text>
+      <text x="36" y="470" font-size="11" font-family="IBM Plex Mono" fill="#E8873A">■</text>
+      <text x="50" y="470" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">SP-side trust: PingFederate translates to whatever protocol the SP requires — SAML 2.0, OIDC, WS-Federation, OAuth. New SPs require only ONE new integration with the hub.</text>
+      <text x="36" y="488" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">■</text>
+      <text x="50" y="488" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">Protocol translation: PingFederate can receive a Kerberos ticket from AD and issue a SAML assertion to Salesforce or an OIDC token to a modern app — transparently.</text>
+    </svg>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">The N×N problem — why the hub model matters</div>
+    <div class="concept-def">Without a federation hub, 10 identity sources × 50 SPs = 500 bilateral trust relationships. Adding a new SP requires 10 new integrations (one per identity source). Adding a new identity source requires 50 new integrations. With a hub: each new SP requires exactly 1 integration (SP ↔ hub). Each new identity source requires exactly 1 integration (source ↔ hub). <strong>PingFederate is valuable not because it does SAML — any IdP can do SAML. It is valuable because it decouples the identity source count from the SP count, eliminating N×N integration complexity.</strong></div>
+  </div>
+
+  <div class="concept-cop">
+    <div class="concept-term">PingFederate's protocol translation capability</div>
+    <div class="concept-def">PingFederate can receive identity assertions in one protocol and issue them in another. A user authenticated via Kerberos (Active Directory) can receive a SAML assertion for Salesforce, an OIDC ID token for a modern web app, and a WS-Federation token for a legacy .NET application — all from the same authentication event. This is the <strong>protocol brokering</strong> pattern, and it is the primary reason large enterprises choose PingFederate over simpler IdPs: it bridges the legacy-to-modern protocol gap without requiring application rewrites.</div>
+  </div>
+</section>
+
+<!-- S6: SAML vs OAUTH -->
+<section class="section" id="saml-vs-oauth">
+  <div class="sec-label">The definitive comparison</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">SAML vs OAuth 2.0/OIDC — when to choose which</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>This is the most common architectural question in enterprise IAM. The answer is not "OAuth is better" — it depends entirely on the use case. Both protocols solve different problems. Understanding the decision criteria is what separates architects from enthusiasts.</p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Dimension</th><th>SAML 2.0</th><th>OAuth 2.0 + OIDC</th><th>Architect's call</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Primary use case</td>
+          <td>Enterprise SSO — browser-based federated authentication</td>
+          <td>API authorization + mobile/SPA authentication</td>
+          <td>Different problems — not substitutes</td>
+        </tr>
+        <tr>
+          <td>Token format</td>
+          <td>XML assertion (verbose, hundreds of bytes to KB)</td>
+          <td>JWT (compact, URL-safe, ~300–800 bytes)</td>
+          <td><span class="tag-sapp">OAuth</span> for APIs · <span class="tag-cop">SAML</span> for browser SSO</td>
+        </tr>
+        <tr>
+          <td>Transport</td>
+          <td>Browser only (redirect + POST). No API transport.</td>
+          <td>HTTP headers (Bearer), URL params, body. API-native.</td>
+          <td><span class="tag-cop">SAML</span> cannot authorize API calls</td>
+        </tr>
+        <tr>
+          <td>Mobile support</td>
+          <td>Poor — requires embedded browser, assertion in URL</td>
+          <td>Native — PKCE + custom URI schemes work perfectly</td>
+          <td><span class="tag-sapp">OAuth/OIDC</span> for all mobile flows</td>
+        </tr>
+        <tr>
+          <td>Enterprise SaaS adoption</td>
+          <td>Universal — every enterprise SaaS supports SAML</td>
+          <td>Growing — modern SaaS supports OIDC. Legacy does not.</td>
+          <td><span class="tag-cop">SAML</span> for legacy SaaS · <span class="tag-sapp">OIDC</span> for modern</td>
+        </tr>
+        <tr>
+          <td>Delegation (act-as)</td>
+          <td>Not supported natively</td>
+          <td>Native — Token Exchange (RFC 8693)</td>
+          <td><span class="tag-sapp">OAuth</span> for microservice delegation</td>
+        </tr>
+        <tr>
+          <td>Machine-to-machine</td>
+          <td>Not designed for M2M</td>
+          <td>Native — Client Credentials grant</td>
+          <td><span class="tag-sapp">OAuth</span> for all M2M flows</td>
+        </tr>
+        <tr>
+          <td>Metadata/discovery</td>
+          <td>XML metadata files — manual exchange common</td>
+          <td>OIDC Discovery (/.well-known/openid-configuration)</td>
+          <td><span class="tag-sapp">OIDC</span> auto-configures clients</td>
+        </tr>
+        <tr>
+          <td>Complexity</td>
+          <td>High — XML, XML signature, XML encryption, multiple bindings</td>
+          <td>Moderate — many RFCs, but JSON/REST-based</td>
+          <td>SAML debugging is harder; OIDC debugging is easier</td>
+        </tr>
+        <tr>
+          <td>Financial/regulated</td>
+          <td>Accepted — long track record</td>
+          <td>FAPI 2.0 now the financial-grade standard</td>
+          <td>Both accepted; FAPI 2.0 for new financial deployments</td>
+        </tr>
+        <tr>
+          <td>Migration strategy</td>
+          <td>Existing integrations — leave in place</td>
+          <td>New integrations — default to OIDC</td>
+          <td>Incremental migration via protocol proxy</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">The architect's decision rule — simple and unambiguous</div>
+    <div class="concept-def">
+      <strong>Choose SAML when:</strong> The SP requires SAML (legacy SaaS, partner org, no OIDC support). The flow is browser-based enterprise SSO. You're integrating with an existing SAML federation hub.<br><br>
+      <strong>Choose OAuth/OIDC when:</strong> The use case involves APIs, mobile apps, or SPAs. The SP supports OIDC. You're building new integrations from scratch. You need delegation, M2M, or fine-grained API scopes.<br><br>
+      <strong>Choose both via protocol brokering when:</strong> Your hub (PingFederate) can issue either protocol. The user authenticates once; the hub translates the assertion to whatever the SP requires. This is the enterprise answer — not SAML vs OAuth, but both via a translation layer.
+    </div>
+  </div>
+</section>
+
+<!-- S7: METADATA & TRUST ESTABLISHMENT -->
+<section class="section" id="metadata">
+  <div class="sec-label">Trust establishment</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">SAML metadata — how trust is established</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>SAML trust is established by exchanging metadata — XML documents that describe each party's identity, endpoints, supported bindings, and public certificates. This is the foundational configuration step before any SAML SSO can work.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-sapp">
+      <div class="card-label">IdP Metadata contains</div>
+      <div class="card-title">What the SP needs to trust the IdP</div>
+      <div class="card-body">
+        Entity ID (IdP's unique identifier URI)<br>
+        SSO endpoint URL + binding type (where to send AuthnRequest)<br>
+        SLO endpoint URL + binding (Single Logout)<br>
+        X.509 signing certificate (to verify assertion signatures)<br>
+        X.509 encryption certificate (to encrypt assertions, if used)<br>
+        NameID formats supported<br>
+        Attribute profiles supported
+      </div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">SP Metadata contains</div>
+      <div class="card-title">What the IdP needs to serve the SP</div>
+      <div class="card-body">
+        Entity ID (SP's unique identifier URI — must match AudienceRestriction)<br>
+        ACS URL + binding type (where to POST the assertion)<br>
+        SLO endpoint + binding<br>
+        X.509 signing certificate (to verify AuthnRequest signatures)<br>
+        X.509 encryption certificate (for IdP to encrypt assertions)<br>
+        Requested attribute list<br>
+        AuthnContext requirements (MFA policy)
+      </div>
+    </div>
+  </div>
+
+  <div class="gotcha">
+    <div class="gotcha-head"><span class="gotcha-icon">⚠️</span><span class="gotcha-label">Gotcha</span><span class="gotcha-title">Certificate expiry in SAML metadata — the most common production outage</span></div>
+    <div class="gotcha-body">SAML signing certificates embedded in metadata have expiry dates. When the IdP's signing certificate expires, every SP that has cached the old certificate will fail to validate new assertions — causing a complete SSO outage for all integrated applications simultaneously. <strong>This is one of the most common causes of enterprise-wide SSO outages.</strong> Architects must implement: (1) certificate rotation procedures that publish new certs in metadata before retiring old ones, (2) monitoring alerts for certificate expiry 90/60/30 days in advance, (3) automated SP metadata refresh where possible. PingFederate supports dual-certificate configuration to enable zero-downtime rotation.</div>
+  </div>
+</section>
+
+<!-- S8: SAML PROXY & PROTOCOL TRANSLATION -->
+<section class="section" id="proxy">
+  <div class="sec-label">Integration patterns</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">SAML proxy &amp; protocol translation patterns</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Not every enterprise scenario involves a simple IdP-to-SP SAML flow. These three patterns handle the complex integration scenarios architects encounter in real enterprise environments.</p>
+  </div>
+
+  <div class="card-grid-3" style="margin:20px 0">
+    <div class="card card-sapp">
+      <div class="card-label">Pattern 1</div>
+      <div class="card-title">SAML Proxy (Assertion Brokering)</div>
+      <div class="card-body">PingFederate acts as both an SP (to the enterprise IdP) and an IdP (to the SaaS applications). The user authenticates to the enterprise IdP; PingFederate receives the assertion, applies attribute mapping and transformation, and re-issues a new assertion to the SP. This enables: attribute normalization, claim enrichment from additional sources (LDAP lookup), policy enforcement, and protocol adaptation — all transparent to the SP.</div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">Pattern 2</div>
+      <div class="card-title">SAML → OAuth/OIDC Bridge</div>
+      <div class="card-body">The user authenticates via SAML (enterprise IdP). PingFederate validates the SAML assertion and issues an OAuth access token or OIDC ID token to modern applications that don't support SAML. This is the migration bridge pattern — it allows modern apps to receive OIDC tokens while the enterprise IdP continues issuing SAML assertions. No change required at the IdP or the modern app.</div>
+    </div>
+    <div class="card card-jade">
+      <div class="card-label">Pattern 3</div>
+      <div class="card-title">B2B Partner Federation</div>
+      <div class="card-body">Two enterprise organizations establish a SAML cross-domain trust. Users from Company A can access resources in Company B using their Company A credentials. PingFederate at each org's boundary establishes the trust via metadata exchange. Attribute mapping defines how Company A's roles/groups translate to Company B's access model. This extends the federation hub model across organizational boundaries.</div>
+    </div>
+  </div>
+</section>
+
+<!-- S9: DECENTRALIZED IDENTITY -->
+<section class="section" id="did">
+  <div class="sec-label">Future direction</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Decentralized identity — where the industry is heading</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Both SAML and OAuth are built on a centralized trust model — the enterprise controls the IdP, and the IdP is the trust anchor. Decentralized identity challenges this assumption. Architects should understand the direction even if enterprise adoption is still early.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-violet">
+      <div class="card-label">DID — Decentralized Identifiers</div>
+      <div class="card-title">Self-sovereign identity anchors</div>
+      <div class="card-body">A DID is a globally unique identifier (e.g., <code>did:web:company.com:alice</code>) that a principal controls without relying on a central registry. DIDs resolve to a DID Document (JSON-LD) that contains public keys, authentication methods, and service endpoints. The key innovation: the principal — not the enterprise — controls their identity anchor. <strong>Enterprise relevance:</strong> DID-based authentication for B2B partner access, eliminating the need for bilateral metadata exchange. Still maturing — Microsoft Entra Verified ID is the most production-ready enterprise implementation.</div>
+    </div>
+    <div class="card card-amber">
+      <div class="card-label">VC — Verifiable Credentials</div>
+      <div class="card-title">Digitally-signed portable claims</div>
+      <div class="card-body">A Verifiable Credential (W3C spec) is a cryptographically signed claim issued by one party (the Issuer — e.g., a university, employer, or government) that a holder presents to a verifier without the issuer being involved in the presentation. Like a digital diploma or passport. <strong>Enterprise relevance:</strong> Employee credentials that persist across employers. Healthcare practitioner licenses. Regulatory compliance certifications that travel with the individual. Reduces reliance on directory synchronization for B2B scenarios. The VC/DID stack is to future IAM what SAML was to 2005 — foundational but not yet ubiquitous.</div>
+    </div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="section" id="kc">
+  <div class="sec-label">Knowledge check</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Test your federation depth</h2><div class="underbar"></div></div>
+
+  <div class="kc" id="kc1">
+    <div class="kc-q" onclick="toggleKC('kc1')">
+      <span class="kc-icon">Q1</span>
+      A SaaS vendor tells you they support "IdP-initiated SAML SSO only." You're the IAM architect. What is the security concern, what compensating controls exist, and what would you negotiate with the vendor?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>Security concern:</strong> IdP-initiated SSO sends an unsolicited assertion to the SP's ACS without a prior AuthnRequest. The SP has no <code>InResponseTo</code> attribute to validate, meaning it cannot verify the assertion was generated in response to a legitimate user action. This enables assertion injection attacks — a stolen valid assertion from one session can be replayed at the SP, potentially by a different user or from a different device, within the assertion's validity window (typically 5 minutes).<br><br>
+      <strong>Compensating controls:</strong> (1) Require the SP to implement a JTI/assertion ID replay cache — reject any assertion with a previously seen ID. (2) Require the SP to validate the assertion's SubjectConfirmationData — specifically the <code>Address</code> attribute (client IP). (3) Reduce assertion validity window to 1–2 minutes. (4) Enable assertion encryption so stolen assertions cannot be read or replayed by intermediaries without the SP's private key.<br><br>
+      <strong>Vendor negotiation:</strong> Push for SP-initiated SSO support. Most modern SaaS vendors support both — if they only support IdP-initiated, ask their product team why and when SP-initiated will be added. Document the risk formally in your security exception process. If the application handles sensitive data, the answer should be "we don't integrate until SP-initiated is supported."
+    </div>
+  </div>
+
+  <div class="kc" id="kc2">
+    <div class="kc-q" onclick="toggleKC('kc2')">
+      <span class="kc-icon">Q2</span>
+      Your enterprise uses PingFederate as the federation hub with 300 SAML SPs. The signing certificate expires in 30 days. Design the zero-downtime certificate rotation procedure.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>Zero-downtime SAML certificate rotation using dual-certificate publication:</strong><br><br>
+      <strong>Step 1 — Generate new certificate (Day 0):</strong> Generate a new RSA-2048 or EC-P256 signing certificate in PingFederate with a 2-year validity. Do NOT yet use it for signing.<br><br>
+      <strong>Step 2 — Publish both certs in metadata (Day 0–7):</strong> Configure PingFederate to publish BOTH the old and new certificates in its IdP metadata (as separate <code>&lt;KeyDescriptor use="signing"&gt;</code> elements). Push the updated metadata to all 300 SPs — automated where possible, manual ticket queue where not. SPs can now validate assertions signed with either certificate.<br><br>
+      <strong>Step 3 — Wait for metadata propagation (Day 7–14):</strong> Confirm all SPs have received the updated metadata. Monitor SP login success rates — any SP still using old cached metadata will still work (old cert still valid and still signing).<br><br>
+      <strong>Step 4 — Switch signing to new cert (Day 14):</strong> Configure PingFederate to sign all new assertions with the new certificate. SPs with updated metadata will validate against the new cert. SPs still on old metadata will validate against the old cert — both are in metadata, both are trusted.<br><br>
+      <strong>Step 5 — Remove old cert (Day 25, before expiry):</strong> Remove old certificate from PingFederate metadata. Any SP that did not pick up the updated metadata will now fail — these are identified and fixed during the propagation window.<br><br>
+      <strong>Monitoring:</strong> Alert on assertion validation failures at any SP during steps 4 and 5. This indicates a SP has not yet received updated metadata.
+    </div>
+  </div>
+
+  <div class="kc" id="kc3">
+    <div class="kc-q" onclick="toggleKC('kc3')">
+      <span class="kc-icon">Q3</span>
+      A developer asks: "Can we just use the SAML assertion the user received for Salesforce to also authorize calls to our internal REST API?" What is your answer and why?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>No — and the reasons reveal fundamental SAML/OAuth architecture:</strong><br><br>
+      <strong>Problem 1 — Audience restriction:</strong> The SAML assertion's <code>AudienceRestriction</code> is set to Salesforce's EntityID. Your REST API's entity ID is different. Any correctly implemented REST API that validates the assertion audience will reject it. You cannot present a Salesforce assertion to a different service provider.<br><br>
+      <strong>Problem 2 — Transport incompatibility:</strong> SAML assertions are XML documents designed to be delivered via browser POST. REST APIs expect HTTP Authorization headers — specifically Bearer tokens or JWTs. There is no standard mechanism for presenting a SAML assertion as an API authorization credential.<br><br>
+      <strong>Problem 3 — Size and performance:</strong> SAML assertions can be 2–10KB of XML. Embedding one in every API request header is impractical and slow compared to a 300-byte JWT access token.<br><br>
+      <strong>Correct architecture:</strong> Use the SAML SSO flow for browser authentication. At your application layer, after the SAML assertion is validated, issue an OAuth access token (from an internal AS) scoped for your REST API. The user is authenticated via SAML; the API call is authorized via OAuth. PingFederate can act as the bridge — accept the SAML assertion and issue an OAuth token — via the SAML → OAuth bridge pattern.
+    </div>
+  </div>
+
+  <div class="kc" id="kc4">
+    <div class="kc-q" onclick="toggleKC('kc4')">
+      <span class="kc-icon">Q4</span>
+      A partner organization wants to federate with your enterprise so their employees can access your internal applications. Design the B2B SAML federation architecture including trust establishment, attribute mapping, and deprovisioning.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>B2B SAML federation architecture:</strong><br><br>
+      <strong>Trust establishment:</strong> (1) Both organizations exchange IdP/SP metadata (PingFederate metadata XML). Your PingFederate becomes an SP to their IdP and an IdP to your internal applications. (2) Establish the trust via metadata import in PingFederate — define the partner connection, import their IdP metadata, configure your SP metadata. (3) Define the NameID format — transient (no linkage, highest privacy) vs persistent (enables user record correlation). For B2B, persistent NameID allows local account provisioning.<br><br>
+      <strong>Attribute mapping:</strong> Their IdP will send attributes defined by their schema — which may not match your internal schema. Configure PingFederate's attribute mapping to: (a) map their email/UPN attribute to your user identifier, (b) map their group/role attributes to your local entitlements (e.g., their "PartnerAdmin" group maps to your "VendorPortal-ReadWrite" role), (c) add a fixed attribute identifying the partner organization for audit purposes.<br><br>
+      <strong>Provisioning:</strong> On first successful assertion from the partner IdP, JIT (Just-In-Time) provisioning creates a local shell account in your directory with limited base access. Full access is provisioned via access request workflow. The local account's identity is correlated to the partner's NameID.<br><br>
+      <strong>Deprovisioning:</strong> This is the hard part — partner IdPs don't typically notify you when an employee leaves. Solutions: (1) SCIM provisioning from the partner org to your IGA system, (2) Time-limited access tokens that expire after 90 days and require re-certification, (3) Regular reconciliation — if an employee's assertion stops being seen for 30 days, disable their local account.
+    </div>
+  </div>
+</section>
+
+<!-- TAKEAWAYS -->
+<div class="takeaway">
+  <div class="takeaway-head">
+    <div class="takeaway-icon">🔗</div>
+    <div class="takeaway-title">Key takeaways — M03b · SAML 2.0 &amp; Federation</div>
+  </div>
+  <ul class="takeaway-list">
+    <li><strong style="color:var(--text-p)">SAML is not legacy — it is the operational standard for enterprise SaaS SSO.</strong> Every large enterprise has hundreds of SAML integrations. Architects who can't design SAML flows cannot design real enterprise identity ecosystems.</li>
+    <li><strong style="color:var(--text-p)">Three SAML components must be distinguished:</strong> Assertions (the payload — AuthnStatement, AttributeStatement), Protocols (the message formats — AuthnRequest, Response, SLO), Bindings (the transport — HTTP-Redirect for requests, HTTP-POST for assertions, HTTP-Artifact for high-security).</li>
+    <li><strong style="color:var(--text-p)">SP-initiated SSO is architecturally safer than IdP-initiated</strong> because the SP can validate <code>InResponseTo</code>, preventing assertion injection. IdP-initiated SSO is a security risk that requires compensating controls.</li>
+    <li><strong style="color:var(--text-p)">Federation hubs (PingFederate) solve the N×N integration problem.</strong> They decouple identity sources from service providers, perform protocol translation, and provide attribute mapping — reducing 500 bilateral integrations to a single hub with 1+1 per new participant.</li>
+    <li><strong style="color:var(--text-p)">SAML and OAuth solve different problems and are not substitutes.</strong> SAML for browser SSO to enterprise SaaS. OAuth/OIDC for APIs, mobile, delegation, and M2M. Protocol brokering via PingFederate enables both simultaneously.</li>
+    <li><strong style="color:var(--text-p)">SAML certificate expiry is the most common cause of enterprise SSO outages.</strong> Design certificate rotation procedures with dual-publication, automated metadata refresh, and 90-day advance alerting.</li>
+    <li><strong style="color:var(--text-p)">Decentralized identity (DID/VC) is the emerging paradigm</strong> — self-sovereign identity anchors and portable verifiable credentials that don't depend on a central IdP. Microsoft Entra Verified ID is the current enterprise entry point.</li>
+  </ul>
+</div>
+
+<!-- ARCHITECT REVIEW -->
+<div class="arch-review">
+  <div class="arch-review-head">
+    <span class="arch-badge">Architect Review</span>
+    <span class="arch-title">Senior-level federation design challenges</span>
+  </div>
+  <ul class="arch-list">
+    <li>
+      <span class="arch-num">01</span>
+      Your enterprise has 400 SAML SP integrations running through PingFederate. The CISO wants to migrate all of them to OIDC "within 18 months." Design the migration strategy: how do you prioritize which integrations migrate first, what is your protocol bridge pattern for apps that can't migrate, how do you handle the 60 SaaS apps that only support SAML, and what is the realistic end state?
+    </li>
+    <li>
+      <span class="arch-num">02</span>
+      A healthcare partner organization needs their physicians to access your clinical research portal using their hospital credentials. Design the complete B2B SAML federation architecture including: trust establishment procedure, attribute mapping for role-based access, JIT provisioning design, session management, and a deprovisioning strategy for when a physician leaves the partner organization (you will not receive a real-time notification).
+    </li>
+    <li>
+      <span class="arch-num">03</span>
+      Your audit team discovers that your SAML SPs are not implementing assertion ID replay caches and are not validating SubjectConfirmationData. You have 200 applications. Design a pragmatic remediation plan: how do you validate which SPs are actually vulnerable, how do you prioritize by risk, what is the remediation approach for packaged SaaS vs custom apps, and what detective controls do you implement in the interim?
+    </li>
+  </ul>
+</div>
+
+<!-- DEP MAP -->
+<section class="section" id="dep">
+  <div class="sec-label">Knowledge dependency map</div>
+  <div class="dep-map">
+    <span class="dep-node dep-done">M01</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-done">M02</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-done">M03a OAuth</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-cur">M03b SAML ← here</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M04a MFA &amp; Adaptive</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M13 Integration Patterns</span>
+  </div>
+</section>
+
+<!-- BRIDGE -->
+<div class="bridge" id="bridge">
+  <div class="sec-label">Bridge to next module</div>
+  <div class="bridge-card">
+    <div class="bridge-eyebrow">What you mastered · What comes next</div>
+    <h2 class="bridge-title">Protocols are complete.<br>Now: <span>how do you prove who's there?</span></h2>
+    <p class="bridge-body">
+      M03a and M03b gave you the two foundational federation protocols — OAuth/OIDC for modern API-first flows, SAML for enterprise SSO. Both protocols handle the mechanics of asserting identity across domains. Neither protocol specifies <em>how strongly</em> that identity must be proven before the assertion is issued.
+      <br><br>
+      Module M04a covers <strong>authentication factors and MFA architecture</strong> — the layer that sits inside the IdP, determining what evidence a user must present before the IdP will issue a SAML assertion or OAuth token. FIDO2, WebAuthn, passkeys, PingID, adaptive risk engines, and step-up authentication flows all live here. Understanding this module means you can design the complete authentication journey from "user opens browser" to "SAML assertion delivered to SP."
+      <br><br>
+      M04a was deliberately placed in Phase 1 alongside the protocol modules — not later — because <strong>every protocol design decision has an MFA implication</strong>. The OIDC <code>acr_values</code> parameter requests a specific authentication assurance level. SAML's <code>AuthnContextClassRef</code> carries the assurance level that was achieved. You need M04a before you can design complete end-to-end authentication architectures.
+    </p>
+    <div class="bridge-concepts">
+      <span class="badge badge-phase">FIDO2 &amp; WebAuthn architecture</span>
+      <span class="badge badge-copper">PingID deployment patterns</span>
+      <span class="badge badge-teal">Adaptive risk engines</span>
+      <span class="badge badge-prereq">Step-up authentication flows</span>
+    </div>
+    <a href="M04a.html" class="bridge-btn">Continue to M04a · MFA &amp; Passwordless →</a>
+  </div>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="toc">
+    <div class="toc-label">In this module</div>
+    <a class="toc-item" href="#why">Why SAML matters</a>
+    <a class="toc-item" href="#fundamentals">SAML fundamentals</a>
+    <a class="toc-item toc-sub" href="#fundamentals">Assertion anatomy diagram</a>
+    <a class="toc-item" href="#bindings">Three HTTP bindings</a>
+    <a class="toc-item" href="#flows">SP vs IdP-initiated flows</a>
+    <a class="toc-item toc-sub" href="#flows">SP-initiated flow diagram</a>
+    <a class="toc-item" href="#federation-hub">PingFederate as hub</a>
+    <a class="toc-item toc-sub" href="#federation-hub">Hub-and-spoke diagram</a>
+    <a class="toc-item" href="#saml-vs-oauth">SAML vs OAuth table</a>
+    <a class="toc-item" href="#metadata">Metadata &amp; trust</a>
+    <a class="toc-item" href="#proxy">Protocol translation</a>
+    <a class="toc-item" href="#did">DID &amp; Verifiable Creds</a>
+    <a class="toc-item" href="#kc">Knowledge check (×4)</a>
+    <a class="toc-item" href="#bridge">Bridge to M04a</a>
+  </div>
+
+  <div class="qref">
+    <div class="qref-label">Quick reference</div>
+    <div class="qref-item"><span class="qref-term">ACS</span><span class="qref-def">Assertion Consumer Service — SP endpoint that receives SAML Response</span></div>
+    <div class="qref-item"><span class="qref-term">EntityID</span><span class="qref-def">Unique URI identifying an IdP or SP in SAML metadata</span></div>
+    <div class="qref-item"><span class="qref-term">AuthnRequest</span><span class="qref-def">Signed XML request from SP to IdP (SP-initiated flow)</span></div>
+    <div class="qref-item"><span class="qref-term">InResponseTo</span><span class="qref-def">Links SAML Response to original AuthnRequest — prevents injection</span></div>
+    <div class="qref-item"><span class="qref-term">RelayState</span><span class="qref-def">Opaque value preserving original resource URL through SSO flow</span></div>
+    <div class="qref-item"><span class="qref-term">NameID</span><span class="qref-def">Subject identifier in assertion — transient, persistent, or email</span></div>
+    <div class="qref-item"><span class="qref-term">SLO</span><span class="qref-def">Single Logout — coordinated session termination across IdP and SPs</span></div>
+    <div class="qref-item"><span class="qref-term">JIT</span><span class="qref-def">Just-In-Time provisioning — account created on first successful SSO</span></div>
+    <div class="qref-item"><span class="qref-term">DID</span><span class="qref-def">Decentralized Identifier — self-controlled identity anchor</span></div>
+    <div class="qref-item"><span class="qref-term">VC</span><span class="qref-def">Verifiable Credential — signed portable claim from issuer to holder</span></div>
+  </div>
+
+  <div class="card card-rose" style="margin-bottom:12px">
+    <div class="card-label">⚠️ Critical risk</div>
+    <div class="card-title">SAML cert expiry = full SSO outage</div>
+    <div class="card-body">When your IdP signing cert expires, every SAML SP fails simultaneously. Implement 90-day advance alerting, dual-certificate publication for zero-downtime rotation, and automated SP metadata refresh wherever possible.</div>
+  </div>
+
+  <div class="card card-copper" style="margin-bottom:12px">
+    <div class="card-label">M03b colour personality</div>
+    <div class="card-title">Deep Sapphire + Copper</div>
+    <div class="card-body">Sapphire for the SAML protocol layer (trust, assertions, federation). Copper for the operational realities (metadata management, certificate rotation, proxy patterns). Section titles: copper underbar on sapphire heading.</div>
+  </div>
+
+  <div class="card card-jade">
+    <div class="card-label">PingFederate tip</div>
+    <div class="card-title">Your daily tool — architecturally</div>
+    <div class="card-body">PingFederate is the hub in Diagram 2. Every SAML integration in your current stack goes through it. When you read "federation hub," think PingFederate. When you read "protocol translation," that's PingFederate's Adapter + Contract model in action.</div>
+  </div>
+</aside>
+</div><!-- /layout -->
+
+<footer class="footer">
+  <div class="footer-left">IAM Architect Portal · M03b of 20 · Phase 1: Core Protocols</div>
+  <div style="display:flex;gap:8px">
+    <a href="M03a.html" class="badge badge-prereq" style="text-decoration:none">← M03a</a>
+    <a href="M04a.html" class="badge badge-phase" style="text-decoration:none">M04a →</a>
+  </div>
+</footer>
+
+</div><!-- /shell -->
+<script>
+function toggleKC(id){document.getElementById(id).classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.toc-item');
+  const targets=[];
+  items.forEach(a=>{const href=a.getAttribute('href');if(href&&href.startsWith('#')){const el=document.querySelector(href);if(el)targets.push({el,a});}});
+  window.addEventListener('scroll',()=>{
+    let cur=null;
+    targets.forEach(({el})=>{if(window.scrollY>=el.offsetTop-90)cur=el});
+    targets.forEach(({el,a})=>a.classList.toggle('active',el===cur));
+  },{passive:true});
+})();
+(function(){
+  const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.06});
+  document.querySelectorAll('.section,.card,.binding-card,.kc,.takeaway,.arch-review,.concept,.concept-cop,.gotcha,.dep-map').forEach(el=>{
+    el.style.opacity='0';el.style.transform='translateY(12px)';
+    el.style.transition='opacity .45s ease,transform .45s ease';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
