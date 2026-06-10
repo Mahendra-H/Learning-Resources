@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M05 · Infrastructure Identity — Network & Linux Auth | IAM Architect Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+:root{
+  --bg-void:#0B0E14;--bg-s1:#111520;--bg-s2:#181D2A;--bg-s3:#1F2535;
+  --border:#1E2636;--border-b:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);
+  --copper:#E8873A;--copper-glow:rgba(232,135,58,0.14);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.12);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.13);
+  --jade:#3ECFA0;--jade-glow:rgba(62,207,160,0.14);
+  --violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.13);
+  --amber:#F5C542;--amber-glow:rgba(245,197,66,0.13);
+  --steel:#5BC8D8;--steel-glow:rgba(91,200,216,0.15);--steel-dim:#3AA8BA;
+  --text-p:#E8EDF5;--text-s:#8A95A8;--text-t:#6B7A8F;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --r-sm:4px;--r-md:8px;--r-lg:12px;--r-xl:16px;--r-pill:999px;
+  --sh-card:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  /* M05: Steel-Blue primary, Jade secondary */
+  --phase:#5BC8D8;--phase-glow:rgba(91,200,216,0.16);--phase-dim:#3AA8BA;
+  --accent2:#3ECFA0;--accent2-glow:rgba(62,207,160,0.14);
+  --grad-head:linear-gradient(95deg,#5BC8D8 0%,#3ECFA0 100%);
+}
+body{background:var(--bg-void);color:var(--text-p);font-family:var(--fb);line-height:1.7;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:var(--r-pill)}
+::selection{background:rgba(91,200,216,.18);color:var(--steel)}
+a{color:var(--sapphire);text-decoration:none;transition:color .15s}a:hover{color:var(--steel)}
+code{font-family:var(--fm);font-size:.85em;background:var(--bg-s3);border:1px solid var(--border);color:var(--steel);padding:1px 6px;border-radius:var(--r-sm)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.95);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--border);padding:0 40px}
+.nav-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:20px}
+.nav-logo{font-family:var(--fd);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.nav-logo span{color:var(--text-t);font-weight:400}
+.nav-div{width:1px;height:18px;background:var(--border-b);flex-shrink:0}
+.nav-progress{flex:1;display:flex;align-items:center;gap:10px}
+.progress-track{flex:1;height:2px;background:var(--border);border-radius:var(--r-pill);overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--steel),var(--jade));border-radius:var(--r-pill);width:35%}
+.progress-label{font-family:var(--fm);font-size:12px;color:var(--text-s);white-space:nowrap}
+.nav-badge{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--r-pill);background:var(--steel-glow);border:1px solid var(--steel);color:var(--steel);white-space:nowrap}
+.nav-home{font-family:var(--fm);font-size:12px;color:var(--text-s);padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border-b);transition:all .15s;text-decoration:none}
+.nav-home:hover{color:var(--text-p);border-color:var(--steel);background:var(--steel-glow)}
+
+/* SHELL */
+.shell{max-width:1100px;margin:0 auto;padding:0 40px}
+
+/* HERO */
+.hero{position:relative;padding:72px 0 56px;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 55% 50% at 8% 35%,rgba(91,200,216,0.12) 0%,transparent 55%),
+  radial-gradient(ellipse 45% 40% at 92% 65%,rgba(62,207,160,0.09) 0%,transparent 55%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse 85% 65% at 18% 50%,black 0%,transparent 75%);opacity:.28;pointer-events:none}
+.hero-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--steel),var(--jade) 60%,transparent);pointer-events:none}
+.hero-content{position:relative;z-index:1}
+.hero-phase{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--steel);margin-bottom:16px}
+.phase-dot{width:7px;height:7px;border-radius:50%;background:var(--steel);box-shadow:0 0 12px var(--steel);animation:pdot 2s ease-in-out infinite}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 12px var(--steel)}50%{opacity:.4;box-shadow:0 0 3px var(--steel)}}
+.hero-title{font-family:var(--fd);font-size:clamp(32px,4.5vw,54px);font-weight:800;line-height:1.07;letter-spacing:-.025em;color:var(--text-p);max-width:820px;margin-bottom:18px}
+.hero-title .ac{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:17px;font-weight:300;color:var(--text-s);max-width:640px;line-height:1.75;margin-bottom:28px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 11px;border-radius:var(--r-pill)}
+.badge-phase{background:var(--steel-glow);border:1px solid var(--steel);color:var(--steel)}
+.badge-jade{background:var(--jade-glow);border:1px solid rgba(62,207,160,.4);color:var(--jade)}
+.badge-effort{background:var(--copper-glow);border:1px solid rgba(232,135,58,.35);color:var(--copper)}
+.badge-prereq{background:var(--bg-s2);border:1px solid var(--border-b);color:var(--text-s)}
+.badge-violet{background:var(--violet-glow);border:1px solid rgba(155,127,255,.35);color:var(--violet)}
+.badge-teal{background:var(--teal-glow);border:1px solid rgba(0,229,195,.35);color:var(--teal)}
+
+/* ORIENTATION */
+.orient{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:56px;position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--steel) 0%,var(--jade) 55%,transparent 100%)}
+.orient-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;margin-bottom:20px}
+.orient-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:5px}
+.orient-val{font-size:14px;font-weight:500;color:var(--text-p)}
+.orient-val.ac{color:var(--steel)}
+.orient-val.done{color:var(--jade)}
+.journey-row{display:flex;gap:5px;flex-wrap:wrap;padding-top:18px;border-top:1px solid var(--border)}
+.jdot{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;font-weight:500;transition:all .2s}
+.jdot-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.jdot-cur{background:var(--steel-glow);border:1px solid var(--steel);color:var(--steel);box-shadow:0 0 16px rgba(91,200,216,.2)}
+.jdot-future{background:var(--bg-s2);border:1px solid var(--border);color:var(--text-s)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:48px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.content-main{min-width:0;overflow:hidden}
+.sidebar{position:sticky;top:72px;min-width:0;overflow:hidden;width:260px}
+
+/* SECTIONS */
+.section{margin-bottom:60px}
+.sec-label{display:flex;align-items:center;gap:10px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);margin-bottom:18px}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--steel) 0%,transparent 100%);opacity:.35}
+.sec-title{font-family:var(--fd);font-size:26px;font-weight:700;color:var(--text-p);margin-bottom:6px;line-height:1.2}
+.sec-title-wrap{margin-bottom:20px}
+.sec-title-wrap .underbar{height:3px;width:60px;background:linear-gradient(90deg,var(--steel),var(--jade));border-radius:var(--r-pill);margin-top:6px}
+.sec-body{font-size:15px;color:var(--text-s);line-height:1.8}
+.sec-body p{margin-bottom:14px}.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text-p);font-weight:500}
+.sec-body em{color:var(--steel);font-style:normal;font-weight:500}
+
+/* DIAGRAM WRAP */
+.diag-wrap{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin:24px 0;overflow-x:auto}
+.diag-label{font-family:var(--fm);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-s);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.diag-label::before{content:'◈';color:var(--steel);font-size:14px}
+
+/* CONCEPTS */
+.concept{border-left:3px solid var(--steel);padding:16px 20px;background:var(--steel-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-term{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--steel);margin-bottom:6px}
+.concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-def strong{color:var(--text-p);font-weight:500}
+.concept-jade{border-left:3px solid var(--jade);padding:16px 20px;background:var(--jade-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-jade .concept-term{color:var(--jade)}
+.concept-jade .concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-jade .concept-def strong{color:var(--text-p);font-weight:500}
+
+/* GOTCHA */
+.gotcha{background:var(--bg-s1);border:1px solid rgba(255,95,126,.35);border-radius:var(--r-lg);padding:18px 20px;margin:20px 0;position:relative;overflow:hidden}
+.gotcha::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--rose)}
+.gotcha-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.gotcha-icon{font-size:16px}
+.gotcha-label{font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rose);background:var(--rose-glow);border:1px solid rgba(255,95,126,.3);padding:2px 8px;border-radius:var(--r-pill)}
+.gotcha-title{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text-p)}
+.gotcha-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.gotcha-body strong{color:var(--rose)}
+
+/* CARDS */
+.card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--border-b);box-shadow:var(--sh-card)}
+.card-steel{border-left:3px solid var(--steel);background:linear-gradient(135deg,var(--steel-glow) 0%,var(--bg-s1) 60%)}
+.card-jade{border-left:3px solid var(--jade);background:linear-gradient(135deg,var(--jade-glow) 0%,var(--bg-s1) 60%)}
+.card-teal{border-left:3px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-s1) 60%)}
+.card-violet{border-left:3px solid var(--violet);background:linear-gradient(135deg,var(--violet-glow) 0%,var(--bg-s1) 60%)}
+.card-copper{border-left:3px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-s1) 60%)}
+.card-rose{border-left:3px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-s1) 60%)}
+.card-amber{border-left:3px solid var(--amber);background:linear-gradient(135deg,var(--amber-glow) 0%,var(--bg-s1) 60%)}
+.card-label{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:8px}
+.card-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p);margin-bottom:8px}
+.card-body{font-size:14px;color:var(--text-s);line-height:1.7;overflow-wrap:break-word;word-break:break-word}
+.card-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+
+/* COMPARE TABLE */
+.tbl-wrap{overflow-x:auto;margin:16px 0}
+table.compare{width:100%;border-collapse:collapse;font-size:14px}
+.compare th{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);padding:10px 14px;border-bottom:1px solid var(--border-b);text-align:left;background:var(--bg-s2);white-space:nowrap}
+.compare th:first-child{color:var(--steel)}
+.compare td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-s);vertical-align:top;line-height:1.6}
+.compare td:first-child{font-weight:600;color:var(--text-p);font-family:var(--fm);font-size:13px}
+.compare tr:hover td{background:var(--bg-s2)}
+.compare tr:last-child td{border-bottom:none}
+.tag-y{color:var(--jade);font-weight:600}
+.tag-n{color:var(--rose);font-weight:600}
+.tag-m{color:var(--amber);font-weight:600}
+
+/* FLOW SEQUENCE */
+.flow{display:flex;flex-direction:column;margin:20px 0}
+.flow-step{display:flex;gap:14px;align-items:flex-start}
+.flow-conn{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:36px}
+.flow-num{width:36px;height:36px;border-radius:50%;background:var(--bg-s2);border:1px solid var(--steel);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:12px;font-weight:600;color:var(--steel);flex-shrink:0;z-index:1}
+.flow-line{width:1px;flex:1;min-height:20px;background:linear-gradient(var(--steel),rgba(91,200,216,.08))}
+.flow-step:last-child .flow-line{display:none}
+.flow-body{padding-bottom:22px;padding-top:5px;flex:1}
+.flow-title{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--text-p);margin-bottom:4px}
+.flow-desc{font-size:14px;color:var(--text-s);line-height:1.65}
+.flow-detail{font-size:12px;font-family:var(--fm);color:var(--text-t);margin-top:6px;padding:6px 10px;background:var(--bg-s2);border-radius:var(--r-sm);border-left:2px solid var(--steel)}
+
+/* KNOWLEDGE CHECK */
+.kc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin:10px 0}
+.kc-q{padding:16px 20px;font-size:15px;font-weight:500;color:var(--text-p);display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s;user-select:none}
+.kc-q:hover{background:var(--bg-s2)}
+.kc-icon{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--steel);background:var(--steel-glow);border:1px solid var(--steel);border-radius:4px;padding:2px 7px;flex-shrink:0;margin-top:2px}
+.kc-chev{margin-left:auto;flex-shrink:0;color:var(--text-s);transition:transform .2s;font-size:13px}
+.kc.open .kc-chev{transform:rotate(180deg)}
+.kc-a{display:none;padding:16px 20px;background:var(--bg-s2);border-top:1px solid var(--border);font-size:14px;color:var(--text-s);line-height:1.75}
+.kc.open .kc-a{display:block}
+.kc-a strong{color:var(--text-p);font-weight:500}
+
+/* TAKEAWAY */
+.takeaway{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin:28px 0;position:relative;overflow:hidden}
+.takeaway::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--steel),var(--jade))}
+.takeaway-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.takeaway-icon{width:36px;height:36px;border-radius:var(--r-sm);background:var(--steel-glow);border:1px solid var(--steel);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.takeaway-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p)}
+.takeaway-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.takeaway-list li{font-size:14px;color:var(--text-s);display:flex;align-items:flex-start;gap:10px;line-height:1.65}
+.takeaway-list li::before{content:'◆';color:var(--steel);font-size:9px;flex-shrink:0;margin-top:5px}
+
+/* ARCHITECT REVIEW */
+.arch-review{background:var(--bg-s1);border:1px solid rgba(232,135,58,.35);border-radius:var(--r-lg);overflow:hidden;margin:28px 0}
+.arch-review-head{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.arch-badge{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:3px 10px;border-radius:var(--r-pill)}
+.arch-title{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--text-p)}
+.arch-list{list-style:none;padding:4px 20px 8px}
+.arch-list li{font-size:14px;color:var(--text-s);display:flex;gap:12px;align-items:flex-start;line-height:1.7;padding:14px 0;border-bottom:1px solid var(--border)}
+.arch-list li:last-child{border-bottom:none}
+.arch-num{font-family:var(--fm);font-size:13px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:24px;font-weight:700}
+
+/* DEP MAP */
+.dep-map{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:16px;background:var(--bg-s2);border-radius:var(--r-md);border:1px solid var(--border);margin:14px 0}
+.dep-node{font-family:var(--fm);font-size:12px;padding:5px 12px;border-radius:var(--r-pill)}
+.dep-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.dep-cur{background:var(--steel-glow);border:1px solid var(--steel);color:var(--steel);font-weight:600;box-shadow:0 0 10px rgba(91,200,216,.15)}
+.dep-future{background:var(--bg-s3);border:1px solid var(--border-b);color:var(--text-s)}
+.dep-arr{color:var(--text-s);font-size:16px;flex-shrink:0}
+
+/* BRIDGE */
+.bridge{margin-top:64px;padding-top:48px;border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-s1) 0%,var(--bg-s2) 100%);border:1px solid var(--border-b);border-radius:var(--r-xl);padding:36px;position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--steel),var(--jade),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(62,207,160,.07);pointer-events:none}
+.bridge-eyebrow{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px}
+.bridge-title{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--text-p);margin-bottom:16px}
+.bridge-title span{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.bridge-body{font-size:15px;color:var(--text-s);line-height:1.8;max-width:600px;margin-bottom:24px}
+.bridge-body strong{color:var(--text-p);font-weight:500}
+.bridge-concepts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.bridge-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(90deg,var(--steel),var(--jade));color:var(--bg-void);font-family:var(--fd);font-size:14px;font-weight:700;padding:13px 28px;border-radius:var(--r-pill);border:none;cursor:pointer;text-decoration:none;transition:all .2s}
+.bridge-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(91,200,216,.25);color:var(--bg-void)}
+
+/* SIDEBAR */
+.toc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;overflow:hidden}
+.toc-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.toc-item{display:block;padding:6px 10px;font-size:12px;color:var(--text-s);border-radius:var(--r-sm);transition:all .15s;cursor:pointer;border-left:2px solid transparent;text-decoration:none;overflow-wrap:break-word;word-break:break-word;line-height:1.45}
+.toc-item:hover{background:var(--bg-s2);color:var(--text-p);border-left-color:var(--border-b)}
+.toc-item.active{background:var(--bg-s2);color:var(--steel);border-left-color:var(--steel)}
+.toc-sub{padding-left:20px;font-size:11px}
+.qref{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;overflow:hidden}
+.qref-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.qref-item{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.qref-item:last-child{border-bottom:none}
+.qref-term{font-family:var(--fm);font-size:11px;color:var(--steel);white-space:nowrap;flex-shrink:0;font-weight:500;min-width:0}
+.qref-def{color:var(--text-s);line-height:1.5;font-size:12px;overflow-wrap:break-word;word-break:break-word;min-width:0}
+.footer{border-top:1px solid var(--border);padding:28px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:40px}
+.footer-left{font-family:var(--fm);font-size:12px;color:var(--text-s)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fadeUp .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
+@media(max-width:768px){.shell{padding:0 20px}.nav{padding:0 20px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">IAM<span>·</span>PORTAL</div>
+    <div class="nav-div"></div>
+    <div class="nav-progress">
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <span class="progress-label">M05 / 20</span>
+    </div>
+    <a href="INDEX.html" class="nav-home">← Index</a>
+    <span class="nav-badge">M05 · Phase 1</span>
+  </div>
+</nav>
+
+<div class="shell">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero-bar"></div>
+  <div class="hero-content">
+    <div class="hero-phase"><div class="phase-dot"></div>Phase 1 · Core Protocols — Module 5 of 20 · Phase 1 Final</div>
+    <h1 class="hero-title">Infrastructure Identity —<br><span class="ac">Network &amp; Linux Auth</span></h1>
+    <p class="hero-sub">Identity extends below the application layer — into the network, the operating system, and the infrastructure itself. This is where most enterprise breaches propagate. Architects who ignore it leave the most exploited attack surface ungoverned.</p>
+    <div class="hero-meta">
+      <span class="badge badge-phase">Phase 1 · Final Module</span>
+      <span class="badge badge-jade">RADIUS · 802.1X · PAM · SSSD</span>
+      <span class="badge badge-effort">⬛⬛⬛☐☐ 5–8 hrs</span>
+      <span class="badge badge-prereq">↳ M04b Directories</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="orient-grid">
+    <div><div class="orient-label">Current module</div><div class="orient-val ac">M05 · Infrastructure Identity</div></div>
+    <div><div class="orient-label">Learning track</div><div class="orient-val">Core Protocols</div></div>
+    <div><div class="orient-label">Current phase</div><div class="orient-val">Phase 1 of 4 — <strong style="color:var(--steel)">Final module</strong></div></div>
+    <div><div class="orient-label">Overall progress</div><div class="orient-val">7 of 20 modules</div></div>
+    <div><div class="orient-label">What came before</div><div class="orient-val done">✓ M01–M04b — Full protocol &amp; directory stack</div></div>
+    <div><div class="orient-label">What comes next</div><div class="orient-val" style="color:var(--jade)">M06 · Authorization Architecture (Phase 2 begins)</div></div>
+  </div>
+  <div class="journey-row">
+    <div class="jdot jdot-done">M01</div><div class="jdot jdot-done">M02</div>
+    <div class="jdot jdot-done">M03a</div><div class="jdot jdot-done">M03b</div>
+    <div class="jdot jdot-done">M04a</div><div class="jdot jdot-done">M04b</div>
+    <div class="jdot jdot-cur" title="M05 — You are here">M05</div>
+    <div class="jdot jdot-future">M06</div><div class="jdot jdot-future">M07</div><div class="jdot jdot-future">M08</div>
+    <div class="jdot jdot-future">M09a</div><div class="jdot jdot-future">M09b</div><div class="jdot jdot-future">M10</div>
+    <div class="jdot jdot-future">M11</div><div class="jdot jdot-future">M12</div><div class="jdot jdot-future">M13</div>
+    <div class="jdot jdot-future">M14</div><div class="jdot jdot-future">M15</div><div class="jdot jdot-future">M16</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="content-main">
+
+<!-- S1: WHY -->
+<section class="section afu d3" id="why">
+  <div class="sec-label">Why this module matters</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">The ungoverned attack surface</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>After a successful credential attack, an attacker doesn't stay where they landed. They move laterally — across the network, onto servers, escalating privileges at every hop. The path typically goes: phished user credential → VPN access → lateral movement to a Linux server → privilege escalation via a misconfigured sudo rule → access to a privileged service account → domain compromise.</p>
+    <p>Every step in that path involves <em>infrastructure identity</em> — the authentication mechanisms below the application layer that most IAM programs never touch. RADIUS governs VPN and Wi-Fi authentication. 802.1X governs network port access. PAM governs Linux login. SSSD connects Linux systems to Active Directory. SSH keys are the privileged credentials that enable lateral movement.</p>
+    <p><strong>Architects who cannot describe infrastructure identity cannot design a complete zero trust architecture.</strong> This module covers it at the depth needed for architecture and design decisions — not as a sysadmin configuration guide, but as an IAM architect's threat model and integration pattern reference.</p>
+  </div>
+</section>
+
+<!-- S2: RADIUS -->
+<section class="section" id="radius">
+  <div class="sec-label">RADIUS architecture</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">RADIUS — enterprise network authentication hub</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>RADIUS (Remote Authentication Dial-In User Service, RFC 2865) is the protocol used to authenticate network access requests from VPN clients, Wi-Fi associations, and network device logins. Despite its age (1997), it is the dominant protocol for network authentication in enterprise environments.</p>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">RADIUS AAA — Authentication, Authorization, Accounting</div>
+    <div class="concept-def">
+      RADIUS provides three services: <strong>Authentication</strong> (verifies the identity of the network access requester), <strong>Authorization</strong> (determines what network access the requester is permitted), and <strong>Accounting</strong> (logs session start, stop, bytes transferred — the audit trail for network access).
+      <br><br>
+      The RADIUS server (NPS on Windows, FreeRADIUS on Linux, PingID RADIUS proxy) receives Access-Request packets from the Network Access Server (NAS — the VPN concentrator, Wi-Fi controller, or network switch) and returns Access-Accept, Access-Reject, or Access-Challenge. The NAS never sees the user's credentials being validated — it only receives a pass/fail decision from the RADIUS server.
+    </div>
+  </div>
+
+  <!-- DIAGRAM 1: RADIUS Proxy Chain -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 1 — RADIUS proxy chain architecture with PingID MFA integration</div>
+    <svg viewBox="0 0 920 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:920px;display:block" role="img" aria-label="RADIUS proxy chain architecture showing VPN client through network access server to RADIUS proxy to Active Directory and PingID MFA">
+      <title>RADIUS Proxy Chain with PingID MFA</title>
+      <rect width="920" height="500" fill="#0B0E14" rx="8"/>
+      <defs>
+        <marker id="r1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8A95A8"/></marker>
+        <marker id="r-steel" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#5BC8D8"/></marker>
+        <marker id="r-jade" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+        <marker id="r-amb" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#F5C542"/></marker>
+        <marker id="r-rose" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#FF5F7E"/></marker>
+      </defs>
+
+      <!-- USER -->
+      <rect x="18" y="200" width="110" height="70" rx="6" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="73" y="228" text-anchor="middle" font-size="20">👤</text>
+      <text x="73" y="248" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8">VPN Client</text>
+      <text x="73" y="262" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">user + password</text>
+
+      <!-- Step 1 arrow -->
+      <line x1="128" y1="235" x2="166" y2="235" stroke="#8A95A8" stroke-width="2" marker-end="url(#r1)"/>
+      <text x="147" y="226" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">1. connect</text>
+
+      <!-- NAS / VPN CONCENTRATOR -->
+      <rect x="166" y="180" width="150" height="110" rx="6" fill="#111520" stroke="#5BC8D8" stroke-width="1.5"/>
+      <text x="241" y="206" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#5BC8D8" font-weight="600">NAS / VPN</text>
+      <text x="241" y="222" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Concentrator</text>
+      <text x="241" y="242" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Cisco ASA · Palo Alto</text>
+      <text x="241" y="258" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Fortinet · Juniper</text>
+      <text x="241" y="274" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#4A5568">Port 1812/1813 UDP</text>
+
+      <!-- Step 2: NAS → RADIUS Proxy -->
+      <line x1="316" y1="235" x2="366" y2="235" stroke="#5BC8D8" stroke-width="2" marker-end="url(#r-steel)"/>
+      <text x="341" y="224" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#5BC8D8">2. Access-Request</text>
+      <text x="341" y="238" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#6B7A8F">{user, password, NAS-IP}</text>
+
+      <!-- PINGID RADIUS PROXY -->
+      <rect x="366" y="140" width="180" height="190" rx="6" fill="#111520" stroke="#5BC8D8" stroke-width="2"/>
+      <rect x="366" y="140" width="180" height="28" rx="6" fill="rgba(91,200,216,0.1)"/>
+      <text x="456" y="159" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#5BC8D8" font-weight="700">PingID RADIUS Proxy</text>
+      <text x="456" y="182" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Step 1: Validate password</text>
+      <text x="456" y="198" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">→ LDAP bind to AD</text>
+      <text x="456" y="216" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Step 2: Trigger MFA</text>
+      <text x="456" y="232" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">→ PingID API call</text>
+      <text x="456" y="250" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">→ Push/TOTP challenge</text>
+      <text x="456" y="270" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Step 3: Return decision</text>
+      <text x="456" y="286" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Access-Accept/Reject</text>
+      <text x="456" y="306" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#4A5568">+ RADIUS attributes (VLAN, ACL)</text>
+
+      <!-- ACTIVE DIRECTORY -->
+      <rect x="590" y="80" width="160" height="90" rx="6" fill="#111520" stroke="#F5C542" stroke-width="1.5"/>
+      <text x="670" y="108" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#F5C542" font-weight="600">Active Directory</text>
+      <text x="670" y="126" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Password validation</text>
+      <text x="670" y="143" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Group membership lookup</text>
+      <text x="670" y="159" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#4A5568">LDAP / Kerberos</text>
+
+      <!-- PINGID CLOUD -->
+      <rect x="590" y="210" width="160" height="90" rx="6" fill="#111520" stroke="#3ECFA0" stroke-width="1.5"/>
+      <text x="670" y="238" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">PingID Cloud</text>
+      <text x="670" y="256" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">MFA factor delivery</text>
+      <text x="670" y="273" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Push · TOTP · Biometric</text>
+      <text x="670" y="289" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#4A5568">REST API · HTTPS</text>
+
+      <!-- Proxy → AD -->
+      <line x1="546" y1="195" x2="590" y2="140" stroke="#F5C542" stroke-width="1.5" marker-end="url(#r-amb)"/>
+      <text x="572" y="165" font-size="9" font-family="IBM Plex Mono" fill="#F5C542" text-anchor="middle">LDAP bind</text>
+
+      <!-- Proxy → PingID -->
+      <line x1="546" y1="255" x2="590" y2="255" stroke="#3ECFA0" stroke-width="1.5" marker-end="url(#r-jade)"/>
+      <text x="568" y="246" font-size="9" font-family="IBM Plex Mono" fill="#3ECFA0" text-anchor="middle">API call</text>
+
+      <!-- User → Phone (MFA) -->
+      <rect x="760" y="200" width="140" height="70" rx="6" fill="#181D2A" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="830" y="224" text-anchor="middle" font-size="20">📱</text>
+      <text x="830" y="248" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">User's Phone</text>
+      <text x="830" y="263" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Approve push</text>
+
+      <!-- PingID → Phone push -->
+      <line x1="750" y1="255" x2="760" y2="245" stroke="#3ECFA0" stroke-width="1.5" marker-end="url(#r-jade)" stroke-dasharray="4,3"/>
+
+      <!-- Step 5: Access-Accept back -->
+      <line x1="366" y1="255" x2="316" y2="255" stroke="#3ECFA0" stroke-width="2" marker-end="url(#r-jade)"/>
+      <text x="341" y="267" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">5. Access-Accept</text>
+      <text x="341" y="280" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#6B7A8F">+VLAN=Corp, ACL=standard</text>
+
+      <!-- Step 6: Grant network access -->
+      <line x1="166" y1="260" x2="128" y2="260" stroke="#3ECFA0" stroke-width="2" marker-end="url(#r-jade)"/>
+      <text x="147" y="275" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">6. VPN tunnel</text>
+
+      <!-- LEGEND + VLAN attributes -->
+      <rect x="18" y="312" width="840" height="140" rx="6" fill="#181D2A" stroke="#1E2636"/>
+      <text x="34" y="334" font-size="11" font-family="IBM Plex Mono" fill="#5BC8D8" font-weight="600">RADIUS Access-Accept attributes — what the NAS enforces:</text>
+      <rect x="34" y="344" width="230" height="44" rx="4" fill="#111520" stroke="#2E3A52"/>
+      <text x="149" y="361" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#F5C542" font-weight="600">VLAN Assignment</text>
+      <text x="149" y="380" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Tunnel-Private-Group-ID=Corp-VLAN</text>
+      <rect x="278" y="344" width="230" height="44" rx="4" fill="#111520" stroke="#2E3A52"/>
+      <text x="393" y="361" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">ACL / Filter-ID</text>
+      <text x="393" y="380" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Filter-Id = "standard-user-acl"</text>
+      <rect x="522" y="344" width="320" height="44" rx="4" fill="#111520" stroke="#2E3A52"/>
+      <text x="682" y="361" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#9B7FFF" font-weight="600">Session timeout + CoA</text>
+      <text x="682" y="380" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Session-Timeout=28800 · CoA allows mid-session policy change</text>
+      <text x="34" y="412" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">RADIUS CoA (Change of Authorization) — RFC 5176: allows the RADIUS server to push mid-session policy changes or disconnect a session without the user re-authenticating. Used for</text>
+      <text x="34" y="428" font-size="11" font-family="IBM Plex Mono" fill="#6B7A8F">dynamic policy enforcement: if a user's device compliance drops mid-session, RADIUS CoA moves them to a quarantine VLAN instantly. This is the network-layer equivalent of Continuous Access Evaluation.</text>
+      <text x="34" y="444" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">Accounting: Access-Start/Stop records (session duration, bytes transferred, NAS identity) → SIEM for network access audit trail.</text>
+    </svg>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-steel">
+      <div class="card-label">TACACS+ vs RADIUS</div>
+      <div class="card-title">Which protocol for which use case</div>
+      <div class="card-body">
+        <strong>RADIUS</strong> — network access authentication (VPN, Wi-Fi, 802.1X). Uses UDP. Encrypts only the password in the packet. Combines Authentication + Authorization in a single exchange. Industry standard for end-user network access.
+        <br><br>
+        <strong>TACACS+</strong> (Cisco-developed) — privileged device management (SSH to routers, switches, firewalls). Uses TCP. Encrypts the entire packet body. Separates Authentication, Authorization, and Accounting into independent exchanges. Provides per-command authorization — an admin can be allowed to run <code>show interface</code> but not <code>reload</code>. The right protocol for managing network infrastructure.
+        <br><br>
+        <strong>Architect's rule:</strong> RADIUS for user network access. TACACS+ for admin device access.
+      </div>
+    </div>
+    <div class="card card-jade">
+      <div class="card-label">EAP method selection</div>
+      <div class="card-title">Which EAP method for which scenario</div>
+      <div class="card-body">
+        <strong>EAP-TLS</strong> — Client presents X.509 certificate. Mutual authentication (server also presents cert). Phishing-resistant. Highest security. Requires PKI infrastructure and client certificate deployment. Use for managed corporate devices where certificates can be deployed via MDM/GPO.
+        <br><br>
+        <strong>PEAP-MSCHAPv2</strong> — Username/password inside a TLS tunnel. No client certificate required. Most widely deployed EAP method for enterprise Wi-Fi. Vulnerable to credential harvesting via rogue access points if the server certificate is not strictly validated.
+        <br><br>
+        <strong>EAP-TTLS</strong> — Similar to PEAP but more flexible inner authentication. Less common in enterprise.
+        <br><br>
+        <strong>Decision:</strong> EAP-TLS for high-security (certificate-based, managed devices). PEAP-MSCHAPv2 for general workforce Wi-Fi with strict server cert validation enforced via MDM policy.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S3: 802.1X -->
+<section class="section" id="dot1x">
+  <div class="sec-label">Network access control</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">802.1X — port-based network access control</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>IEEE 802.1X is the standard for port-based network access control — the mechanism that prevents an unmanaged device from connecting to the corporate network simply by plugging in an Ethernet cable or connecting to a Wi-Fi SSID. It uses RADIUS as the backend authentication protocol.</p>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">802.1X three-party model — Supplicant, Authenticator, Authentication Server</div>
+    <div class="concept-def">
+      <strong>Supplicant</strong> — the client device (laptop, phone, IoT device) attempting network access. Runs the EAP protocol client. Windows built-in 802.1X supplicant, Apple's native 802.1X, or Cisco AnyConnect for managed devices.
+      <br><br>
+      <strong>Authenticator</strong> — the network access device (managed switch port or Wi-Fi access point). Controls the port — in "unauthorized" state, only EAP traffic is allowed through. Once authentication succeeds, the port opens for regular traffic. The authenticator does not validate credentials — it passes EAP messages to the authentication server.
+      <br><br>
+      <strong>Authentication Server</strong> — the RADIUS server (NPS, FreeRADIUS, Cisco ISE). Validates credentials, makes policy decisions, and returns the port authorization state to the authenticator including VLAN assignment.
+    </div>
+  </div>
+
+  <div class="card-grid-3" style="margin:20px 0">
+    <div class="card card-steel">
+      <div class="card-label">NAC use case 1</div>
+      <div class="card-title">Corporate wired access</div>
+      <div class="card-body">Managed laptop connects to ethernet → switch port in unauthorized state → 802.1X supplicant sends EAP-Identity → RADIUS validates certificate (EAP-TLS) → RADIUS returns Access-Accept with VLAN=Corporate → port opens. Unmanaged device: no certificate → Access-Reject → port stays in guest VLAN or blocked.</div>
+    </div>
+    <div class="card card-jade">
+      <div class="card-label">NAC use case 2</div>
+      <div class="card-title">Enterprise Wi-Fi (WPA3-Enterprise)</div>
+      <div class="card-body">Employee connects to SSID=Corp-WiFi → AP requires 802.1X → PEAP-MSCHAPv2 with AD credentials + PingID MFA via RADIUS proxy → RADIUS returns VLAN assignment → user on corporate VLAN. Guest SSID uses pre-shared key (no 802.1X) → isolated internet-only VLAN.</div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">NAC use case 3</div>
+      <div class="card-title">Device posture + VLAN segmentation</div>
+      <div class="card-body">Cisco ISE or similar NAC platform evaluates device posture (MDM enrolled? Antivirus current? OS patched?) alongside authentication. Non-compliant device authenticated successfully but placed in Remediation VLAN with only update server access. Posture re-evaluated periodically via RADIUS CoA.</div>
+    </div>
+  </div>
+
+  <div class="gotcha">
+    <div class="gotcha-head"><span class="gotcha-icon">⚠️</span><span class="gotcha-label">Architecture gotcha</span><span class="gotcha-title">802.1X without server certificate validation enables credential harvesting via rogue APs</span></div>
+    <div class="gotcha-body">In PEAP-MSCHAPv2 deployments, if the supplicant is not configured to validate the RADIUS server's certificate, an attacker can deploy a rogue access point broadcasting the same SSID. The supplicant connects, the attacker's AP responds to EAP-Identity, and the inner tunnel is established against the rogue server — handing the attacker the user's MSCHAPv2 challenge/response, which can be cracked offline. <strong>Enforce server certificate validation via MDM/GPO policy on all managed devices. Configure the trusted CA and expected server name. Without this, PEAP-MSCHAPv2 provides false assurance.</strong></div>
+  </div>
+</section>
+
+<!-- S4: PAM STACK -->
+<section class="section" id="pam">
+  <div class="sec-label">Linux authentication</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">PAM — the Linux authentication framework</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>PAM (Pluggable Authentication Modules) is the framework that governs authentication on every Linux and Unix system. Every login, every sudo, every SSH session, every su command goes through PAM. Understanding PAM architecturally — not as a config file author, but as an IAM architect — is what allows you to design centralized Linux authentication and enforce MFA on infrastructure access.</p>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">PAM's architectural role — the authentication delegation framework</div>
+    <div class="concept-def">
+      Instead of each application implementing its own authentication logic, PAM provides a common API. Applications (sshd, sudo, login, su) call <code>pam_authenticate()</code> and delegate the decision entirely to the PAM stack configured in <code>/etc/pam.d/servicename</code>.
+      <br><br>
+      The PAM stack is a sequence of module calls, each with a control flag: <strong>required</strong> (must pass; failure doesn't abort immediately), <strong>requisite</strong> (must pass; failure aborts immediately), <strong>sufficient</strong> (if passes, stack is satisfied), <strong>optional</strong> (result doesn't affect overall outcome). The final result is a combination of all required/requisite module outcomes.
+      <br><br>
+      Key modules architects care about: <code>pam_sss</code> (delegates to SSSD for centralized auth), <code>pam_krb5</code> (Kerberos authentication), <code>pam_ldap</code> (LDAP authentication), <code>pam_mkhomedir</code> (creates home dir on first login), <code>pam_limits</code> (resource limits), <code>pam_google_authenticator</code> / <code>pam_pingid</code> (MFA modules).
+    </div>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-steel">
+      <div class="card-label">PAM MFA integration</div>
+      <div class="card-title">Adding MFA to Linux SSH</div>
+      <div class="card-body">
+        PingID and other MFA solutions provide PAM modules (<code>pam_pingid.so</code>). Inserting this module into the SSH PAM stack requires both password authentication and MFA approval before SSH access is granted.
+        <br><br>
+        <strong>Stack design:</strong>
+        <code>auth required pam_sss.so</code> (password via AD)<br>
+        <code>auth required pam_pingid.so</code> (PingID push/TOTP)<br>
+        <code>auth required pam_deny.so</code> (deny if above fail)
+        <br><br>
+        This extends PingID MFA to server SSH access — the same user experience as web app MFA, applied to infrastructure access. This is a critical gap in most enterprise PAM programs.
+      </div>
+    </div>
+    <div class="card card-jade">
+      <div class="card-label">sudo governance via PAM</div>
+      <div class="card-title">Privilege delegation on Linux</div>
+      <div class="card-body">
+        <code>sudo</code> is the primary privilege delegation mechanism on Linux. Its configuration (<code>/etc/sudoers</code> or <code>/etc/sudoers.d/</code>) defines which users can run which commands as which principals.
+        <br><br>
+        <strong>Architecture principle:</strong> sudoers rules should be managed centrally, not per-server. Options: (1) Deploy via configuration management (Ansible/Puppet) from a central repository, (2) Use AD group membership to drive sudo access (SSSD + sssd.conf sudo provider), (3) Use CyberArk PSM for Linux to proxy all privilege commands through the PAM vault.
+        <br><br>
+        Unmanaged local sudoers files across hundreds of servers are an unauditable privilege sprawl problem — the Linux equivalent of unmanaged local admin accounts.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S5: SSSD -->
+<section class="section" id="sssd">
+  <div class="sec-label">Centralized Linux auth</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">SSSD — enterprise Linux identity bridge</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>SSSD (System Security Services Daemon) is the component that makes Linux a first-class citizen of the enterprise identity ecosystem. It bridges Linux systems to Active Directory, LDAP, and Kerberos — handling authentication, group membership lookup, and caching for offline scenarios.</p>
+  </div>
+
+  <div class="concept-jade">
+    <div class="concept-term">SSSD's three critical functions</div>
+    <div class="concept-def">
+      <strong>1. Identity resolution (NSS):</strong> When a Linux command runs <code>getpwnam("alice")</code> or <code>id alice</code>, SSSD answers — returning user attributes and group memberships from AD/LDAP. This makes AD users visible to the Linux OS without local <code>/etc/passwd</code> entries.
+      <br><br>
+      <strong>2. Authentication delegation (PAM):</strong> The <code>pam_sss</code> module asks SSSD to authenticate a user. SSSD validates credentials against AD/Kerberos/LDAP and returns pass/fail. The application (SSH, sudo) never touches AD directly.
+      <br><br>
+      <strong>3. Offline caching:</strong> SSSD caches the last successful authentication result. If the domain controller is unreachable (network outage, DNS failure), users can still authenticate against the local cache. The <code>cache_credentials = true</code> option in sssd.conf enables this. Cache TTL is configurable — default 24 hours.
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">1</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">realm join — joining Linux to Active Directory</div>
+        <div class="flow-desc">The <code>realm join company.com</code> command (using the <code>realmd</code> utility) enrolls the Linux system as a computer object in AD, configures Kerberos (<code>/etc/krb5.conf</code>), configures SSSD (<code>/etc/sssd/sssd.conf</code>), and modifies PAM and NSS to use SSSD. This single command replaces what previously required manual configuration of five separate files.</div>
+        <div class="flow-detail">realm join -U admin@company.com company.com</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">2</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">User authenticates via SSH</div>
+        <div class="flow-desc">SSH daemon receives login attempt for <code>alice@company.com</code>. sshd calls PAM → PAM calls <code>pam_sss</code> → SSSD checks its cache. Cache miss: SSSD sends Kerberos AS-REQ to the AD KDC with Alice's credentials. KDC validates and returns TGT. SSSD caches the result and returns success to PAM.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">3</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">Group-based access control</div>
+        <div class="flow-desc">SSSD's <code>access_provider = ad</code> + <code>ad_access_filter</code> allows access control based on AD group membership. Only users in the <code>linux-admins@company.com</code> AD group are permitted to log in. No local <code>/etc/group</code> management needed — group changes in AD propagate automatically within SSSD's cache TTL.</div>
+        <div class="flow-detail">access_provider = ad, ad_access_filter = memberOf=CN=linux-admins,OU=Groups,DC=company,DC=com</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-conn"><div class="flow-num">4</div><div class="flow-line"></div></div>
+      <div class="flow-body">
+        <div class="flow-title">Offline login (DC unreachable)</div>
+        <div class="flow-desc">SSSD returns credentials from its local cache when the domain controller is unreachable. The user authenticates against the cached credentials. Security consideration: the cache only contains credentials from the last successful online authentication — if a user's account is disabled in AD, they can still authenticate offline until the cache expires or is manually cleared.</div>
+        <div class="flow-detail">sss_cache -u alice  # Flush Alice's cache entry — forces re-authentication against AD on next login</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gotcha">
+    <div class="gotcha-head"><span class="gotcha-icon">⚠️</span><span class="gotcha-label">Security gotcha</span><span class="gotcha-title">SSSD offline cache creates a deprovisioning window — terminated users can still log in</span></div>
+    <div class="gotcha-body">When a user is terminated in AD (account disabled), the PAM authentication check against SSSD will use the cached credentials for the duration of the cache TTL (default 24 hours). An attacker with the terminated employee's credentials can still authenticate to Linux servers where SSSD has a cached entry. <strong>Remediation: (1) Reduce SSSD cache TTL for privileged servers, (2) Run <code>sss_cache -u username</code> as part of the termination runbook on all critical servers, (3) Implement Leaver automation that flushes SSSD caches via Ansible/Salt at termination time.</strong> This is a common IGA-to-infrastructure deprovisioning gap.</div>
+  </div>
+</section>
+
+<!-- S6: SSH CERTIFICATE AUTHORITIES -->
+<section class="section" id="ssh-ca">
+  <div class="sec-label">SSH certificate authority</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">SSH CAs — replacing key sprawl with certificate governance</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>SSH public key authentication is the dominant method for privileged server access — and it is one of the most poorly governed credential types in most enterprises. Understanding SSH certificate authorities is essential for any architect designing infrastructure PAM or zero trust for Linux.</p>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">The SSH key sprawl problem — why authorized_keys fails at scale</div>
+    <div class="concept-def">
+      In the traditional SSH model: each user generates a key pair. The public key is added to <code>~/.ssh/authorized_keys</code> on each server the user needs to access. With 200 servers and 50 engineers, that is 10,000 potential key entries to manage. Problems: (1) No central revocation — disabling an engineer requires removing their key from 200 servers. (2) No expiry — keys last forever unless manually removed. (3) No audit trail — which key was used when is often not logged. (4) Shared keys — the same key pair used everywhere means one compromise affects everything.
+    </div>
+  </div>
+
+  <!-- DIAGRAM 2: SSH CA Flow -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 2 — SSH Certificate Authority: issuance &amp; authentication flow</div>
+    <svg viewBox="0 0 900 440" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;display:block" role="img" aria-label="SSH certificate authority flow showing key pair generation, certificate signing, and SSH authentication using certificates">
+      <title>SSH Certificate Authority Flow</title>
+      <rect width="900" height="440" fill="#0B0E14" rx="8"/>
+      <defs>
+        <marker id="s1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8A95A8"/></marker>
+        <marker id="s-jade" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+        <marker id="s-steel" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#5BC8D8"/></marker>
+        <marker id="s-vio" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#9B7FFF"/></marker>
+      </defs>
+
+      <!-- ISSUANCE PHASE header -->
+      <rect x="18" y="14" width="430" height="26" rx="4" fill="rgba(91,200,216,0.08)" stroke="#5BC8D8" stroke-width="1"/>
+      <text x="233" y="31" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#5BC8D8" font-weight="700" letter-spacing="1">CERTIFICATE ISSUANCE (one-time per session)</text>
+
+      <!-- AUTHENTICATION PHASE header -->
+      <rect x="460" y="14" width="422" height="26" rx="4" fill="rgba(62,207,160,0.08)" stroke="#3ECFA0" stroke-width="1"/>
+      <text x="671" y="31" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="700" letter-spacing="1">SSH AUTHENTICATION (each connection)</text>
+
+      <!-- Divider -->
+      <line x1="446" y1="14" x2="446" y2="420" stroke="#2E3A52" stroke-width="1" stroke-dasharray="5,4"/>
+
+      <!-- === ISSUANCE SIDE === -->
+      <!-- Engineer -->
+      <rect x="18" y="56" width="100" height="60" rx="5" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="68" y="82" text-anchor="middle" font-size="18">👷</text>
+      <text x="68" y="99" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">Engineer</text>
+      <text x="68" y="112" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">workstation</text>
+
+      <!-- Generate key pair -->
+      <rect x="18" y="138" width="180" height="42" rx="4" fill="#181D2A" stroke="#5BC8D8" stroke-width="1"/>
+      <text x="108" y="154" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#5BC8D8" font-weight="600">1. Generate ephemeral key pair</text>
+      <text x="108" y="170" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">ssh-keygen → id_rsa / id_rsa.pub</text>
+
+      <!-- Arrow to CA -->
+      <line x1="198" y1="86" x2="256" y2="86" stroke="#5BC8D8" stroke-width="2" marker-end="url(#s-steel)"/>
+      <text x="227" y="76" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#5BC8D8">2. Sign request</text>
+      <text x="227" y="91" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#6B7A8F">(+ auth token)</text>
+
+      <!-- SSH CA -->
+      <rect x="256" y="56" width="178" height="180" rx="6" fill="#111520" stroke="#9B7FFF" stroke-width="2"/>
+      <rect x="256" y="56" width="178" height="28" rx="6" fill="rgba(155,127,255,0.1)"/>
+      <text x="345" y="74" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#9B7FFF" font-weight="700">SSH CA Service</text>
+      <text x="345" y="100" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">3. Validate requester</text>
+      <text x="345" y="116" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Check AD group membership</text>
+      <text x="345" y="132" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Validate MFA token</text>
+      <text x="345" y="152" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">4. Issue signed certificate</text>
+      <text x="345" y="168" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">id_rsa-cert.pub</text>
+      <text x="345" y="186" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">Valid-before: +8h</text>
+      <text x="345" y="202" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">Principals: alice@company.com</text>
+      <text x="345" y="218" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">Signed-by: CA private key</text>
+
+      <!-- Certificate anatomy box -->
+      <rect x="18" y="200" width="220" height="120" rx="5" fill="#181D2A" stroke="#9B7FFF" stroke-width="1"/>
+      <text x="128" y="220" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#9B7FFF" font-weight="600">Certificate contains:</text>
+      <text x="34" y="238" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">key_id: "alice-2025-01-15-1400"</text>
+      <text x="34" y="254" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">valid_after: 2025-01-15T14:00Z</text>
+      <text x="34" y="270" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">valid_before: 2025-01-15T22:00Z</text>
+      <text x="34" y="286" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">principals: [alice@company.com]</text>
+      <text x="34" y="302" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">signature: &lt;CA private key sig&gt;</text>
+
+      <!-- === AUTHENTICATION SIDE === -->
+      <!-- Engineer with cert -->
+      <rect x="464" y="56" width="110" height="60" rx="5" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="519" y="78" text-anchor="middle" font-size="14">👷🔑</text>
+      <text x="519" y="95" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#8A95A8">Engineer</text>
+      <text x="519" y="109" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">+ certificate</text>
+
+      <!-- Arrow to server -->
+      <line x1="574" y1="86" x2="636" y2="86" stroke="#3ECFA0" stroke-width="2" marker-end="url(#s-jade)"/>
+      <text x="605" y="76" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">5. SSH connect</text>
+      <text x="605" y="92" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#6B7A8F">presents cert</text>
+
+      <!-- Linux Server -->
+      <rect x="636" y="56" width="240" height="180" rx="6" fill="#111520" stroke="#3ECFA0" stroke-width="1.5"/>
+      <text x="756" y="80" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">Linux Server (sshd)</text>
+      <text x="756" y="102" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">6. Verify certificate</text>
+      <text x="756" y="118" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">TrustedUserCAKeys = /etc/ssh/ca.pub</text>
+      <text x="756" y="138" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Checks:</text>
+      <text x="756" y="154" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">① Signature valid against CA pubkey</text>
+      <text x="756" y="170" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">② Not expired (valid_before)</text>
+      <text x="756" y="186" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">③ Principal matches allowed users</text>
+      <text x="756" y="204" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">④ No CRL / revocation check</text>
+      <text x="756" y="224" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="600">→ Grant SSH session</text>
+
+      <!-- Benefit boxes -->
+      <rect x="464" y="264" width="412" height="140" rx="6" fill="#181D2A" stroke="#2E3A52"/>
+      <text x="670" y="284" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0" font-weight="700">WHY THIS IS BETTER THAN authorized_keys</text>
+      <text x="480" y="304" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">✓  <strong style="color:#E8EDF5">Automatic expiry</strong> — 8-hour certs expire. No manual cleanup. Compromise window is bounded.</text>
+      <text x="480" y="322" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">✓  <strong style="color:#E8EDF5">Instant revocation</strong> — rotate CA key and ALL certificates become invalid. One operation, all servers.</text>
+      <text x="480" y="340" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">✓  <strong style="color:#E8EDF5">No per-server config</strong> — servers trust the CA public key, not individual user keys. One <code>TrustedUserCAKeys</code> config line.</text>
+      <text x="480" y="358" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">✓  <strong style="color:#E8EDF5">Audit identity</strong> — <code>key_id</code> in every session log. Know exactly whose certificate was used and when it was issued.</text>
+      <text x="480" y="376" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">✓  <strong style="color:#E8EDF5">MFA enforcement</strong> — SSH CA only issues cert after AD auth + MFA. Every certificate issuance is a MFA-verified action.</text>
+      <text x="480" y="394" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">✓  <strong style="color:#E8EDF5">Scalability</strong> — 1,000 servers need zero configuration changes when onboarding a new engineer. Just issue a cert.</text>
+    </svg>
+  </div>
+</section>
+
+<!-- S7: INFRASTRUCTURE THREAT MODEL -->
+<section class="section" id="threats">
+  <div class="sec-label">Threat model</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Infrastructure identity attack surface</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Infrastructure identity is consistently the most exploited layer in enterprise breaches. Understanding the attack surface is what connects this module to M11 (Identity Security) and justifies the architectural controls covered above.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-rose">
+      <div class="card-label">Attack vector 1</div>
+      <div class="card-title">SSH key harvesting &amp; lateral movement</div>
+      <div class="card-body">
+        Attacker compromises one Linux server → finds SSH private keys in <code>~/.ssh/</code> or deployment pipelines → uses keys to authenticate to other servers (the key may be in authorized_keys on hundreds of systems).
+        <br><br>
+        <strong>Why it works:</strong> No expiry on SSH keys. No central visibility into which keys exist where. Keys often shared between environments (dev → prod same key).
+        <br><br>
+        <strong>Architectural defence:</strong> SSH certificate authority (short-lived certs + MFA-gated issuance). Remove all long-lived SSH keys from servers. Require cert-based auth only.
+      </div>
+    </div>
+    <div class="card card-rose">
+      <div class="card-label">Attack vector 2</div>
+      <div class="card-title">sudo misconfiguration — privilege escalation</div>
+      <div class="card-body">
+        Attacker with a low-privilege account finds a misconfigured sudo rule — <code>ALL=(ALL) NOPASSWD: /bin/bash</code> or an overly permissive wildcard. Single sudo command → root shell.
+        <br><br>
+        <strong>Why it works:</strong> Local sudoers files diverge from policy over time. Configuration drift is invisible without central auditing. NOPASSWD rules are convenient and never reviewed.
+        <br><br>
+        <strong>Architectural defence:</strong> Central sudoers management (Ansible, SSSD sudo provider). Audit all NOPASSWD rules quarterly via IGA certification. CyberArk PSM for Linux proxies all privilege commands — no direct sudo to root.
+      </div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">Attack vector 3</div>
+      <div class="card-title">RADIUS shared secret compromise</div>
+      <div class="card-body">
+        The RADIUS protocol uses a shared secret between the NAS and the RADIUS server to protect packets. If the shared secret is weak, reused, or extracted from a network device config backup, an attacker can forge Access-Accept responses or decrypt RADIUS traffic.
+        <br><br>
+        <strong>Architectural defence:</strong> Generate cryptographically random shared secrets (32+ characters) per NAS. Store in PAM vault (CyberArk). Rotate annually or on NAS replacement. Use RadSec (RADIUS over TLS, RFC 6614) for transit encryption instead of relying on the shared secret alone.
+      </div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">Attack vector 4</div>
+      <div class="card-title">SSSD cache — offline authentication after termination</div>
+      <div class="card-body">
+        As detailed in the SSSD section — terminated employee credentials can authenticate to Linux servers for up to 24 hours after account disable in AD, if SSSD cache is not flushed.
+        <br><br>
+        <strong>Architectural defence:</strong> Automated cache flush as part of Leaver runbook. Reduce cache TTL to 4 hours on sensitive servers. Integrate IGA termination workflow with infrastructure automation (Ansible/Salt) to flush SSSD cache on critical server groups.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="section" id="kc">
+  <div class="sec-label">Knowledge check</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Test your infrastructure identity depth</h2><div class="underbar"></div></div>
+
+  <div class="kc" id="kc1">
+    <div class="kc-q" onclick="toggleKC('kc1')">
+      <span class="kc-icon">Q1</span>
+      Your enterprise has 3,000 Linux servers. Engineers currently use long-lived SSH key pairs stored in their home directories. Design a migration to SSH certificate-based authentication with MFA-gated issuance.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>SSH Certificate Authority migration — phased approach:</strong><br><br>
+      <strong>Phase 1 — Build the CA service (Month 1–2):</strong> Deploy an SSH CA service (HashiCorp Vault SSH secrets engine, or open-source Teleport, or a custom CA using OpenSSH <code>ssh-keygen -s</code> with AD auth + PingID integration). The CA service: (1) authenticates the requesting engineer against AD, (2) verifies MFA via PingID API, (3) signs a short-lived certificate (8 hours) with the engineer's AD UPN as the principal, (4) returns the certificate. Store the CA private key in an HSM or Vault transit engine.<br><br>
+      <strong>Phase 2 — Server-side trust (Month 2–3):</strong> Deploy the CA public key to all 3,000 servers via Ansible: add <code>TrustedUserCAKeys /etc/ssh/ca.pub</code> to <code>/etc/ssh/sshd_config</code>. This enables certificate-based auth alongside existing key auth — no disruption yet.<br><br>
+      <strong>Phase 3 — Engineer migration (Month 3–5):</strong> Communicate the new workflow. Engineers request certs via CLI tool or web UI (authenticates → issues cert → loads into ssh-agent automatically). Document the workflow. Run in parallel — both key-based and cert-based auth accepted.<br><br>
+      <strong>Phase 4 — Disable legacy keys (Month 6):</strong> Audit which servers still have <code>authorized_keys</code> entries (via Ansible scan). Set a deadline. Disable <code>AuthorizedKeysFile</code> in sshd_config on all servers. Only certificate-based auth accepted.<br><br>
+      <strong>Monitoring:</strong> Alert on any SSH authentication using a long-lived key after Phase 4. Any key-based auth attempt is now anomalous and indicates a misconfigured server or a compromised endpoint.
+    </div>
+  </div>
+
+  <div class="kc" id="kc2">
+    <div class="kc-q" onclick="toggleKC('kc2')">
+      <span class="kc-icon">Q2</span>
+      A security audit finds that the corporate Wi-Fi (WPA2-Enterprise, PEAP-MSCHAPv2) has been successfully attacked using a rogue access point to harvest employee credentials. What happened, why, and what is the remediation architecture?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>What happened:</strong> An attacker deployed a rogue Wi-Fi access point broadcasting the same SSID as the corporate Wi-Fi. Employee devices configured to "auto-connect to known networks" connected to the rogue AP. The rogue AP initiated an 802.1X EAP handshake. Since the supplicants were not configured to validate the RADIUS server's TLS certificate, the PEAP tunnel was established against the attacker's server. The inner MSCHAPv2 challenge/response was captured by the attacker. Offline cracking of MSCHAPv2 (via Asleap or similar) recovered plaintext credentials.<br><br>
+      <strong>Root cause:</strong> Supplicant certificate validation was either disabled or not configured. Employees' devices accepted any certificate presented by a "RADIUS server" — including a self-signed cert from the attacker's laptop.<br><br>
+      <strong>Remediation architecture:</strong><br>
+      <strong>Immediate:</strong> Force password resets for all employees who connected to corporate Wi-Fi in the affected time window (RADIUS accounting logs identify who was connected).<br><br>
+      <strong>Short-term (2–4 weeks):</strong> Push MDM/GPO policy to all managed devices: (1) Configure the trusted CA for RADIUS server validation (the internal CA that signed the NPS/RADIUS certificate), (2) Specify the expected server name in the certificate CN/SAN, (3) Set <code>"Do not prompt user to authorize new servers or trusted certification authorities"</code> to prevent users from approving rogue certs.<br><br>
+      <strong>Strategic:</strong> Migrate corporate Wi-Fi from PEAP-MSCHAPv2 to EAP-TLS (certificate-based). Deploy client certificates to managed devices via MDM. EAP-TLS is immune to rogue AP attacks because the attacker cannot produce a valid client certificate even if they have a valid server certificate.
+    </div>
+  </div>
+
+  <div class="kc" id="kc3">
+    <div class="kc-q" onclick="toggleKC('kc3')">
+      <span class="kc-icon">Q3</span>
+      Design the complete Linux authentication architecture for a 500-server fleet where: engineers need SSH access from managed laptops, service accounts run automated jobs, and all privileged access must be audited. Integrate with your existing AD, PingID, and CyberArk environment.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>Three distinct identity flows — each needs separate architecture:</strong><br><br>
+      <strong>Flow 1 — Engineer interactive SSH access:</strong> All 500 servers joined to AD via SSSD realm join. SSH CA service (Vault or Teleport) integrated with AD auth + PingID MFA. Engineers request short-lived certificates (8-hour TTL). SSH cert presented at login → sshd validates against CA pubkey → SSSD maps to AD user → PAM session started. No long-lived SSH keys. Every session logged with cert key_id (engineer identity + issuance time). Group-based access control via SSSD (only members of <code>linux-access</code> AD group can SSH).<br><br>
+      <strong>Flow 2 — Service account automation (no interactive MFA):</strong> Service accounts use long-lived certificates (30-day) issued by the CA, stored in CyberArk as managed credentials. Automation pipelines (Jenkins, Ansible, GitLab CI) retrieve fresh certificates from CyberArk before each run via the Conjur/CyberArk API. Certificate rotation automated by CyberArk CPM. Service accounts have no interactive shell access (<code>AllowUsers</code> in sshd_config restricts them to specific source IPs).<br><br>
+      <strong>Flow 3 — Privileged access (root/admin) via CyberArk PSM:</strong> No direct root SSH from engineer workstations. Engineers request privileged access via CyberArk PVWA → JIT approval workflow → CyberArk PSM SSH proxy session → audited session recording. PSM connects to target server using a managed privileged account. Engineer never sees the privileged credential. All commands recorded and indexed for SOC review.<br><br>
+      <strong>SSSD HA design:</strong> Configure two AD domain controllers per site in sssd.conf. Offline cache TTL = 4 hours for privileged servers, 24 hours for non-critical. Cache flush automation integrated into Leaver termination runbook via Ansible.
+    </div>
+  </div>
+
+  <div class="kc" id="kc4">
+    <div class="kc-q" onclick="toggleKC('kc4')">
+      <span class="kc-icon">Q4</span>
+      TACACS+ vs RADIUS — a network engineer says "we use RADIUS for everything including device management." As the IAM architect, what is your response and what is the correct architecture?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>RADIUS for device management is a common and architecturally incorrect pattern.</strong><br><br>
+      <strong>What RADIUS is missing for device management:</strong> (1) <strong>Per-command authorization</strong> — RADIUS handles authentication and returns a static authorization level (privilege level 1–15 in Cisco terms). It cannot say "this engineer can run <code>show</code> commands but not <code>configure</code> commands." TACACS+ provides per-command authorization as a first-class feature. (2) <strong>Accounting completeness</strong> — RADIUS accounting for device management captures session start/stop but not individual commands. TACACS+ logs every command executed during the session — essential for compliance auditing of network device changes. (3) <strong>Encryption</strong> — RADIUS encrypts only the password. TACACS+ encrypts the entire packet body. On management plane traffic, full encryption is appropriate.<br><br>
+      <strong>Correct architecture:</strong> RADIUS for end-user network access (VPN, Wi-Fi, 802.1X). TACACS+ for privileged device management (SSH to routers, switches, firewalls, load balancers). Deploy a TACACS+ server (Cisco ISE, tac_plus) alongside the RADIUS infrastructure. Define command authorization sets: read-only operators get <code>show</code> commands only. Network engineers get configuration commands. Network architects get global config access. All command executions logged to SIEM.<br><br>
+      <strong>The business case to make to the network team:</strong> In a SOX or PCI audit, "who changed this network ACL and when?" requires TACACS+ command accounting. RADIUS cannot answer that question. The cost of deploying TACACS+ is far lower than the cost of a compliance finding.
+    </div>
+  </div>
+</section>
+
+<!-- TAKEAWAYS -->
+<div class="takeaway">
+  <div class="takeaway-head">
+    <div class="takeaway-icon">🌐</div>
+    <div class="takeaway-title">Key takeaways — M05 · Infrastructure Identity</div>
+  </div>
+  <ul class="takeaway-list">
+    <li><strong style="color:var(--text-p)">Infrastructure identity is the most exploited and least governed IAM layer in most enterprises.</strong> SSH key sprawl, unmanaged sudo rules, SSSD cache gaps, and weak RADIUS shared secrets are consistently exploited in real breaches. Architects who don't govern this layer leave the highest-risk attack surface open.</li>
+    <li><strong style="color:var(--text-p)">RADIUS is the network authentication protocol for VPN, Wi-Fi, and 802.1X.</strong> PingID integrates via RADIUS proxy — password validation against AD + MFA trigger in a single RADIUS exchange. RADIUS CoA enables mid-session policy enforcement (network-layer equivalent of CAE).</li>
+    <li><strong style="color:var(--text-p)">TACACS+ is the correct protocol for privileged device management</strong> — per-command authorization, full packet encryption, and complete command audit logging. RADIUS lacks all three for device admin use cases.</li>
+    <li><strong style="color:var(--text-p)">802.1X PEAP-MSCHAPv2 requires server certificate validation enforced via MDM</strong> — without it, rogue access points can harvest credentials. EAP-TLS (certificate-based) is phishing-resistant and the long-term target for managed device environments.</li>
+    <li><strong style="color:var(--text-p)">PAM is the Linux authentication delegation framework</strong> — all authentication goes through the PAM stack. Adding PingID MFA to the PAM stack extends enterprise MFA to SSH access on Linux servers.</li>
+    <li><strong style="color:var(--text-p)">SSSD bridges Linux to Active Directory</strong> — centralized auth, group-based access control, and offline caching. SSSD cache creates a deprovisioning window: terminated user credentials remain valid until cache expiry. Flush via Leaver automation.</li>
+    <li><strong style="color:var(--text-p)">SSH Certificate Authorities replace key sprawl with governed, short-lived credentials.</strong> MFA-gated issuance, 8-hour TTL, automatic expiry, instant CA rotation = revocation. One <code>TrustedUserCAKeys</code> config line on all servers. No per-server authorized_keys management.</li>
+  </ul>
+</div>
+
+<!-- ARCHITECT REVIEW -->
+<div class="arch-review">
+  <div class="arch-review-head">
+    <span class="arch-badge">Architect Review</span>
+    <span class="arch-title">Senior-level infrastructure identity design</span>
+  </div>
+  <ul class="arch-list">
+    <li>
+      <span class="arch-num">01</span>
+      Your enterprise has zero trust as a strategic initiative. The network team says "we've deployed 802.1X everywhere — that's zero trust for the network." As the IAM architect, evaluate whether 802.1X alone satisfies zero trust network access principles. What is missing, and how do you extend the architecture to achieve genuine zero trust — including device posture, continuous evaluation, and integration with identity signals from Entra ID and PingID?
+    </li>
+    <li>
+      <span class="arch-num">02</span>
+      A red team exercise revealed lateral movement from a compromised developer workstation to a production database server in 4 hops, entirely via SSH key reuse. The developer had the same SSH key on their laptop, in their home directory on a dev server, in a CI/CD pipeline config, and the same public key was in authorized_keys on the production database. Design the complete remediation and the target state architecture that makes this 4-hop chain architecturally impossible.
+    </li>
+    <li>
+      <span class="arch-num">03</span>
+      Phase 1 is now complete (M01–M05). You have covered the complete IAM protocol stack from ecosystem thinking through directories and infrastructure auth. Before Phase 2 (Governance &amp; PAM) begins: draw the complete identity flow for a new employee on Day 1 — from HR record creation through directory provisioning, authentication setup, MFA enrollment, Linux server access, and VPN access. Identify every system, every protocol, and every dependency in the chain. Where are the gaps in your current environment?
+    </li>
+  </ul>
+</div>
+
+<!-- DEP MAP -->
+<section class="section" id="dep">
+  <div class="sec-label">Knowledge dependency map</div>
+  <div class="dep-map">
+    <span class="dep-node dep-done">M01–M04b</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-cur">M05 Infra Auth ← here (Phase 1 complete)</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M06 AuthZ Architecture</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M08 PAM (CyberArk)</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M11 Identity Security</span>
+  </div>
+</section>
+
+<!-- BRIDGE -->
+<div class="bridge" id="bridge">
+  <div class="sec-label">Bridge to Phase 2</div>
+  <div class="bridge-card">
+    <div class="bridge-eyebrow">Phase 1 complete · Phase 2 begins</div>
+    <h2 class="bridge-title">You've proven identity at every layer.<br>Now: <span>who can do what?</span></h2>
+    <p class="bridge-body">
+      Phase 1 (M01–M05) is now complete. You have covered the full identity stack from ecosystem thinking (M01) through vocabulary (M02), federation protocols (M03a, M03b), authentication factors (M04a), directory services (M04b), and infrastructure identity (M05). You can now describe how identity is proven at every layer of the enterprise stack — applications, networks, and operating systems.
+      <br><br>
+      <strong>Phase 2 — Governance &amp; PAM</strong> answers the companion question: once identity is proven, what is the principal permitted to do? Authorization architecture (M06) is the most consequential design decision in enterprise IAM — the gap between authentication and authorization is where most access control failures occur.
+      <br><br>
+      M06 covers RBAC, ABAC, PBAC, ReBAC, the Google Zanzibar model, OPA/Cedar policy engines, and the PDP/PEP/PAP/PIP architecture — at genuine architect depth, with three enterprise design exercises. The concepts from M02 (authorization vs authentication, principal, entitlement) and M04b (directory group membership as the raw material for RBAC) feed directly into M06.
+    </p>
+    <div class="bridge-concepts">
+      <span class="badge badge-phase">RBAC → ABAC → ReBAC evolution</span>
+      <span class="badge badge-jade">Google Zanzibar model</span>
+      <span class="badge badge-violet">OPA &amp; Cedar policy engines</span>
+      <span class="badge badge-teal">PDP / PEP / PAP / PIP</span>
+    </div>
+    <a href="M06.html" class="bridge-btn">Begin Phase 2 — M06 · Authorization Architecture →</a>
+  </div>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="toc">
+    <div class="toc-label">In this module</div>
+    <a class="toc-item" href="#why">Why infra identity matters</a>
+    <a class="toc-item" href="#radius">RADIUS architecture</a>
+    <a class="toc-item toc-sub" href="#radius">Proxy chain diagram</a>
+    <a class="toc-item toc-sub" href="#radius">TACACS+ vs RADIUS</a>
+    <a class="toc-item toc-sub" href="#radius">EAP method selection</a>
+    <a class="toc-item" href="#dot1x">802.1X &amp; NAC</a>
+    <a class="toc-item" href="#pam">PAM framework</a>
+    <a class="toc-item toc-sub" href="#pam">PAM MFA integration</a>
+    <a class="toc-item toc-sub" href="#pam">sudo governance</a>
+    <a class="toc-item" href="#sssd">SSSD — Linux AD bridge</a>
+    <a class="toc-item toc-sub" href="#sssd">realm join flow</a>
+    <a class="toc-item toc-sub" href="#sssd">Deprovisioning gotcha</a>
+    <a class="toc-item" href="#ssh-ca">SSH certificate authority</a>
+    <a class="toc-item toc-sub" href="#ssh-ca">CA issuance &amp; auth diagram</a>
+    <a class="toc-item" href="#threats">Infra threat model</a>
+    <a class="toc-item" href="#kc">Knowledge check (×4)</a>
+    <a class="toc-item" href="#bridge">Bridge to Phase 2</a>
+  </div>
+
+  <div class="qref">
+    <div class="qref-label">Quick reference</div>
+    <div class="qref-item"><span class="qref-term">NAS</span><span class="qref-def">Network Access Server — VPN concentrator or switch that sends RADIUS requests</span></div>
+    <div class="qref-item"><span class="qref-term">CoA</span><span class="qref-def">Change of Authorization — mid-session RADIUS policy push</span></div>
+    <div class="qref-item"><span class="qref-term">EAP-TLS</span><span class="qref-def">Certificate-based 802.1X — phishing-resistant, requires PKI</span></div>
+    <div class="qref-item"><span class="qref-term">PEAP</span><span class="qref-def">Password EAP in TLS tunnel — requires server cert validation</span></div>
+    <div class="qref-item"><span class="qref-term">PAM</span><span class="qref-def">Pluggable Authentication Modules — Linux auth delegation framework</span></div>
+    <div class="qref-item"><span class="qref-term">SSSD</span><span class="qref-def">System Security Services Daemon — Linux ↔ AD bridge with caching</span></div>
+    <div class="qref-item"><span class="qref-term">realm join</span><span class="qref-def">Enroll Linux host in AD domain (configures Kerberos + SSSD)</span></div>
+    <div class="qref-item"><span class="qref-term">sss_cache</span><span class="qref-def">Flush SSSD credential cache — use in Leaver runbook</span></div>
+    <div class="qref-item"><span class="qref-term">SSH CA</span><span class="qref-def">Certificate Authority for SSH — issues short-lived signed certs</span></div>
+    <div class="qref-item"><span class="qref-term">TrustedUserCAKeys</span><span class="qref-def">sshd_config line that trusts an SSH CA public key</span></div>
+    <div class="qref-item"><span class="qref-term">TACACS+</span><span class="qref-def">Cisco protocol for device management — per-command authz + full encrypt</span></div>
+    <div class="qref-item"><span class="qref-term">RadSec</span><span class="qref-def">RADIUS over TLS (RFC 6614) — encrypted transit for RADIUS traffic</span></div>
+  </div>
+
+  <div class="card card-rose" style="margin-bottom:12px">
+    <div class="card-label">⚠️ Top infra risk</div>
+    <div class="card-title">SSH key sprawl = lateral movement highway</div>
+    <div class="card-body">No expiry, no central revocation, often reused across environments. One compromised key enables lateral movement to every server where the public key exists. SSH CA with 8-hour certs is the architectural fix.</div>
+  </div>
+
+  <div class="card card-steel" style="margin-bottom:12px">
+    <div class="card-label">Phase 1 milestone</div>
+    <div class="card-title">Protocol stack complete ✓</div>
+    <div class="card-body">M01–M05 complete. You now understand IAM at every layer: ecosystem, vocabulary, OAuth/OIDC, SAML, MFA, directories, network auth, and Linux auth. Phase 2 covers who can do what — the governance layer.</div>
+  </div>
+
+  <div class="card card-jade">
+    <div class="card-label">M05 colour personality</div>
+    <div class="card-title">Steel-Blue + Jade</div>
+    <div class="card-body">Steel-blue for the industrial network/infrastructure layer. Jade for the "granted access" flows (SSSD auth, cert-based login, successful 802.1X). Cooler palette than the application-layer modules — deliberately industrial.</div>
+  </div>
+</aside>
+</div><!-- /layout -->
+
+<footer class="footer">
+  <div class="footer-left">IAM Architect Portal · M05 of 20 · Phase 1: Core Protocols — Final module</div>
+  <div style="display:flex;gap:8px">
+    <a href="M04b.html" class="badge badge-prereq" style="text-decoration:none">← M04b</a>
+    <a href="M06.html" class="badge badge-phase" style="text-decoration:none">M06 Phase 2 →</a>
+  </div>
+</footer>
+</div><!-- /shell -->
+
+<script>
+function toggleKC(id){document.getElementById(id).classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.toc-item');
+  const targets=[];
+  items.forEach(a=>{const href=a.getAttribute('href');if(href&&href.startsWith('#')){const el=document.querySelector(href);if(el)targets.push({el,a});}});
+  window.addEventListener('scroll',()=>{
+    let cur=null;
+    targets.forEach(({el})=>{if(window.scrollY>=el.offsetTop-90)cur=el});
+    targets.forEach(({el,a})=>a.classList.toggle('active',el===cur));
+  },{passive:true});
+})();
+(function(){
+  const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.06});
+  document.querySelectorAll('.section,.card,.kc,.takeaway,.arch-review,.concept,.concept-jade,.gotcha,.flow-step').forEach(el=>{
+    el.style.opacity='0';el.style.transform='translateY(12px)';
+    el.style.transition='opacity .45s ease,transform .45s ease';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

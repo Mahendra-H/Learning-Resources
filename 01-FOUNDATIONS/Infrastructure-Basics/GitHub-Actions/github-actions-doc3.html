@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doc 03 — Scale &amp; Reusability | GitHub Actions Mastery</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050f0a;--bg2:#081408;--bg-card:#0c1a0e;--bg-card2:#101f12;--bg-code:#060d07;
+  --accent:#34d399;--accent-dim:#10b981;--a2:#38bdf8;
+  --warn:#fbbf24;--danger:#f87171;--info:#818cf8;--rose:#fb7185;
+  --t1:#eefff6;--t2:#b8e0cc;--t3:#6a9e80;
+  --border:rgba(52,211,153,0.1);--border2:rgba(52,211,153,0.2);
+  --code-key:#7dd3fc;--code-val:#86efac;--code-str:#fde68a;
+  --code-num:#fca5a5;--code-cmt:#3d6b4f;--code-sp:#f0abfc;
+  --code-acc:#34d399;--code-text:#d8f5e8;
+  --sw:272px;
+  --font-d:'Fraunces',Georgia,serif;
+  --font-b:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-m:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:18px;line-height:1.82;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(52,211,153,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(52,211,153,.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0}
+
+.sb{position:fixed;top:0;left:0;width:var(--sw);height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;z-index:100;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.sb-brand{padding:1.4rem 1.3rem 1rem;border-bottom:1px solid var(--border)}
+.sb-series{font-family:var(--font-m);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:5px}
+.sb-doc{font-family:var(--font-d);font-size:1rem;font-weight:700;color:var(--t1);line-height:1.25}
+.sb-sec{font-family:var(--font-m);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);padding:.9rem 1.3rem .35rem}
+.nav-a{display:flex;align-items:center;gap:9px;padding:.42rem 1.3rem;text-decoration:none;color:var(--t2);font-size:.855rem;font-weight:500;border-left:2px solid transparent;transition:all .2s;line-height:1.35}
+.nav-a:hover,.nav-a.on{color:var(--accent);border-left-color:var(--accent);background:rgba(52,211,153,.05)}
+.nd{width:5px;height:5px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .2s}
+.nav-a:hover .nd,.nav-a.on .nd{background:var(--accent)}
+.xp-box{margin:auto 1.2rem 1.4rem;padding:.9rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px}
+.xp-top{font-family:var(--font-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:flex;justify-content:space-between;margin-bottom:7px}
+.xp-bar{height:5px;background:var(--bg);border-radius:10px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));border-radius:10px;transition:width .4s ease;width:0%}
+
+.main{margin-left:var(--sw);position:relative;z-index:1}
+.content{max-width:870px;margin:0 auto;padding:2.8rem 3rem 7rem}
+
+.doc-hdr{padding:3rem 0 2.8rem;border-bottom:1px solid var(--border);margin-bottom:3rem;animation:fadeUp .6s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.35);color:var(--accent);font-family:var(--font-m);font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:1.4rem}
+.badge .dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.doc-title{font-family:var(--font-d);font-size:clamp(2.2rem,5vw,3.6rem);font-weight:700;line-height:1.08;letter-spacing:-.025em;color:var(--t1);margin-bottom:.55rem}
+.doc-title .hi{color:var(--accent)}
+.doc-sub{font-size:1.1rem;color:var(--t2);font-weight:400;margin-bottom:1.8rem;line-height:1.65;max-width:640px}
+.doc-meta{display:flex;gap:1rem;flex-wrap:wrap}
+.mpill{font-family:var(--font-m);font-size:.7rem;color:var(--t2);background:var(--bg-card);border:1px solid var(--border);padding:4px 12px;border-radius:100px;letter-spacing:.05em}
+
+.bc{display:inline-flex;align-items:center;gap:6px;color:var(--t3);font-family:var(--font-m);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;margin-bottom:1.8rem;transition:color .2s}
+.bc:hover{color:var(--accent)}
+
+.where{background:var(--bg-card);border:1px solid rgba(52,211,153,.22);border-left:4px solid var(--accent);border-radius:12px;padding:1.5rem 1.8rem;margin-bottom:3rem}
+.where h3{font-family:var(--font-m);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem}
+.where p{color:var(--t2);font-size:.975rem;line-height:1.78;margin-bottom:.5rem}
+.where p:last-child{margin-bottom:0}
+
+.sec{margin-bottom:3.5rem}
+.eyebrow{font-family:var(--font-m);font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:.55rem;display:block}
+h2.stitle{font-family:var(--font-d);font-size:1.95rem;font-weight:700;color:var(--t1);letter-spacing:-.02em;line-height:1.15;margin-bottom:1.1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+h3.ssub{font-family:var(--font-d);font-size:1.3rem;font-weight:600;color:var(--t1);letter-spacing:-.01em;margin:2rem 0 .75rem}
+p{color:var(--t2);margin-bottom:1rem;font-size:1rem;line-height:1.85}
+p:last-child{margin-bottom:0}
+p strong{color:var(--t1);font-weight:600}
+
+.box{border-radius:12px;padding:1.35rem 1.55rem;margin:1.8rem 0;border:1px solid}
+.box-hd{font-family:var(--font-m);font-size:.67rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:.55rem;display:flex;align-items:center;gap:8px}
+.box p{font-size:.96rem;margin-bottom:.45rem}
+.box p:last-child{margin-bottom:0}
+.box ul{margin:.4rem 0 0 1.2rem}
+.box ul li{font-size:.93rem;color:var(--t2);margin-bottom:.35rem;line-height:1.6}
+.box-war{background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.25)}
+.box-war .box-hd{color:var(--danger)}
+.box-war p,.box-war li{color:#e8b8b8}
+.box-tip{background:rgba(129,140,248,.07);border-color:rgba(129,140,248,.25)}
+.box-tip .box-hd{color:var(--info)}
+.box-tip p,.box-tip li{color:#c5c9f5}
+.box-iam{background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.2)}
+.box-iam .box-hd{color:var(--a2)}
+.box-iam p,.box-iam li{color:var(--t2)}
+.box-warn{background:rgba(251,191,36,.07);border-color:rgba(251,191,36,.25)}
+.box-warn .box-hd{color:var(--warn)}
+.box-warn p,.box-warn li{color:#e8d4a0}
+.box-ok{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.25)}
+.box-ok .box-hd{color:var(--accent)}
+.box-ok p,.box-ok li{color:#a8e8d0}
+
+.cb{background:var(--bg-code);border:1px solid rgba(52,211,153,.15);border-radius:10px;margin:1.5rem 0;overflow:hidden}
+.cb-hd{display:flex;align-items:center;justify-content:space-between;padding:.55rem 1.15rem;background:rgba(52,211,153,.05);border-bottom:1px solid rgba(52,211,153,.12)}
+.cb-fn{font-family:var(--font-m);font-size:.7rem;color:var(--accent);letter-spacing:.04em}
+.cb-right{display:flex;gap:8px;align-items:center}
+.cb-lang{font-family:var(--font-m);font-size:.62rem;color:var(--t3);letter-spacing:.1em;text-transform:uppercase}
+.cb-copy{background:none;border:1px solid var(--border);color:var(--t3);font-family:var(--font-m);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 9px;border-radius:4px;cursor:pointer;transition:all .2s}
+.cb-copy:hover{color:var(--accent);border-color:var(--accent)}
+pre{padding:1.35rem;overflow-x:auto;font-family:var(--font-m);font-size:.875rem;line-height:1.72;color:var(--code-text);scrollbar-width:thin}
+.k{color:var(--code-key)}.v{color:var(--code-val)}.s{color:var(--code-str)}
+.n{color:var(--code-num)}.c{color:var(--code-cmt);font-style:italic}
+.sp{color:var(--code-sp)}.ac{color:var(--code-acc)}.ex{color:#fbbf24}
+
+code{font-family:var(--font-m);font-size:.855rem;background:rgba(52,211,153,.1);color:var(--accent);padding:1px 6px;border-radius:4px}
+
+.tw{overflow-x:auto;margin:1.5rem 0;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.91rem}
+thead th{background:var(--bg-card2);color:var(--t1);font-family:var(--font-m);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.85rem 1.15rem;text-align:left;border-bottom:1px solid var(--border)}
+tbody td{padding:.82rem 1.15rem;color:var(--t2);border-bottom:1px solid rgba(52,211,153,.06);line-height:1.55;vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(52,211,153,.025)}
+td strong{color:var(--t1)}
+td code{background:rgba(52,211,153,.1);color:var(--accent)}
+
+/* COMPARE CARDS */
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.5rem 0}
+.cmp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.3rem;transition:border-color .25s}
+.cmp-card:hover{border-color:var(--border2)}
+.cmp-card.green{border-top:2px solid var(--accent)}
+.cmp-card.blue{border-top:2px solid var(--a2)}
+.cmp-label{font-family:var(--font-m);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.6rem}
+.cmp-card.green .cmp-label{color:var(--accent)}
+.cmp-card.blue .cmp-label{color:var(--a2)}
+.cmp-title{font-family:var(--font-d);font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:.5rem}
+.cmp-card ul{list-style:none;display:flex;flex-direction:column;gap:.4rem}
+.cmp-card ul li{font-size:.875rem;color:var(--t2);padding-left:1rem;position:relative;line-height:1.5}
+.cmp-card ul li::before{content:'›';position:absolute;left:0;color:var(--t3)}
+
+/* BUG */
+.bug{background:var(--bg-card);border:1px solid rgba(248,113,113,.25);border-radius:14px;margin:2rem 0;overflow:hidden}
+.bug-hd{background:rgba(248,113,113,.08);padding:.75rem 1.35rem;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(248,113,113,.18)}
+.bug-hd span{font-family:var(--font-m);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--danger);font-weight:600}
+.bug-body{padding:1.15rem 1.35rem}
+.bug-body p{color:var(--t2);font-size:.95rem;margin-bottom:.9rem}
+.reveal-btn{background:none;border:1px solid rgba(52,211,153,.3);color:var(--accent);font-family:var(--font-m);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;padding:6px 16px;border-radius:6px;cursor:pointer;transition:all .2s;margin-top:.3rem}
+.reveal-btn:hover{background:rgba(52,211,153,.1)}
+.bug-ans{display:none;margin-top:1rem;padding:1rem 1.1rem;background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.2);border-radius:8px}
+.bug-ans p{color:var(--t2);font-size:.92rem;margin:0}
+.bug-ans strong{color:var(--accent)}
+
+/* LAB */
+.lab{background:var(--bg-card);border:1px solid rgba(52,211,153,.28);border-radius:16px;margin:2.5rem 0;overflow:hidden}
+.lab-hd{background:rgba(52,211,153,.07);padding:1.1rem 1.7rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(52,211,153,.18)}
+.lab-title{font-family:var(--font-d);font-size:1.08rem;font-weight:700;color:var(--t1)}
+.lab-badge{font-family:var(--font-m);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.28);padding:3px 12px;border-radius:100px}
+.lab-body{padding:1.7rem}
+.lab-obj{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.18);border-radius:8px;padding:.95rem 1.15rem;margin-bottom:1.4rem;font-size:.96rem;color:var(--t2)}
+.lab-obj strong{color:var(--a2)}
+.lab-steps{list-style:none;counter-reset:lc;display:flex;flex-direction:column;gap:.9rem}
+.lab-steps li{counter-increment:lc;display:flex;gap:.9rem;align-items:flex-start;color:var(--t2);font-size:.97rem;line-height:1.72}
+.lab-steps li::before{content:counter(lc);background:rgba(52,211,153,.14);color:var(--accent);font-family:var(--font-m);font-size:.7rem;font-weight:600;width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px}
+.lab-steps li strong{color:var(--t1)}
+
+.hr{height:1px;background:var(--border);margin:3rem 0}
+
+.bridge{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2rem 2.2rem;margin-top:4rem;position:relative;overflow:hidden}
+.bridge::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--a2),#a78bfa)}
+.bridge-eye{font-family:var(--font-m);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.7rem}
+.bridge h2{font-family:var(--font-d);font-size:1.55rem;font-weight:700;color:var(--t1);margin-bottom:1rem;letter-spacing:-.01em}
+.bridge p{color:var(--t2);font-size:.97rem}
+.learned{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.8rem;margin:1.2rem 0 1.6rem}
+.li{display:flex;align-items:flex-start;gap:8px;font-size:.9rem;color:var(--t2)}
+.li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:2px}
+.next-box{padding:1.15rem 1.35rem;background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.18);border-radius:10px;margin-top:1.4rem}
+.next-label{font-family:var(--font-m);font-size:.63rem;letter-spacing:.15em;text-transform:uppercase;color:#a78bfa;margin-bottom:.5rem}
+.next-box p{font-size:.95rem;color:var(--t2);margin:0}
+.next-cta{display:inline-flex;align-items:center;gap:8px;margin-top:1.2rem;padding:10px 22px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);color:var(--accent);font-family:var(--font-m);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;border-radius:8px;cursor:default;transition:all .2s}
+.next-cta:hover{background:rgba(52,211,153,.18)}
+
+@media(max-width:768px){.sb{display:none}.main{margin-left:0}.content{padding:1.8rem 1.1rem 5rem}.learned{grid-template-columns:1fr}.cmp-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="sb">
+  <div class="sb-brand">
+    <span class="sb-series">GitHub Actions Mastery · Doc 03 / 04</span>
+    <div class="sb-doc">Scale &amp; Reusability</div>
+  </div>
+  <div class="sb-sec">// orientation</div>
+  <a href="#where" class="nav-a on"><span class="nd"></span>📍 Where You Are</a>
+  <div class="sb-sec">// artifacts &amp; caching</div>
+  <a href="#artifacts" class="nav-a"><span class="nd"></span>Artifacts</a>
+  <a href="#caching" class="nav-a"><span class="nd"></span>Caching Strategy</a>
+  <div class="sb-sec">// reusability</div>
+  <a href="#reusable-workflows" class="nav-a"><span class="nd"></span>Reusable Workflows</a>
+  <a href="#composite-actions" class="nav-a"><span class="nd"></span>Composite Actions</a>
+  <a href="#reusable-vs-composite" class="nav-a"><span class="nd"></span>Reusable vs Composite</a>
+  <div class="sb-sec">// scaling</div>
+  <a href="#matrix" class="nav-a"><span class="nd"></span>Matrix Strategy</a>
+  <a href="#service-containers" class="nav-a"><span class="nd"></span>Service Containers</a>
+  <a href="#release-workflows" class="nav-a"><span class="nd"></span>Release Workflows</a>
+  <div class="sb-sec">// labs</div>
+  <a href="#lab1" class="nav-a"><span class="nd"></span>Lab 1 — Caching Pipeline</a>
+  <a href="#lab2" class="nav-a"><span class="nd"></span>Lab 2 — Reusable Workflow</a>
+  <a href="#lab3" class="nav-a"><span class="nd"></span>Lab 3 — Matrix + Release</a>
+  <div class="sb-sec">// wrap up</div>
+  <a href="#bridge" class="nav-a"><span class="nd"></span>What You Learned + Next →</a>
+  <div class="xp-box">
+    <div class="xp-top"><span>Progress</span><span id="xpn">0%</span></div>
+    <div class="xp-bar"><div class="xp-fill" id="xpf"></div></div>
+  </div>
+</nav>
+
+<main class="main">
+<div class="content">
+  <a href="github-actions-index.html" class="bc">← Index</a>
+  <header class="doc-hdr">
+    <div class="badge"><span class="dot"></span>Module 03 of 04 · Advanced · Emerald &amp; Sky</div>
+    <h1 class="doc-title">Scale &amp; <span class="hi">Reusability</span></h1>
+    <p class="doc-sub">Artifacts, caching, reusable workflows, composite actions, matrix strategies, service containers, and release automation — where individual pipelines become an enterprise CI/CD platform.</p>
+    <div class="doc-meta">
+      <span class="mpill">⏱ 4–5 hours</span>
+      <span class="mpill">🧪 3 Labs</span>
+      <span class="mpill">🐛 3 Spot-the-Bug exercises</span>
+      <span class="mpill">🎯 Advanced Level</span>
+    </div>
+  </header>
+
+  <div id="where" class="where">
+    <h3>📍 Where You Are</h3>
+    <p>You finished Doc 2 with smart, secure, context-aware pipelines. You can read contexts, scope secrets, write conditional logic, chain outputs between jobs, and prevent deployment races with concurrency groups. Your pipelines make decisions.</p>
+    <p>The problem now is <strong>scale</strong>. When you have ten repositories, you don't want to copy-paste the same 300-line workflow YAML into each one. When a PingFederate deployment needs to run across three AWS regions, you don't want three separate jobs written by hand. When your TypeScript API needs testing against Node 18, 20, and 22, you don't want three copies of your test job. This doc solves all of that — reuse, scale, and automation.</p>
+  </div>
+
+  <!-- S1: ARTIFACTS -->
+  <section id="artifacts" class="sec">
+    <span class="eyebrow">// section 01</span>
+    <h2 class="stitle">Artifacts — Persisting Build Output Across Jobs</h2>
+    <p>Jobs in a workflow run on separate, isolated VMs. Nothing is shared between them automatically. <strong>Artifacts</strong> are how you pass files from one job to another — or make them available for download after the run. Think compiled binaries, test reports, coverage data, packaged configs.</p>
+    <p>Artifacts are uploaded by one job using <code>actions/upload-artifact</code> and downloaded by subsequent jobs using <code>actions/download-artifact</code>. They are stored by GitHub for a configurable retention period (default 90 days).</p>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">artifacts.yml — upload, download, cross-job passing</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">'20'</span>}
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm run build</span>
+
+      - <span class="k">name</span>: <span class="s">Upload build output</span>
+        <span class="k">uses</span>: <span class="s">actions/upload-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="s">dist-${{ github.sha }}</span>     <span class="c"># unique name per commit</span>
+          <span class="k">path</span>: <span class="s">dist/</span>
+          <span class="k">retention-days</span>: <span class="n">7</span>              <span class="c"># keep for 7 days, not the 90-day default</span>
+          <span class="k">if-no-files-found</span>: <span class="s">error</span>        <span class="c"># fail loudly if dist/ is empty</span>
+
+      - <span class="k">name</span>: <span class="s">Upload test coverage report</span>
+        <span class="k">if</span>: <span class="ex">always()</span>                       <span class="c"># upload even when tests fail</span>
+        <span class="k">uses</span>: <span class="s">actions/upload-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="s">coverage-${{ github.run_number }}</span>
+          <span class="k">path</span>: <span class="s">coverage/</span>
+          <span class="k">if-no-files-found</span>: <span class="s">warn</span>          <span class="c"># warn but don't fail if coverage not generated</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Download build output</span>
+        <span class="k">uses</span>: <span class="s">actions/download-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="s">dist-${{ github.sha }}</span>     <span class="c"># must match exactly</span>
+          <span class="k">path</span>: <span class="s">dist/</span>                       <span class="c"># where to place it on this runner</span>
+
+      - <span class="k">name</span>: <span class="s">Deploy the artifact</span>
+        <span class="k">run</span>: <span class="s">aws s3 sync dist/ s3://my-bucket/</span>
+
+  <span class="c"># Download ALL artifacts from the run at once</span>
+  <span class="k">collect-reports</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">if</span>: <span class="ex">always()</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Download all artifacts</span>
+        <span class="k">uses</span>: <span class="s">actions/download-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">path</span>: <span class="s">all-artifacts/</span>            <span class="c"># no name: downloads everything</span>
+      - <span class="k">run</span>: <span class="s">ls -la all-artifacts/</span></pre>
+    </div>
+
+    <div class="box box-warn">
+      <div class="box-hd">⚠️ if-no-files-found: error is Your Friend</div>
+      <p>The default value of <code>if-no-files-found</code> is <code>warn</code> — which means if your build step silently fails to produce output, the artifact upload succeeds with a warning, the deploy job downloads an empty artifact, and your deployment proceeds with nothing. Set it to <code>error</code> for all critical artifacts so a missing build output fails loudly at the upload step, not mysteriously at deploy time.</p>
+    </div>
+  </section>
+
+  <!-- S2: CACHING -->
+  <section id="caching" class="sec">
+    <span class="eyebrow">// section 02</span>
+    <h2 class="stitle">Caching Strategy — Making Pipelines Fast</h2>
+    <p>Every GitHub-hosted runner starts fresh. Without caching, <code>npm ci</code> downloads every dependency from the internet on every single run. For a project with 500 packages, that's 30–90 seconds per job — multiplied across every branch, every PR, every push. Caching eliminates that cost by storing and restoring <code>node_modules</code> between runs.</p>
+
+    <h3 class="ssub">The Two Ways to Cache Node.js Dependencies</h3>
+    <div class="cmp-grid">
+      <div class="cmp-card green">
+        <div class="cmp-label">Method 1 — Recommended</div>
+        <div class="cmp-title">Built-in cache in setup-node</div>
+        <ul>
+          <li>One line to enable: <code>cache: 'npm'</code></li>
+          <li>Automatically uses <code>package-lock.json</code> as cache key</li>
+          <li>Handles cache restore and save automatically</li>
+          <li>Best choice for standard npm/yarn/pnpm projects</li>
+        </ul>
+      </div>
+      <div class="cmp-card blue">
+        <div class="cmp-label">Method 2 — Full Control</div>
+        <div class="cmp-title">Manual actions/cache</div>
+        <ul>
+          <li>Explicit control over key, restore-keys, and paths</li>
+          <li>Works for any tool — Docker layers, pip, Go modules, Gradle</li>
+          <li>Supports fallback restore keys for partial cache hits</li>
+          <li>Best when you need custom cache key logic</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">caching.yml — both methods with real key strategies</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="k">build-method-1</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>:
+          <span class="k">node-version</span>: <span class="s">'20'</span>
+          <span class="k">cache</span>: <span class="s">'npm'</span>              <span class="c"># ← that's it. Done.</span>
+      - <span class="k">run</span>: <span class="s">npm ci</span>               <span class="c"># uses cache automatically</span>
+
+  <span class="k">build-method-2</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">name</span>: <span class="s">Cache node_modules</span>
+        <span class="k">uses</span>: <span class="s">actions/cache@v4</span>
+        <span class="k">with</span>:
+          <span class="k">path</span>: <span class="s">~/.npm</span>
+          <span class="c"># Primary key: exact match on OS + lock file hash</span>
+          <span class="k">key</span>: <span class="s">npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}</span>
+          <span class="c"># Restore keys: fallback to any npm cache for this OS</span>
+          <span class="k">restore-keys</span>: <span class="sp">|</span>
+            <span class="s">npm-${{ runner.os }}-</span>
+            <span class="s">npm-</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">'20'</span>}
+      - <span class="k">run</span>: <span class="s">npm ci</span></pre>
+    </div>
+
+    <h3 class="ssub">Cache Key Strategy — The Pattern That Matters</h3>
+    <p>A good cache key has three properties: it changes when dependencies change, it stays the same when only source code changes, and it has a useful fallback for partial hits. Here is the canonical pattern for Node.js:</p>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">cache-key-strategy.yml</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="c"># Primary key: exact match — cache hit if lock file hasn't changed</span>
+<span class="k">key</span>: <span class="s">node-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}</span>
+
+<span class="c"># Restore keys: used when primary key misses — partial match</span>
+<span class="c"># Finds most recent cache with this OS prefix</span>
+<span class="k">restore-keys</span>: <span class="sp">|</span>
+  <span class="s">node-${{ runner.os }}-</span>
+
+<span class="c"># For monorepos — scope cache to specific package</span>
+<span class="k">key</span>: <span class="s">node-${{ runner.os }}-packages/auth-${{ hashFiles('packages/auth/package-lock.json') }}</span>
+
+<span class="c"># For Docker layer caching</span>
+<span class="k">key</span>: <span class="s">docker-${{ runner.os }}-${{ hashFiles('Dockerfile', '.dockerignore') }}</span></pre>
+    </div>
+
+    <div class="box box-tip">
+      <div class="box-hd">💡 How Much Time Does Caching Save?</div>
+      <p>A typical Node.js project with 400 packages: <code>npm ci</code> without cache takes 45–90 seconds. With cache hit, it takes 3–8 seconds. Across 50 workflow runs per day across a team of 10 engineers, that's roughly <strong>40–60 minutes of saved pipeline time per day</strong> for one project. At scale across dozens of repos, caching is one of the highest-ROI pipeline optimizations you can make.</p>
+    </div>
+
+    <div class="box box-war">
+      <div class="box-hd">💀 War Story — Stale Cache Breaking Production Build</div>
+      <p>A team added a new npm package on a Friday. They pushed directly to main without updating <code>package-lock.json</code> properly. Their cache key was based on the lock file — so the cache hit, <code>node_modules</code> was restored from the old cache, the new package wasn't there, and the build succeeded because the import was in a code path that tests didn't exercise. The production deployment ran fine. The feature broke for users on Monday morning. The fix: always run <code>npm ci</code> (not <code>npm install</code>) — <code>ci</code> validates the lockfile is consistent and fails fast if it's not.</p>
+    </div>
+  </section>
+
+  <!-- S3: REUSABLE WORKFLOWS -->
+  <section id="reusable-workflows" class="sec">
+    <span class="eyebrow">// section 03</span>
+    <h2 class="stitle">Reusable Workflows — DRY CI/CD at the Repository Level</h2>
+    <p>A reusable workflow is a complete workflow file that other workflows can call like a function — passing inputs, receiving outputs, inheriting or explicitly passing secrets. One workflow file lives in a central repo; dozens of service repos call it. When you update the central workflow, all callers get the update automatically.</p>
+    <p>This is the pattern that turns a collection of per-repo pipelines into an <strong>enterprise CI/CD platform</strong>. One team owns the shared deployment workflow. Service teams consume it. Standards are enforced by default.</p>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">shared-workflows/.github/workflows/deploy-node.yml — the CALLED workflow</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">name</span>: <span class="s">Deploy Node Service</span>
+
+<span class="c"># workflow_call makes this a reusable workflow</span>
+<span class="k">on</span>:
+  <span class="k">workflow_call</span>:
+    <span class="k">inputs</span>:
+      <span class="k">environment</span>:
+        <span class="k">description</span>: <span class="s">'Target environment'</span>
+        <span class="k">type</span>: <span class="s">string</span>
+        <span class="k">required</span>: <span class="n">true</span>
+      <span class="k">node-version</span>:
+        <span class="k">description</span>: <span class="s">'Node.js version'</span>
+        <span class="k">type</span>: <span class="s">string</span>
+        <span class="k">default</span>: <span class="s">'20'</span>
+      <span class="k">service-name</span>:
+        <span class="k">description</span>: <span class="s">'ECS service name to update'</span>
+        <span class="k">type</span>: <span class="s">string</span>
+        <span class="k">required</span>: <span class="n">true</span>
+      <span class="k">run-migrations</span>:
+        <span class="k">description</span>: <span class="s">'Run DB migrations before deploy?'</span>
+        <span class="k">type</span>: <span class="s">boolean</span>
+        <span class="k">default</span>: <span class="n">false</span>
+    <span class="k">secrets</span>:
+      <span class="k">AWS_ROLE_ARN</span>:
+        <span class="k">description</span>: <span class="s">'IAM role ARN for OIDC auth'</span>
+        <span class="k">required</span>: <span class="n">true</span>
+      <span class="k">DEPLOY_TOKEN</span>:
+        <span class="k">required</span>: <span class="n">false</span>
+    <span class="k">outputs</span>:
+      <span class="k">deployed-version</span>:
+        <span class="k">description</span>: <span class="s">'The version that was deployed'</span>
+        <span class="k">value</span>: <span class="ex">${{ jobs.deploy.outputs.version }}</span>
+
+<span class="k">jobs</span>:
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">environment</span>: <span class="s">${{ inputs.environment }}</span>
+    <span class="k">permissions</span>:
+      <span class="k">id-token</span>: <span class="s">write</span>
+      <span class="k">contents</span>: <span class="s">read</span>
+    <span class="k">outputs</span>:
+      <span class="k">version</span>: <span class="ex">${{ steps.deploy-step.outputs.version }}</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+
+      - <span class="k">uses</span>: <span class="s">aws-actions/configure-aws-credentials@v4</span>
+        <span class="k">with</span>:
+          <span class="k">role-to-assume</span>: <span class="s">${{ secrets.AWS_ROLE_ARN }}</span>
+          <span class="k">aws-region</span>: <span class="s">us-east-1</span>
+
+      - <span class="k">name</span>: <span class="s">Run migrations</span>
+        <span class="k">if</span>: <span class="ex">${{ inputs.run-migrations }}</span>
+        <span class="k">run</span>: <span class="s">npm run db:migrate</span>
+
+      - <span class="k">name</span>: <span class="s">Deploy service</span>
+        <span class="k">id</span>: <span class="s">deploy-step</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">VERSION=$(node -p "require('./package.json').version")</span>
+          <span class="s">echo "version=$VERSION" >> $GITHUB_OUTPUT</span>
+          <span class="s">aws ecs update-service \</span>
+          <span class="s">  --cluster ${{ inputs.environment }} \</span>
+          <span class="s">  --service ${{ inputs.service-name }} \</span>
+          <span class="s">  --force-new-deployment</span></pre>
+    </div>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">iam-api/.github/workflows/deploy.yml — the CALLER workflow</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">name</span>: <span class="s">Deploy IAM API</span>
+<span class="k">on</span>:
+  <span class="k">push</span>:
+    <span class="k">branches</span>: <span class="sp">[main]</span>
+
+<span class="k">jobs</span>:
+  <span class="k">deploy-staging</span>:
+    <span class="k">uses</span>: <span class="s">org/shared-workflows/.github/workflows/deploy-node.yml@main</span>
+    <span class="k">with</span>:
+      <span class="k">environment</span>: <span class="s">staging</span>
+      <span class="k">service-name</span>: <span class="s">iam-api-staging</span>
+      <span class="k">node-version</span>: <span class="s">'20'</span>
+      <span class="k">run-migrations</span>: <span class="n">true</span>
+    <span class="k">secrets</span>:
+      <span class="k">AWS_ROLE_ARN</span>: <span class="s">${{ secrets.STAGING_AWS_ROLE_ARN }}</span>
+
+  <span class="k">deploy-prod</span>:
+    <span class="k">uses</span>: <span class="s">org/shared-workflows/.github/workflows/deploy-node.yml@main</span>
+    <span class="k">needs</span>: <span class="s">deploy-staging</span>
+    <span class="k">with</span>:
+      <span class="k">environment</span>: <span class="s">production</span>
+      <span class="k">service-name</span>: <span class="s">iam-api-prod</span>
+      <span class="k">run-migrations</span>: <span class="n">true</span>
+    <span class="k">secrets</span>:
+      <span class="k">AWS_ROLE_ARN</span>: <span class="s">${{ secrets.PROD_AWS_ROLE_ARN }}</span>
+
+  <span class="k">notify</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="sp">[deploy-staging, deploy-prod]</span>
+    <span class="k">if</span>: <span class="ex">always()</span>
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: <span class="s">echo "Deployed version ${{ needs.deploy-prod.outputs.deployed-version }}"</span></pre>
+    </div>
+
+    <div class="box box-iam">
+      <div class="box-hd">🔐 PingFederate Pattern — Central Workflow Library</div>
+      <p>Create an <code>org/platform-workflows</code> repository with shared workflows for your common deployment patterns. Service teams call these instead of writing their own. The platform team controls security standards — OIDC auth, mandatory approval gates, required notifications — and service teams configure only what's specific to their service: environment name, service identifier, whether migrations are needed.</p>
+      <p>When a security requirement changes (for example, adding a mandatory SBOM scan before every deploy), you update it in one place and all callers get it immediately on their next run.</p>
+    </div>
+
+    <div class="box box-warn">
+      <div class="box-hd">⚠️ Reusable Workflow Constraints</div>
+      <p>Reusable workflows have important limitations to know before designing around them:</p>
+      <ul>
+        <li>A caller workflow can call at most <strong>20 reusable workflows</strong> — they can be nested up to 4 levels deep</li>
+        <li>Reusable workflows run as a <strong>complete job</strong> in the caller — you cannot use them as a step inside an existing job</li>
+        <li>The called workflow must be in a repository the caller has access to — either public, the same org with appropriate access, or the same repo</li>
+        <li>Matrix strategies <strong>cannot</strong> be applied to a <code>uses:</code> job directly — use a composite action inside a matrix job instead</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- BUG 1 -->
+  <div class="bug">
+    <div class="bug-hd"><span>🐛 Spot the Bug #1 — Reusable Workflow Secret Not Passed</span></div>
+    <div class="bug-body">
+      <p>A team calls a shared deploy workflow. The called workflow fails with "AWS credentials could not be loaded." The secret is defined in the caller repo. What is wrong?</p>
+      <div class="cb" style="margin:0 0 1rem">
+        <pre style="padding:1rem"><span class="c"># Caller workflow</span>
+<span class="k">jobs</span>:
+  <span class="k">deploy</span>:
+    <span class="k">uses</span>: <span class="s">org/shared/.github/workflows/deploy.yml@main</span>
+    <span class="k">with</span>:
+      <span class="k">environment</span>: <span class="s">production</span>
+      <span class="k">service-name</span>: <span class="s">auth-api</span>
+
+<span class="c"># Called workflow expects:</span>
+<span class="k">on</span>:
+  <span class="k">workflow_call</span>:
+    <span class="k">secrets</span>:
+      <span class="k">AWS_ROLE_ARN</span>:
+        <span class="k">required</span>: <span class="n">true</span></pre>
+      </div>
+      <button class="reveal-btn" onclick="reveal(this)">Reveal Answer</button>
+      <div class="bug-ans"><p><strong>The bug:</strong> The caller workflow does not pass the <code>AWS_ROLE_ARN</code> secret to the called workflow. Secrets are not automatically inherited unless you add <code>secrets: inherit</code> or explicitly pass them with a <code>secrets:</code> block. The called workflow declares it as required — so the run starts but the secret value is empty, causing the AWS credentials step to fail. <strong>Fix:</strong> Add <code>secrets: AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}</code> under the <code>deploy</code> job, or use <code>secrets: inherit</code> if you want to pass all secrets.</p></div>
+    </div>
+  </div>
+
+  <!-- S4: COMPOSITE ACTIONS -->
+  <section id="composite-actions" class="sec">
+    <span class="eyebrow">// section 04</span>
+    <h2 class="stitle">Composite Actions — Reusable Step Sequences</h2>
+    <p>A composite action packages multiple steps into a single reusable unit that can be called as a <code>uses:</code> step inside any job. Unlike reusable workflows (which run as a complete job), composite actions run <strong>inline within an existing job</strong> — they have access to the job's environment, working directory, and previously set variables.</p>
+    <p>The key file is <code>action.yml</code> at the root of the action's directory. It defines inputs, outputs, and the steps to execute.</p>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">.github/actions/setup-node-app/action.yml — a composite action</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">name</span>: <span class="s">'Setup Node App'</span>
+<span class="k">description</span>: <span class="s">'Checkout, setup Node, install deps with cache — one step'</span>
+
+<span class="k">inputs</span>:
+  <span class="k">node-version</span>:
+    <span class="k">description</span>: <span class="s">'Node.js version to use'</span>
+    <span class="k">required</span>: <span class="n">false</span>
+    <span class="k">default</span>: <span class="s">'20'</span>
+  <span class="k">install-args</span>:
+    <span class="k">description</span>: <span class="s">'Additional args for npm ci'</span>
+    <span class="k">required</span>: <span class="n">false</span>
+    <span class="k">default</span>: <span class="s">''</span>
+
+<span class="k">outputs</span>:
+  <span class="k">node-version</span>:
+    <span class="k">description</span>: <span class="s">'The actual Node version installed'</span>
+    <span class="k">value</span>: <span class="ex">${{ steps.setup.outputs.node-version }}</span>
+
+<span class="k">runs</span>:
+  <span class="k">using</span>: <span class="s">'composite'</span>       <span class="c"># ← this is what makes it composite</span>
+  <span class="k">steps</span>:
+    - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+
+    - <span class="k">name</span>: <span class="s">Setup Node.js</span>
+      <span class="k">id</span>: <span class="s">setup</span>
+      <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+      <span class="k">with</span>:
+        <span class="k">node-version</span>: <span class="s">${{ inputs.node-version }}</span>
+        <span class="k">cache</span>: <span class="s">'npm'</span>
+
+    - <span class="k">name</span>: <span class="s">Install dependencies</span>
+      <span class="k">shell</span>: <span class="s">bash</span>             <span class="c"># ← required in composite actions for run: steps</span>
+      <span class="k">run</span>: <span class="s">npm ci ${{ inputs.install-args }}</span></pre>
+    </div>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">workflow using the composite action</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      <span class="c"># One step replaces checkout + setup-node + npm ci</span>
+      - <span class="k">name</span>: <span class="s">Setup app</span>
+        <span class="k">uses</span>: <span class="s">./.github/actions/setup-node-app</span>    <span class="c"># local action</span>
+        <span class="k">with</span>:
+          <span class="k">node-version</span>: <span class="s">'20'</span>
+
+      - <span class="k">run</span>: <span class="s">npm run build</span>
+      - <span class="k">run</span>: <span class="s">npm test</span>
+
+  <span class="k">lint</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Setup app</span>
+        <span class="k">uses</span>: <span class="s">./.github/actions/setup-node-app</span>    <span class="c"># same action, different job</span>
+      - <span class="k">run</span>: <span class="s">npm run lint</span></pre>
+    </div>
+
+    <div class="box box-warn">
+      <div class="box-hd">⚠️ shell: bash is Required in Composite run: Steps</div>
+      <p>In a composite action, every <code>run:</code> step must explicitly declare <code>shell: bash</code> (or <code>shell: sh</code>, <code>shell: pwsh</code>, etc.). Unlike regular workflow steps where the shell is inferred from the runner OS, composite action steps have no default shell — omitting it is a validation error that surfaces only when the action is actually called.</p>
+    </div>
+  </section>
+
+  <!-- S5: REUSABLE vs COMPOSITE -->
+  <section id="reusable-vs-composite" class="sec">
+    <span class="eyebrow">// section 05</span>
+    <h2 class="stitle">Reusable Workflow vs Composite Action — Choosing the Right Tool</h2>
+    <p>Both mechanisms enable reuse. The choice comes down to what you're reusing and where it needs to run.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th></th><th>Reusable Workflow</th><th>Composite Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Runs as</strong></td><td>A complete job (or multiple jobs) in the caller workflow</td><td>Inline steps within an existing job</td></tr>
+          <tr><td><strong>Called with</strong></td><td><code>uses:</code> at the job level</td><td><code>uses:</code> at the step level</td></tr>
+          <tr><td><strong>Has access to caller's env vars?</strong></td><td>No — runs in its own job environment</td><td>Yes — shares the job's environment</td></tr>
+          <tr><td><strong>Can use matrix strategy?</strong></td><td>No — cannot be combined with matrix on the same job</td><td>Yes — works inside a matrix job</td></tr>
+          <tr><td><strong>Secrets</strong></td><td>Must be explicitly passed or inherited</td><td>Inherits from the calling job automatically</td></tr>
+          <tr><td><strong>Best for</strong></td><td>Full deployment pipelines, multi-job sequences, cross-repo standardization</td><td>Common setup sequences (checkout + install), linting steps, packaging steps shared across jobs</td></tr>
+          <tr><td><strong>Example</strong></td><td>A shared <code>deploy-to-aws.yml</code> used by 20 service repos</td><td>A <code>setup-node-app</code> action used at the top of every build job</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box box-ok">
+      <div class="box-hd">✅ Quick Decision Rule</div>
+      <p>If you're reusing something that should run as its own isolated job — use a <strong>reusable workflow</strong>. If you're reusing a sequence of steps that need to run inside an existing job — use a <strong>composite action</strong>. If you need matrix compatibility — use a composite action.</p>
+    </div>
+  <!-- S6: MATRIX -->
+  <section id="matrix" class="sec">
+    <span class="eyebrow">// section 06</span>
+    <h2 class="stitle">Matrix Strategy — Running Jobs Across Multiple Configurations</h2>
+    <p>A matrix strategy lets you run the same job multiple times with different variable values — simultaneously, in parallel. Test against Node 18, 20, and 22 at the same time. Deploy to us-east-1, eu-west-1, and ap-southeast-1 in parallel. The matrix expands automatically into as many parallel job instances as there are combinations.</p>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">matrix.yml — multi-version, multi-env, include/exclude</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="c"># Basic matrix — test against 3 Node versions simultaneously</span>
+  <span class="k">test</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">strategy</span>:
+      <span class="k">matrix</span>:
+        <span class="k">node-version</span>: <span class="sp">['18', '20', '22']</span>
+      <span class="k">fail-fast</span>: <span class="n">false</span>          <span class="c"># don't cancel other matrix jobs if one fails</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>:
+          <span class="k">node-version</span>: <span class="s">${{ matrix.node-version }}</span>
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm test</span>
+
+  <span class="c"># Multi-dimensional matrix — OS x Node version = 9 combinations</span>
+  <span class="k">test-cross-platform</span>:
+    <span class="k">runs-on</span>: <span class="s">${{ matrix.os }}</span>
+    <span class="k">strategy</span>:
+      <span class="k">matrix</span>:
+        <span class="k">os</span>: <span class="sp">[ubuntu-latest, windows-latest, macos-latest]</span>
+        <span class="k">node</span>: <span class="sp">['18', '20', '22']</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">${{ matrix.node }}</span>}
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm test</span>
+
+  <span class="c"># include — add extra variables to specific combinations</span>
+  <span class="k">deploy-multi-region</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">strategy</span>:
+      <span class="k">matrix</span>:
+        <span class="k">region</span>: <span class="sp">[us-east-1, eu-west-1, ap-southeast-1]</span>
+        <span class="k">include</span>:
+          <span class="c"># Add cluster name per region</span>
+          - <span class="k">region</span>: <span class="s">us-east-1</span>
+            <span class="k">cluster</span>: <span class="s">prod-us</span>
+          - <span class="k">region</span>: <span class="s">eu-west-1</span>
+            <span class="k">cluster</span>: <span class="s">prod-eu</span>
+          - <span class="k">region</span>: <span class="s">ap-southeast-1</span>
+            <span class="k">cluster</span>: <span class="s">prod-ap</span>
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">echo "Deploying to ${{ matrix.region }} cluster ${{ matrix.cluster }}"</span>
+          <span class="s">aws ecs update-service \</span>
+          <span class="s">  --region ${{ matrix.region }} \</span>
+          <span class="s">  --cluster ${{ matrix.cluster }} \</span>
+          <span class="s">  --service iam-api</span>
+
+  <span class="c"># exclude — remove specific combinations from the matrix</span>
+  <span class="k">test-with-exclusion</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">strategy</span>:
+      <span class="k">matrix</span>:
+        <span class="k">node</span>: <span class="sp">['18', '20', '22']</span>
+        <span class="k">env</span>: <span class="sp">[staging, production]</span>
+        <span class="k">exclude</span>:
+          <span class="c"># Don't test Node 18 against production</span>
+          - <span class="k">node</span>: <span class="s">'18'</span>
+            <span class="k">env</span>: <span class="s">production</span></pre>
+    </div>
+
+    <div class="box box-warn">
+      <div class="box-hd">⚠️ fail-fast: true is the Default — Know What It Does</div>
+      <p>By default, <code>fail-fast</code> is <code>true</code> — if any single matrix job fails, GitHub immediately cancels all other running matrix jobs. For CI tests this is often fine (you saw a failure, no need to run the rest). For multi-region deployments, this is dangerous — a failure in ap-southeast-1 would cancel the in-progress us-east-1 and eu-west-1 deployments, potentially leaving those regions half-deployed. Always set <code>fail-fast: false</code> for deployment matrices.</p>
+    </div>
+
+    <div class="box box-iam">
+      <div class="box-hd">🔐 PingFederate Multi-Region Pattern</div>
+      <p>Use a matrix to deploy PingFederate config across multiple AWS regions simultaneously. Define your regions in the matrix, use <code>include:</code> to attach region-specific cluster names and role ARNs, and set <code>fail-fast: false</code> so a single region failure doesn't abort the others. Each matrix job picks up its region-specific OIDC role from the <code>include:</code> data and deploys independently.</p>
+    </div>
+  </section>
+
+  <!-- BUG 2 -->
+  <div class="bug">
+    <div class="bug-hd"><span>🐛 Spot the Bug #2 — Matrix Deploy Aborts Mid-Flight</span></div>
+    <div class="bug-body">
+      <p>A team uses a matrix to deploy their IAM service to three AWS regions simultaneously. When the ap-southeast-1 deployment fails due to a transient AWS API error, the us-east-1 and eu-west-1 deployments — which were already 80% complete — are immediately cancelled. Production in those two regions ends up in a broken state. What is the root cause?</p>
+      <div class="cb" style="margin:0 0 1rem">
+        <pre style="padding:1rem"><span class="k">jobs</span>:
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">strategy</span>:
+      <span class="k">matrix</span>:
+        <span class="k">region</span>: <span class="sp">[us-east-1, eu-west-1, ap-southeast-1]</span>
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: <span class="s">aws ecs update-service --region ${{ matrix.region }} ...</span></pre>
+      </div>
+      <button class="reveal-btn" onclick="reveal(this)">Reveal Answer</button>
+      <div class="bug-ans"><p><strong>The bug:</strong> <code>fail-fast</code> is not set, so it defaults to <code>true</code>. When ap-southeast-1 fails, GitHub immediately cancels all other running matrix jobs — including the in-progress us-east-1 and eu-west-1 deployments. For any deployment matrix, <strong>always</strong> set <code>fail-fast: false</code>. Let each region succeed or fail independently. A failure in one region should never cancel a deployment that's already running in another.</p></div>
+    </div>
+  </div>
+
+  <!-- S7: SERVICE CONTAINERS -->
+  <section id="service-containers" class="sec">
+    <span class="eyebrow">// section 07</span>
+    <h2 class="stitle">Service Containers — Running Dependencies Alongside Your Job</h2>
+    <p>Integration tests for a Node.js/TypeScript API typically need a real database, a cache, or a message queue running while the tests execute. Service containers let you spin up Docker containers alongside your job — they start before your steps run and are available at a known hostname inside the job.</p>
+    <p>This eliminates the need for mocking database calls in integration tests — your tests hit a real PostgreSQL instance, just one that lives for the duration of the job.</p>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">service-containers.yml — Postgres + Redis for integration tests</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="k">integration-tests</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">20</span>
+
+    <span class="c"># Service containers run alongside the job</span>
+    <span class="k">services</span>:
+      <span class="k">postgres</span>:
+        <span class="k">image</span>: <span class="s">postgres:16</span>
+        <span class="k">env</span>:
+          <span class="k">POSTGRES_USER</span>: <span class="s">testuser</span>
+          <span class="k">POSTGRES_PASSWORD</span>: <span class="s">testpass</span>
+          <span class="k">POSTGRES_DB</span>: <span class="s">testdb</span>
+        <span class="k">ports</span>:
+          - <span class="s">5432:5432</span>
+        <span class="k">options</span>: <span class="sp">></span>
+          <span class="s">--health-cmd pg_isready</span>
+          <span class="s">--health-interval 10s</span>
+          <span class="s">--health-timeout 5s</span>
+          <span class="s">--health-retries 5</span>
+
+      <span class="k">redis</span>:
+        <span class="k">image</span>: <span class="s">redis:7-alpine</span>
+        <span class="k">ports</span>:
+          - <span class="s">6379:6379</span>
+        <span class="k">options</span>: <span class="s">--health-cmd "redis-cli ping" --health-interval 10s --health-retries 5</span>
+
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">'20'</span>, <span class="k">cache</span>: <span class="s">'npm'</span>}
+      - <span class="k">run</span>: <span class="s">npm ci</span>
+
+      - <span class="k">name</span>: <span class="s">Run DB migrations against test DB</span>
+        <span class="k">env</span>:
+          <span class="k">DATABASE_URL</span>: <span class="s">"postgresql://testuser:testpass@localhost:5432/testdb"</span>
+        <span class="k">run</span>: <span class="s">npm run db:migrate</span>
+
+      - <span class="k">name</span>: <span class="s">Run integration tests</span>
+        <span class="k">env</span>:
+          <span class="k">DATABASE_URL</span>: <span class="s">"postgresql://testuser:testpass@localhost:5432/testdb"</span>
+          <span class="k">REDIS_URL</span>: <span class="s">"redis://localhost:6379"</span>
+        <span class="k">run</span>: <span class="s">npm run test:integration</span></pre>
+    </div>
+
+    <div class="box box-tip">
+      <div class="box-hd">💡 Health Checks Are Essential</div>
+      <p>The <code>options: --health-cmd</code> block tells Docker to wait until the service is actually ready to accept connections before starting your steps. Without it, your first step that tries to connect to Postgres might run before Postgres has finished initializing — resulting in a flaky connection error that disappears on retry. Always add health checks to database and cache service containers.</p>
+    </div>
+  </section>
+
+  <!-- S8: RELEASE WORKFLOWS -->
+  <section id="release-workflows" class="sec">
+    <span class="eyebrow">// section 08</span>
+    <h2 class="stitle">Release Workflows — Automating Versioning and Publishing</h2>
+    <p>A release workflow automates the steps that happen when you're ready to ship: bumping the version, creating a Git tag, generating a changelog, creating a GitHub Release, and publishing to npm or a container registry. Done manually, this is error-prone and slow. Automated, it happens the same way every time.</p>
+
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">.github/workflows/release.yml — tag-triggered release pipeline</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">name</span>: <span class="s">Release</span>
+
+<span class="k">on</span>:
+  <span class="k">push</span>:
+    <span class="k">tags</span>:
+      - <span class="s">'v*.*.*'</span>              <span class="c"># triggers on tags like v1.2.3</span>
+
+<span class="k">permissions</span>:
+  <span class="k">contents</span>: <span class="s">write</span>            <span class="c"># create releases, push tags</span>
+  <span class="k">packages</span>: <span class="s">write</span>            <span class="c"># push to GitHub Container Registry</span>
+  <span class="k">id-token</span>: <span class="s">write</span>            <span class="c"># OIDC for npm publish provenance</span>
+
+<span class="k">jobs</span>:
+  <span class="k">release</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">20</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+        <span class="k">with</span>:
+          <span class="k">fetch-depth</span>: <span class="n">0</span>         <span class="c"># need full history for changelog generation</span>
+
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>:
+          <span class="k">node-version</span>: <span class="s">'20'</span>
+          <span class="k">cache</span>: <span class="s">'npm'</span>
+          <span class="k">registry-url</span>: <span class="s">'https://registry.npmjs.org'</span>
+
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm run build &amp;&amp; npm test</span>
+
+      - <span class="k">name</span>: <span class="s">Extract version from tag</span>
+        <span class="k">id</span>: <span class="s">version</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">VERSION="${{ github.ref_name }}"</span>      <span class="c"># e.g. v1.2.3</span>
+          <span class="s">echo "version=$VERSION" >> $GITHUB_OUTPUT</span>
+          <span class="s">echo "semver=${VERSION#v}" >> $GITHUB_OUTPUT</span>   <span class="c"># strip the v → 1.2.3</span>
+
+      - <span class="k">name</span>: <span class="s">Build and push Docker image</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin</span>
+          <span class="s">docker build -t ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }} .</span>
+          <span class="s">docker build -t ghcr.io/${{ github.repository }}:latest .</span>
+          <span class="s">docker push ghcr.io/${{ github.repository }} --all-tags</span>
+
+      - <span class="k">name</span>: <span class="s">Publish to npm</span>
+        <span class="k">run</span>: <span class="s">npm publish --provenance --access public</span>
+        <span class="k">env</span>:
+          <span class="k">NODE_AUTH_TOKEN</span>: <span class="s">${{ secrets.NPM_TOKEN }}</span>
+
+      - <span class="k">name</span>: <span class="s">Create GitHub Release</span>
+        <span class="k">uses</span>: <span class="s">softprops/action-gh-release@v2</span>
+        <span class="k">with</span>:
+          <span class="k">tag_name</span>: <span class="s">${{ steps.version.outputs.version }}</span>
+          <span class="k">name</span>: <span class="s">Release ${{ steps.version.outputs.version }}</span>
+          <span class="k">generate_release_notes</span>: <span class="n">true</span>    <span class="c"># auto-generates from merged PRs</span>
+          <span class="k">files</span>: <span class="sp">|</span>
+            <span class="s">dist/*.js</span>
+            <span class="s">dist/*.d.ts</span></pre>
+    </div>
+
+    <div class="box box-tip">
+      <div class="box-hd">💡 generate_release_notes: true</div>
+      <p>GitHub automatically generates release notes from the merged PRs between the previous tag and this one — including PR titles, authors, and links. No manual changelog writing needed. For more control, add a <code>.github/release.yml</code> file to categorize PRs by label (Features, Bug Fixes, Chores) in the generated notes.</p>
+    </div>
+  </section>
+
+  <!-- BUG 3 -->
+  <div class="bug">
+    <div class="bug-hd"><span>🐛 Spot the Bug #3 — Composite Action Step Missing Shell</span></div>
+    <div class="bug-body">
+      <p>An engineer creates a composite action that packages three common setup steps. When any workflow calls it, the action fails with: <em>"Required property is missing: shell"</em>. The YAML looks correct. What is wrong?</p>
+      <div class="cb" style="margin:0 0 1rem">
+        <pre style="padding:1rem"><span class="c"># .github/actions/setup-env/action.yml</span>
+<span class="k">name</span>: <span class="s">'Setup Environment'</span>
+<span class="k">runs</span>:
+  <span class="k">using</span>: <span class="s">'composite'</span>
+  <span class="k">steps</span>:
+    - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+    - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+      <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">'20'</span>}
+    - <span class="k">name</span>: <span class="s">Install deps</span>
+      <span class="k">run</span>: <span class="s">npm ci</span>        <span class="c"># ← missing something here</span></pre>
+      </div>
+      <button class="reveal-btn" onclick="reveal(this)">Reveal Answer</button>
+      <div class="bug-ans"><p><strong>The bug:</strong> The <code>run:</code> step inside a composite action is missing the required <code>shell:</code> property. In regular workflow steps, the shell is inferred from the runner OS. In composite actions, <strong>every <code>run:</code> step must explicitly declare its shell</strong> — there is no default. <strong>Fix:</strong> Add <code>shell: bash</code> to the Install deps step. This catches a lot of engineers off guard because the error only appears at call time, not when the action file is written.</p></div>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- LAB 1 -->
+  <div id="lab1" class="lab">
+    <div class="lab-hd">
+      <div class="lab-title">🧪 Lab 1 — Artifact + Caching Pipeline</div>
+      <span class="lab-badge">Hands-On · ~45 min</span>
+    </div>
+    <div class="lab-body">
+      <div class="lab-obj"><strong>Objective:</strong> Add proper artifact handling and dependency caching to your pipeline. Measure the before-and-after time difference and verify artifact passing between jobs works end to end.</div>
+      <ol class="lab-steps">
+        <li><strong>Add <code>cache: 'npm'</code></strong> to your <code>actions/setup-node@v4</code> step. Run the pipeline twice — the first run is a cache miss (populates the cache), the second is a cache hit. Compare the install step duration between runs.</li>
+        <li><strong>In your build job</strong>, add <code>actions/upload-artifact@v4</code> after the build step. Name the artifact <code>dist-${{ github.sha }}</code>, point it at your <code>dist/</code> directory, set <code>retention-days: 7</code>, and critically set <code>if-no-files-found: error</code>.</li>
+        <li><strong>In your deploy job</strong>, add <code>actions/download-artifact@v4</code> as the first step — before any deploy commands. Use the same name <code>dist-${{ github.sha }}</code> and download to <code>dist/</code>. Add a step that runs <code>ls -la dist/</code> to verify the files arrived correctly.</li>
+        <li><strong>Test the if-no-files-found: error</strong> behaviour — temporarily change your build script to not produce output (or rename the dist directory). Run the workflow and observe it fails at the upload step with a clear error, rather than silently passing an empty artifact through to deployment.</li>
+        <li><strong>Upload test coverage</strong> with <code>if: always()</code> and <code>if-no-files-found: warn</code>. Run the tests, then check the Actions UI → your run → Artifacts section to see the uploaded coverage report available for download.</li>
+        <li><strong>Compare pipeline times</strong> — record the total workflow duration before adding caching, after first run (cache miss), and after second run (cache hit). Document the actual numbers in a comment in your workflow file.</li>
+      </ol>
+      <div class="cb" style="margin-top:1.5rem">
+        <div class="cb-hd"><span class="cb-fn">.github/workflows/ci.yml — Lab 1 solution with caching and artifacts</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+        <pre><span class="k">name</span>: <span class="s">CI Pipeline</span>
+<span class="k">on</span>:
+  <span class="k">push</span>: {<span class="k">branches</span>: <span class="sp">[main]</span>}
+  <span class="k">pull_request</span>: {<span class="k">branches</span>: <span class="sp">[main]</span>}
+  <span class="k">workflow_dispatch</span>:
+
+<span class="k">permissions</span>: <span class="s">read-all</span>
+
+<span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">15</span>
+    <span class="k">permissions</span>: {<span class="k">contents</span>: <span class="s">read</span>}
+    <span class="k">outputs</span>:
+      <span class="k">short_sha</span>: <span class="ex">${{ steps.meta.outputs.short_sha }}</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>:
+          <span class="k">node-version</span>: <span class="s">'20'</span>
+          <span class="k">cache</span>: <span class="s">'npm'</span>                    <span class="c"># ← caching enabled</span>
+      - <span class="k">name</span>: <span class="s">Install dependencies</span>
+        <span class="k">run</span>: <span class="s">npm ci</span>
+      - <span class="k">name</span>: <span class="s">Build</span>
+        <span class="k">run</span>: <span class="s">npm run build</span>
+      - <span class="k">name</span>: <span class="s">Test</span>
+        <span class="k">run</span>: <span class="s">npm test</span>
+      - <span class="k">id</span>: <span class="s">meta</span>
+        <span class="k">run</span>: <span class="s">echo "short_sha=${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT</span>
+      - <span class="k">name</span>: <span class="s">Upload build artifact</span>
+        <span class="k">uses</span>: <span class="s">actions/upload-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="s">dist-${{ github.sha }}</span>
+          <span class="k">path</span>: <span class="s">dist/</span>
+          <span class="k">retention-days</span>: <span class="n">7</span>
+          <span class="k">if-no-files-found</span>: <span class="s">error</span>
+      - <span class="k">name</span>: <span class="s">Upload coverage</span>
+        <span class="k">if</span>: <span class="ex">always()</span>
+        <span class="k">uses</span>: <span class="s">actions/upload-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="s">coverage-${{ github.run_number }}</span>
+          <span class="k">path</span>: <span class="s">coverage/</span>
+          <span class="k">if-no-files-found</span>: <span class="s">warn</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">timeout-minutes</span>: <span class="n">20</span>
+    <span class="k">if</span>: <span class="ex">github.ref == 'refs/heads/main'</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Download build artifact</span>
+        <span class="k">uses</span>: <span class="s">actions/download-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="s">dist-${{ github.sha }}</span>
+          <span class="k">path</span>: <span class="s">dist/</span>
+      - <span class="k">name</span>: <span class="s">Verify artifact contents</span>
+        <span class="k">run</span>: <span class="s">ls -la dist/</span>
+      - <span class="k">name</span>: <span class="s">Deploy</span>
+        <span class="k">run</span>: <span class="s">echo "Deploying ${{ needs.build.outputs.short_sha }} to staging"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAB 2 -->
+  <div id="lab2" class="lab">
+    <div class="lab-hd">
+      <div class="lab-title">🧪 Lab 2 — Build a Reusable Deployment Workflow</div>
+      <span class="lab-badge">Hands-On · ~60 min</span>
+    </div>
+    <div class="lab-body">
+      <div class="lab-obj"><strong>Objective:</strong> Extract your deployment logic into a reusable workflow that any repository in your org can call. Build both the called workflow and the caller, and verify the output flows back correctly.</div>
+      <ol class="lab-steps">
+        <li><strong>Create a new workflow file</strong> at <code>.github/workflows/deploy-service.yml</code> in your repo (or a new shared repo). This will be the called workflow. Add <code>on: workflow_call:</code> with inputs for <code>environment</code> (string, required), <code>service-name</code> (string, required), and <code>node-version</code> (string, default '20'). Add a secret for <code>AWS_ROLE_ARN</code>.</li>
+        <li><strong>Add a single deploy job</strong> to the called workflow. It should: checkout code, setup Node with caching, download the dist artifact by name (accept as an input), print the deployment summary to <code>$GITHUB_STEP_SUMMARY</code>, and echo the deploy command. Expose a <code>deployed-at</code> output set to the current timestamp.</li>
+        <li><strong>Create a caller workflow</strong> at <code>.github/workflows/ci-cd.yml</code>. Add a build job that runs normally, then a <code>deploy-staging</code> job that calls your reusable workflow with <code>uses:</code>. Pass the environment as <code>staging</code>, the service name, and the AWS role ARN secret.</li>
+        <li><strong>Chain a notify job</strong> after deploy-staging that reads <code>needs.deploy-staging.outputs.deployed-at</code> and prints it. This verifies the output flows from the called workflow back to the caller.</li>
+        <li><strong>Test the secrets: inherit pattern</strong> — change your caller to use <code>secrets: inherit</code> instead of explicit secret passing. Verify it still works. Then switch back to explicit passing and document why explicit is preferred for production workflows.</li>
+        <li><strong>Simulate a multi-repo scenario</strong> — if you have a second GitHub repo, call your shared workflow from it using the full path <code>your-org/repo/.github/workflows/deploy-service.yml@main</code>. Observe that both repos now share one deployment implementation.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- LAB 3 -->
+  <div id="lab3" class="lab">
+    <div class="lab-hd">
+      <div class="lab-title">🧪 Lab 3 — Matrix Testing + Automated Release</div>
+      <span class="lab-badge">Hands-On · ~60 min</span>
+    </div>
+    <div class="lab-body">
+      <div class="lab-obj"><strong>Objective:</strong> Add matrix-based multi-version testing and an automated tag-triggered release workflow to your project. By the end you will have a pipeline that tests across Node 18/20/22 and publishes a GitHub Release automatically when you push a version tag.</div>
+      <ol class="lab-steps">
+        <li><strong>Create a matrix test job</strong> that runs your test suite against Node versions 18, 20, and 22 simultaneously. Set <code>fail-fast: false</code>. Run it and observe three parallel job instances in the GitHub Actions UI — note the time saving vs running them sequentially.</li>
+        <li><strong>Add include to your matrix</strong> — for Node 20 only, set an additional variable <code>upload-coverage: true</code>. In your steps, use <code>if: matrix.upload-coverage</code> to upload coverage only for the Node 20 run. This prevents triplicate coverage uploads while still testing all versions.</li>
+        <li><strong>Create a release workflow</strong> at <code>.github/workflows/release.yml</code> triggered by <code>on: push: tags: ['v*.*.*']</code>. It should: checkout with <code>fetch-depth: 0</code>, install and build, create a GitHub Release with <code>generate_release_notes: true</code>, and upload the <code>dist/</code> files as release assets.</li>
+        <li><strong>Add the version extraction step</strong> using <code>github.ref_name</code> to get the tag (e.g. <code>v1.2.3</code>) and strip the <code>v</code> prefix to get the semver. Use this in the release name.</li>
+        <li><strong>Create and push a test tag</strong>: <code>git tag v0.1.0 && git push origin v0.1.0</code>. Watch the release workflow trigger. Verify the GitHub Release is created with auto-generated notes and your dist files attached.</li>
+        <li><strong>Add a composite action</strong> at <code>.github/actions/setup-node-cached/action.yml</code> that wraps checkout + setup-node + npm ci into one reusable step. Replace the three setup steps in all your jobs with a single call to this action. Verify all jobs still pass.</li>
+      </ol>
+      <div class="cb" style="margin-top:1.5rem">
+        <div class="cb-hd"><span class="cb-fn">.github/workflows/test-matrix.yml — Lab 3 matrix solution</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+        <pre><span class="k">name</span>: <span class="s">Test Matrix</span>
+<span class="k">on</span>:
+  <span class="k">push</span>: {<span class="k">branches</span>: <span class="sp">[main]</span>}
+  <span class="k">pull_request</span>: {<span class="k">branches</span>: <span class="sp">[main]</span>}
+
+<span class="k">jobs</span>:
+  <span class="k">test</span>:
+    <span class="k">name</span>: <span class="s">Test — Node ${{ matrix.node-version }}</span>
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">15</span>
+    <span class="k">strategy</span>:
+      <span class="k">fail-fast</span>: <span class="n">false</span>
+      <span class="k">matrix</span>:
+        <span class="k">node-version</span>: <span class="sp">['18', '20', '22']</span>
+        <span class="k">include</span>:
+          - <span class="k">node-version</span>: <span class="s">'20'</span>
+            <span class="k">upload-coverage</span>: <span class="n">true</span>    <span class="c"># only upload coverage from Node 20 run</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>:
+          <span class="k">node-version</span>: <span class="s">${{ matrix.node-version }}</span>
+          <span class="k">cache</span>: <span class="s">'npm'</span>
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm test</span>
+      - <span class="k">name</span>: <span class="s">Upload coverage</span>
+        <span class="k">if</span>: <span class="ex">matrix.upload-coverage</span>
+        <span class="k">uses</span>: <span class="s">actions/upload-artifact@v4</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="s">coverage</span>
+          <span class="k">path</span>: <span class="s">coverage/</span>
+          <span class="k">if-no-files-found</span>: <span class="s">warn</span>
+
+<span class="c">---</span>
+<span class="c"># .github/workflows/release.yml</span>
+<span class="k">name</span>: <span class="s">Release</span>
+<span class="k">on</span>:
+  <span class="k">push</span>:
+    <span class="k">tags</span>: <span class="sp">['v*.*.*']</span>
+
+<span class="k">permissions</span>:
+  <span class="k">contents</span>: <span class="s">write</span>
+
+<span class="k">jobs</span>:
+  <span class="k">release</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">20</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+        <span class="k">with</span>: {<span class="k">fetch-depth</span>: <span class="n">0</span>}
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">'20'</span>, <span class="k">cache</span>: <span class="s">'npm'</span>}
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm run build</span>
+      - <span class="k">name</span>: <span class="s">Create GitHub Release</span>
+        <span class="k">uses</span>: <span class="s">softprops/action-gh-release@v2</span>
+        <span class="k">with</span>:
+          <span class="k">generate_release_notes</span>: <span class="n">true</span>
+          <span class="k">name</span>: <span class="s">Release ${{ github.ref_name }}</span>
+          <span class="k">files</span>: <span class="s">dist/*</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- BRIDGE -->
+  <div id="bridge" class="bridge">
+    <div class="bridge-eye">// doc 03 — complete</div>
+    <h2>What You Built &amp; What Comes Next</h2>
+    <p>Your pipelines went from single-repo scripts to reusable, scalable enterprise CI/CD components. Here is what you now have:</p>
+    <div class="learned">
+      <div class="li">Artifact upload and download with retention and error handling</div>
+      <div class="li">Dependency caching with proper key strategies — before/after benchmarked</div>
+      <div class="li">Reusable workflows with inputs, outputs, and explicit secret passing</div>
+      <div class="li">Composite actions that package step sequences for inline reuse</div>
+      <div class="li">The decision framework — reusable workflow vs composite action</div>
+      <div class="li">Matrix strategies with fail-fast control, include, and exclude</div>
+      <div class="li">Service containers for real database and cache integration tests</div>
+      <div class="li">Tag-triggered release workflows with auto-generated changelogs</div>
+      <div class="li">A complete multi-job pipeline wiring all these patterns together</div>
+    </div>
+    <div class="next-box">
+      <div class="next-label">// what's waiting in doc 04 — enterprise mastery</div>
+      <p>You now build production-grade pipelines. Doc 4 teaches you the expert layer — OIDC-based AWS authentication with no static credentials, workflow security hardening against supply chain attacks, systematic debugging techniques, enterprise design patterns for monorepos and workflow-as-a-service, the GitHub Deployments API, and the full capstone project: a complete enterprise IAM API pipeline combining everything from all four docs. Plus the 25-point readiness checklist confirming you can work independently on any GitHub Actions project.</p>
+    </div>
+    <div class="next-cta">Doc 04 — Enterprise Mastery → coming next</div>
+  </div>
+
+</div>
+</main>
+
+<script>
+function copyCode(btn){
+  const pre=btn.closest('.cb').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    const o=btn.textContent;btn.textContent='Copied!';
+    btn.style.color='var(--accent)';btn.style.borderColor='var(--accent)';
+    setTimeout(()=>{btn.textContent=o;btn.style.color='';btn.style.borderColor='';},1800);
+  });
+}
+function reveal(btn){btn.nextElementSibling.style.display='block';btn.style.display='none';}
+
+const sectionIds=['where','artifacts','caching','reusable-workflows','composite-actions','reusable-vs-composite','matrix','service-containers','release-workflows','lab1','lab2','lab3','bridge'];
+const navLinks=document.querySelectorAll('.nav-a');
+const xpf=document.getElementById('xpf');
+const xpn=document.getElementById('xpn');
+
+const spy=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting) navLinks.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id));
+  });
+},{rootMargin:'-20% 0px -60% 0px'});
+
+sectionIds.forEach(id=>{const el=document.getElementById(id);if(el)spy.observe(el);});
+
+window.addEventListener('scroll',()=>{
+  const pct=Math.min(100,Math.round((window.scrollY/(document.documentElement.scrollHeight-window.innerHeight))*100));
+  xpf.style.width=pct+'%';xpn.textContent=pct+'%';
+},{passive:true});
+</script>
+</body>
+</html>
