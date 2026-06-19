@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-1">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M02 · HCL Fundamentals — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void:#0B0E14;--bg-surface-1:#111520;--bg-surface-2:#181D2A;--bg-surface-3:#1F2535;--bg-surface-4:#252D40;
+  --border:#1E2636;--border-bright:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);--teal-glow-md:rgba(0,229,195,0.20);
+  --copper:#E8873A;--copper-dim:#B86929;--copper-glow:rgba(232,135,58,0.15);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.12);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.12);
+  --jade:#3ECFA0;--violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.13);
+  --text-primary:#E8EDF5;--text-secondary:#8A95A8;--text-tertiary:#4A5568;--text-accent:#00E5C3;
+  --font-display:'Syne',sans-serif;--font-body:'IBM Plex Sans',sans-serif;--font-mono:'IBM Plex Mono',monospace;
+  --space-xs:4px;--space-sm:8px;--space-md:16px;--space-lg:24px;--space-xl:40px;--space-2xl:64px;--space-3xl:96px;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;--radius-pill:999px;
+  --shadow-card:0 1px 3px rgba(0,0,0,0.5),0 4px 16px rgba(0,0,0,0.3);
+  --transition-fast:150ms ease;--transition-base:250ms ease;
+  /* Phase 1 — Teal */
+  --module-phase-color:#00E5C3;--module-phase-glow:rgba(0,229,195,0.15);--module-phase-dim:#00B89A;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background-color:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);font-weight:400;line-height:1.7;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-size:128px 128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:999px}
+::selection{background:var(--module-phase-glow);color:var(--module-phase-color)}
+a{color:var(--sapphire);text-decoration:none;transition:color var(--transition-fast)}a:hover{color:var(--teal)}
+code{font-family:var(--font-mono);font-size:0.85em;background:var(--bg-surface-3);border:1px solid var(--border);color:var(--teal);padding:1px 5px;border-radius:var(--radius-sm)}
+mark{background:var(--module-phase-glow);color:var(--module-phase-color);padding:1px 4px;border-radius:2px}
+hr.divider{border:none;border-top:1px solid var(--border);margin:var(--space-2xl) 0}
+.portal-shell{max-width:1100px;margin:0 auto;padding:0 var(--space-xl)}
+@media(max-width:768px){.portal-shell{padding:0 var(--space-md)}}
+/* NAV */
+.portal-nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,0.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--border);padding:0 var(--space-xl)}
+.portal-nav__inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--space-lg)}
+.portal-nav__logo{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.portal-nav__logo span{color:var(--text-tertiary);font-weight:400}
+.nav-divider{width:1px;height:20px;background:var(--border-bright);flex-shrink:0}
+.portal-nav__progress{flex:1;display:flex;align-items:center;gap:var(--space-sm)}
+.progress-track{flex:1;height:2px;background:var(--border);border-radius:var(--radius-pill);overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--module-phase-color),var(--teal));border-radius:var(--radius-pill)}
+.progress-label{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);white-space:nowrap}
+.nav-module-badge{font-family:var(--font-mono);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--radius-pill);background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color);white-space:nowrap}
+/* HERO */
+.module-hero{position:relative;padding:var(--space-3xl) 0 var(--space-2xl);overflow:hidden}
+.module-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--module-phase-glow) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 80% 20%,rgba(74,158,255,0.06) 0%,transparent 60%);pointer-events:none}
+.module-hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 60% at 20% 50%,black 0%,transparent 70%);opacity:0.4;pointer-events:none}
+.module-hero__content{position:relative;z-index:1}
+.module-hero__phase{display:inline-flex;align-items:center;gap:var(--space-sm);font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--module-phase-color);margin-bottom:var(--space-md)}
+.phase-dot{width:6px;height:6px;border-radius:50%;background:var(--module-phase-color);box-shadow:0 0 8px var(--module-phase-color);animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px var(--module-phase-color)}50%{opacity:.5;box-shadow:0 0 3px var(--module-phase-color)}}
+.module-hero__title{font-family:var(--font-display);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-0.02em;color:var(--text-primary);margin-bottom:var(--space-md);max-width:780px}
+.module-hero__title .accent{color:var(--module-phase-color)}
+.module-hero__subtitle{font-size:17px;font-weight:300;color:var(--text-secondary);max-width:640px;line-height:1.65;margin-bottom:var(--space-xl)}
+.module-hero__meta{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--radius-pill);white-space:nowrap;letter-spacing:0.04em}
+.badge--phase{background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color)}
+.badge--effort{background:rgba(232,135,58,0.10);border:1px solid rgba(232,135,58,0.30);color:var(--copper)}
+.badge--track{background:rgba(74,158,255,0.10);border:1px solid rgba(74,158,255,0.30);color:var(--sapphire)}
+.badge--prereq{background:var(--bg-surface-2);border:1px solid var(--border-bright);color:var(--text-secondary)}
+.badge--new{background:rgba(0,229,195,0.10);border:1px solid rgba(0,229,195,0.30);color:var(--teal)}
+.badge--violet{background:var(--violet-glow);border:1px solid rgba(155,127,255,.35);color:var(--violet)}
+/* ORIENTATION */
+.orientation-panel{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-xl);margin-bottom:var(--space-2xl);position:relative;overflow:hidden}
+.orientation-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--module-phase-color) 0%,transparent 100%)}
+.orientation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-lg)}
+.orientation-item__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px}
+.orientation-item__value{font-size:14px;font-weight:500;color:var(--text-primary)}
+.orientation-item__value.accent{color:var(--module-phase-color)}
+.journey-dots{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--space-lg);padding-top:var(--space-lg);border-top:1px solid var(--border)}
+.journey-dot{width:30px;height:30px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:500;transition:all var(--transition-base)}
+.journey-dot--done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.journey-dot--current{background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color);box-shadow:0 0 12px var(--module-phase-glow)}
+.journey-dot--future{background:var(--bg-surface-2);border:1px solid var(--border);color:var(--text-tertiary)}
+/* LAYOUT */
+.module-content{display:grid;grid-template-columns:1fr 260px;gap:var(--space-2xl);align-items:start}
+@media(max-width:900px){.module-content{grid-template-columns:1fr}}
+.content-main{min-width:0}.content-sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.section{margin-bottom:var(--space-2xl)}
+.section-label{display:flex;align-items:center;gap:var(--space-sm);font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--module-phase-color);margin-bottom:var(--space-md)}
+.section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border-bright) 0%,transparent 100%)}
+.section-title{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);line-height:1.2}
+.section-body{font-size:15px;color:var(--text-secondary);line-height:1.8}
+.section-body p{margin-bottom:var(--space-md)}.section-body p:last-child{margin-bottom:0}
+.section-body strong{color:var(--text-primary);font-weight:600}
+.section-body em{color:var(--module-phase-color);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);transition:border-color var(--transition-base),box-shadow var(--transition-base)}
+.card:hover{border-color:var(--border-bright);box-shadow:var(--shadow-card)}
+.card--phase{border-left:2px solid var(--module-phase-color);background:linear-gradient(135deg,var(--module-phase-glow) 0%,var(--bg-surface-1) 60%)}
+.card--teal{border-left:2px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-surface-1) 60%)}
+.card--copper{border-left:2px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-surface-1) 60%)}
+.card--sapphire{border-left:2px solid var(--sapphire);background:linear-gradient(135deg,var(--sapphire-glow) 0%,var(--bg-surface-1) 60%)}
+.card--rose{border-left:2px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-surface-1) 60%)}
+.card--violet{border-left:2px solid var(--violet);background:linear-gradient(135deg,var(--violet-glow) 0%,var(--bg-surface-1) 60%)}
+.card__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm)}
+.card__title{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:var(--space-sm)}
+.card__body{font-size:14px;color:var(--text-secondary);line-height:1.7}
+.card-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--space-md)}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md)}
+/* DIAGRAM */
+.diagram-wrap{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);margin:var(--space-xl) 0;overflow-x:auto}
+.diagram-wrap__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-md);display:flex;align-items:center;gap:var(--space-sm)}
+.diagram-wrap__label::before{content:'◈';color:var(--module-phase-color);font-size:12px}
+/* CONCEPT BLOCKS */
+.concept-block{border-left:2px solid var(--module-phase-color);padding:var(--space-md) var(--space-lg);background:var(--module-phase-glow);border-radius:0 var(--radius-md) var(--radius-md) 0;margin:var(--space-lg) 0}
+.concept-block__term{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--module-phase-color);margin-bottom:4px}
+.concept-block__def{font-size:14px;color:var(--text-secondary);line-height:1.65}
+/* COMPARE TABLE */
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;margin:var(--space-lg) 0}
+.compare-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);padding:var(--space-sm) var(--space-md);border-bottom:1px solid var(--border-bright);text-align:left;white-space:nowrap}
+.compare-table th:first-child{color:var(--module-phase-color)}
+.compare-table td{padding:10px var(--space-md);border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:top;line-height:1.6}
+.compare-table td:first-child{font-weight:500;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;white-space:nowrap}
+.compare-table tr:hover td{background:var(--bg-surface-2)}
+.compare-table tr:last-child td{border-bottom:none}
+/* CODE BLOCKS */
+.code-block{background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;margin:var(--space-md) 0;font-family:var(--font-mono);font-size:12px}
+.code-block__header{display:flex;align-items:center;justify-content:space-between;padding:var(--space-sm) var(--space-md);background:var(--bg-surface-3);border-bottom:1px solid var(--border)}
+.code-block__lang{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary)}
+.code-block__file{font-size:11px;color:var(--text-secondary)}
+.code-block__body{padding:var(--space-md);overflow-x:auto;line-height:1.7;color:var(--text-secondary);tab-size:2}
+.code-block__body .k{color:#c792ea}.code-block__body .s{color:var(--jade)}.code-block__body .c{color:var(--text-tertiary);font-style:italic}
+.code-block__body .v{color:var(--copper)}.code-block__body .n{color:var(--teal)}.code-block__body .p{color:var(--sapphire)}.code-block__body .num{color:#f78c6c}
+/* KNOWLEDGE CHECK */
+.knowledge-check{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-md) 0}
+.knowledge-check__question{padding:var(--space-md) var(--space-lg);font-size:14px;font-weight:500;color:var(--text-primary);display:flex;align-items:flex-start;gap:var(--space-sm);cursor:pointer;transition:background var(--transition-fast);user-select:none}
+.knowledge-check__question:hover{background:var(--bg-surface-2)}
+.kc-icon{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--module-phase-color);background:var(--module-phase-glow);border:1px solid var(--module-phase-color);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kc-chevron{margin-left:auto;flex-shrink:0;color:var(--text-tertiary);transition:transform var(--transition-base);font-size:12px}
+.knowledge-check.open .kc-chevron{transform:rotate(180deg)}
+.knowledge-check__answer{display:none;padding:var(--space-md) var(--space-lg);background:var(--bg-surface-2);border-top:1px solid var(--border);font-size:14px;color:var(--text-secondary);line-height:1.7}
+.knowledge-check.open .knowledge-check__answer{display:block}
+/* SIDEBAR */
+.toc{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)}
+.toc__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm);padding-bottom:var(--space-sm);border-bottom:1px solid var(--border)}
+.toc__item{display:block;padding:5px var(--space-sm);font-size:12px;color:var(--text-secondary);border-radius:var(--radius-sm);transition:all var(--transition-fast);cursor:pointer;border-left:2px solid transparent}
+.toc__item:hover,.toc__item.active{background:var(--bg-surface-2);color:var(--text-primary);border-left-color:var(--module-phase-color)}
+.toc__item--sub{padding-left:var(--space-lg);font-size:11px}
+.quick-ref{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)}
+.quick-ref__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm);padding-bottom:var(--space-sm);border-bottom:1px solid var(--border)}
+.quick-ref__item{display:flex;gap:var(--space-sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.quick-ref__item:last-child{border-bottom:none}
+.quick-ref__term{font-family:var(--font-mono);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.quick-ref__def{color:var(--text-secondary);line-height:1.5}
+/* TAKEAWAY */
+.takeaway-box{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin:var(--space-xl) 0}
+.takeaway-box__header{display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);padding-bottom:var(--space-md);border-bottom:1px solid var(--border)}
+.takeaway-box__icon{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--module-phase-glow);border:1px solid var(--module-phase-color);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--module-phase-color);flex-shrink:0}
+.takeaway-box__title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text-primary)}
+.takeaway-list{list-style:none;display:flex;flex-direction:column;gap:var(--space-sm)}
+.takeaway-list li{font-size:14px;color:var(--text-secondary);display:flex;align-items:flex-start;gap:var(--space-sm);line-height:1.65}
+.takeaway-list li::before{content:'◆';color:var(--module-phase-color);font-size:8px;flex-shrink:0;margin-top:6px}
+/* ARCHITECT REVIEW */
+.architect-review{background:var(--bg-surface-1);border:1px solid var(--copper-dim);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-xl) 0}
+.architect-review__header{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--space-sm)}
+.architect-review__badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,0.15);border:1px solid rgba(232,135,58,0.4);padding:2px 8px;border-radius:var(--radius-pill)}
+.architect-review__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary)}
+.architect-review__list{list-style:none;padding:var(--space-md) var(--space-lg);display:flex;flex-direction:column;gap:var(--space-sm)}
+.architect-review__list li{font-size:14px;color:var(--text-secondary);display:flex;gap:var(--space-sm);align-items:flex-start;line-height:1.65;padding:var(--space-sm) 0;border-bottom:1px solid var(--border)}
+.architect-review__list li:last-child{border-bottom:none}
+.ar-num{font-family:var(--font-mono);font-size:11px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:20px}
+/* DEP MAP */
+.dep-map{display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;padding:var(--space-md);background:var(--bg-surface-2);border-radius:var(--radius-md);border:1px solid var(--border);margin:var(--space-md) 0}
+.dep-node{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:var(--radius-pill);white-space:nowrap}
+.dep-node--done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.dep-node--current{background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color);font-weight:600;box-shadow:0 0 12px var(--module-phase-glow)}
+.dep-node--future{background:var(--bg-surface-3);border:1px solid var(--border-bright);color:var(--text-tertiary)}
+.dep-arrow{color:var(--text-tertiary);font-size:14px;flex-shrink:0}
+/* MENTOR NOTE */
+.mentor-note{display:flex;gap:var(--space-md);padding:var(--space-lg);background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);margin:var(--space-lg) 0}
+.mentor-note__avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--module-phase-glow);border:1px solid var(--module-phase-color);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mentor-note__body{flex:1}
+.mentor-note__label{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--module-phase-color);margin-bottom:4px}
+.mentor-note__text{font-size:14px;color:var(--text-secondary);line-height:1.75}
+.mentor-note__text strong{color:var(--text-primary);font-weight:600}
+/* LAB */
+.lab-block{background:var(--bg-surface-1);border:1px solid var(--teal-dim);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-xl) 0}
+.lab-block__header{background:linear-gradient(135deg,var(--teal-glow),transparent);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--space-sm)}
+.lab-block__badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);background:var(--teal-glow);border:1px solid rgba(0,229,195,0.4);padding:2px 8px;border-radius:var(--radius-pill)}
+.lab-block__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary)}
+.lab-block__body{padding:var(--space-lg)}
+.lab-block__body ol{padding-left:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-sm)}
+.lab-block__body ol li{font-size:14px;color:var(--text-secondary);line-height:1.65;padding-left:4px}
+.lab-block__body ol li strong{color:var(--text-primary)}
+/* BRIDGE */
+.bridge-section{margin-top:var(--space-3xl);padding-top:var(--space-2xl);border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-surface-1) 0%,var(--bg-surface-2) 100%);border:1px solid var(--border-bright);border-radius:var(--radius-xl);padding:var(--space-xl);position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--module-phase-color),var(--teal),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--module-phase-glow);pointer-events:none}
+.bridge-card__eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm)}
+.bridge-card__title{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);position:relative}
+.bridge-card__title span{color:var(--sapphire)}
+.bridge-card__body{font-size:14px;color:var(--text-secondary);line-height:1.75;max-width:580px;margin-bottom:var(--space-lg)}
+.bridge-card__concepts{display:flex;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-lg)}
+.bridge-card__btn{display:inline-flex;align-items:center;gap:var(--space-sm);background:var(--sapphire);color:var(--bg-void);font-family:var(--font-display);font-size:14px;font-weight:700;padding:12px var(--space-lg);border-radius:var(--radius-pill);text-decoration:none;transition:all var(--transition-base)}
+.bridge-card__btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--sapphire-glow);color:var(--bg-void)}
+/* FOOTER */
+.portal-footer{margin-top:var(--space-3xl);padding:var(--space-xl) 0;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap}
+.portal-footer__left{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)}
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.animate-fade-up{animation:fadeInUp 0.5s ease both}.animate-fade{animation:fadeIn 0.4s ease both}
+.delay-1{animation-delay:.10s}.delay-2{animation-delay:.20s}.delay-3{animation-delay:.30s}.delay-4{animation-delay:.40s}
+/* HCL anatomy diagram specific */
+.hcl-anatomy{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin:var(--space-lg) 0}
+@media(max-width:680px){.hcl-anatomy{grid-template-columns:1fr}}
+.hcl-block{background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);position:relative;overflow:hidden}
+.hcl-block::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.hcl-block--provider::before{background:var(--violet)}
+.hcl-block--resource::before{background:var(--teal)}
+.hcl-block--data::before{background:var(--sapphire)}
+.hcl-block--variable::before{background:var(--copper)}
+.hcl-block--output::before{background:var(--jade)}
+.hcl-block--local::before{background:var(--rose)}
+.hcl-block__tag{font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;padding:2px 8px;border-radius:var(--radius-pill);display:inline-block;margin-bottom:8px}
+.hcl-block__tag--provider{background:var(--violet-glow);border:1px solid rgba(155,127,255,.35);color:var(--violet)}
+.hcl-block__tag--resource{background:var(--teal-glow);border:1px solid rgba(0,229,195,.35);color:var(--teal)}
+.hcl-block__tag--data{background:var(--sapphire-glow);border:1px solid rgba(74,158,255,.35);color:var(--sapphire)}
+.hcl-block__tag--variable{background:var(--copper-glow);border:1px solid rgba(232,135,58,.35);color:var(--copper)}
+.hcl-block__tag--output{background:rgba(62,207,160,.1);border:1px solid rgba(62,207,160,.35);color:var(--jade)}
+.hcl-block__tag--local{background:var(--rose-glow);border:1px solid rgba(255,95,126,.35);color:var(--rose)}
+.hcl-block__name{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+.hcl-block__desc{font-size:12.5px;color:var(--text-secondary);line-height:1.6}
+/* variable type table */
+.type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-sm);margin:var(--space-lg) 0}
+.type-item{background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md)}
+.type-item__name{font-family:var(--font-mono);font-size:12px;color:var(--teal);margin-bottom:4px;font-weight:500}
+.type-item__desc{font-size:12px;color:var(--text-secondary);line-height:1.55}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="portal-nav">
+  <div class="portal-nav__inner">
+    <a href="index.html" class="portal-nav__logo" style="text-decoration:none;">Terraform<span> · Mastery</span></a>
+    <div class="nav-divider"></div>
+    <div class="portal-nav__progress">
+      <div class="progress-track"><div class="progress-fill" style="width:18%"></div></div>
+      <span class="progress-label">M02 / 10</span>
+    </div>
+    <span class="nav-module-badge">M02 · Phase 1</span>
+  </div>
+</nav>
+
+<div class="portal-shell">
+
+<!-- HERO -->
+<section class="module-hero animate-fade-up">
+  <div class="module-hero__content">
+    <div class="module-hero__phase"><div class="phase-dot"></div>Phase 1 · Core Language &amp; State</div>
+    <h1 class="module-hero__title">HCL Fundamentals —<br><span class="accent">Reading &amp; Writing</span> Terraform Confidently</h1>
+    <p class="module-hero__subtitle">You own the mental model. Now you need the language. This module teaches you to read any <code>.tf</code> file systematically — providers, resources, data sources, variables, outputs, locals — and introduces the single most important pattern in your project: the dynamic AMI lookup.</p>
+    <div class="module-hero__meta">
+      <span class="badge badge--phase">Phase 1 · Core Language</span>
+      <span class="badge badge--effort">⬛⬛⬛⬛☐ 4–5 hrs</span>
+      <span class="badge badge--track">HCL · Language</span>
+      <span class="badge badge--prereq">↳ Prereq: M01 Mental Model</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orientation-panel animate-fade-up delay-2">
+  <div class="orientation-grid">
+    <div><div class="orientation-item__label">Current module</div><div class="orientation-item__value accent">M02 · HCL Fundamentals</div></div>
+    <div><div class="orientation-item__label">Phase</div><div class="orientation-item__value">Phase 1 — Core Language &amp; State</div></div>
+    <div><div class="orientation-item__label">What you bring in</div><div class="orientation-item__value">Mental model of TF's role from M01</div></div>
+    <div><div class="orientation-item__label">Unlocks</div><div class="orientation-item__value">M03 · State Management</div></div>
+  </div>
+  <div class="journey-dots">
+    <div class="journey-dot journey-dot--done" title="M01 Complete">M01</div>
+    <div class="journey-dot journey-dot--current" title="M02 — Current">M02</div>
+    <div class="journey-dot journey-dot--future">M03</div>
+    <div class="journey-dot journey-dot--future">M04</div>
+    <div class="journey-dot journey-dot--future">M05</div>
+    <div class="journey-dot journey-dot--future">M06</div>
+    <div class="journey-dot journey-dot--future">M07</div>
+    <div class="journey-dot journey-dot--future">M08</div>
+    <div class="journey-dot journey-dot--future">M09</div>
+    <div class="journey-dot journey-dot--future">M10</div>
+    <div class="journey-dot journey-dot--future" style="background:linear-gradient(135deg,var(--copper-glow),var(--teal-glow));border:1px solid var(--copper);color:var(--copper)">★</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="module-content">
+<div class="content-main">
+
+<!-- ── SECTION: BRIDGE FROM M01 ── -->
+<section class="section animate-fade-up delay-3" id="bridge-from-m01">
+  <div class="section-label">Bridge from Module 01</div>
+  <h2 class="section-title">You know the map. Now learn the language.</h2>
+  <div class="section-body">
+    <p>In Module 01 you established a precise mental model of what Terraform owns, where it sits in the pipeline, and how the AMI refresh works end-to-end. You even read your first <code>.tf</code> file — and you could follow the structure, even if the syntax wasn't fully clear yet.</p>
+    <p>This module fills that gap completely. By the end, you will be able to open any <code>.tf</code> file in your project repository and read it <em>systematically</em> — not just recognise that it's code, but understand the relationship between every block, trace how a variable flows from input to resource, and explain why each construct exists.</p>
+    <p>The payoff in your project: the dynamic AMI lookup pattern, the variable system for multi-environment deployments, and the output pattern that connects modules together are all things you will encounter on day one in the codebase. You will own them completely after this module.</p>
+  </div>
+  <div class="mentor-note">
+    <div class="mentor-note__avatar">🧑‍🏫</div>
+    <div class="mentor-note__body">
+      <div class="mentor-note__label">Mentor Note</div>
+      <div class="mentor-note__text">HCL is intentionally simple. It has no loops that aren't built-in, no complex control flow, no classes. If you are used to TypeScript or Java, it will feel almost too straightforward. <strong>That's the point.</strong> The complexity in Terraform is not in the language — it's in the infrastructure patterns and the state model. Lean into the simplicity of HCL and spend your cognitive budget on understanding what the resources do and why.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: FILE STRUCTURE ── -->
+<section class="section" id="file-structure">
+  <div class="section-label">How Terraform projects are structured</div>
+  <h2 class="section-title">What files live in a Terraform directory</h2>
+  <div class="section-body">
+    <p>Before diving into individual block types, understand how a Terraform project is organized on disk. Terraform loads <em>all</em> <code>.tf</code> files in a directory as a single configuration — order of files doesn't matter. The separation into multiple files is purely for human readability.</p>
+  </div>
+
+  <div class="card-grid-3" style="margin-top: var(--space-lg);">
+    <div class="card card--phase">
+      <div class="card__label">Standard files</div>
+      <div class="card__title"><code>main.tf</code></div>
+      <div class="card__body">The primary resource definitions. In practice, large projects split resources by concern — <code>network.tf</code>, <code>compute.tf</code>, <code>iam.tf</code>. There's no rule — just consistency.</div>
+    </div>
+    <div class="card card--phase">
+      <div class="card__label">Standard files</div>
+      <div class="card__title"><code>variables.tf</code></div>
+      <div class="card__body">All variable declarations. The <em>definitions</em> of what inputs the configuration accepts — names, types, descriptions, defaults. Values come from <code>terraform.tfvars</code> or environment variables.</div>
+    </div>
+    <div class="card card--phase">
+      <div class="card__label">Standard files</div>
+      <div class="card__title"><code>outputs.tf</code></div>
+      <div class="card__body">Output values the configuration exposes after apply — things like VPC IDs, ASG names, load balancer DNS names. Used by other modules or scripts to consume the results of a deployment.</div>
+    </div>
+    <div class="card card--phase">
+      <div class="card__label">Standard files</div>
+      <div class="card__title"><code>versions.tf</code></div>
+      <div class="card__body">The <code>terraform {}</code> block that pins provider versions and the minimum Terraform version. Critical for reproducibility across teams and CI environments.</div>
+    </div>
+    <div class="card card--phase">
+      <div class="card__label">Standard files</div>
+      <div class="card__title"><code>terraform.tfvars</code></div>
+      <div class="card__body">The actual variable values for a given environment. Often environment-specific: <code>dev.tfvars</code>, <code>prod.tfvars</code>. Never commit secrets here — use environment variables or a secrets manager instead.</div>
+    </div>
+    <div class="card card--teal">
+      <div class="card__label">Generated — never edit</div>
+      <div class="card__title"><code>.terraform/</code></div>
+      <div class="card__body">Local directory created by <code>terraform init</code>. Contains downloaded provider plugins and module caches. Add to <code>.gitignore</code> — never commit this directory.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: THE SIX BLOCK TYPES ── -->
+<section class="section" id="block-types">
+  <div class="section-label">The six block types</div>
+  <h2 class="section-title">Every HCL construct you need to know</h2>
+  <div class="section-body">
+    <p>HCL configurations are composed of blocks. There are exactly six block types you need to master. Everything else in a <code>.tf</code> file is an attribute inside one of these six.</p>
+  </div>
+
+  <div class="hcl-anatomy">
+    <div class="hcl-block hcl-block--provider">
+      <span class="hcl-block__tag hcl-block__tag--provider">provider</span>
+      <div class="hcl-block__name">Provider Block</div>
+      <div class="hcl-block__desc">Configures the plugin that communicates with a cloud API. Specifies the region, credentials strategy, and any provider-level settings. You must have at least one provider for Terraform to do anything useful.</div>
+    </div>
+    <div class="hcl-block hcl-block--resource">
+      <span class="hcl-block__tag hcl-block__tag--resource">resource</span>
+      <div class="hcl-block__name">Resource Block</div>
+      <div class="hcl-block__desc">Declares a single piece of managed infrastructure — a VPC, a security group, a Launch Template. The most common block type. Every resource has a type and a local name used to reference it elsewhere.</div>
+    </div>
+    <div class="hcl-block hcl-block--data">
+      <span class="hcl-block__tag hcl-block__tag--data">data</span>
+      <div class="hcl-block__name">Data Source Block</div>
+      <div class="hcl-block__desc">Reads existing information from AWS without creating or managing it. The AMI lookup is a data source — it reads the latest approved AMI ID from AWS at plan time without Terraform owning that AMI.</div>
+    </div>
+    <div class="hcl-block hcl-block--variable">
+      <span class="hcl-block__tag hcl-block__tag--variable">variable</span>
+      <div class="hcl-block__name">Variable Block</div>
+      <div class="hcl-block__desc">Declares an input parameter. Sets the type, description, default, and validation rules. Values are supplied at plan/apply time via tfvars files, environment variables, or the CLI. The interface of a configuration.</div>
+    </div>
+    <div class="hcl-block hcl-block--output">
+      <span class="hcl-block__tag hcl-block__tag--output">output</span>
+      <div class="hcl-block__name">Output Block</div>
+      <div class="hcl-block__desc">Exposes a value after apply — the VPC ID, the NLB DNS name, the S3 bucket ARN. Used by other modules, CI pipelines, or scripts. Think of it as the return value of a module call.</div>
+    </div>
+    <div class="hcl-block hcl-block--local">
+      <span class="hcl-block__tag hcl-block__tag--local">locals</span>
+      <div class="hcl-block__name">Locals Block</div>
+      <div class="hcl-block__desc">Computes intermediate values from variables and other expressions. Like a local variable in code — used to avoid repeating the same expression in multiple places. Not visible outside the configuration.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: PROVIDER DEEP DIVE ── -->
+<section class="section" id="provider">
+  <div class="section-label">Provider block</div>
+  <h2 class="section-title">Configuring the AWS provider</h2>
+  <div class="section-body">
+    <p>The provider block is always the starting point. In enterprise environments the AWS provider is almost never configured with static credentials — instead it inherits the IAM role of the execution environment: a GitHub Actions OIDC role, an EC2 instance profile, or a developer's local AWS profile.</p>
+  </div>
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">versions.tf</span></div>
+    <div class="code-block__body"><pre><span class="c"># Pin the minimum Terraform version and provider version</span>
+<span class="k">terraform</span> {
+  required_version = <span class="s">">= 1.5.0"</span>
+
+  required_providers {
+    <span class="n">aws</span> = {
+      <span class="k">source</span>  = <span class="s">"hashicorp/aws"</span>
+      <span class="k">version</span> = <span class="s">"~> 5.0"</span>   <span class="c"># accept 5.x, reject 6.x</span>
+    }
+  }
+
+  <span class="c"># Remote state backend — where Terraform stores its state file</span>
+  <span class="c"># (covered in depth in Module 03)</span>
+  <span class="k">backend</span> <span class="s">"s3"</span> {
+    <span class="k">bucket</span>         = <span class="s">"company-terraform-state-prod"</span>
+    <span class="k">key</span>            = <span class="s">"pingfederate/terraform.tfstate"</span>
+    <span class="k">region</span>         = <span class="s">"us-east-1"</span>
+    <span class="k">dynamodb_table</span> = <span class="s">"company-terraform-locks"</span>
+    <span class="k">encrypt</span>        = <span class="k">true</span>
+  }
+}
+
+<span class="c"># Provider config — credentials come from the execution environment</span>
+<span class="k">provider</span> <span class="s">"aws"</span> {
+  <span class="k">region</span> = <span class="v">var.aws_region</span>
+
+  <span class="c"># In GitHub Actions: assumed via OIDC role, no keys in config</span>
+  <span class="c"># Locally: uses ~/.aws/credentials profile</span>
+
+  <span class="k">default_tags</span> {
+    <span class="k">tags</span> = {
+      <span class="n">ManagedBy</span>   = <span class="s">"terraform"</span>
+      <span class="n">Project</span>     = <span class="s">"pingfederate-migration"</span>
+      <span class="n">Environment</span> = <span class="v">var.environment</span>
+    }
+  }
+}</pre>
+    </div>
+  </div>
+  <div class="concept-block">
+    <div class="concept-block__term">Version Constraints — the <code>~></code> operator</div>
+    <div class="concept-block__def"><code>~> 5.0</code> means "accept any version <code>&gt;= 5.0</code> and <code>&lt; 6.0</code>". The tilde-arrow is the pessimistic constraint operator — it allows patch and minor updates but pins the major version. In enterprise environments, you will often see even tighter constraints like <code>= 5.31.0</code> to guarantee reproducibility across all pipeline runs.</div>
+  </div>
+  <div class="concept-block">
+    <div class="concept-block__term"><code>default_tags</code> — enterprise tagging at scale</div>
+    <div class="concept-block__def">The <code>default_tags</code> block in the provider applies tags to <em>every</em> resource created by this provider configuration. This is the enterprise-standard way to ensure every AWS resource in an account has the mandatory tags (environment, owner, project, managed-by). You do not need to add them to every resource block individually.</div>
+  </div>
+</section>
+
+<!-- ── SECTION: RESOURCE DEEP DIVE ── -->
+<section class="section" id="resource">
+  <div class="section-label">Resource block</div>
+  <h2 class="section-title">Resources — the core of every Terraform configuration</h2>
+  <div class="section-body">
+    <p>Every resource block follows the same pattern: <code>resource "&lt;type&gt;" "&lt;local_name&gt;"</code>. The type is the AWS resource type. The local name is how <em>you</em> reference it inside the configuration. Together they form a unique address — <code>aws_security_group.pf_engine</code> — that other resources use to build dependency relationships.</p>
+  </div>
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">iam.tf — annotated resource example</span></div>
+    <div class="code-block__body"><pre><span class="c"># resource "&lt;TYPE&gt;" "&lt;LOCAL_NAME&gt;"</span>
+<span class="c">#   TYPE      = the AWS resource type (defined by the provider)</span>
+<span class="c">#   LOCAL_NAME = how you reference this resource in other blocks</span>
+
+<span class="k">resource</span> <span class="s">"aws_iam_role"</span> <span class="s">"pf_instance_role"</span> {
+  <span class="k">name</span> = <span class="s">"pf-instance-role-${</span><span class="v">var.environment</span><span class="s">}"</span>  <span class="c"># string interpolation</span>
+
+  <span class="c"># Trust policy — which AWS service can assume this role</span>
+  <span class="k">assume_role_policy</span> = <span class="n">jsonencode</span>({
+    <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+    <span class="n">Statement</span> = [{
+      <span class="n">Effect</span>    = <span class="s">"Allow"</span>
+      <span class="n">Principal</span> = { <span class="n">Service</span> = <span class="s">"ec2.amazonaws.com"</span> }
+      <span class="n">Action</span>    = <span class="s">"sts:AssumeRole"</span>
+    }]
+  })
+
+  <span class="k">tags</span> = <span class="v">local.common_tags</span>  <span class="c"># reference a local value (defined below)</span>
+}
+
+<span class="c"># Attach a managed policy to the role above</span>
+<span class="c"># Note: references pf_instance_role using the local name</span>
+<span class="k">resource</span> <span class="s">"aws_iam_role_policy_attachment"</span> <span class="s">"pf_ssm"</span> {
+  <span class="k">role</span>       = <span class="n">aws_iam_role</span>.<span class="v">pf_instance_role</span>.<span class="n">name</span>  <span class="c"># TYPE.LOCAL_NAME.ATTRIBUTE</span>
+  <span class="k">policy_arn</span> = <span class="s">"arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"</span>
+}
+
+<span class="c"># Instance profile — wraps the role so EC2 can use it</span>
+<span class="k">resource</span> <span class="s">"aws_iam_instance_profile"</span> <span class="s">"pf_profile"</span> {
+  <span class="k">name</span> = <span class="s">"pf-instance-profile-${</span><span class="v">var.environment</span><span class="s">}"</span>
+  <span class="k">role</span> = <span class="n">aws_iam_role</span>.<span class="v">pf_instance_role</span>.<span class="n">name</span>
+}</pre>
+    </div>
+  </div>
+  <div class="mentor-note">
+    <div class="mentor-note__avatar">🧑‍🏫</div>
+    <div class="mentor-note__body">
+      <div class="mentor-note__label">The reference pattern — critical to understand</div>
+      <div class="mentor-note__text">Notice <code>aws_iam_role.pf_instance_role.name</code> — this is how Terraform resources reference each other. The pattern is always <code>&lt;resource_type&gt;.&lt;local_name&gt;.&lt;attribute&gt;</code>. When Terraform sees this reference, it automatically understands that the role must be created before the profile. You do not write <code>depends_on</code> for this — Terraform builds the dependency graph automatically from these references. This is one of its most powerful features.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: DATA SOURCE DEEP DIVE ── -->
+<section class="section" id="data-sources">
+  <div class="section-label">Data source block</div>
+  <h2 class="section-title">Reading from AWS without owning it</h2>
+  <div class="section-body">
+    <p>A data source is a read-only query against AWS — or any other provider — that happens at plan time. Terraform uses the result to build other resources, but does not manage the queried resource itself. It doesn't appear in state as a managed resource. If you destroy the configuration, the data source's target is unaffected.</p>
+    <p>Data sources are how your project solves the AMI ID problem. Instead of hardcoding an AMI ID — which breaks every time the infrastructure team releases a new approved image — the configuration dynamically queries for the latest approved AMI at every plan run.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">data.tf — the AMI lookup pattern (critical for your project)</span></div>
+    <div class="code-block__body"><pre><span class="c"># data "&lt;TYPE&gt;" "&lt;LOCAL_NAME&gt;" — same naming convention as resource</span>
+
+<span class="k">data</span> <span class="s">"aws_ami"</span> <span class="s">"approved_pf"</span> {
+  <span class="c"># most_recent = true — if multiple AMIs match the filters,</span>
+  <span class="c"># use the one with the most recent creation date</span>
+  <span class="k">most_recent</span> = <span class="k">true</span>
+
+  <span class="c"># owners — restrict to your company's own account</span>
+  <span class="c"># prevents pulling AMIs from public or unknown accounts</span>
+  <span class="k">owners</span> = [<span class="v">var.ami_owner_account_id</span>]
+
+  <span class="c"># Filters narrow down which AMI is selected</span>
+  <span class="k">filter</span> {
+    <span class="k">name</span>   = <span class="s">"name"</span>
+    <span class="k">values</span> = [<span class="s">"company-approved-pf-*"</span>]  <span class="c"># glob pattern on AMI name</span>
+  }
+
+  <span class="k">filter</span> {
+    <span class="k">name</span>   = <span class="s">"state"</span>
+    <span class="k">values</span> = [<span class="s">"available"</span>]  <span class="c"># only available (not deregistered) AMIs</span>
+  }
+
+  <span class="k">filter</span> {
+    <span class="k">name</span>   = <span class="s">"tag:ApprovalStatus"</span>
+    <span class="k">values</span> = [<span class="s">"approved"</span>]    <span class="c"># only AMIs tagged as approved by infra team</span>
+  }
+}
+
+<span class="c"># The selected AMI ID is then referenced in the Launch Template</span>
+<span class="k">resource</span> <span class="s">"aws_launch_template"</span> <span class="s">"pf_engine"</span> {
+  <span class="k">name_prefix</span> = <span class="s">"pf-engine-"</span>
+
+  <span class="c"># data.TYPE.LOCAL_NAME.ATTRIBUTE — same reference pattern as resources</span>
+  <span class="k">image_id</span>      = <span class="n">data</span>.<span class="n">aws_ami</span>.<span class="v">approved_pf</span>.<span class="n">id</span>
+  <span class="k">instance_type</span> = <span class="v">var.instance_type</span>
+
+  <span class="c"># ... rest of launch template config</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">Why this pattern matters for AMI refresh</div>
+    <div class="concept-block__def">When the infrastructure team publishes a new approved AMI with the tag <code>ApprovalStatus=approved</code>, the <em>next time</em> someone runs <code>terraform plan</code>, the data source will return the new AMI ID. The plan will show that the Launch Template will be updated with the new ID. No one needs to manually find or update an AMI ID in the code. The pattern is self-updating — the filter does the work.</div>
+  </div>
+
+  <div class="card-grid-2" style="margin-top: var(--space-lg);">
+    <div class="card card--sapphire">
+      <div class="card__label">Other common data sources</div>
+      <div class="card__title"><code>data "aws_vpc"</code></div>
+      <div class="card__body">Look up an existing VPC by its ID or tags. Used when the VPC is managed in a separate Terraform configuration (e.g. a shared networking layer) and you need its ID to create subnets or security groups.</div>
+    </div>
+    <div class="card card--sapphire">
+      <div class="card__label">Other common data sources</div>
+      <div class="card__title"><code>data "aws_caller_identity"</code></div>
+      <div class="card__body">Returns the AWS account ID and ARN of the IAM identity running Terraform. Used in IAM policies to construct ARNs dynamically — e.g. <code>arn:aws:iam::${data.aws_caller_identity.current.account_id}:root</code>.</div>
+    </div>
+    <div class="card card--sapphire">
+      <div class="card__label">Other common data sources</div>
+      <div class="card__title"><code>data "aws_subnets"</code></div>
+      <div class="card__body">Looks up subnet IDs by VPC ID and tags. When you want the ASG to deploy across all private subnets in the VPC, use this data source to get the IDs — rather than hardcoding them.</div>
+    </div>
+    <div class="card card--sapphire">
+      <div class="card__label">Other common data sources</div>
+      <div class="card__title"><code>data "aws_ssm_parameter"</code></div>
+      <div class="card__body">Reads a value from AWS Systems Manager Parameter Store at plan time. Used for sensitive configuration like the S3 bucket name or a shared ARN that's managed outside of this Terraform configuration.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: VARIABLES ── -->
+<section class="section" id="variables">
+  <div class="section-label">Variable block</div>
+  <h2 class="section-title">Variables — the inputs to your configuration</h2>
+  <div class="section-body">
+    <p>Variables are the interface of a Terraform configuration. They make it reusable across environments — the same configuration can deploy to dev, test, and prod by simply providing different variable values. Understanding how variables flow through the system is essential before you can read any real-world configuration.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">variables.tf — comprehensive variable patterns</span></div>
+    <div class="code-block__body"><pre><span class="c"># Basic variable with type and default</span>
+<span class="k">variable</span> <span class="s">"aws_region"</span> {
+  <span class="k">description</span> = <span class="s">"AWS region to deploy into"</span>
+  <span class="k">type</span>        = <span class="n">string</span>
+  <span class="k">default</span>     = <span class="s">"us-east-1"</span>
+}
+
+<span class="c"># Variable with validation — rejects invalid values before plan runs</span>
+<span class="k">variable</span> <span class="s">"environment"</span> {
+  <span class="k">description</span> = <span class="s">"Deployment environment"</span>
+  <span class="k">type</span>        = <span class="n">string</span>
+
+  <span class="k">validation</span> {
+    <span class="k">condition</span>     = <span class="n">contains</span>([<span class="s">"dev"</span>, <span class="s">"test"</span>, <span class="s">"prod"</span>], <span class="v">var.environment</span>)
+    <span class="k">error_message</span> = <span class="s">"Environment must be dev, test, or prod."</span>
+  }
+}
+
+<span class="c"># Sensitive variable — value redacted from plan output and logs</span>
+<span class="k">variable</span> <span class="s">"db_password"</span> {
+  <span class="k">description</span> = <span class="s">"PingFederate database password"</span>
+  <span class="k">type</span>        = <span class="n">string</span>
+  <span class="k">sensitive</span>   = <span class="k">true</span>  <span class="c"># never printed in plan output</span>
+}
+
+<span class="c"># Number variable</span>
+<span class="k">variable</span> <span class="s">"pf_engine_min_capacity"</span> {
+  <span class="k">description</span> = <span class="s">"Minimum number of PF engine nodes"</span>
+  <span class="k">type</span>        = <span class="n">number</span>
+  <span class="k">default</span>     = <span class="num">2</span>
+}
+
+<span class="c"># List variable — used for multi-AZ subnet IDs</span>
+<span class="k">variable</span> <span class="s">"private_subnet_ids"</span> {
+  <span class="k">description</span> = <span class="s">"Private subnet IDs for ASG placement"</span>
+  <span class="k">type</span>        = <span class="n">list</span>(<span class="n">string</span>)
+}
+
+<span class="c"># Map variable — key-value pairs, e.g. for tags</span>
+<span class="k">variable</span> <span class="s">"additional_tags"</span> {
+  <span class="k">description</span> = <span class="s">"Extra tags to apply to all resources"</span>
+  <span class="k">type</span>        = <span class="n">map</span>(<span class="n">string</span>)
+  <span class="k">default</span>     = {}
+}
+
+<span class="c"># Object variable — structured input with typed fields</span>
+<span class="k">variable</span> <span class="s">"pf_config"</span> {
+  <span class="k">description</span> = <span class="s">"PingFederate node configuration"</span>
+  <span class="k">type</span> = <span class="n">object</span>({
+    <span class="n">instance_type</span> = <span class="n">string</span>
+    <span class="n">disk_size_gb</span>  = <span class="n">number</span>
+    <span class="n">enable_ssm</span>   = <span class="n">bool</span>
+  })
+  <span class="k">default</span> = {
+    <span class="n">instance_type</span> = <span class="s">"m5.xlarge"</span>
+    <span class="n">disk_size_gb</span>  = <span class="num">50</span>
+    <span class="n">enable_ssm</span>   = <span class="k">true</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="section-body" style="margin-top: var(--space-lg);">
+    <p><strong>How variable values are supplied — precedence order (highest to lowest):</strong></p>
+  </div>
+
+  <div class="diagram-wrap" style="padding: var(--space-lg);">
+    <div class="diagram-wrap__label">Variable Value Precedence</div>
+    <table class="compare-table">
+      <thead><tr><th>Source</th><th>Syntax</th><th>When to use</th></tr></thead>
+      <tbody>
+        <tr><td>CLI flag (highest)</td><td><code>terraform apply -var="env=prod"</code></td><td>One-off overrides, CI/CD pipelines</td></tr>
+        <tr><td>Auto-loaded tfvars</td><td><code>terraform.tfvars</code> or <code>*.auto.tfvars</code></td><td>Default values for a workspace</td></tr>
+        <tr><td>Named tfvars file</td><td><code>terraform apply -var-file="prod.tfvars"</code></td><td>Environment-specific value sets</td></tr>
+        <tr><td>Environment variable</td><td><code>TF_VAR_environment=prod</code></td><td>CI/CD secrets, avoiding committed files</td></tr>
+        <tr><td>Default in declaration (lowest)</td><td><code>default = "us-east-1"</code> in variable block</td><td>Sensible fallback when not provided</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="type-grid">
+    <div class="type-item"><div class="type-item__name">string</div><div class="type-item__desc">Any text value. Most common type.</div></div>
+    <div class="type-item"><div class="type-item__name">number</div><div class="type-item__desc">Integer or float. Used for capacities, sizes.</div></div>
+    <div class="type-item"><div class="type-item__name">bool</div><div class="type-item__desc">true or false. Feature flags, toggles.</div></div>
+    <div class="type-item"><div class="type-item__name">list(T)</div><div class="type-item__desc">Ordered sequence of type T. e.g. subnet IDs.</div></div>
+    <div class="type-item"><div class="type-item__name">map(T)</div><div class="type-item__desc">Key-value pairs with string keys, values of type T.</div></div>
+    <div class="type-item"><div class="type-item__name">object({…})</div><div class="type-item__desc">Structured type with named fields of different types.</div></div>
+    <div class="type-item"><div class="type-item__name">set(T)</div><div class="type-item__desc">Like list but unordered and deduplicated.</div></div>
+    <div class="type-item"><div class="type-item__name">any</div><div class="type-item__desc">Disables type checking. Avoid in production code.</div></div>
+  </div>
+</section>
+
+<!-- ── SECTION: OUTPUTS ── -->
+<section class="section" id="outputs">
+  <div class="section-label">Output block</div>
+  <h2 class="section-title">Outputs — exposing values after apply</h2>
+  <div class="section-body">
+    <p>Outputs are the values a Terraform configuration makes available after a successful apply. They serve two purposes: passing values between modules (one module's output is another module's input), and surfacing information to CI/CD pipelines and operators — like the NLB DNS name or the S3 bucket ARN that Ansible needs.</p>
+  </div>
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">outputs.tf — PingFederate deployment outputs</span></div>
+    <div class="code-block__body"><pre><span class="c"># Output the NLB DNS name — needed by Route53 and monitoring</span>
+<span class="k">output</span> <span class="s">"nlb_dns_name"</span> {
+  <span class="k">description</span> = <span class="s">"DNS name of the Network Load Balancer"</span>
+  <span class="k">value</span>       = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">dns_name</span>
+}
+
+<span class="c"># Output the ASG name — needed by GitHub Actions to monitor refresh</span>
+<span class="k">output</span> <span class="s">"asg_name"</span> {
+  <span class="k">description</span> = <span class="s">"Name of the PingFederate Auto Scaling Group"</span>
+  <span class="k">value</span>       = <span class="n">aws_autoscaling_group</span>.<span class="v">pf_engines</span>.<span class="n">name</span>
+}
+
+<span class="c"># Output the config S3 bucket name — needed by Ansible</span>
+<span class="k">output</span> <span class="s">"config_bucket_name"</span> {
+  <span class="k">description</span> = <span class="s">"S3 bucket storing PingFederate configuration"</span>
+  <span class="k">value</span>       = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">bucket</span>
+}
+
+<span class="c"># Sensitive output — value is hidden in plan, visible in state</span>
+<span class="k">output</span> <span class="s">"pf_instance_role_arn"</span> {
+  <span class="k">description</span> = <span class="s">"ARN of the PingFederate instance IAM role"</span>
+  <span class="k">value</span>       = <span class="n">aws_iam_role</span>.<span class="v">pf_instance_role</span>.<span class="n">arn</span>
+  <span class="k">sensitive</span>   = <span class="k">false</span>   <span class="c"># ARNs are not secret, but flag is available</span>
+}
+
+<span class="c"># --- Reading outputs from the CLI ---</span>
+<span class="c"># terraform output                      → show all outputs</span>
+<span class="c"># terraform output nlb_dns_name         → show specific output</span>
+<span class="c"># terraform output -json nlb_dns_name   → JSON format for scripts</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: LOCALS ── -->
+<section class="section" id="locals">
+  <div class="section-label">Locals block</div>
+  <h2 class="section-title">Locals — computed values inside your configuration</h2>
+  <div class="section-body">
+    <p>Local values are named expressions computed inside the configuration. They are not inputs (variables) and not outputs — they exist purely to reduce repetition and make complex expressions readable. Think of them as constants or helper values in your code.</p>
+    <p>In enterprise Terraform, locals are extensively used to build consistent tag maps, construct resource name prefixes, and compose complex string expressions that would be unreadable if repeated across dozens of resources.</p>
+  </div>
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">locals.tf — practical local value patterns</span></div>
+    <div class="code-block__body"><pre><span class="k">locals</span> {
+  <span class="c"># Name prefix — used across every resource for consistency</span>
+  <span class="c"># Results in e.g. "pf-prod-" as a prefix</span>
+  <span class="n">name_prefix</span> = <span class="s">"pf-${</span><span class="v">var.environment</span><span class="s">}-"</span>
+
+  <span class="c"># Common tags merged with any additional tags passed as a variable</span>
+  <span class="c"># merge() combines two maps; later keys override earlier ones</span>
+  <span class="n">common_tags</span> = <span class="n">merge</span>(
+    {
+      <span class="n">Environment</span> = <span class="v">var.environment</span>
+      <span class="n">Application</span> = <span class="s">"PingFederate"</span>
+      <span class="n">ManagedBy</span>   = <span class="s">"terraform"</span>
+      <span class="n">Owner</span>       = <span class="s">"iam-sso-team"</span>
+    },
+    <span class="v">var.additional_tags</span>   <span class="c"># overrides or adds to the base tags</span>
+  )
+
+  <span class="c"># Derive the AZs from the subnet list to avoid hardcoding them</span>
+  <span class="n">availability_zones</span> = <span class="k">distinct</span>([
+    <span class="k">for</span> <span class="n">s</span> <span class="k">in</span> <span class="n">data</span>.<span class="n">aws_subnets</span>.<span class="v">private</span>.<span class="n">ids</span> : <span class="n">data</span>.<span class="n">aws_subnet</span>.<span class="v">details</span>[<span class="n">s</span>].<span class="n">availability_zone</span>
+  ])
+
+  <span class="c"># Is this a production environment? Used in conditional expressions</span>
+  <span class="n">is_prod</span> = <span class="v">var.environment</span> == <span class="s">"prod"</span>
+
+  <span class="c"># AMI ID from the data source — centralise the reference</span>
+  <span class="n">approved_ami_id</span> = <span class="n">data</span>.<span class="n">aws_ami</span>.<span class="v">approved_pf</span>.<span class="n">id</span>
+}
+
+<span class="c"># Usage: reference locals with local.NAME</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}config-${</span><span class="v">data.aws_caller_identity.current.account_id</span><span class="s">}"</span>
+  <span class="k">tags</span>   = <span class="v">local.common_tags</span>
+}</pre>
+    </div>
+  </div>
+  <div class="card card--phase" style="margin-top: var(--space-lg);">
+    <div class="card__label">Variable vs Local vs Data Source — when to use which</div>
+    <div class="card__body" style="font-size:14px;">
+      Use a <strong style="color:var(--copper)">variable</strong> when the value must come from outside the configuration — from a caller, a tfvars file, or CI.<br>
+      Use a <strong style="color:var(--rose)">local</strong> when the value is derived inside the configuration from other values — a computed name, a merged tag map.<br>
+      Use a <strong style="color:var(--sapphire)">data source</strong> when the value exists in AWS and you need to look it up — an AMI ID, a VPC ID, an account number.
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: EXPRESSIONS & FUNCTIONS ── -->
+<section class="section" id="expressions">
+  <div class="section-label">Expressions &amp; functions</div>
+  <h2 class="section-title">The expressions you will see daily in enterprise code</h2>
+  <div class="section-body">
+    <p>HCL supports a set of built-in functions and expressions. You don't need to memorise all of them, but the following appear constantly in real-world Terraform and you will encounter them in your project on day one.</p>
+  </div>
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">Common expressions and functions</span></div>
+    <div class="code-block__body"><pre><span class="c"># ── STRING INTERPOLATION ──────────────────────────────────────────────</span>
+<span class="k">name</span> = <span class="s">"pf-${</span><span class="v">var.environment</span><span class="s">}-engine"</span>
+<span class="c"># → "pf-prod-engine"</span>
+
+<span class="c"># ── CONDITIONAL EXPRESSION ─────────────────────────────────────────────</span>
+<span class="c"># condition ? true_value : false_value</span>
+<span class="k">instance_type</span> = <span class="v">var.environment</span> == <span class="s">"prod"</span> <span class="p">?</span> <span class="s">"m5.2xlarge"</span> <span class="p">:</span> <span class="s">"m5.xlarge"</span>
+
+<span class="c"># ── MERGE — combine two maps ────────────────────────────────────────────</span>
+<span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Role</span> = <span class="s">"engine"</span> })
+
+<span class="c"># ── TOSET — convert list to set (for for_each) ─────────────────────────</span>
+<span class="k">for_each</span> = <span class="n">toset</span>(<span class="v">var.availability_zones</span>)
+
+<span class="c"># ── FORMAT — printf-style string formatting ────────────────────────────</span>
+<span class="k">name</span> = <span class="n">format</span>(<span class="s">"pf-%s-%03d"</span>, <span class="v">var.environment</span>, <span class="v">count.index</span>)
+<span class="c"># → "pf-prod-001"</span>
+
+<span class="c"># ── JSONENCODE — serialize a value to JSON string ──────────────────────</span>
+<span class="k">policy</span> = <span class="n">jsonencode</span>({
+  <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+  <span class="n">Statement</span> = [{ <span class="n">Effect</span> = <span class="s">"Allow"</span>, <span class="n">Action</span> = <span class="s">"s3:GetObject"</span>, <span class="n">Resource</span> = <span class="s">"*"</span> }]
+})
+
+<span class="c"># ── LOOKUP — safely read from a map with a default ─────────────────────</span>
+<span class="k">value</span> = <span class="n">lookup</span>(<span class="v">var.additional_tags</span>, <span class="s">"CostCenter"</span>, <span class="s">"unknown"</span>)
+
+<span class="c"># ── CONTAINS — check if a list contains a value ────────────────────────</span>
+<span class="n">contains</span>([<span class="s">"dev"</span>, <span class="s">"test"</span>, <span class="s">"prod"</span>], <span class="v">var.environment</span>)   <span class="c"># → true or false</span>
+
+<span class="c"># ── LENGTH — count elements in a list ──────────────────────────────────</span>
+<span class="k">desired_capacity</span> = <span class="n">length</span>(<span class="v">var.private_subnet_ids</span>)
+
+<span class="c"># ── COALESCE — return first non-null value ─────────────────────────────</span>
+<span class="k">value</span> = <span class="n">coalesce</span>(<span class="v">var.override_ami_id</span>, <span class="n">data</span>.<span class="n">aws_ami</span>.<span class="v">approved_pf</span>.<span class="n">id</span>)</pre>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">for_each — creating multiple resources from a list</span></div>
+    <div class="code-block__body"><pre><span class="c"># for_each creates one resource instance per element in the set/map</span>
+<span class="c"># Essential for creating multiple subnets, security rules, etc.</span>
+
+<span class="k">variable</span> <span class="s">"private_subnets"</span> {
+  <span class="k">type</span> = <span class="n">map</span>(<span class="n">object</span>({
+    <span class="n">cidr</span> = <span class="n">string</span>
+    <span class="n">az</span>   = <span class="n">string</span>
+  }))
+  <span class="k">default</span> = {
+    <span class="s">"private-1a"</span> = { <span class="n">cidr</span> = <span class="s">"10.0.10.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1a"</span> }
+    <span class="s">"private-1b"</span> = { <span class="n">cidr</span> = <span class="s">"10.0.11.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1b"</span> }
+    <span class="s">"private-1c"</span> = { <span class="n">cidr</span> = <span class="s">"10.0.12.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1c"</span> }
+  }
+}
+
+<span class="k">resource</span> <span class="s">"aws_subnet"</span> <span class="s">"private"</span> {
+  <span class="k">for_each</span> = <span class="v">var.private_subnets</span>      <span class="c"># creates 3 subnet resources</span>
+
+  <span class="k">vpc_id</span>            = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+  <span class="k">cidr_block</span>        = <span class="n">each</span>.<span class="v">value</span>.<span class="n">cidr</span>  <span class="c"># each.value = current map value</span>
+  <span class="k">availability_zone</span> = <span class="n">each</span>.<span class="v">value</span>.<span class="n">az</span>
+  <span class="k">tags</span>              = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="n">each</span>.<span class="v">key</span> })
+  <span class="c"># each.key = "private-1a", "private-1b", "private-1c"</span>
+}
+
+<span class="c"># Reference a specific subnet from the for_each:  </span>
+<span class="c"># aws_subnet.private["private-1a"].id</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: READING SYSTEMATICALLY ── -->
+<section class="section" id="reading-tf">
+  <div class="section-label">Reading strategy</div>
+  <h2 class="section-title">How to read any <code>.tf</code> file you've never seen before</h2>
+  <div class="section-body">
+    <p>Senior engineers don't read Terraform files top-to-bottom. They follow a systematic approach that maps the dependency graph before understanding individual resources. Here is the exact process to use when you encounter an unfamiliar configuration.</p>
+  </div>
+
+  <div class="flow-sequence" style="margin: var(--space-lg) 0;">
+    <div class="flow-step">
+      <div class="flow-step__connector"><div class="flow-step__num">1</div><div class="flow-step__line"></div></div>
+      <div class="flow-step__body">
+        <div class="flow-step__title">Find <code>versions.tf</code> — understand the environment</div>
+        <div class="flow-step__desc">What provider and version is used? What backend stores the state? What minimum Terraform version is required? This gives you the execution context before reading any resources.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step__connector"><div class="flow-step__num">2</div><div class="flow-step__line"></div></div>
+      <div class="flow-step__body">
+        <div class="flow-step__title">Read <code>variables.tf</code> — understand the inputs</div>
+        <div class="flow-step__desc">What does this configuration accept as inputs? What are the types and defaults? This tells you what the configuration can be parameterised with. Look for variables without defaults — those are required at runtime.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step__connector"><div class="flow-step__num">3</div><div class="flow-step__line"></div></div>
+      <div class="flow-step__body">
+        <div class="flow-step__title">Read <code>outputs.tf</code> — understand what it produces</div>
+        <div class="flow-step__desc">What values does the configuration expose after apply? This tells you what downstream systems, other modules, or operators depend on. The outputs define the contract.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step__connector"><div class="flow-step__num">4</div><div class="flow-step__line"></div></div>
+      <div class="flow-step__body">
+        <div class="flow-step__title">Find the data sources — understand what it reads</div>
+        <div class="flow-step__desc">What external state does this configuration depend on? Data sources are the configuration's dependencies on the external world — an AMI that must exist, a VPC that must already be provisioned, account IDs.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step__connector"><div class="flow-step__num">5</div><div class="flow-step__line"></div></div>
+      <div class="flow-step__body">
+        <div class="flow-step__title">Read resource blocks — follow the references</div>
+        <div class="flow-step__desc">Now read the resources. When you see <code>module.vpc.vpc_id</code> or <code>aws_iam_role.pf_role.arn</code>, follow the reference. Build a mental graph of what depends on what. The resource that has the most incoming references is usually the most critical one.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step__connector"><div class="flow-step__num">6</div><div class="flow-step__line"></div></div>
+      <div class="flow-step__body">
+        <div class="flow-step__title">Check <code>locals.tf</code> — understand the computed values</div>
+        <div class="flow-step__desc">Locals often contain the most important business logic in the configuration — the name prefix, the tag map, the conditional expressions. If something appears all over the resource files as <code>local.something</code>, look it up here to understand the pattern.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mentor-note">
+    <div class="mentor-note__avatar">🧑‍🏫</div>
+    <div class="mentor-note__body">
+      <div class="mentor-note__label">The IAM parallel</div>
+      <div class="mentor-note__text">This reading strategy mirrors how you would audit an unfamiliar IAM policy set. You don't start with the most complex policy statement — you start with the trust policies (who can assume what), then the permission boundaries, then the attached policies, then the individual statements. <strong>Always start with the structure before the detail.</strong> Terraform is no different.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION: KNOWLEDGE CHECKS ── -->
+<section class="section" id="knowledge-checks">
+  <div class="section-label">Knowledge check</div>
+  <h2 class="section-title">Test your HCL understanding</h2>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      What is the difference between a <code>resource</code> block and a <code>data</code> block? If both declare an S3 bucket, what happens differently?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">A resource block creates and manages an S3 bucket — Terraform owns its lifecycle. A data block reads an existing S3 bucket without owning it.</strong> If you declare a <code>resource "aws_s3_bucket" "config"</code>, Terraform creates it, tracks it in state, and will destroy it if you run <code>terraform destroy</code>. If you declare a <code>data "aws_s3_bucket" "config"</code>, Terraform reads its attributes (ARN, region, etc.) at plan time but never creates, modifies, or deletes it. The bucket must already exist for the data source to succeed.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      A variable is declared with <code>default = "us-east-1"</code> but the CI pipeline sets <code>TF_VAR_aws_region=eu-west-1</code>. What value does Terraform use?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">The environment variable wins: <code>eu-west-1</code>.</strong> The precedence order from highest to lowest is: CLI flag → auto-loaded tfvars / .auto.tfvars → named tfvars file → environment variable (TF_VAR_) → default in declaration. The default is only used if no other source provides the value. In CI/CD pipelines, <code>TF_VAR_</code> environment variables are the standard way to inject environment-specific values without committing them to version control.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      Why does the AMI data source use <code>most_recent = true</code>? What would happen without it if multiple AMIs matched the filters?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">Without <code>most_recent = true</code>, Terraform would throw an error if multiple AMIs match the filters.</strong> The AWS AMI data source expects to return exactly one result. If the filter matches multiple AMIs (e.g. all previous company-approved images), Terraform has no way to choose between them and fails the plan with "multiple values found". <code>most_recent = true</code> resolves this by selecting the AMI with the latest creation timestamp — which, by your team's convention, is the newest approved release. This is why the infrastructure team uses a consistent naming pattern with timestamps in the AMI name.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      You see <code>aws_iam_role_policy_attachment.pf_ssm.role = aws_iam_role.pf_instance_role.name</code> in a Terraform file. What does this reference tell you about the dependency order?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">Terraform will automatically create the role before the policy attachment — you don't need to write <code>depends_on</code>.</strong> When Terraform sees a reference from one resource to another's attribute, it builds an implicit dependency. <code>pf_ssm</code> references <code>pf_instance_role.name</code>, so Terraform knows the role must exist before it tries to attach a policy to it. This implicit dependency graph is one of Terraform's most valuable features — it determines the correct creation order automatically from the references in your code.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      When should you use a local value instead of repeating a variable reference? Give a real example from the PingFederate stack.
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">Use a local when you are computing something from one or more variables that will be used in multiple places.</strong> A concrete example: your PingFederate configuration needs a consistent naming prefix — <code>"pf-prod-"</code> in production, <code>"pf-dev-"</code> in dev. Rather than writing <code>"pf-${var.environment}-"</code> in every resource's <code>name</code> attribute, define <code>local.name_prefix = "pf-${var.environment}-"</code> once and use <code>local.name_prefix</code> everywhere. If the naming convention changes, you fix it in one place. The same applies to the common tags map — define it once as a local, reference it everywhere.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      What is the purpose of <code>sensitive = true</code> on a variable or output? Does it encrypt the value?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)"><code>sensitive = true</code> prevents the value from appearing in plan and apply output — it does NOT encrypt it.</strong> When you mark a variable or output as sensitive, Terraform redacts its value in CLI output, showing <code>(sensitive value)</code> instead. This prevents accidental logging of secrets in CI pipelines. However, the value is still stored in plain text in the state file unless the state backend encrypts the file at rest (which S3 with SSE-KMS does). Sensitive flagging is about output hygiene, not encryption. For actual secret management, use AWS Secrets Manager or SSM Parameter Store with SecureString type.
+    </div>
+  </div>
+</section>
+
+<!-- ── MINI LAB ── -->
+<section class="section" id="lab">
+  <div class="section-label">Mini lab</div>
+  <h2 class="section-title">HCL reading and writing exercises</h2>
+
+  <div class="lab-block">
+    <div class="lab-block__header">
+      <span class="lab-block__badge">Lab 02-A</span>
+      <span class="lab-block__title">Trace the variable flow</span>
+    </div>
+    <div class="lab-block__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">Given the following <code>prod.tfvars</code> file and <code>variables.tf</code> snippet, trace what value <code>local.name_prefix</code> will evaluate to. Then identify which resource name will be affected.</p>
+      <div class="code-block" style="margin:0 0 var(--space-md)">
+        <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">prod.tfvars</span></div>
+        <div class="code-block__body"><pre><span class="n">environment</span> = <span class="s">"prod"</span>
+<span class="n">aws_region</span>  = <span class="s">"us-east-1"</span>
+<span class="n">instance_type</span> = <span class="s">"m5.2xlarge"</span></pre>
+        </div>
+      </div>
+      <div class="code-block" style="margin:0">
+        <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">locals.tf</span></div>
+        <div class="code-block__body"><pre><span class="k">locals</span> {
+  <span class="n">name_prefix</span> = <span class="s">"pf-${</span><span class="v">var.environment</span><span class="s">}-"</span>
+  <span class="n">is_prod</span>     = <span class="v">var.environment</span> == <span class="s">"prod"</span>
+  <span class="n">engine_size</span> = <span class="v">local.is_prod</span> <span class="p">?</span> <span class="s">"m5.2xlarge"</span> <span class="p">:</span> <span class="s">"m5.xlarge"</span>
+}
+
+<span class="k">resource</span> <span class="s">"aws_autoscaling_group"</span> <span class="s">"pf_engines"</span> {
+  <span class="k">name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}asg"</span>
+  <span class="c"># ...</span>
+}</pre>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-tertiary);margin-top:var(--space-md);">Questions: (1) What is <code>local.name_prefix</code>? (2) What is <code>local.is_prod</code>? (3) What is the full name of the ASG? (4) What would <code>local.engine_size</code> be if <code>var.environment = "dev"</code>?</p>
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)" style="margin-top:var(--space-sm)">
+    <div class="knowledge-check__question"><span class="kc-icon">✓</span>Reveal Lab 02-A answers<span class="kc-chevron">▼</span></div>
+    <div class="knowledge-check__answer">
+      <ol style="padding-left:var(--space-lg);display:flex;flex-direction:column;gap:6px;color:var(--text-secondary);font-size:14px;line-height:1.6">
+        <li><code style="color:var(--teal)">local.name_prefix = "pf-prod-"</code> — the variable is substituted into the string.</li>
+        <li><code style="color:var(--teal)">local.is_prod = true</code> — the equality check evaluates to true.</li>
+        <li>The ASG name is <code style="color:var(--teal)">"pf-prod-asg"</code> — the local prefix is interpolated into the resource name string.</li>
+        <li>If <code>var.environment = "dev"</code>: <code>local.is_prod = false</code>, so <code>local.engine_size = "m5.xlarge"</code> — the conditional resolves to the false branch.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="lab-block" style="margin-top:var(--space-xl)">
+    <div class="lab-block__header">
+      <span class="lab-block__badge">Lab 02-B</span>
+      <span class="lab-block__title">Write the S3 config bucket resource</span>
+    </div>
+    <div class="lab-block__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">Write a Terraform resource block for the PingFederate configuration S3 bucket. Requirements:</p>
+      <ol>
+        <li>Resource type: <code>aws_s3_bucket</code>, local name: <code>pf_config</code></li>
+        <li>Bucket name: <code>"pf-config-${var.environment}-${data.aws_caller_identity.current.account_id}"</code></li>
+        <li>Apply <code>local.common_tags</code> as the tags</li>
+        <li>Add a second resource block: <code>aws_s3_bucket_versioning</code> named <code>pf_config_versioning</code> that enables versioning on the bucket above (reference the bucket ID from your first block)</li>
+      </ol>
+      <p style="font-size:13px;color:var(--text-tertiary);margin-top:var(--space-md);">Bonus: Add an <code>aws_s3_bucket_server_side_encryption_configuration</code> block using SSE-S3 (<code>aws:s3</code>) encryption. The full attribute tree for this resource can be found in the Terraform Registry docs for <code>aws_s3_bucket_server_side_encryption_configuration</code>.</p>
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)" style="margin-top:var(--space-sm)">
+    <div class="knowledge-check__question"><span class="kc-icon">✓</span>Reveal Lab 02-B solution<span class="kc-chevron">▼</span></div>
+    <div class="knowledge-check__answer">
+      <div class="code-block" style="margin:0">
+        <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">s3.tf — solution</span></div>
+        <div class="code-block__body"><pre><span class="k">resource</span> <span class="s">"aws_s3_bucket"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="s">"pf-config-${</span><span class="v">var.environment</span><span class="s">}-${</span><span class="v">data.aws_caller_identity.current.account_id</span><span class="s">}"</span>
+  <span class="k">tags</span>   = <span class="v">local.common_tags</span>
+}
+
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_versioning"</span> <span class="s">"pf_config_versioning"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>   <span class="c"># implicit dependency on pf_config</span>
+
+  <span class="k">versioning_configuration</span> {
+    <span class="k">status</span> = <span class="s">"Enabled"</span>
+  }
+}
+
+<span class="c"># BONUS: Server-side encryption</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_server_side_encryption_configuration"</span> <span class="s">"pf_config_sse"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+
+  <span class="k">rule</span> {
+    <span class="k">apply_server_side_encryption_by_default</span> {
+      <span class="k">sse_algorithm</span> = <span class="s">"aws:s3"</span>   <span class="c"># SSE-S3 (AWS-managed keys)</span>
+      <span class="c"># For SSE-KMS: use "aws:kms" + kms_master_key_id</span>
+    }
+    <span class="k">bucket_key_enabled</span> = <span class="k">true</span>   <span class="c"># reduces KMS API calls and cost</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECT REVIEW ── -->
+<div class="architect-review">
+  <div class="architect-review__header">
+    <span class="architect-review__badge">Senior Review</span>
+    <span class="architect-review__title">HCL questions a platform engineer might ask you</span>
+  </div>
+  <ul class="architect-review__list">
+    <li><span class="ar-num">01</span>A junior engineer put the S3 bucket name directly in every resource that needs it — in the launch template, in the IAM policy, in the outputs. What's the problem with this and how would you fix it?</li>
+    <li><span class="ar-num">02</span>The AMI data source is returning an AMI from three months ago even though the infra team released a new one last week. What are the three most likely causes?</li>
+    <li><span class="ar-num">03</span>A variable is declared with <code>type = any</code>. Under what circumstances is this acceptable in production Terraform code? When is it not?</li>
+    <li><span class="ar-num">04</span>You are reviewing a PR that adds 14 new resources, all of which use the same <code>depends_on = [aws_iam_role.pf_role]</code>. Is this correct? Is it necessary?</li>
+    <li><span class="ar-num">05</span>You need to create identical security group rules for 8 different services. How would you avoid writing 8 nearly-identical resource blocks?</li>
+  </ul>
+</div>
+
+<!-- ── TAKEAWAY ── -->
+<div class="takeaway-box">
+  <div class="takeaway-box__header">
+    <div class="takeaway-box__icon">◆</div>
+    <div class="takeaway-box__title">Module 02 — Key Takeaways</div>
+  </div>
+  <ul class="takeaway-list">
+    <li>HCL has six block types: <code>provider</code>, <code>resource</code>, <code>data</code>, <code>variable</code>, <code>output</code>, <code>locals</code>. Master these and you can read any <code>.tf</code> file.</li>
+    <li>Resources declare infrastructure Terraform owns and manages. Data sources read existing infrastructure without owning it.</li>
+    <li>The dynamic AMI lookup using <code>data "aws_ami"</code> with filters is the pattern your project uses to always pick the latest approved AMI at plan time — no hardcoded IDs.</li>
+    <li>Resource references like <code>aws_iam_role.pf_role.name</code> create implicit dependencies. Terraform builds the execution order from these references automatically.</li>
+    <li>Variables are inputs (supplied externally), locals are intermediate computed values (internal), outputs are what the configuration exposes after apply.</li>
+    <li>Variable value precedence: CLI flag &gt; auto tfvars &gt; named tfvars &gt; TF_VAR_ environment variables &gt; default.</li>
+    <li>Read unknown <code>.tf</code> files in this order: versions → variables → outputs → data sources → resources → locals.</li>
+    <li><code>sensitive = true</code> hides a value from plan output. It does not encrypt it. The state file still stores it in plain text unless the backend encrypts at rest.</li>
+  </ul>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- SIDEBAR -->
+<div class="content-sidebar">
+  <div class="toc">
+    <div class="toc__label">In this module</div>
+    <a class="toc__item" href="#bridge-from-m01">Bridge from M01</a>
+    <a class="toc__item" href="#file-structure">File structure</a>
+    <a class="toc__item" href="#block-types">The six block types</a>
+    <a class="toc__item" href="#provider">Provider block</a>
+    <a class="toc__item" href="#resource">Resource block</a>
+    <a class="toc__item" href="#data-sources">Data sources</a>
+    <a class="toc__item" href="#variables">Variables</a>
+    <a class="toc__item" href="#outputs">Outputs</a>
+    <a class="toc__item" href="#locals">Locals</a>
+    <a class="toc__item" href="#expressions">Expressions &amp; functions</a>
+    <a class="toc__item" href="#reading-tf">Reading strategy</a>
+    <a class="toc__item" href="#knowledge-checks">Knowledge checks</a>
+    <a class="toc__item" href="#lab">Mini lab</a>
+  </div>
+  <div class="quick-ref">
+    <div class="quick-ref__label">Block Types</div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--violet)">provider</span><span class="quick-ref__def">Cloud API adapter</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--teal)">resource</span><span class="quick-ref__def">Managed infrastructure</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--sapphire)">data</span><span class="quick-ref__def">Read-only AWS query</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--copper)">variable</span><span class="quick-ref__def">External input</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--jade)">output</span><span class="quick-ref__def">Exposed result</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--rose)">locals</span><span class="quick-ref__def">Computed value</span></div>
+  </div>
+  <div class="quick-ref">
+    <div class="quick-ref__label">Reference Syntax</div>
+    <div class="quick-ref__item"><span class="quick-ref__term">resource</span><span class="quick-ref__def"><code>TYPE.NAME.attr</code></span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">data</span><span class="quick-ref__def"><code>data.TYPE.NAME.attr</code></span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">variable</span><span class="quick-ref__def"><code>var.NAME</code></span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">local</span><span class="quick-ref__def"><code>local.NAME</code></span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">module</span><span class="quick-ref__def"><code>module.NAME.output</code></span></div>
+  </div>
+  <div class="quick-ref">
+    <div class="quick-ref__label">Key Functions</div>
+    <div class="quick-ref__item"><span class="quick-ref__term">merge()</span><span class="quick-ref__def">Combine maps</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">jsonencode()</span><span class="quick-ref__def">Object to JSON string</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">toset()</span><span class="quick-ref__def">List to set</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">lookup()</span><span class="quick-ref__def">Map read with default</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">coalesce()</span><span class="quick-ref__def">First non-null value</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">format()</span><span class="quick-ref__def">Printf-style string</span></div>
+  </div>
+  <div class="quick-ref">
+    <div class="quick-ref__label">Series Progress</div>
+    <div style="padding:var(--space-sm) 0">
+      <div class="dep-map" style="flex-wrap:wrap;gap:4px;padding:var(--space-sm)">
+        <span class="dep-node dep-node--done">M01</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--current">M02</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">M03–10</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /module-content -->
+
+<!-- BRIDGE -->
+<div class="bridge-section">
+  <div class="bridge-card">
+    <div class="bridge-card__eyebrow">Coming up next · Module 03</div>
+    <div class="bridge-card__title"><span>State Management</span> — The Most Important Concept in Terraform</div>
+    <div class="bridge-card__body">
+      You can now read and write Terraform confidently. You understand providers, resources, data sources, variables, outputs, and locals. You can trace how the AMI data source feeds the Launch Template. You know the reference pattern and how implicit dependencies work.<br><br>
+      The missing piece: <em>what happens to all of this in production?</em> How does Terraform know what already exists? What prevents two engineers from running apply at the same time? What happens when the state file diverges from reality? What does Terraform record about your ASG when an instance refresh replaces your nodes?<br><br>
+      Module 03 answers all of this. State management is not a detail — it is the foundation that makes everything you have learned so far safe to use in production. It is also the topic that causes the most serious incidents when it is not understood.
+    </div>
+    <div class="bridge-card__concepts">
+      <span class="badge badge--new">State file anatomy</span>
+      <span class="badge badge--new">S3 backend</span>
+      <span class="badge badge--new">DynamoDB locking</span>
+      <span class="badge badge--new">Drift detection</span>
+      <span class="badge badge--new">terraform import</span>
+      <span class="badge badge--new">State surgery</span>
+    </div>
+    <a href="module-03.html" class="bridge-card__btn">Continue to Module 03 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="portal-footer">
+  <div class="portal-footer__left">M02 · HCL Fundamentals · Phase 1 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--space-sm);align-items:center;">
+    <a href="module-01.html" class="badge badge--prereq" style="text-decoration:none;">← M01</a>
+    <a href="index.html" class="badge badge--prereq" style="text-decoration:none;">Index</a>
+    <a href="module-03.html" class="badge badge--phase" style="text-decoration:none;">M03 →</a>
+  </div>
+</footer>
+
+</div><!-- /portal-shell -->
+
+<script>
+function toggleKC(el){ el.classList.toggle('open'); }
+(function(){
+  const items = document.querySelectorAll('.toc__item');
+  const sections = [];
+  items.forEach(i=>{ const id=i.getAttribute('href').replace('#',''); const el=document.getElementById(id); if(el) sections.push({el,item:i}); });
+  const io = new IntersectionObserver((entries)=>{ entries.forEach(e=>{ if(e.isIntersecting){ items.forEach(i=>i.classList.remove('active')); const found=sections.find(s=>s.el===e.target); if(found) found.item.classList.add('active'); } }); },{ rootMargin:'-20% 0px -70% 0px' });
+  sections.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io = new IntersectionObserver((entries)=>{ entries.forEach(e=>{ if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; io.unobserve(e.target); } }); },{ threshold:0.06 });
+  document.querySelectorAll('.section,.card,.diagram-wrap,.lab-block,.architect-review,.takeaway-box,.bridge-card,.hcl-block').forEach(el=>{ el.style.opacity='0'; el.style.transform='translateY(12px)'; el.style.transition='opacity 0.45s ease,transform 0.45s ease'; io.observe(el); });
+})();
+</script>
+</body>
+</html>

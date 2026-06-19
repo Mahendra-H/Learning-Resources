@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terraform Mastery — PingFederate Migration Series</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS — full THEME system
+══════════════════════════════════════════════════════════ */
+:root {
+  --bg-void:        #0B0E14;
+  --bg-surface-1:   #111520;
+  --bg-surface-2:   #181D2A;
+  --bg-surface-3:   #1F2535;
+  --bg-surface-4:   #252D40;
+  --border:         #1E2636;
+  --border-bright:  #2E3A52;
+  --border-active:  #00E5C3;
+  --teal:           #00E5C3;
+  --teal-dim:       #00B89A;
+  --teal-glow:      rgba(0,229,195,0.10);
+  --teal-glow-md:   rgba(0,229,195,0.20);
+  --copper:         #E8873A;
+  --copper-dim:     #B86929;
+  --copper-glow:    rgba(232,135,58,0.13);
+  --sapphire:       #4A9EFF;
+  --sapphire-glow:  rgba(74,158,255,0.12);
+  --rose:           #FF5F7E;
+  --rose-glow:      rgba(255,95,126,0.12);
+  --jade:           #3ECFA0;
+  --violet:         #9B7FFF;
+  --violet-glow:    rgba(155,127,255,0.13);
+  --text-primary:   #E8EDF5;
+  --text-secondary: #8A95A8;
+  --text-tertiary:  #4A5568;
+  --text-accent:    #00E5C3;
+  --font-display:   'Syne', sans-serif;
+  --font-body:      'IBM Plex Sans', sans-serif;
+  --font-mono:      'IBM Plex Mono', monospace;
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-void); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 999px; }
+::selection { background: var(--teal-glow-md); color: var(--teal); }
+a { color: var(--sapphire); text-decoration: none; transition: color var(--transition-fast); }
+a:hover { color: var(--teal); }
+
+/* ═══════════════════════════════════════════════════════════
+   NAV
+══════════════════════════════════════════════════════════ */
+.portal-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(11,14,20,0.92);
+  backdrop-filter: blur(16px) saturate(1.5);
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--space-xl);
+}
+
+.portal-nav__inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.portal-nav__logo {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal);
+  white-space: nowrap;
+}
+
+.portal-nav__logo span { color: var(--text-tertiary); font-weight: 400; }
+
+.nav-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-bright);
+  flex-shrink: 0;
+}
+
+.nav-series-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  flex: 1;
+}
+
+.nav-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--teal-glow);
+  border: 1px solid var(--teal);
+  color: var(--teal);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHELL
+══════════════════════════════════════════════════════════ */
+.portal-shell {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO — index-specific, all-phases gradient
+══════════════════════════════════════════════════════════ */
+.index-hero {
+  position: relative;
+  padding: var(--space-3xl) 0 var(--space-2xl);
+  overflow: hidden;
+}
+
+.index-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 50% at 10% 30%, rgba(155,127,255,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 40% at 90% 70%, rgba(0,229,195,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 35% 40% at 55% 10%, rgba(74,158,255,0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Grid lines on left */
+.index-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 60% 80% at 5% 50%, black 0%, transparent 65%);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.index-hero__content {
+  position: relative;
+  z-index: 1;
+}
+
+.index-hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: var(--space-md);
+}
+
+.eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--teal); }
+  50% { opacity: 0.5; box-shadow: 0 0 3px var(--teal); }
+}
+
+.index-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 5vw, 62px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+  max-width: 820px;
+}
+
+.index-hero__title .t-violet { color: var(--violet); }
+.index-hero__title .t-teal   { color: var(--teal); }
+
+.index-hero__subtitle {
+  font-size: 17px;
+  font-weight: 300;
+  color: var(--text-secondary);
+  max-width: 620px;
+  line-height: 1.7;
+  margin-bottom: var(--space-xl);
+}
+
+.index-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.badge--teal    { background: var(--teal-glow); border: 1px solid rgba(0,229,195,0.35); color: var(--teal); }
+.badge--copper  { background: var(--copper-glow); border: 1px solid rgba(232,135,58,0.35); color: var(--copper); }
+.badge--sapphire{ background: var(--sapphire-glow); border: 1px solid rgba(74,158,255,0.35); color: var(--sapphire); }
+.badge--violet  { background: var(--violet-glow); border: 1px solid rgba(155,127,255,0.35); color: var(--violet); }
+.badge--muted   { background: var(--bg-surface-2); border: 1px solid var(--border-bright); color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════════════════════
+   PIPELINE DIAGRAM SECTION
+══════════════════════════════════════════════════════════ */
+.pipeline-section {
+  margin-bottom: var(--space-3xl);
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: var(--space-lg);
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-bright) 0%, transparent 100%);
+}
+
+.pipeline-wrap {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  overflow-x: auto;
+  position: relative;
+}
+
+.pipeline-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--violet), var(--teal), var(--sapphire), var(--copper));
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.pipeline-wrap__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.pipeline-wrap__label::before { content: '◈'; color: var(--teal); font-size: 12px; }
+
+/* ═══════════════════════════════════════════════════════════
+   WHAT YOU WILL BUILD — context box
+══════════════════════════════════════════════════════════ */
+.context-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-bottom: var(--space-3xl);
+}
+
+@media (max-width: 760px) {
+  .context-grid { grid-template-columns: 1fr; }
+}
+
+.context-card {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.context-card:hover {
+  border-color: var(--border-bright);
+  box-shadow: var(--shadow-card);
+}
+
+.context-card--teal    { border-left: 2px solid var(--teal); }
+.context-card--copper  { border-left: 2px solid var(--copper); }
+.context-card--sapphire{ border-left: 2px solid var(--sapphire); }
+.context-card--violet  { border-left: 2px solid var(--violet); }
+
+.context-card__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-sm);
+}
+
+.context-card__title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.context-card__body {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PHASE HEADERS
+══════════════════════════════════════════════════════════ */
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  margin-top: var(--space-3xl);
+}
+
+.phase-header:first-of-type { margin-top: 0; }
+
+.phase-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.phase-pip--violet  { background: var(--violet); box-shadow: 0 0 10px rgba(155,127,255,0.5); }
+.phase-pip--teal    { background: var(--teal);   box-shadow: 0 0 10px rgba(0,229,195,0.5); }
+.phase-pip--sapphire{ background: var(--sapphire);box-shadow: 0 0 10px rgba(74,158,255,0.5); }
+.phase-pip--copper  { background: var(--copper); box-shadow: 0 0 10px rgba(232,135,58,0.5); }
+
+.phase-header__text {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.phase-header__sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODULE CARDS — the main grid
+══════════════════════════════════════════════════════════ */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.module-card {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--card-phase-color, var(--teal));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-base);
+}
+
+.module-card:hover::before { transform: scaleX(1); }
+
+.module-card:hover {
+  border-color: var(--border-bright);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+  color: inherit;
+}
+
+/* Per-phase card variants */
+.module-card--violet  { --card-phase-color: var(--violet); }
+.module-card--teal    { --card-phase-color: var(--teal); }
+.module-card--sapphire{ --card-phase-color: var(--sapphire); }
+.module-card--copper  { --card-phase-color: var(--copper); }
+
+.module-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.module-card__num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+}
+
+.module-card__num--violet  { background: var(--violet-glow); border: 1px solid rgba(155,127,255,0.35); color: var(--violet); }
+.module-card__num--teal    { background: var(--teal-glow); border: 1px solid rgba(0,229,195,0.35); color: var(--teal); }
+.module-card__num--sapphire{ background: var(--sapphire-glow); border: 1px solid rgba(74,158,255,0.35); color: var(--sapphire); }
+.module-card__num--copper  { background: var(--copper-glow); border: 1px solid rgba(232,135,58,0.35); color: var(--copper); }
+
+.module-card__effort {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.module-card__title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.module-card__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  flex: 1;
+}
+
+.module-card__anchor {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-sm);
+  margin-top: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.module-card__anchor::before {
+  content: '⚑';
+  font-size: 10px;
+}
+
+.module-card__arrow {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.module-card:hover .module-card__arrow {
+  transform: translateX(4px);
+  color: var(--card-phase-color, var(--teal));
+}
+
+/* Capstone card — special treatment */
+.module-card--capstone {
+  background: linear-gradient(135deg, var(--bg-surface-2) 0%, var(--bg-surface-1) 100%);
+  border: 1px solid var(--border-bright);
+  --card-phase-color: var(--copper);
+  grid-column: 1 / -1;
+}
+
+.module-card--capstone .module-card__title {
+  font-size: 20px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEARNING PATH VISUAL
+══════════════════════════════════════════════════════════ */
+.path-section {
+  margin: var(--space-3xl) 0;
+}
+
+.path-strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: var(--space-lg) var(--space-xl);
+  gap: var(--space-xs);
+}
+
+.path-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.path-node__dot {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  transition: all var(--transition-base);
+}
+
+.path-node__dot--violet  { background: var(--violet-glow); border: 1px solid var(--violet); color: var(--violet); }
+.path-node__dot--teal    { background: var(--teal-glow); border: 1px solid var(--teal); color: var(--teal); }
+.path-node__dot--sapphire{ background: var(--sapphire-glow); border: 1px solid var(--sapphire); color: var(--sapphire); }
+.path-node__dot--copper  { background: var(--copper-glow); border: 1px solid var(--copper); color: var(--copper); }
+.path-node__dot--star    { background: linear-gradient(135deg, var(--copper-glow), var(--teal-glow)); border: 1px solid var(--copper); color: var(--copper); font-size: 14px; }
+
+.path-node__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+  text-align: center;
+  white-space: nowrap;
+  max-width: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.path-arrow {
+  color: var(--border-bright);
+  font-size: 13px;
+  flex-shrink: 0;
+  align-self: center;
+  margin-bottom: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   READINESS BRIEF
+══════════════════════════════════════════════════════════ */
+.readiness-section {
+  margin: var(--space-3xl) 0;
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.readiness-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal), var(--sapphire));
+}
+
+@media (max-width: 760px) {
+  .readiness-section { grid-template-columns: 1fr; }
+}
+
+.readiness-col__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+}
+
+.readiness-col__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.readiness-col__body {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.readiness-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.readiness-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.readiness-list li::before {
+  content: '◆';
+  color: var(--teal);
+  font-size: 8px;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   START CTA
+══════════════════════════════════════════════════════════ */
+.start-section {
+  margin: var(--space-3xl) 0;
+  text-align: center;
+  padding: var(--space-2xl);
+  background: linear-gradient(135deg, var(--bg-surface-1), var(--bg-surface-2));
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.start-section::before {
+  content: '';
+  position: absolute;
+  bottom: -60px; right: -60px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: var(--violet-glow);
+  pointer-events: none;
+}
+
+.start-section::after {
+  content: '';
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: var(--teal-glow);
+  pointer-events: none;
+}
+
+.start-section__title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+  position: relative;
+  z-index: 1;
+}
+
+.start-section__sub {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xl);
+  position: relative;
+  z-index: 1;
+}
+
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--violet);
+  color: var(--bg-void);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 28px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 1;
+}
+
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(155,127,255,0.35);
+  color: var(--bg-void);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════════════════════ */
+.portal-footer {
+  margin-top: var(--space-3xl);
+  padding: var(--space-xl) 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.portal-footer__left {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════════════════════ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-fade-up { animation: fadeInUp 0.5s ease both; }
+.animate-fade    { animation: fadeIn 0.4s ease both; }
+
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+.delay-6 { animation-delay: 0.6s; }
+.delay-7 { animation-delay: 0.7s; }
+.delay-8 { animation-delay: 0.8s; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .portal-shell { padding: 0 var(--space-md); }
+  .portal-nav   { padding: 0 var(--space-md); }
+  .index-hero   { padding: var(--space-2xl) 0 var(--space-xl); }
+  .modules-grid { grid-template-columns: 1fr; }
+  .module-card--capstone { grid-column: 1; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav class="portal-nav">
+  <div class="portal-nav__inner">
+    <div class="portal-nav__logo">Terraform<span> · Mastery Series</span></div>
+    <div class="nav-divider"></div>
+    <div class="nav-series-label">PingFederate Migration · AWS Infrastructure · Enterprise Patterns</div>
+    <div class="nav-badge">10 Modules + Capstone</div>
+  </div>
+</nav>
+
+<div class="portal-shell">
+
+  <!-- ═══════════════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════════════ -->
+  <section class="index-hero">
+    <div class="index-hero__content">
+
+      <div class="index-hero__eyebrow animate-fade">
+        <span class="eyebrow-dot"></span>
+        Enterprise Learning Series · Staff Engineer Edition
+      </div>
+
+      <h1 class="index-hero__title animate-fade-up delay-1">
+        Terraform Mastery<br>
+        for <span class="t-violet">Infrastructure</span><br>
+        <span class="t-teal">Engineers</span>
+      </h1>
+
+      <p class="index-hero__subtitle animate-fade-up delay-2">
+        A project-anchored learning journey built around one real-world goal: owning the Terraform infrastructure layer of a live PingFederate-on-AWS migration. Not a certification prep course — a mentored path from zero to confident contributor.
+      </p>
+
+      <div class="index-hero__meta animate-fade-up delay-3">
+        <span class="badge badge--violet">Phase 0–3</span>
+        <span class="badge badge--teal">10 Modules</span>
+        <span class="badge badge--copper">Capstone Project</span>
+        <span class="badge badge--sapphire">45–55 hrs total</span>
+        <span class="badge badge--muted">PingFederate · AWS · IAM · ASG</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       THE PIPELINE — what this series is actually about
+  ═══════════════════════════════════════════════ -->
+  <section class="pipeline-section animate-fade-up delay-3">
+    <div class="section-label">The deployment pipeline you are learning to own</div>
+
+    <div class="pipeline-wrap">
+      <div class="pipeline-wrap__label">PingFederate AMI Refresh · End-to-End Workflow</div>
+
+      <!-- SVG Pipeline Diagram -->
+      <svg viewBox="0 0 1000 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:720px;display:block;">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#2E3A52"/>
+          </marker>
+          <marker id="arr-teal" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#00E5C3"/>
+          </marker>
+          <filter id="glow-v">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+
+        <!-- Row 1: top flow labels -->
+        <text x="68" y="22" font-family="IBM Plex Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle" letter-spacing="0.08em">INFRA TEAM</text>
+        <text x="210" y="22" font-family="IBM Plex Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle" letter-spacing="0.08em">APP TEAM</text>
+        <text x="352" y="22" font-family="IBM Plex Mono,monospace" font-size="9" fill="#9B7FFF" text-anchor="middle" letter-spacing="0.08em">GITHUB ACTIONS</text>
+        <text x="505" y="22" font-family="IBM Plex Mono,monospace" font-size="9" fill="#00E5C3" text-anchor="middle" letter-spacing="0.08em">TERRAFORM ←YOU</text>
+        <text x="657" y="22" font-family="IBM Plex Mono,monospace" font-size="9" fill="#4A9EFF" text-anchor="middle" letter-spacing="0.08em">ANSIBLE</text>
+        <text x="810" y="22" font-family="IBM Plex Mono,monospace" font-size="9" fill="#E8873A" text-anchor="middle" letter-spacing="0.08em">PINGFEDERATE</text>
+        <text x="953" y="22" font-family="IBM Plex Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle" letter-spacing="0.08em">LIVE TRAFFIC</text>
+
+        <!-- Boxes row 1 -->
+        <!-- AMI Released -->
+        <rect x="10" y="34" width="116" height="50" rx="6" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+        <text x="68" y="56" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#E8EDF5" text-anchor="middle" font-weight="500">New AMI</text>
+        <text x="68" y="72" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#4A5568" text-anchor="middle">Released</text>
+
+        <!-- Deploy Planned -->
+        <rect x="152" y="34" width="116" height="50" rx="6" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+        <text x="210" y="56" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#E8EDF5" text-anchor="middle" font-weight="500">Deployment</text>
+        <text x="210" y="72" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#4A5568" text-anchor="middle">Planned</text>
+
+        <!-- GHA Pipeline -->
+        <rect x="294" y="34" width="116" height="50" rx="6" fill="#141520" stroke="rgba(155,127,255,0.3)" stroke-width="1"/>
+        <text x="352" y="56" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#E8EDF5" text-anchor="middle" font-weight="500">Pipeline</text>
+        <text x="352" y="72" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#9B7FFF" text-anchor="middle">Triggered</text>
+
+        <!-- Terraform — highlighted -->
+        <rect x="447" y="28" width="116" height="62" rx="8" fill="#0f1a24" stroke="#00E5C3" stroke-width="1.5"/>
+        <text x="505" y="53" font-family="IBM Plex Sans,sans-serif" font-size="12" fill="#00E5C3" text-anchor="middle" font-weight="600">Terraform</text>
+        <text x="505" y="70" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#8A95A8" text-anchor="middle">Infra Updated</text>
+        <!-- glow line under -->
+        <line x1="455" y1="90" x2="557" y2="90" stroke="rgba(0,229,195,0.3)" stroke-width="1"/>
+
+        <!-- Ansible -->
+        <rect x="599" y="34" width="116" height="50" rx="6" fill="#111520" stroke="rgba(74,158,255,0.3)" stroke-width="1"/>
+        <text x="657" y="56" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#E8EDF5" text-anchor="middle" font-weight="500">Ansible</text>
+        <text x="657" y="72" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#4A9EFF" text-anchor="middle">Configures PF</text>
+
+        <!-- PF Live -->
+        <rect x="752" y="34" width="116" height="50" rx="6" fill="#111520" stroke="rgba(232,135,58,0.3)" stroke-width="1"/>
+        <text x="810" y="56" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#E8EDF5" text-anchor="middle" font-weight="500">PingFederate</text>
+        <text x="810" y="72" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#E8873A" text-anchor="middle">Nodes Online</text>
+
+        <!-- Traffic -->
+        <rect x="905" y="34" width="82" height="50" rx="6" fill="#111520" stroke="#1E2636" stroke-width="1"/>
+        <text x="946" y="56" font-family="IBM Plex Sans,sans-serif" font-size="11" fill="#E8EDF5" text-anchor="middle" font-weight="500">Traffic</text>
+        <text x="946" y="72" font-family="IBM Plex Sans,sans-serif" font-size="10" fill="#4A5568" text-anchor="middle">Flowing</text>
+
+        <!-- Arrows between boxes -->
+        <line x1="127" y1="59" x2="150" y2="59" stroke="#2E3A52" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="269" y1="59" x2="292" y2="59" stroke="#2E3A52" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="411" y1="59" x2="445" y2="59" stroke="#2E3A52" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="564" y1="59" x2="597" y2="59" stroke="#00E5C3" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+        <line x1="716" y1="59" x2="750" y2="59" stroke="#2E3A52" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="869" y1="59" x2="903" y2="59" stroke="#2E3A52" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- Row 2: Terraform internals -->
+        <text x="505" y="118" font-family="IBM Plex Mono,monospace" font-size="9" fill="#4A5568" text-anchor="middle" letter-spacing="0.06em">TERRAFORM MANAGES ↓</text>
+
+        <!-- TF resource boxes -->
+        <rect x="60" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="#1E2636" stroke-width="1"/>
+        <text x="101" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8A95A8" text-anchor="middle">VPC / Subnets</text>
+
+        <rect x="152" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="#1E2636" stroke-width="1"/>
+        <text x="193" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8A95A8" text-anchor="middle">IAM Roles</text>
+
+        <rect x="244" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="#1E2636" stroke-width="1"/>
+        <text x="285" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8A95A8" text-anchor="middle">Launch Tmpl</text>
+
+        <rect x="336" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="rgba(0,229,195,0.25)" stroke-width="1"/>
+        <text x="377" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#00B89A" text-anchor="middle">ASG + Refresh</text>
+
+        <rect x="428" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="rgba(0,229,195,0.25)" stroke-width="1"/>
+        <text x="469" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#00B89A" text-anchor="middle">NLB / ALB</text>
+
+        <rect x="520" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="#1E2636" stroke-width="1"/>
+        <text x="561" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8A95A8" text-anchor="middle">Route53</text>
+
+        <rect x="612" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="#1E2636" stroke-width="1"/>
+        <text x="653" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8A95A8" text-anchor="middle">S3 Config</text>
+
+        <rect x="704" y="130" width="82" height="32" rx="4" fill="#181D2A" stroke="#1E2636" stroke-width="1"/>
+        <text x="745" y="150" font-family="IBM Plex Mono,monospace" font-size="9" fill="#8A95A8" text-anchor="middle">Sec Groups</text>
+
+        <!-- Connect TF box down to resource row -->
+        <line x1="505" y1="91" x2="505" y2="127" stroke="rgba(0,229,195,0.25)" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="101" y1="127" x2="745" y2="127" stroke="rgba(0,229,195,0.15)" stroke-width="1"/>
+
+        <!-- S3 persistence note -->
+        <rect x="130" y="180" width="360" height="28" rx="4" fill="rgba(74,158,255,0.05)" stroke="rgba(74,158,255,0.2)" stroke-width="1"/>
+        <text x="310" y="199" font-family="IBM Plex Mono,monospace" font-size="9" fill="#4A9EFF" text-anchor="middle">S3 → PF config survives instance replacement → new nodes self-heal on launch</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       CONTEXT CARDS — what makes this series different
+  ═══════════════════════════════════════════════ -->
+  <section style="margin-bottom: var(--space-3xl);">
+    <div class="section-label">What makes this series different</div>
+    <div class="context-grid">
+
+      <div class="context-card context-card--violet animate-fade-up delay-1">
+        <div class="context-card__label">Not a certification course</div>
+        <div class="context-card__title">Project-anchored from day one</div>
+        <div class="context-card__body">Every concept is introduced in the context of the PingFederate migration project. You learn why a Launch Template exists <em>because</em> you need one to refresh AMIs. You learn S3 backends <em>because</em> your team already uses one.</div>
+      </div>
+
+      <div class="context-card context-card--teal animate-fade-up delay-2">
+        <div class="context-card__label">Mentored progression</div>
+        <div class="context-card__title">Each module earns the next</div>
+        <div class="context-card__body">No module is self-contained. Each one builds a bridge to the next — explaining what knowledge you now have, what gap remains, and exactly why the next topic fills it. You will never wonder "why am I learning this?"</div>
+      </div>
+
+      <div class="context-card context-card--sapphire animate-fade-up delay-3">
+        <div class="context-card__label">Your background is an asset</div>
+        <div class="context-card__title">IAM expertise, applied to infra</div>
+        <div class="context-card__body">Your deep IAM knowledge is a genuine advantage here. IAM roles, instance profiles, S3 bucket policies, and least-privilege design are concepts you already own. This series leverages that and fills the infrastructure gaps.</div>
+      </div>
+
+      <div class="context-card context-card--copper animate-fade-up delay-4">
+        <div class="context-card__label">Real operational depth</div>
+        <div class="context-card__title">Read code, fix things, ship safely</div>
+        <div class="context-card__body">The goal isn't to write Terraform from scratch on day one — it's to confidently read existing code, understand why decisions were made, troubleshoot deployments, and eventually contribute improvements to a real enterprise codebase.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       MODULE CARDS — all 10 modules
+  ═══════════════════════════════════════════════ -->
+  <section>
+    <div class="section-label">Your learning path</div>
+
+    <!-- PHASE 0 -->
+    <div class="phase-header">
+      <div class="phase-pip phase-pip--violet"></div>
+      <div class="phase-header__text">Phase 0 — Foundation &amp; Mental Model</div>
+      <div class="phase-header__sub">1 module · ~3–4 hrs</div>
+    </div>
+
+    <div class="modules-grid">
+      <a href="module-01.html" class="module-card module-card--violet animate-fade-up delay-1">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--violet">M01</span>
+          <span class="module-card__effort">3–4 hrs</span>
+        </div>
+        <div class="module-card__title">Infrastructure as Code &amp; The Terraform Mental Model</div>
+        <div class="module-card__desc">Why IaC exists. Where Terraform fits in the four-component pipeline. HCL orientation. Validate and sharpen your existing understanding of the migration project before a single line of Terraform is written.</div>
+        <div class="module-card__anchor">Anchor: GitHub Actions → Terraform → Ansible → PingFederate</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+    </div>
+
+    <!-- PHASE 1 -->
+    <div class="phase-header">
+      <div class="phase-pip phase-pip--teal"></div>
+      <div class="phase-header__text">Phase 1 — Core Language &amp; State</div>
+      <div class="phase-header__sub">2 modules · ~8–10 hrs</div>
+    </div>
+
+    <div class="modules-grid">
+      <a href="module-02.html" class="module-card module-card--teal animate-fade-up delay-1">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--teal">M02</span>
+          <span class="module-card__effort">4–5 hrs</span>
+        </div>
+        <div class="module-card__title">HCL Fundamentals</div>
+        <div class="module-card__desc">Providers, resources, data sources, variables, outputs, local values. Learn to read any <code style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface-3);color:var(--teal);padding:1px 4px;border-radius:3px;">.tf</code> file confidently — including the dynamic AMI lookup pattern your project uses to find the latest approved AMI at plan time.</div>
+        <div class="module-card__anchor">Anchor: Dynamic AMI ID lookup · Security group definitions</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+
+      <a href="module-03.html" class="module-card module-card--teal animate-fade-up delay-2">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--teal">M03</span>
+          <span class="module-card__effort">4–5 hrs</span>
+        </div>
+        <div class="module-card__title">State Management</div>
+        <div class="module-card__desc">The most important concept in Terraform. State file anatomy, remote state on S3, DynamoDB locking, drift detection, resource import, and state surgery. Understand what happens to state when an ASG replaces an instance during an AMI refresh.</div>
+        <div class="module-card__anchor">Anchor: S3 remote backend · Instance refresh state behaviour</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="phase-header">
+      <div class="phase-pip phase-pip--sapphire"></div>
+      <div class="phase-header__text">Phase 2 — AWS Infrastructure, Layer by Layer</div>
+      <div class="phase-header__sub">5 modules · ~20–24 hrs</div>
+    </div>
+
+    <div class="modules-grid">
+      <a href="module-04.html" class="module-card module-card--sapphire animate-fade-up delay-1">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--sapphire">M04</span>
+          <span class="module-card__effort">4–5 hrs</span>
+        </div>
+        <div class="module-card__title">VPC, Subnets &amp; Security Groups</div>
+        <div class="module-card__desc">VPC CIDR design, public/private subnets, route tables, IGW, NAT gateway, security group rules, and SG-to-SG references. Why the network layer is always provisioned before compute — and how PingFederate's network topology is expressed in Terraform.</div>
+        <div class="module-card__anchor">Anchor: PingFederate port rules · Private subnet ASG placement</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+
+      <a href="module-05.html" class="module-card module-card--sapphire animate-fade-up delay-2">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--sapphire">M05</span>
+          <span class="module-card__effort">3–4 hrs</span>
+        </div>
+        <div class="module-card__title">IAM &amp; Instance Profiles</div>
+        <div class="module-card__desc">Your IAM expertise applied to infrastructure. Trust policies, permission policies, instance profiles. The IAM role that allows EC2 instances to read PingFederate config from S3 — why it exists, what it contains, and how Terraform creates and attaches it.</div>
+        <div class="module-card__anchor">Anchor: PF-to-S3 read role · Least privilege in instance profiles</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+
+      <a href="module-06.html" class="module-card module-card--sapphire animate-fade-up delay-3">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--sapphire">M06</span>
+          <span class="module-card__effort">5–6 hrs</span>
+        </div>
+        <div class="module-card__title">EC2, Launch Templates &amp; Auto Scaling Groups</div>
+        <div class="module-card__desc">The heart of immutable infrastructure. Launch Template anatomy, AMI data source lookups, user_data bootstrap scripts, ASG desired/min/max, health checks, lifecycle hooks, and <code style="font-family:var(--font-mono);font-size:11px;background:var(--bg-surface-3);color:var(--teal);padding:1px 4px;border-radius:3px;">instance_refresh</code>. How a Terraform plan triggers a rolling AMI replacement.</div>
+        <div class="module-card__anchor">Anchor: AMI refresh workflow · user_data pulls PF config from S3</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+
+      <a href="module-07.html" class="module-card module-card--sapphire animate-fade-up delay-4">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--sapphire">M07</span>
+          <span class="module-card__effort">4–5 hrs</span>
+        </div>
+        <div class="module-card__title">Load Balancers &amp; Route53</div>
+        <div class="module-card__desc">ALB vs NLB decision criteria for PingFederate workloads. Target groups, listeners, health checks, and how the load balancer keeps traffic flowing during instance refresh. Route53 hosted zones, A records, and alias records — the full DNS-to-node path in Terraform.</div>
+        <div class="module-card__anchor">Anchor: NLB for TLS passthrough · Traffic continuity during refresh</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+
+      <a href="module-08.html" class="module-card module-card--sapphire animate-fade-up delay-5">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--sapphire">M08</span>
+          <span class="module-card__effort">3–4 hrs</span>
+        </div>
+        <div class="module-card__title">S3 &amp; Config Externalisation</div>
+        <div class="module-card__desc">S3 bucket provisioning, policies, versioning, and encryption. Why S3 is the right persistence layer for immutable compute. The config externalisation pattern that lets PingFederate nodes be replaced without losing configuration — and how Terraform models the storage layer that makes it possible.</div>
+        <div class="module-card__anchor">Anchor: PF config bucket · The pattern that makes instance replacement safe</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="phase-header">
+      <div class="phase-pip phase-pip--copper"></div>
+      <div class="phase-header__text">Phase 3 — Enterprise Terraform</div>
+      <div class="phase-header__sub">2 modules · ~8–10 hrs</div>
+    </div>
+
+    <div class="modules-grid">
+      <a href="module-09.html" class="module-card module-card--copper animate-fade-up delay-1">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--copper">M09</span>
+          <span class="module-card__effort">4–5 hrs</span>
+        </div>
+        <div class="module-card__title">Modules &amp; Enterprise Patterns</div>
+        <div class="module-card__desc">Reusable modules, module structure, versioning, and the Terraform Registry. Dev/Test/Prod environment management — directory-per-env vs workspaces. DRY patterns. How to navigate an unfamiliar enterprise Terraform codebase on day one without getting lost.</div>
+        <div class="module-card__anchor">Anchor: Multi-env PF deployment structure · Reading existing enterprise code</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+
+      <a href="module-10.html" class="module-card module-card--copper animate-fade-up delay-2">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--copper">M10</span>
+          <span class="module-card__effort">4–5 hrs</span>
+        </div>
+        <div class="module-card__title">Troubleshooting &amp; Operations</div>
+        <div class="module-card__desc">Reading Terraform plans like a senior engineer. Debugging failed applies. State incidents, dependency problems, and resource ordering. The AMI refresh end-to-end with failure scenarios. Zero-downtime patterns, rollback strategies, and operational runbooks for enterprise deployments.</div>
+        <div class="module-card__anchor">Anchor: AMI refresh failure modes · What to do when plan surprises you</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+    </div>
+
+    <!-- CAPSTONE -->
+    <div class="phase-header" style="margin-top: var(--space-3xl);">
+      <div class="phase-pip" style="background: var(--copper); box-shadow: 0 0 10px rgba(232,135,58,0.5); width:14px;height:14px;"></div>
+      <div class="phase-header__text">Capstone — Build the Full Stack</div>
+      <div class="phase-header__sub">Standalone · ~4–5 hrs</div>
+    </div>
+
+    <div class="modules-grid">
+      <a href="capstone.html" class="module-card module-card--capstone animate-fade-up delay-1">
+        <div class="module-card__top">
+          <span class="module-card__num module-card__num--copper">★ CAPSTONE</span>
+          <span class="module-card__effort">4–5 hrs · Standalone reference</span>
+        </div>
+        <div class="module-card__title">Build the PingFederate AWS Stack from Scratch</div>
+        <div class="module-card__desc">A guided self-build challenge that takes you from empty directory to a fully provisioned, production-pattern PingFederate environment on AWS. VPC → Security Groups → IAM → S3 → Launch Template → Auto Scaling Group → NLB → Route53. Each section is a challenge block with hint toggles and solution reveals — you write the Terraform, guided by meaningful prompts, not handed the answers. Completes with a 25-point enterprise readiness checklist so you know exactly when you're ready to contribute to the real project.</div>
+        <div class="module-card__anchor">Anchor: Full AMI refresh workflow · Enterprise readiness checklist · Complete annotated architecture</div>
+        <span class="module-card__arrow">→</span>
+      </a>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       LINEAR PATH STRIP
+  ═══════════════════════════════════════════════ -->
+  <section class="path-section animate-fade-up">
+    <div class="section-label">Recommended learning sequence</div>
+    <div class="path-strip">
+
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--violet">M01</div>
+        <div class="path-node__label">Mental Model</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--teal">M02</div>
+        <div class="path-node__label">HCL</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--teal">M03</div>
+        <div class="path-node__label">State</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--sapphire">M04</div>
+        <div class="path-node__label">VPC / SGs</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--sapphire">M05</div>
+        <div class="path-node__label">IAM</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--sapphire">M06</div>
+        <div class="path-node__label">EC2 / ASG</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--sapphire">M07</div>
+        <div class="path-node__label">LB / DNS</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--sapphire">M08</div>
+        <div class="path-node__label">S3</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--copper">M09</div>
+        <div class="path-node__label">Modules</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--copper">M10</div>
+        <div class="path-node__label">Ops</div>
+      </div>
+      <span class="path-arrow">›</span>
+      <div class="path-node">
+        <div class="path-node__dot path-node__dot--star">★</div>
+        <div class="path-node__label">Capstone</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       READINESS SECTION
+  ═══════════════════════════════════════════════ -->
+  <section class="readiness-section animate-fade-up">
+    <div>
+      <div class="readiness-col__label">What you will be able to do after this series</div>
+      <div class="readiness-col__title">From reader to contributor</div>
+      <div class="readiness-col__body">
+        <p style="margin-bottom:var(--space-md);">You are starting this series as a Staff Engineer with deep IAM expertise and solid software fundamentals. You're not starting from zero — you're extending your domain into infrastructure.</p>
+        <p>By the end, you will be able to open a Terraform PR in a real enterprise project, understand every resource and decision in scope, troubleshoot a failed deployment, and have an informed conversation with any platform or cloud engineer on the team.</p>
+      </div>
+    </div>
+    <div>
+      <div class="readiness-col__label">Competencies unlocked</div>
+      <ul class="readiness-list">
+        <li>Read and navigate any existing Terraform codebase confidently</li>
+        <li>Understand every AWS resource in the PingFederate migration stack</li>
+        <li>Explain the AMI refresh workflow end-to-end, including Terraform's role</li>
+        <li>Troubleshoot state issues, failed applies, and drift scenarios</li>
+        <li>Create and modify Terraform modules with correct input/output design</li>
+        <li>Participate in infrastructure architecture discussions as an informed contributor</li>
+        <li>Know what Terraform owns vs Ansible vs GitHub Actions — and why</li>
+        <li>Pass the 25-point capstone readiness checklist</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       START CTA
+  ═══════════════════════════════════════════════ -->
+  <section class="start-section animate-fade-up">
+    <h2 class="start-section__title">Ready to begin?</h2>
+    <p class="start-section__sub">Module 01 starts by validating your existing mental model of the project — before introducing a single line of HCL.</p>
+    <a href="module-01.html" class="start-btn">
+      Begin Module 01 — The Mental Model →
+    </a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="portal-footer">
+    <div class="portal-footer__left">Terraform Mastery Series · 10 Modules + Capstone · PingFederate Migration Edition</div>
+    <div style="display:flex;gap:var(--space-sm);">
+      <span class="badge badge--violet">Phase 0</span>
+      <span class="badge badge--teal">Phase 1</span>
+      <span class="badge badge--sapphire">Phase 2</span>
+      <span class="badge badge--copper">Phase 3</span>
+    </div>
+  </footer>
+
+</div><!-- /portal-shell -->
+
+<script>
+/* Scroll-triggered reveal for module cards */
+(function() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.module-card, .context-card, .readiness-section, .path-section, .start-section').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(14px)';
+    el.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+    observer.observe(el);
+  });
+})();
+</script>
+
+</body>
+</html>

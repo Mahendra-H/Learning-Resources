@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-2">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M06 · EC2, Launch Templates &amp; Auto Scaling — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0B0E14;--s1:#111520;--s2:#181D2A;--s3:#1F2535;
+  --br:#1E2636;--brb:#2E3A52;
+  --teal:#00E5C3;--tdim:#00B89A;--tg:rgba(0,229,195,.12);
+  --copper:#E8873A;--cg:rgba(232,135,58,.15);
+  --sap:#4A9EFF;--sg:rgba(74,158,255,.12);
+  --rose:#FF5F7E;--rg:rgba(255,95,126,.12);
+  --jade:#3ECFA0;--vi:#9B7FFF;--vg:rgba(155,127,255,.13);
+  --t1:#E8EDF5;--t2:#8A95A8;--t3:#4A5568;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --sp4:4px;--sp8:8px;--sp16:16px;--sp24:24px;--sp40:40px;--sp64:64px;--sp96:96px;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--rpill:999px;
+  --sh:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  --tf:150ms ease;--tb:250ms ease;
+  /* Phase 2 — Teal for M06 (compute is the green heart of the system) */
+  --pc:#00E5C3;--pg:rgba(0,229,195,.15);--pd:#00B89A;
+  --ac:#4A9EFF;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--brb);border-radius:999px}
+::selection{background:var(--pg);color:var(--pc)}
+a{color:var(--sap);text-decoration:none;transition:color var(--tf)}a:hover{color:var(--teal)}
+code{font-family:var(--fm);font-size:.85em;background:var(--s3);border:1px solid var(--br);color:var(--teal);padding:1px 5px;border-radius:var(--r4)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 var(--sp40)}
+@media(max-width:768px){.wrap{padding:0 var(--sp16)}}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--br);padding:0 var(--sp40)}
+.nav-in{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--sp24)}
+.nav-logo{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.nav-logo span{color:var(--t3);font-weight:400}
+.nav-sep{width:1px;height:20px;background:var(--brb);flex-shrink:0}
+.nav-prog{flex:1;display:flex;align-items:center;gap:var(--sp8)}
+.pt{flex:1;height:2px;background:var(--br);border-radius:var(--rpill);overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,var(--pc),var(--ac));border-radius:var(--rpill)}
+.pl{font-family:var(--fm);font-size:11px;color:var(--t3);white-space:nowrap}
+.nb{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--rpill);background:var(--pg);border:1px solid var(--pc);color:var(--pc);white-space:nowrap}
+/* HERO */
+.hero{position:relative;padding:var(--sp96) 0 var(--sp64);overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pg) 0%,transparent 55%),radial-gradient(ellipse 55% 45% at 82% 25%,rgba(155,127,255,.06) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--br) 1px,transparent 1px),linear-gradient(90deg,var(--br) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 70% 60% at 15% 50%,black 0%,transparent 70%);opacity:.4;pointer-events:none}
+.hero-in{position:relative;z-index:1}
+.h-phase{display:inline-flex;align-items:center;gap:var(--sp8);font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--sp16)}
+.hdot{width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 8px var(--pc);animation:hd 2s ease-in-out infinite}
+@keyframes hd{0%,100%{opacity:1;box-shadow:0 0 8px var(--pc)}50%{opacity:.5;box-shadow:0 0 3px var(--pc)}}
+.h-title{font-family:var(--fd);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-.02em;color:var(--t1);margin-bottom:var(--sp16);max-width:780px}
+.h-title .at{color:var(--pc)}.h-title .aa{color:var(--ac)}
+.h-sub{font-size:17px;font-weight:300;color:var(--t2);max-width:640px;line-height:1.65;margin-bottom:var(--sp40)}
+.h-meta{display:flex;flex-wrap:wrap;gap:var(--sp8)}
+/* BADGES */
+.b{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--rpill);white-space:nowrap;letter-spacing:.04em}
+.bt{background:var(--pg);border:1px solid var(--pc);color:var(--pc)}
+.be{background:rgba(232,135,58,.1);border:1px solid rgba(232,135,58,.3);color:var(--copper)}
+.bs{background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:var(--sap)}
+.bq{background:var(--s2);border:1px solid var(--brb);color:var(--t2)}
+.bn{background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.3);color:var(--teal)}
+.bv{background:var(--vg);border:1px solid rgba(155,127,255,.35);color:var(--vi)}
+/* ORIENT */
+.orient{background:var(--s1);border:1px solid var(--br);border-radius:var(--r16);padding:var(--sp40);margin-bottom:var(--sp64);position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc) 0%,transparent 100%)}
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--sp24)}
+.oi-l{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.oi-v{font-size:14px;font-weight:500;color:var(--t1)}.oi-v.ac{color:var(--pc)}
+.jrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--sp24);padding-top:var(--sp24);border-top:1px solid var(--br)}
+.jd{width:30px;height:30px;border-radius:var(--r4);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:500}
+.jd-d{background:var(--tg);border:1px solid var(--tdim);color:var(--tdim)}
+.jd-c{background:var(--pg);border:1px solid var(--pc);color:var(--pc);box-shadow:0 0 10px var(--pg)}
+.jd-f{background:var(--s2);border:1px solid var(--br);color:var(--t3)}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:var(--sp64);align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.main{min-width:0}.sidebar{position:sticky;top:72px}
+/* SECTION */
+.sec{margin-bottom:var(--sp64)}
+.sl{display:flex;align-items:center;gap:var(--sp8);font-family:var(--fm);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--sp16)}
+.sl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--brb) 0%,transparent 100%)}
+.st{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--t1);margin-bottom:var(--sp16);line-height:1.2}
+.sb{font-size:15px;color:var(--t2);line-height:1.8}
+.sb p{margin-bottom:var(--sp16)}.sb p:last-child{margin-bottom:0}
+.sb strong{color:var(--t1);font-weight:600}.sb em{color:var(--pc);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--sp24);transition:border-color var(--tb),box-shadow var(--tb)}
+.card:hover{border-color:var(--brb);box-shadow:var(--sh)}
+.c-t{border-left:2px solid var(--pc);background:linear-gradient(135deg,var(--pg) 0%,var(--s1) 60%)}
+.c-b{border-left:2px solid var(--sap);background:linear-gradient(135deg,var(--sg) 0%,var(--s1) 60%)}
+.c-c{border-left:2px solid var(--copper);background:linear-gradient(135deg,var(--cg) 0%,var(--s1) 60%)}
+.c-r{border-left:2px solid var(--rose);background:linear-gradient(135deg,var(--rg) 0%,var(--s1) 60%)}
+.c-v{border-left:2px solid var(--vi);background:linear-gradient(135deg,var(--vg) 0%,var(--s1) 60%)}
+.c-lbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sp8)}
+.c-ttl{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--t1);margin-bottom:var(--sp8)}
+.c-body{font-size:14px;color:var(--t2);line-height:1.7}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp16)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--sp16)}
+/* CONCEPT BLOCK */
+.cb{border-left:2px solid var(--pc);padding:var(--sp16) var(--sp24);background:var(--pg);border-radius:0 var(--r8) var(--r8) 0;margin:var(--sp24) 0}
+.cb-ttl{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pc);margin-bottom:4px}
+.cb-def{font-size:14px;color:var(--t2);line-height:1.65}
+.cb-v{border-left-color:var(--vi);background:var(--vg)}.cb-v .cb-ttl{color:var(--vi)}
+.cb-c{border-left-color:var(--copper);background:var(--cg)}.cb-c .cb-ttl{color:var(--copper)}
+.cb-r{border-left-color:var(--rose);background:var(--rg)}.cb-r .cb-ttl{color:var(--rose)}
+/* DIAGRAM */
+.dw{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--sp40);margin:var(--sp40) 0;overflow-x:auto}
+.dw-l{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sp16);display:flex;align-items:center;gap:var(--sp8)}
+.dw-l::before{content:'◈';color:var(--pc);font-size:12px}
+/* CODE */
+.code{background:var(--s2);border:1px solid var(--br);border-radius:var(--r8);overflow:hidden;margin:var(--sp16) 0;font-family:var(--fm);font-size:12px}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:var(--sp8) var(--sp16);background:var(--s3);border-bottom:1px solid var(--br)}
+.ch-lang{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.ch-file{font-size:11px;color:var(--t2)}
+.cb2{padding:var(--sp16);overflow-x:auto;line-height:1.7;color:var(--t2);tab-size:2}
+.cb2 .k{color:#c792ea}.cb2 .s{color:var(--jade)}.cb2 .c{color:var(--t3);font-style:italic}
+.cb2 .v{color:var(--copper)}.cb2 .n{color:var(--teal)}.cb2 .p{color:var(--sap)}.cb2 .num{color:#f78c6c}
+/* KC */
+.kc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);overflow:hidden;margin:var(--sp16) 0}
+.kc-q{padding:var(--sp16) var(--sp24);font-size:14px;font-weight:500;color:var(--t1);display:flex;align-items:flex-start;gap:var(--sp8);cursor:pointer;transition:background var(--tf);user-select:none}
+.kc-q:hover{background:var(--s2)}
+.kc-i{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--pc);background:var(--pg);border:1px solid var(--pc);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kc-ch{margin-left:auto;flex-shrink:0;color:var(--t3);transition:transform var(--tb);font-size:12px}
+.kc.open .kc-ch{transform:rotate(180deg)}
+.kc-a{display:none;padding:var(--sp16) var(--sp24);background:var(--s2);border-top:1px solid var(--br);font-size:14px;color:var(--t2);line-height:1.7}
+.kc.open .kc-a{display:block}
+/* SIDEBAR */
+.toc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--sp16);margin-bottom:var(--sp16)}
+.toc-l{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sp8);padding-bottom:var(--sp8);border-bottom:1px solid var(--br)}
+.ti{display:block;padding:5px var(--sp8);font-size:12px;color:var(--t2);border-radius:var(--r4);transition:all var(--tf);cursor:pointer;border-left:2px solid transparent}
+.ti:hover,.ti.active{background:var(--s2);color:var(--t1);border-left-color:var(--pc)}
+.qr{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--sp16);margin-bottom:var(--sp16)}
+.qr-l{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sp8);padding-bottom:var(--sp8);border-bottom:1px solid var(--br)}
+.qi{display:flex;gap:var(--sp8);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--br);font-size:12px}
+.qi:last-child{border-bottom:none}
+.qt{font-family:var(--fm);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.qd{color:var(--t2);line-height:1.5}
+/* TK */
+.tk{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--sp24);margin:var(--sp40) 0}
+.tkh{display:flex;align-items:center;gap:var(--sp8);margin-bottom:var(--sp16);padding-bottom:var(--sp16);border-bottom:1px solid var(--br)}
+.tki{width:32px;height:32px;border-radius:var(--r4);background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--pc);flex-shrink:0}
+.tkt{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--t1)}
+.tk-list{list-style:none;display:flex;flex-direction:column;gap:var(--sp8)}
+.tk-list li{font-size:14px;color:var(--t2);display:flex;align-items:flex-start;gap:var(--sp8);line-height:1.65}
+.tk-list li::before{content:'◆';color:var(--pc);font-size:8px;flex-shrink:0;margin-top:6px}
+/* AR */
+.ar{background:var(--s1);border:1px solid var(--copper);border-radius:var(--r12);overflow:hidden;margin:var(--sp40) 0}
+.arh{background:var(--cg);padding:var(--sp16) var(--sp24);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sp8)}
+.arb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--rpill)}
+.art{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.ar-list{list-style:none;padding:var(--sp16) var(--sp24);display:flex;flex-direction:column;gap:var(--sp8)}
+.ar-list li{font-size:14px;color:var(--t2);display:flex;gap:var(--sp8);align-items:flex-start;line-height:1.65;padding:var(--sp8) 0;border-bottom:1px solid var(--br)}
+.ar-list li:last-child{border-bottom:none}
+.arn{font-family:var(--fm);font-size:11px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR */
+.mn{display:flex;gap:var(--sp16);padding:var(--sp24);background:var(--s2);border:1px solid var(--br);border-radius:var(--r12);margin:var(--sp24) 0}
+.mn-av{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mn-b{flex:1}
+.mn-l{font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:4px}
+.mn-t{font-size:14px;color:var(--t2);line-height:1.75}
+.mn-t strong{color:var(--t1);font-weight:600}
+/* LAB */
+.lab{background:var(--s1);border:1px solid var(--tdim);border-radius:var(--r12);overflow:hidden;margin:var(--sp40) 0}
+.lab-h{background:var(--tg);padding:var(--sp16) var(--sp24);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sp8)}
+.lab-b{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);background:var(--tg);border:1px solid rgba(0,229,195,.4);padding:2px 8px;border-radius:var(--rpill)}
+.lab-t{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.lab-body{padding:var(--sp24)}
+.lab-body ol{padding-left:var(--sp24);display:flex;flex-direction:column;gap:var(--sp8)}
+.lab-body ol li{font-size:14px;color:var(--t2);line-height:1.65;padding-left:4px}
+.lab-body ol li strong{color:var(--t1)}
+/* BRIDGE */
+.bridge{margin-top:var(--sp96);padding-top:var(--sp64);border-top:1px solid var(--br)}
+.bc{background:linear-gradient(135deg,var(--s1) 0%,var(--s2) 100%);border:1px solid var(--brb);border-radius:var(--r16);padding:var(--sp40);position:relative;overflow:hidden}
+.bc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc),var(--sap),transparent)}
+.bc::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--sg);pointer-events:none}
+.bc-ey{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sp8)}
+.bc-t{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--t1);margin-bottom:var(--sp16)}
+.bc-t span{color:var(--sap)}
+.bc-b{font-size:14px;color:var(--t2);line-height:1.75;max-width:580px;margin-bottom:var(--sp24)}
+.bc-cc{display:flex;flex-wrap:wrap;gap:var(--sp8);margin-bottom:var(--sp24)}
+.bc-btn{display:inline-flex;align-items:center;gap:var(--sp8);background:var(--sap);color:var(--bg);font-family:var(--fd);font-size:14px;font-weight:700;padding:12px var(--sp24);border-radius:var(--rpill);text-decoration:none;transition:all var(--tb)}
+.bc-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--sg);color:var(--bg)}
+/* FOOTER */
+.footer{margin-top:var(--sp96);padding:var(--sp40) 0;border-top:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;gap:var(--sp16);flex-wrap:wrap}
+.fl{font-family:var(--fm);font-size:11px;color:var(--t3)}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:var(--sp24) 0}
+.tbl th{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:var(--sp8) var(--sp16);border-bottom:1px solid var(--brb);text-align:left}
+.tbl th:first-child{color:var(--pc)}
+.tbl td{padding:10px var(--sp16);border-bottom:1px solid var(--br);color:var(--t2);vertical-align:top;line-height:1.6}
+.tbl td:first-child{font-weight:500;color:var(--t1);font-family:var(--fm);font-size:12px;white-space:nowrap}
+.tbl tr:hover td{background:var(--s2)}
+.tbl tr:last-child td{border-bottom:none}
+/* FLOW */
+.flow{display:flex;flex-direction:column;gap:0;margin:var(--sp24) 0}
+.fstep{display:flex;gap:var(--sp16);align-items:flex-start}
+.fconn{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:32px}
+.fnum{width:32px;height:32px;border-radius:50%;background:var(--s2);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:12px;font-weight:500;color:var(--pc);flex-shrink:0;z-index:1}
+.fline{width:1px;flex:1;min-height:24px;background:linear-gradient(var(--brb),var(--br))}
+.fstep:last-child .fline{display:none}
+.fbody{padding-bottom:var(--sp24);padding-top:5px;flex:1}
+.ftitle{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.fdesc{font-size:13px;color:var(--t2);line-height:1.65}
+/* ANIM */
+@keyframes fiu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fiu .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+/* HIGHLIGHT BOX */
+.hl-box{background:linear-gradient(135deg,rgba(0,229,195,.06) 0%,var(--s1) 60%);border:1px solid rgba(0,229,195,.3);border-radius:var(--r12);padding:var(--sp24);margin:var(--sp24) 0}
+.hl-box p{font-size:14px;color:var(--t2);line-height:1.75;margin-bottom:var(--sp16)}
+.hl-box p:last-child{margin-bottom:0}
+.hl-box strong{color:var(--teal);font-weight:600}
+/* REFRESH TIMELINE */
+.timeline{position:relative;padding-left:var(--sp40);margin:var(--sp24) 0}
+.timeline::before{content:'';position:absolute;left:12px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--pc),var(--sap),var(--vi))}
+.tl-item{position:relative;margin-bottom:var(--sp24)}
+.tl-item::before{content:'';position:absolute;left:-34px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--pc);border:2px solid var(--bg);box-shadow:0 0 0 2px var(--pc)}
+.tl-title{font-family:var(--fd);font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.tl-desc{font-size:13px;color:var(--t2);line-height:1.65}
+.tl-badge{font-family:var(--fm);font-size:9.5px;padding:2px 8px;border-radius:var(--rpill);display:inline-block;margin-top:4px}
+.tl-tf{background:var(--pg);border:1px solid rgba(0,229,195,.3);color:var(--teal)}
+.tl-asg{background:var(--sg);border:1px solid rgba(74,158,255,.3);color:var(--sap)}
+.tl-aws{background:var(--cg);border:1px solid rgba(232,135,58,.3);color:var(--copper)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-in">
+    <a href="index.html" class="nav-logo" style="text-decoration:none">Terraform<span> · Mastery</span></a>
+    <div class="nav-sep"></div>
+    <div class="nav-prog">
+      <div class="pt"><div class="pf" style="width:54%"></div></div>
+      <span class="pl">M06 / 10</span>
+    </div>
+    <span class="nb">M06 · Phase 2</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero-in">
+    <div class="h-phase"><div class="hdot"></div>Phase 2 · AWS Infrastructure — Layer by Layer</div>
+    <h1 class="h-title">EC2, Launch Templates &amp;<br><span class="at">Auto Scaling Groups</span> —<br>The <span class="aa">Heart</span> of Immutable Infrastructure</h1>
+    <p class="h-sub">This is the most important module in the series. The Launch Template + ASG + instance_refresh combination is the exact Terraform pattern your project runs on. Every concept from every prior module converges here — network, identity, state, HCL — into the resource set that makes the PingFederate AMI refresh work.</p>
+    <div class="h-meta">
+      <span class="b bt">Phase 2 · Compute</span>
+      <span class="b be">⬛⬛⬛⬛⬛ 5–6 hrs</span>
+      <span class="b bs">EC2 · ASG · LT</span>
+      <span class="b bq">↳ Prereq: M01–M05</span>
+      <span class="b bv">⭐ Most important module</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="og">
+    <div><div class="oi-l">Current module</div><div class="oi-v ac">M06 · EC2, Launch Templates &amp; ASG</div></div>
+    <div><div class="oi-l">Phase</div><div class="oi-v">Phase 2 — AWS Infrastructure</div></div>
+    <div><div class="oi-l">What you bring in</div><div class="oi-v">VPC IDs, SG IDs, Instance Profile ARN</div></div>
+    <div><div class="oi-l">Unlocks</div><div class="oi-v">M07 · Load Balancers &amp; Route53</div></div>
+  </div>
+  <div class="jrow">
+    <div class="jd jd-d">M01</div><div class="jd jd-d">M02</div><div class="jd jd-d">M03</div>
+    <div class="jd jd-d">M04</div><div class="jd jd-d">M05</div>
+    <div class="jd jd-c">M06</div>
+    <div class="jd jd-f">M07</div><div class="jd jd-f">M08</div>
+    <div class="jd jd-f">M09</div><div class="jd jd-f">M10</div>
+    <div class="jd jd-f" style="background:linear-gradient(135deg,var(--cg),var(--tg));border:1px solid var(--copper);color:var(--copper)">★</div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="layout">
+<div class="main">
+
+<!-- ── SECTION 1: BRIDGE ── -->
+<section class="sec afu d3" id="bridge">
+  <div class="sl">Bridge from Module 05</div>
+  <h2 class="st">All dependencies satisfied. Time to launch.</h2>
+  <div class="sb">
+    <p>Look at what you have built across M04 and M05. You have a VPC with private subnets and a security group for PF engine nodes (M04). You have an IAM instance profile that grants PF instances credential-free access to S3, CloudWatch, and SSM (M05). Both modules produced outputs — subnet IDs, security group ID, instance profile ARN — that are now ready to be consumed.</p>
+    <p>Module 06 is where those pieces come together. The Launch Template references all of them — the security group, the instance profile, the AMI, the instance type, and the user_data bootstrap script that pulls PF configuration from S3 on first launch. The Auto Scaling Group uses the Launch Template and the subnet IDs to create and manage the fleet of PF engine nodes. The <code>instance_refresh</code> block is what triggers rolling replacement when the AMI changes.</p>
+    <p>This is also the module where the <em>Terraform owns the template; the ASG owns the instances</em> distinction — introduced in M01 and reinforced in M03 — becomes completely concrete in code. By the end of this module, you will be able to look at a <code>terraform plan</code> showing a Launch Template update and know exactly what will happen: a new LT version is created, the ASG picks it up, instance_refresh begins, old nodes are terminated as new ones pass health checks.</p>
+  </div>
+  <div class="mn">
+    <div class="mn-av">🧑‍🏫</div>
+    <div class="mn-b">
+      <div class="mn-l">Mentor Note — why this module is the longest</div>
+      <div class="mn-t">The Launch Template and ASG have many configurable attributes — more than any other resource in this series. This module does not cover all of them; it covers the ones that matter for your specific project. The goal is not a complete reference but a precise understanding of every attribute in your project's configuration, plus the operational knowledge to troubleshoot and modify it confidently.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 2: THE COMPUTE ARCHITECTURE ── -->
+<section class="sec" id="compute-arch">
+  <div class="sl">The compute model</div>
+  <h2 class="st">How EC2, Launch Templates, and ASGs relate</h2>
+  <div class="sb">
+    <p>Before writing any Terraform, understand the three-layer compute model. Each layer has a distinct role, and confusing them leads to misunderstanding what Terraform manages vs what AWS manages autonomously.</p>
+  </div>
+
+  <div class="dw">
+    <div class="dw-l">Three-Layer Compute Model — Terraform's Scope</div>
+    <svg viewBox="0 0 820 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:560px;display:block;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#00E5C3"/></marker>
+        <marker id="a2" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#4A9EFF"/></marker>
+      </defs>
+      <!-- Layer 1: Launch Template -->
+      <rect x="10" y="20" width="250" height="280" rx="10" fill="rgba(0,229,195,.04)" stroke="rgba(0,229,195,.4)" stroke-width="1.5"/>
+      <text x="135" y="44" text-anchor="middle" fill="#00E5C3" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">LAUNCH TEMPLATE</text>
+      <text x="135" y="60" text-anchor="middle" fill="rgba(0,229,195,.4)" font-size="8.5" font-family="IBM Plex Mono,monospace">Terraform owns this ✓</text>
+      <!-- LT attributes -->
+      <rect x="25" y="72" width="220" height="24" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="135" y="88" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">AMI ID (from data source)</text>
+      <rect x="25" y="102" width="220" height="24" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="135" y="118" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Instance type</text>
+      <rect x="25" y="132" width="220" height="24" rx="4" fill="rgba(155,127,255,.06)" stroke="rgba(155,127,255,.15)" stroke-width="1"/>
+      <text x="135" y="148" text-anchor="middle" fill="#9B7FFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">IAM Instance Profile ARN</text>
+      <rect x="25" y="162" width="220" height="24" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="135" y="178" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Security group IDs</text>
+      <rect x="25" y="192" width="220" height="24" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="135" y="208" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">EBS volume config</text>
+      <rect x="25" y="222" width="220" height="24" rx="4" fill="rgba(232,135,58,.06)" stroke="rgba(232,135,58,.15)" stroke-width="1"/>
+      <text x="135" y="238" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">user_data (bootstrap script)</text>
+      <rect x="25" y="252" width="220" height="24" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="135" y="268" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Metadata options (IMDSv2)</text>
+
+      <!-- Arrow LT → ASG -->
+      <line x1="261" y1="160" x2="298" y2="160" stroke="rgba(0,229,195,.5)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="280" y="152" text-anchor="middle" fill="rgba(0,229,195,.4)" font-size="8" font-family="IBM Plex Mono,monospace">references</text>
+
+      <!-- Layer 2: Auto Scaling Group -->
+      <rect x="300" y="20" width="250" height="280" rx="10" fill="rgba(74,158,255,.04)" stroke="rgba(74,158,255,.4)" stroke-width="1.5"/>
+      <text x="425" y="44" text-anchor="middle" fill="#4A9EFF" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">AUTO SCALING GROUP</text>
+      <text x="425" y="60" text-anchor="middle" fill="rgba(74,158,255,.4)" font-size="8.5" font-family="IBM Plex Mono,monospace">Terraform owns this ✓</text>
+      <rect x="315" y="72" width="220" height="24" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="425" y="88" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Desired / Min / Max capacity</text>
+      <rect x="315" y="102" width="220" height="24" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="425" y="118" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">VPC subnet IDs (multi-AZ)</text>
+      <rect x="315" y="132" width="220" height="24" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="425" y="148" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Health check type + grace period</text>
+      <rect x="315" y="162" width="220" height="24" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="425" y="178" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">instance_refresh block</text>
+      <rect x="315" y="192" width="220" height="24" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="425" y="208" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Target group ARNs (NLB)</text>
+      <rect x="315" y="222" width="220" height="24" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="425" y="238" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Lifecycle hooks</text>
+      <rect x="315" y="252" width="220" height="24" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="425" y="268" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Termination policies</text>
+
+      <!-- Arrow ASG → Instances -->
+      <line x1="551" y1="160" x2="588" y2="160" stroke="rgba(74,158,255,.5)" stroke-width="1.5" marker-end="url(#a2)"/>
+      <text x="570" y="152" text-anchor="middle" fill="rgba(74,158,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">spawns</text>
+
+      <!-- Layer 3: EC2 Instances -->
+      <rect x="590" y="20" width="220" height="280" rx="10" fill="rgba(232,135,58,.03)" stroke="rgba(232,135,58,.3)" stroke-width="1.5" stroke-dasharray="6 3"/>
+      <text x="700" y="44" text-anchor="middle" fill="rgba(232,135,58,.6)" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">EC2 INSTANCES</text>
+      <text x="700" y="60" text-anchor="middle" fill="rgba(232,135,58,.4)" font-size="8.5" font-family="IBM Plex Mono,monospace">ASG manages — NOT Terraform</text>
+      <!-- Instance icons -->
+      <rect x="610" y="80" width="160" height="50" rx="5" fill="rgba(232,135,58,.06)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="690" y="102" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Mono,monospace">PF Engine i-0a1b2c3d</text>
+      <text x="690" y="118" text-anchor="middle" fill="rgba(232,135,58,.5)" font-size="8.5" font-family="IBM Plex Sans,sans-serif">10.0.11.14 · us-east-1a</text>
+      <rect x="610" y="140" width="160" height="50" rx="5" fill="rgba(232,135,58,.06)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="690" y="162" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Mono,monospace">PF Engine i-0e4f5a6b</text>
+      <text x="690" y="178" text-anchor="middle" fill="rgba(232,135,58,.5)" font-size="8.5" font-family="IBM Plex Sans,sans-serif">10.0.12.22 · us-east-1b</text>
+      <rect x="610" y="200" width="160" height="50" rx="5" fill="rgba(232,135,58,.06)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="690" y="222" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Mono,monospace">PF Engine i-0c7d8e9f</text>
+      <text x="690" y="238" text-anchor="middle" fill="rgba(232,135,58,.5)" font-size="8.5" font-family="IBM Plex Sans,sans-serif">10.0.11.35 · us-east-1a</text>
+      <text x="700" y="285" text-anchor="middle" fill="rgba(232,135,58,.35)" font-size="8.5" font-family="IBM Plex Mono,monospace">NOT in Terraform state</text>
+    </svg>
+  </div>
+
+  <div class="g3" style="margin-top:var(--sp16)">
+    <div class="card c-t">
+      <div class="c-lbl">Launch Template</div>
+      <div class="c-ttl">The blueprint</div>
+      <div class="c-body">Defines what every instance will look like when launched — AMI, type, storage, networking, identity, bootstrap script. Terraform creates and versions it. When the AMI changes, a new LT version is created.</div>
+    </div>
+    <div class="card c-b">
+      <div class="c-lbl">Auto Scaling Group</div>
+      <div class="c-ttl">The fleet policy</div>
+      <div class="c-body">Defines how many instances should run, where (subnets), and how to replace them. Terraform manages the policy. The ASG autonomously creates, monitors, and terminates the actual instances.</div>
+    </div>
+    <div class="card c-c">
+      <div class="c-lbl">EC2 Instances</div>
+      <div class="c-ttl">Ephemeral compute</div>
+      <div class="c-body">Created and terminated by the ASG using the Launch Template. Not tracked individually in Terraform state. Replaced wholesale during an AMI refresh. Cattle, not pets.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 3: LAUNCH TEMPLATE ── -->
+<section class="sec" id="launch-template">
+  <div class="sl">Launch Template</div>
+  <h2 class="st">Building the PingFederate Launch Template</h2>
+  <div class="sb">
+    <p>The Launch Template is the richest resource in this module. Every attribute in the template is stamped onto every EC2 instance that the ASG launches. Get the template right and every instance in the fleet is identical, predictable, and ready to run PingFederate on first boot.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="ch-lang">HCL</span><span class="ch-file">compute.tf — Launch Template (complete)</span></div>
+    <div class="cb2"><pre><span class="c"># ── LAUNCH TEMPLATE ───────────────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_launch_template"</span> <span class="s">"pf_engine"</span> {
+  <span class="k">name_prefix</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}engine-lt-"</span>
+  <span class="k">description</span> = <span class="s">"PingFederate engine node launch template"</span>
+  <span class="c"># Terraform creates a new VERSION on every apply that changes the template</span>
+  <span class="c"># The ASG picks up the new version via instance_refresh</span>
+
+  <span class="c"># ── AMI — from the data source you learned in M02 ────────────────────</span>
+  <span class="k">image_id</span>      = <span class="n">data</span>.<span class="n">aws_ami</span>.<span class="v">approved_pf</span>.<span class="n">id</span>
+  <span class="k">instance_type</span> = <span class="v">var.pf_instance_type</span>   <span class="c"># e.g. "m5.xlarge"</span>
+
+  <span class="c"># ── IAM INSTANCE PROFILE — from M05 ──────────────────────────────────</span>
+  <span class="k">iam_instance_profile</span> {
+    <span class="k">arn</span> = <span class="n">aws_iam_instance_profile</span>.<span class="v">pf_instance</span>.<span class="n">arn</span>
+    <span class="c"># NOTE: arn, not role arn — instance profiles, not roles</span>
+  }
+
+  <span class="c"># ── NETWORK — attach the PF engine security group ─────────────────────</span>
+  <span class="k">network_interfaces</span> {
+    <span class="k">associate_public_ip_address</span> = <span class="k">false</span>   <span class="c"># private subnet — NO public IP</span>
+    <span class="k">security_groups</span>             = [<span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>]
+    <span class="k">delete_on_termination</span>       = <span class="k">true</span>
+  }
+
+  <span class="c"># ── EBS ROOT VOLUME ───────────────────────────────────────────────────</span>
+  <span class="k">block_device_mappings</span> {
+    <span class="k">device_name</span> = <span class="s">"/dev/xvda"</span>   <span class="c"># root device for AL2 / RHEL AMIs</span>
+    <span class="k">ebs</span> {
+      <span class="k">volume_size</span>           = <span class="v">var.root_volume_size_gb</span>   <span class="c"># e.g. 50</span>
+      <span class="k">volume_type</span>           = <span class="s">"gp3"</span>
+      <span class="k">iops</span>                  = <span class="num">3000</span>    <span class="c"># gp3 baseline; increase for high I/O</span>
+      <span class="k">throughput</span>            = <span class="num">125</span>     <span class="c"># MiB/s; gp3 default</span>
+      <span class="k">encrypted</span>             = <span class="k">true</span>
+      <span class="k">kms_key_id</span>            = <span class="v">var.ebs_kms_key_arn</span>
+      <span class="k">delete_on_termination</span> = <span class="k">true</span>   <span class="c"># instance is ephemeral — disk too</span>
+    }
+  }
+
+  <span class="c"># ── USER DATA — the bootstrap script ─────────────────────────────────</span>
+  <span class="c"># base64encode() is required — EC2 expects base64-encoded user_data</span>
+  <span class="c"># templatefile() renders the script with Terraform variable values</span>
+  <span class="k">user_data</span> = <span class="n">base64encode</span>(<span class="n">templatefile</span>(<span class="s">"${path.module}/templates/userdata.sh.tpl"</span>, {
+    <span class="n">config_bucket</span>     = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">bucket</span>
+    <span class="n">config_key_prefix</span> = <span class="s">"config/"</span>
+    <span class="n">environment</span>       = <span class="v">var.environment</span>
+    <span class="n">aws_region</span>        = <span class="v">var.aws_region</span>
+    <span class="n">log_group</span>         = <span class="s">"/pingfederate/${</span><span class="v">var.environment</span><span class="s">}"</span>
+  }))
+
+  <span class="c"># ── METADATA OPTIONS — enforce IMDSv2 ─────────────────────────────────</span>
+  <span class="c"># IMDSv2 requires a session-oriented request with a PUT token</span>
+  <span class="c"># Prevents SSRF-based credential theft attacks</span>
+  <span class="k">metadata_options</span> {
+    <span class="k">http_endpoint</span>               = <span class="s">"enabled"</span>
+    <span class="k">http_tokens</span>                 = <span class="s">"required"</span>    <span class="c"># IMDSv2 REQUIRED</span>
+    <span class="k">http_put_response_hop_limit</span> = <span class="num">1</span>             <span class="c"># prevent hop from containers</span>
+    <span class="k">instance_metadata_tags</span>      = <span class="s">"enabled"</span>    <span class="c"># tags accessible via IMDS</span>
+  }
+
+  <span class="c"># ── MONITORING ────────────────────────────────────────────────────────</span>
+  <span class="k">monitoring</span> {
+    <span class="k">enabled</span> = <span class="k">true</span>   <span class="c"># detailed CloudWatch monitoring (1-minute resolution)</span>
+  }
+
+  <span class="c"># ── TAGS — applied to the Launch Template resource ───────────────────</span>
+  <span class="k">tag_specifications</span> {
+    <span class="k">resource_type</span> = <span class="s">"instance"</span>   <span class="c"># tags applied to each launched EC2 instance</span>
+    <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+      <span class="n">Name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-engine"</span>
+      <span class="n">Component</span>   = <span class="s">"PingFederate"</span>
+      <span class="n">LaunchedBy</span>  = <span class="s">"asg"</span>
+    })
+  }
+  <span class="k">tag_specifications</span> {
+    <span class="k">resource_type</span> = <span class="s">"volume"</span>     <span class="c"># tags applied to each EBS volume</span>
+    <span class="k">tags</span>          = <span class="v">local.common_tags</span>
+  }
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+    <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}engine-lt"</span>
+  })
+
+  <span class="c"># Ensure a new version is always created before the ASG is updated</span>
+  <span class="k">lifecycle</span> {
+    <span class="k">create_before_destroy</span> = <span class="k">true</span>
+  }
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 4: USER DATA ── -->
+<section class="sec" id="userdata">
+  <div class="sl">user_data bootstrap script</div>
+  <h2 class="st">The bootstrap bridge — how a blank instance becomes a PF node</h2>
+  <div class="sb">
+    <p>The <code>user_data</code> script is the most important operational piece in this module. It is the bridge between the blank AMI and a fully configured PingFederate node. It runs exactly once — on first boot — as root. It is the mechanism that retrieves configuration from S3 (made possible by the IAM role from M05) and prepares the instance for Ansible to complete the configuration.</p>
+    <p>The script is rendered by Terraform's <code>templatefile()</code> function, which substitutes the S3 bucket name, environment, region, and other values at plan time. The result is base64-encoded and embedded in the Launch Template. Every instance launched from this template runs the same script with the same values.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="ch-lang">Bash</span><span class="ch-file">templates/userdata.sh.tpl — PF bootstrap script</span></div>
+    <div class="cb2"><pre>#!/bin/bash
+set -euo pipefail
+
+<span class="c"># ── LOGGING SETUP ─────────────────────────────────────────────────────</span>
+exec > >(tee /var/log/userdata.log) 2>&1
+echo "=== PingFederate bootstrap started: $(date) ==="
+
+<span class="c"># ── WAIT FOR INSTANCE METADATA (IMDSv2 token) ─────────────────────────</span>
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/instance-id)
+
+echo "Instance ID: $INSTANCE_ID"
+
+<span class="c"># ── SET AWS REGION ────────────────────────────────────────────────────</span>
+export AWS_DEFAULT_REGION="${aws_region}"   <span class="c"># rendered by templatefile()</span>
+
+<span class="c"># ── RETRIEVE PF CONFIGURATION FROM S3 ────────────────────────────────</span>
+<span class="c"># Uses the IAM instance role credentials from IMDS automatically</span>
+<span class="c"># No credentials needed — the role grants S3 access</span>
+
+CONFIG_BUCKET="${config_bucket}"            <span class="c"># e.g. pf-config-prod-123456789012</span>
+CONFIG_PREFIX="${config_key_prefix}"        <span class="c"># e.g. config/</span>
+ENV="${environment}"                        <span class="c"># e.g. prod</span>
+
+echo "Downloading PF configuration from s3://$CONFIG_BUCKET/$CONFIG_PREFIX..."
+
+<span class="c"># Create the PF config directory</span>
+mkdir -p /opt/pingfederate/config
+
+<span class="c"># Download the configuration archive</span>
+aws s3 cp "s3://$CONFIG_BUCKET/${config_key_prefix}pingfederate-$ENV.zip" \
+  /tmp/pf-config.zip \
+  --region "$AWS_DEFAULT_REGION"
+
+<span class="c"># Extract configuration to PF config directory</span>
+unzip -o /tmp/pf-config.zip -d /opt/pingfederate/config/
+echo "Configuration extracted successfully"
+
+<span class="c"># ── WRITE ENVIRONMENT FILE ────────────────────────────────────────────</span>
+<span class="c"># Ansible reads this file to know which environment it's configuring</span>
+cat > /etc/pingfederate-env << EOF
+PF_ENVIRONMENT=${environment}
+PF_INSTANCE_ID=$INSTANCE_ID
+AWS_REGION=${aws_region}
+CONFIG_BUCKET=${config_bucket}
+LOG_GROUP=${log_group}
+EOF
+
+<span class="c"># ── SET HOSTNAME ─────────────────────────────────────────────────────</span>
+hostnamectl set-hostname "pf-engine-$INSTANCE_ID"
+
+<span class="c"># ── SIGNAL READINESS ─────────────────────────────────────────────────</span>
+echo "=== Bootstrap complete: $(date) ==="
+<span class="c"># Ansible will now run to complete PF installation and startup</span>
+<span class="c"># The lifecycle hook holds the instance in Pending:Wait state</span>
+<span class="c"># until Ansible signals completion via CompleteLifecycleAction</span></pre>
+    </div>
+  </div>
+
+  <div class="cb cb-c">
+    <div class="cb-ttl">Why user_data is base64-encoded in Terraform</div>
+    <div class="cb-def">The AWS EC2 API requires user_data to be base64-encoded. Terraform's <code>base64encode()</code> function handles this automatically. The <code>templatefile()</code> function renders the script template by substituting variables before encoding. The combination ensures the final Launch Template contains a correctly encoded, variable-substituted script. Note: user_data is not re-executed on instance reboot — only on first boot. It is part of the instance's immutable launch configuration.</div>
+  </div>
+
+  <div class="mn">
+    <div class="mn-av">🧑‍🏫</div>
+    <div class="mn-b">
+      <div class="mn-l">The four-module chain made concrete</div>
+      <div class="mn-t">Look at what the user_data script references: the S3 bucket name from M08's output, the IAM credentials from the M05 role (via IMDS), the environment variable from M02's variable system, the region from the provider. <strong>The user_data script is the physical point where all five prior modules converge into a single running PF node.</strong> This is why M06 is described as the heart of the system — it is the junction where all other infrastructure becomes operational.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 5: AUTO SCALING GROUP ── -->
+<section class="sec" id="asg">
+  <div class="sl">Auto Scaling Group</div>
+  <h2 class="st">The ASG — fleet policy, multi-AZ placement, and instance_refresh</h2>
+  <div class="sb">
+    <p>The Auto Scaling Group is where the fleet policy is declared. It references the Launch Template, the subnet IDs from M04, the NLB target group (from M07 — referenced here via a data source or variable), and configures the health checks and replacement behaviour. The <code>instance_refresh</code> block is the mechanism that implements rolling AMI replacement.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="ch-lang">HCL</span><span class="ch-file">compute.tf — Auto Scaling Group (complete)</span></div>
+    <div class="cb2"><pre><span class="k">resource</span> <span class="s">"aws_autoscaling_group"</span> <span class="s">"pf_engines"</span> {
+  <span class="k">name</span>                = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-engines"</span>
+
+  <span class="c"># ── CAPACITY ─────────────────────────────────────────────────────────</span>
+  <span class="k">desired_capacity</span>    = <span class="v">var.pf_engine_desired</span>   <span class="c"># e.g. 2 (start here)</span>
+  <span class="k">min_size</span>            = <span class="v">var.pf_engine_min</span>       <span class="c"># e.g. 2 (never go below)</span>
+  <span class="k">max_size</span>            = <span class="v">var.pf_engine_max</span>       <span class="c"># e.g. 6 (scale ceiling)</span>
+
+  <span class="c"># ── PLACEMENT — private subnets across AZs ───────────────────────────</span>
+  <span class="k">vpc_zone_identifier</span> = <span class="v">local.private_subnet_ids</span>
+
+  <span class="c"># ── LAUNCH TEMPLATE reference ─────────────────────────────────────────</span>
+  <span class="k">launch_template</span> {
+    <span class="k">id</span>      = <span class="n">aws_launch_template</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+    <span class="k">version</span> = <span class="n">aws_launch_template</span>.<span class="v">pf_engine</span>.<span class="n">latest_version</span>
+    <span class="c"># latest_version ensures ASG always uses the current LT version</span>
+    <span class="c"># instance_refresh triggers replacement when this version changes</span>
+  }
+
+  <span class="c"># ── HEALTH CHECK ─────────────────────────────────────────────────────</span>
+  <span class="k">health_check_type</span>         = <span class="s">"ELB"</span>      <span class="c"># use NLB health check, not EC2 status</span>
+  <span class="k">health_check_grace_period</span> = <span class="num">300</span>        <span class="c"># 5 min: time for PF to start before HC</span>
+  <span class="c"># ELB type: instance must pass the NLB health check to be considered healthy</span>
+  <span class="c"># EC2 type: only checks that the instance is running (not that PF is ready)</span>
+
+  <span class="c"># ── NLB INTEGRATION ──────────────────────────────────────────────────</span>
+  <span class="k">target_group_arns</span> = [<span class="v">var.nlb_target_group_arn</span>]
+  <span class="c"># ASG registers new instances with this target group on launch</span>
+  <span class="c"># and deregisters them on termination — automatically</span>
+
+  <span class="c"># ── INSTANCE REFRESH — rolling AMI replacement ────────────────────────</span>
+  <span class="k">instance_refresh</span> {
+    <span class="k">strategy</span> = <span class="s">"Rolling"</span>
+    <span class="k">preferences</span> {
+      <span class="k">min_healthy_percentage</span>       = <span class="num">90</span>   <span class="c"># keep 90% of fleet healthy during refresh</span>
+      <span class="k">instance_warmup</span>              = <span class="num">300</span>  <span class="c"># 5 min warmup before counting as healthy</span>
+      <span class="k">checkpoint_delay</span>             = <span class="num">60</span>   <span class="c"># pause 60s after each checkpoint</span>
+      <span class="k">checkpoint_percentages</span>       = [<span class="num">25</span>, <span class="num">50</span>, <span class="num">75</span>, <span class="num">100</span>]  <span class="c"># staged rollout checkpoints</span>
+      <span class="k">auto_rollback</span>                = <span class="k">true</span>  <span class="c"># roll back if health check fails</span>
+    }
+    <span class="k">triggers</span> = [<span class="s">"launch_template"</span>]   <span class="c"># refresh when LT version changes</span>
+  }
+
+  <span class="c"># ── TERMINATION POLICY ───────────────────────────────────────────────</span>
+  <span class="k">termination_policies</span> = [<span class="s">"OldestLaunchTemplate"</span>, <span class="s">"Default"</span>]
+  <span class="c"># Ensures instances running old LT versions are terminated first</span>
+  <span class="c"># during scale-in — keeps the fleet on the latest AMI</span>
+
+  <span class="c"># ── LIFECYCLE HOOKS ──────────────────────────────────────────────────</span>
+  <span class="c"># Pause instance in Pending:Wait state before it goes InService</span>
+  <span class="c"># Gives Ansible time to configure PF before the instance accepts traffic</span>
+  <span class="k">initial_lifecycle_hook</span> {
+    <span class="k">name</span>                 = <span class="s">"pf-launch-hook"</span>
+    <span class="k">default_result</span>       = <span class="s">"ABANDON"</span>    <span class="c"># fail safe: if no signal, terminate</span>
+    <span class="k">heartbeat_timeout</span>    = <span class="num">1800</span>         <span class="c"># 30 min max for Ansible to complete</span>
+    <span class="k">lifecycle_transition</span> = <span class="s">"autoscaling:EC2_INSTANCE_LAUNCHING"</span>
+  }
+
+  <span class="c"># ── PROTECT FROM SCALE-IN ─────────────────────────────────────────────</span>
+  <span class="k">protect_from_scale_in</span> = <span class="k">false</span>   <span class="c"># set true per-instance for maintenance</span>
+
+  <span class="c"># ── WARM POOL (optional) ──────────────────────────────────────────────</span>
+  <span class="c"># Pre-initialised instances ready to join fleet quickly</span>
+  <span class="c"># Reduces AMI refresh time — instances are already running</span>
+  <span class="c"># warm_pool {</span>
+  <span class="c">#   pool_state                  = "Stopped"</span>
+  <span class="c">#   min_size                    = 1</span>
+  <span class="c">#   max_group_prepared_capacity = 2</span>
+  <span class="c"># }</span>
+
+  <span class="c"># ── TAGS propagated to instances ──────────────────────────────────────</span>
+  <span class="k">dynamic</span> <span class="s">"tag"</span> {
+    <span class="k">for_each</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+      <span class="n">Name</span>      = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-engine"</span>
+      <span class="n">Component</span> = <span class="s">"PingFederate"</span>
+    })
+    <span class="k">content</span> {
+      <span class="k">key</span>                 = <span class="n">tag</span>.<span class="v">key</span>
+      <span class="k">value</span>               = <span class="n">tag</span>.<span class="v">value</span>
+      <span class="k">propagate_at_launch</span> = <span class="k">true</span>
+    }
+  }
+
+  <span class="c"># CRITICAL: Tell Terraform not to manage desired_capacity in state</span>
+  <span class="c"># This allows auto-scaling to change the count without Terraform reverting it</span>
+  <span class="k">lifecycle</span> {
+    <span class="k">ignore_changes</span> = [<span class="n">desired_capacity</span>]
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="cb">
+    <div class="cb-ttl">Why <code>ignore_changes = [desired_capacity]</code> is essential</div>
+    <div class="cb-def">The ASG autonomously changes desired_capacity in response to scaling policies, scheduled actions, or manual adjustments. Without <code>ignore_changes</code>, the next <code>terraform apply</code> would reset the count to whatever is declared in the variable — potentially scaling down a fleet that was scaled up for legitimate reasons. With <code>ignore_changes</code>, Terraform only manages desired_capacity on the initial creation; subsequent changes by the ASG are preserved. Always include this lifecycle rule in production ASG resources.</div>
+  </div>
+</section>
+
+<!-- ── SECTION 6: INSTANCE REFRESH DEEP DIVE ── -->
+<section class="sec" id="instance-refresh">
+  <div class="sl">The AMI refresh workflow</div>
+  <h2 class="st">What actually happens during an AMI refresh — step by step</h2>
+  <div class="sb">
+    <p>This is the moment the entire series has been building toward. You now have every piece: the data source that finds the new AMI, the Launch Template that references it, the ASG that manages the fleet, the health checks that gate traffic, and the user_data that bootstraps each node. Here is the exact sequence when you run <code>terraform apply</code> after a new approved AMI is released.</p>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-title">New AMI ID is resolved by the data source</div>
+      <div class="tl-desc">At plan time, Terraform runs <code>data "aws_ami" "approved_pf"</code> and resolves the latest approved AMI. The plan output shows the Launch Template <code>image_id</code> changing from the old AMI ID to the new one.</div>
+      <span class="tl-badge tl-tf">Terraform</span>
+    </div>
+    <div class="tl-item">
+      <div class="tl-title">New Launch Template version is created</div>
+      <div class="tl-desc">Terraform calls <code>ec2:CreateLaunchTemplateVersion</code> with the new AMI ID. The LT gets version N+1. The old version remains and can be used for rollback. Terraform updates state to record the new latest version.</div>
+      <span class="tl-badge tl-tf">Terraform</span>
+    </div>
+    <div class="tl-item">
+      <div class="tl-title">ASG is updated to reference the new LT version</div>
+      <div class="tl-desc">The ASG's <code>launch_template.version</code> is updated to the new version. This triggers the <code>instance_refresh</code> because <code>triggers = ["launch_template"]</code>. The refresh strategy is Rolling with min_healthy_percentage = 90.</div>
+      <span class="tl-badge tl-tf">Terraform</span>
+    </div>
+    <div class="tl-item">
+      <div class="tl-title">terraform apply completes — instance refresh begins asynchronously</div>
+      <div class="tl-desc">Terraform marks the apply complete. The instance_refresh is running in AWS asynchronously. GitHub Actions can poll the refresh status via <code>aws autoscaling describe-instance-refreshes</code> if the pipeline requires it.</div>
+      <span class="tl-badge tl-asg">ASG (AWS)</span>
+    </div>
+    <div class="tl-item">
+      <div class="tl-title">First batch of new instances launched (checkpoint: 25%)</div>
+      <div class="tl-desc">ASG launches new instances using the new LT version. Each instance runs user_data: pulls config from S3, sets hostname, writes env file. Lifecycle hook holds the instance in Pending:Wait. Ansible runs, configures PF, calls CompleteLifecycleAction. Instance moves to InService.</div>
+      <span class="tl-badge tl-asg">ASG (AWS)</span>
+    </div>
+    <div class="tl-item">
+      <div class="tl-title">NLB health check validates new nodes before old ones are terminated</div>
+      <div class="tl-desc">NLB checks port 8080 on the new instances every 10 seconds. Once the threshold of healthy checks is reached, the instance is registered as healthy in the target group. Only then does the ASG terminate an old instance. The 90% min_healthy_percentage ensures at least 90% of the fleet is always serving traffic.</div>
+      <span class="tl-badge tl-aws">NLB (AWS)</span>
+    </div>
+    <div class="tl-item">
+      <div class="tl-title">Staged rollout continues through checkpoints 50%, 75%, 100%</div>
+      <div class="tl-desc">The refresh pauses 60 seconds at each checkpoint. If auto_rollback is true and health checks fail at any checkpoint, the ASG automatically triggers a rollback to the previous LT version. The old instances that haven't been terminated yet are preserved.</div>
+      <span class="tl-badge tl-asg">ASG (AWS)</span>
+    </div>
+    <div class="tl-item">
+      <div class="tl-title">All old instances terminated — refresh complete</div>
+      <div class="tl-desc">All engine nodes now run the new AMI. The Terraform state file reflects the updated Launch Template version. Individual instance IDs are not tracked in state. The fleet is fully refreshed with zero downtime if health checks were configured correctly.</div>
+      <span class="tl-badge tl-asg">ASG (AWS)</span>
+    </div>
+  </div>
+
+  <div class="hl-box">
+    <p><strong>What to monitor during a refresh:</strong> <code>aws autoscaling describe-instance-refreshes --auto-scaling-group-name pf-prod-pf-engines</code> — shows InstancesToUpdate, InstancesUpdated, Status, and any StatusReason. A Status of <code>Failed</code> with an auto_rollback policy means the old AMI is restored automatically. A Status of <code>Cancelled</code> requires manual investigation.</p>
+    <p><strong>How long does a refresh take?</strong> For a 4-node fleet: approximately (instance warmup 5min + health check settle 2min + checkpoint pause 1min) × 4 stages = ~32 minutes end-to-end. Larger fleets take longer but the math is the same per batch.</p>
+  </div>
+</section>
+
+<!-- ── SECTION 7: IMDSV2 ── -->
+<section class="sec" id="imdsv2">
+  <div class="sl">Security — IMDSv2</div>
+  <h2 class="st">Why <code>http_tokens = "required"</code> is non-negotiable</h2>
+  <div class="sb">
+    <p>IMDSv2 (Instance Metadata Service version 2) is a session-oriented protocol that requires a PUT request to get a token before metadata can be retrieved. The old IMDSv1 allowed GET requests directly to 169.254.169.254 — which was vulnerable to SSRF (Server-Side Request Forgery) attacks where a web application vulnerability could be used to steal IAM credentials from the metadata service.</p>
+    <p>Setting <code>http_tokens = "required"</code> in the Launch Template metadata_options block disables IMDSv1 entirely. Only IMDSv2 token-based requests are accepted. This is a mandatory security control in any enterprise PCI, SOC2, or ISO 27001 environment — and it is the correct default for any new deployment regardless of compliance requirements.</p>
+  </div>
+
+  <div class="g2">
+    <div class="card c-r">
+      <div class="c-lbl">IMDSv1 — vulnerable</div>
+      <div class="c-ttl"><code>http_tokens = "optional"</code></div>
+      <div class="c-body">An attacker exploiting an SSRF vulnerability in a web application running on the PF instance can make a GET request to <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/</code> and retrieve valid AWS credentials — no authentication required.</div>
+    </div>
+    <div class="card c-t">
+      <div class="c-lbl">IMDSv2 — required</div>
+      <div class="c-ttl"><code>http_tokens = "required"</code></div>
+      <div class="c-body">To get credentials, the attacker must first make a PUT request to receive a token. PUT requests are blocked by most SSRF attack vectors. Even if SSRF exists, the attacker cannot complete the two-step protocol and cannot steal credentials. This single setting closes a critical attack vector.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 8: CAPACITY PLANNING ── -->
+<section class="sec" id="capacity">
+  <div class="sl">Capacity planning</div>
+  <h2 class="st">Sizing desired, min, and max for PingFederate</h2>
+  <div class="sb">
+    <p>The desired/min/max values in the ASG are the operational heartbeat of the PF fleet. Setting them incorrectly means either over-spending on idle capacity or risking service degradation under load. Here is the reasoning framework for PingFederate specifically.</p>
+  </div>
+
+  <div class="dw" style="padding:var(--sp24)">
+    <div class="dw-l">Capacity Configuration Reference</div>
+    <table class="tbl">
+      <thead><tr><th>Parameter</th><th>Purpose</th><th>PF Recommendation</th><th>Never do this</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>min_size</td>
+          <td>Floor — never go below this count regardless of scaling policy</td>
+          <td>≥ 2 for HA. Must be ≥ 2 to survive a single AZ failure without downtime</td>
+          <td>min_size = 0 in production. One AZ failure means full outage.</td>
+        </tr>
+        <tr>
+          <td>desired_capacity</td>
+          <td>Starting/target count — what the ASG aims for when not scaling</td>
+          <td>= min_size for stable loads. Terraform uses ignore_changes so auto-scaling can override this</td>
+          <td>Setting desired below min or above max. Terraform will error.</td>
+        </tr>
+        <tr>
+          <td>max_size</td>
+          <td>Ceiling — the hard limit on instance count</td>
+          <td>2–3× desired. Provides burst capacity for authentication spikes</td>
+          <td>max_size = min_size. Eliminates all scaling headroom.</td>
+        </tr>
+        <tr>
+          <td>health_check_grace_period</td>
+          <td>Seconds after launch before health checks are enforced</td>
+          <td>300 seconds (5 min). PingFederate startup takes 2–4 min; allow margin</td>
+          <td>Too short (< 120s). Healthy instances get terminated before PF starts.</td>
+        </tr>
+        <tr>
+          <td>min_healthy_percentage</td>
+          <td>Minimum % of fleet healthy during instance_refresh</td>
+          <td>90%. For a 4-node fleet: 3 nodes always serving, 1 being replaced</td>
+          <td>100%. Means instances can only be replaced if fleet can exceed desired. Use only with warm pools.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── KNOWLEDGE CHECKS ── -->
+<section class="sec" id="knowledge-checks">
+  <div class="sl">Knowledge check</div>
+  <h2 class="st">Test your compute understanding</h2>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>You update the AMI ID in the Terraform data source and run <code>terraform plan</code>. The plan shows the Launch Template will be updated but the ASG will only show a version reference change. How many EC2 instances will be terminated during apply?<span class="kc-ch">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">Zero instances are terminated during apply.</strong> Terraform's apply only creates a new Launch Template version and updates the ASG to reference it. The instance_refresh begins asynchronously after apply completes — it is an AWS-side operation, not a Terraform operation. Terraform does not wait for or monitor the refresh unless you use a <code>wait_for_capacity_timeout</code> setting or have GitHub Actions poll the refresh status. The actual instance replacement is performed by the ASG over the following 20–40 minutes, depending on fleet size and warmup settings. This is a critical insight: <code>terraform apply</code> returning success does not mean the new AMI is running on all instances yet.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>A new PF instance fails the NLB health check after an AMI refresh. The health check is on port 8080. The instance is running and you can ping it. What are the three most likely causes to check first?<span class="kc-ch">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">Three most likely causes in order of frequency:</strong><br><br><strong>1. PingFederate hasn't started yet — health_check_grace_period expired too soon.</strong> If the grace period is too short, the ASG begins enforcing health checks before PF has fully started. Check <code>/var/log/userdata.log</code> and PF logs to see startup progress. Increase <code>health_check_grace_period</code> if PF routinely takes longer than the configured period.<br><br><strong>2. PF is listening on port 9031 but not 8080 — wrong health check port.</strong> PF's runtime health check endpoint is configurable. If the NLB target group health check is pointing at port 8080 but PF's health endpoint is on a different port, every check will fail. Verify the health check port in the target group matches the PF health endpoint configuration.<br><br><strong>3. Security group doesn't allow the NLB health check source.</strong> NLB health checks originate from the NLB nodes in the public subnets. If the PF engine security group only allows traffic from the NLB's security group on port 9031, but not on port 8080 (or not from the NLB's IP range), health checks are silently dropped. Add an ingress rule for the health check port from the NLB security group or the public subnet CIDR.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>What is the difference between <code>health_check_type = "ELB"</code> and <code>health_check_type = "EC2"</code>? Why does PingFederate require ELB type?<span class="kc-ch">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">EC2 health checks only verify the instance is running (hypervisor-level). ELB health checks verify the application is responding on the specified port.</strong> With EC2 type: an instance could be running but have PF in a crashed state, and the ASG would consider it healthy, keep it in the target group, and route traffic to it — resulting in failed federation requests. With ELB type: the NLB health check on port 8080 (or 9031) verifies PF is actually responding before the ASG considers the instance healthy. If PF crashes, the health check fails, the ASG marks the instance unhealthy, deregisters it from the target group, and either replaces it (if below desired) or terminates it. ELB type is always the right choice for application-layer services like PF.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>A junior engineer removes the <code>lifecycle { ignore_changes = [desired_capacity] }</code> block from the ASG. The team scales up from 2 to 4 instances during a peak event. The next morning, someone runs <code>terraform apply</code> for an unrelated change. What happens?<span class="kc-ch">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">Terraform resets desired_capacity to the value in the variable (2) and the ASG terminates 2 instances.</strong> Without <code>ignore_changes</code>, Terraform treats the desired_capacity drift (2 declared, 4 actual) as a configuration change and plans to reconcile it. The apply scales the ASG back to 2, terminating 2 healthy instances. If this happens during peak load, the authentication service is degraded or fails. The fix requires two actions: restore the <code>ignore_changes</code> lifecycle rule immediately, and run <code>terraform apply -refresh-only</code> (or <code>terraform state rm</code> + re-import the ASG) to reset state without changing infrastructure. This is one of the most common production incidents in teams new to Terraform managing auto-scaling workloads.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>What is the purpose of the <code>initial_lifecycle_hook</code> on the ASG, and what would happen to the PingFederate deployment if it was removed?<span class="kc-ch">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">The lifecycle hook pauses the instance in a Pending:Wait state before it goes InService, giving Ansible time to complete the PF configuration.</strong> Without the hook: the instance launches, user_data runs and downloads config from S3, but the ASG immediately moves the instance to InService and the NLB begins routing traffic. If PF hasn't finished starting — which takes 2–4 minutes after Ansible completes — users receive connection errors or malformed SAML responses. With the hook: the instance stays in Pending:Wait (for up to 30 minutes as configured) while Ansible configures and starts PF, runs smoke tests, and then calls <code>aws autoscaling complete-lifecycle-action --lifecycle-action-result CONTINUE</code>. Only then does the ASG move the instance to InService. The <code>default_result = "ABANDON"</code> ensures that if Ansible fails or times out, the instance is terminated rather than being added to the fleet in a broken state.</div>
+  </div>
+</section>
+
+<!-- ── LAB ── -->
+<section class="sec" id="lab">
+  <div class="sl">Mini lab</div>
+  <h2 class="st">Compute exercises</h2>
+
+  <div class="lab">
+    <div class="lab-h"><span class="lab-b">Lab 06-A</span><span class="lab-t">Read and annotate a plan output</span></div>
+    <div class="lab-body">
+      <p style="font-size:14px;color:var(--t2);margin-bottom:var(--sp16)">The following is a <code>terraform plan</code> excerpt after a new AMI was published. For each change shown, identify: (1) which resource is changing, (2) what specifically is changing, (3) whether it is a create/update/replace, and (4) what consequence this has for running PF instances.</p>
+      <div class="code" style="margin:0 0 var(--sp16)">
+        <div class="ch"><span class="ch-lang">Plan Output</span><span class="ch-file">terraform plan — AMI refresh</span></div>
+        <div class="cb2"><pre><span class="c"># aws_launch_template.pf_engine must be replaced</span>
+-/+ <span class="n">resource</span> <span class="s">"aws_launch_template"</span> <span class="s">"pf_engine"</span> {
+      ~ <span class="k">id</span>             = <span class="s">"lt-0a1b2c3d4e5f"</span> -> (known after apply)
+      ~ <span class="k">latest_version</span> = <span class="num">3</span> -> (known after apply)
+      ~ <span class="k">image_id</span>       = <span class="s">"ami-0OLD1a2b3c4d5e6f"</span> -> <span class="s">"ami-0NEW9z8y7x6w5v4u"</span>
+    }
+
+<span class="c"># aws_autoscaling_group.pf_engines will be updated in-place</span>
+~ <span class="n">resource</span> <span class="s">"aws_autoscaling_group"</span> <span class="s">"pf_engines"</span> {
+    ~ <span class="k">launch_template</span> {
+        ~ <span class="k">version</span> = <span class="s">"3"</span> -> <span class="s">"$Latest"</span>
+      }
+  }</pre>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--t3)">Is this plan safe to apply to a production PF environment? What should you verify before approving it?</p>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sp8)">
+    <div class="kc-q"><span class="kc-i">✓</span>Reveal Lab 06-A analysis<span class="kc-ch">▼</span></div>
+    <div class="kc-a">
+      <p style="margin-bottom:10px"><strong style="color:var(--pc)">Launch Template: destroy and recreate (<code>-/+</code>)</strong> — The image_id changed. Because the Launch Template uses <code>create_before_destroy = true</code>, a new LT resource will be created first (with the new AMI), then the old one will be destroyed. This is not a risk — the ASG continues to use the old version during the transition. The <code>latest_version</code> attribute showing "(known after apply)" simply means it will be calculated after the new LT is created.</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--pc)">ASG: in-place update (<code>~</code>)</strong> — The launch_template.version reference is updating from "3" to "$Latest". This tells the ASG to always use the latest version, which will trigger instance_refresh because <code>triggers = ["launch_template"]</code> is set. No instances are terminated during this apply step.</p>
+      <p><strong style="color:var(--teal)">Is it safe to apply?</strong> Before approving: (1) Verify the new AMI ID (<code>ami-0NEW9z8y7x6w5v4u</code>) is the correct approved image — confirm with the infrastructure team. (2) Verify it's an appropriate maintenance window — instance_refresh will replace all nodes over the next 30–40 minutes. (3) Confirm Ansible playbooks are updated for any changes in the new AMI's base configuration. (4) Ensure monitoring and alerting are active to detect health check failures during the refresh.</p>
+    </div>
+  </div>
+
+  <div class="lab" style="margin-top:var(--sp40)">
+    <div class="lab-h"><span class="lab-b">Lab 06-B</span><span class="lab-t">Add a scaling policy to the PF ASG</span></div>
+    <div class="lab-body">
+      <p style="font-size:14px;color:var(--t2);margin-bottom:var(--sp16)">The operations team wants the PF fleet to scale out automatically when CPU utilisation exceeds 70% for 5 minutes. Write the Terraform resources for a target tracking scaling policy.</p>
+      <ol>
+        <li>Resource type: <code>aws_autoscaling_policy</code>, name: <code>pf_cpu_scale_out</code></li>
+        <li>Policy type: <code>TargetTrackingScaling</code></li>
+        <li>Target value: 70 (CPU utilization)</li>
+        <li>Predefined metric: <code>ASGAverageCPUUtilization</code></li>
+        <li>Scale-in cooldown: 300 seconds. Scale-out cooldown: 60 seconds</li>
+        <li>Reference the correct ASG name</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sp8)">
+    <div class="kc-q"><span class="kc-i">✓</span>Reveal Lab 06-B solution<span class="kc-ch">▼</span></div>
+    <div class="kc-a">
+      <div class="code" style="margin:0">
+        <div class="ch"><span class="ch-lang">HCL</span><span class="ch-file">scaling_policies.tf</span></div>
+        <div class="cb2"><pre><span class="k">resource</span> <span class="s">"aws_autoscaling_policy"</span> <span class="s">"pf_cpu_scale_out"</span> {
+  <span class="k">name</span>                   = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-cpu-tracking"</span>
+  <span class="k">autoscaling_group_name</span> = <span class="n">aws_autoscaling_group</span>.<span class="v">pf_engines</span>.<span class="n">name</span>
+  <span class="k">policy_type</span>            = <span class="s">"TargetTrackingScaling"</span>
+  <span class="k">estimated_instance_warmup</span> = <span class="num">300</span>   <span class="c"># match health_check_grace_period</span>
+
+  <span class="k">target_tracking_configuration</span> {
+    <span class="k">predefined_metric_specification</span> {
+      <span class="k">predefined_metric_type</span> = <span class="s">"ASGAverageCPUUtilization"</span>
+    }
+    <span class="k">target_value</span>            = <span class="num">70.0</span>
+    <span class="k">scale_in_cooldown</span>       = <span class="num">300</span>   <span class="c"># 5 min — be conservative scaling in</span>
+    <span class="k">scale_out_cooldown</span>      = <span class="num">60</span>    <span class="c"># 1 min — scale out quickly under load</span>
+    <span class="k">disable_scale_in</span>        = <span class="k">false</span> <span class="c"># allow automatic scale-in</span>
+  }
+}
+<span class="c"># Note: desired_capacity must remain in ignore_changes lifecycle</span>
+<span class="c"># because scaling policies will change it automatically</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECT REVIEW ── -->
+<div class="ar">
+  <div class="arh">
+    <span class="arb">Senior Review</span>
+    <span class="art">Compute questions a platform engineer might ask you</span>
+  </div>
+  <ul class="ar-list">
+    <li><span class="arn">01</span>An AMI refresh is in progress. After replacing 50% of the fleet, two new instances fail their health checks. The auto_rollback policy should trigger, but you see the refresh status is still "InProgress". What would you check and what manual intervention is available?</li>
+    <li><span class="arn">02</span>The team wants to increase the PF engine instance type from m5.xlarge to m5.2xlarge. Walk through exactly what Terraform will do and what will happen to running instances. Is there any risk of downtime?</li>
+    <li><span class="arn">03</span>The lifecycle hook is set to <code>default_result = "ABANDON"</code> with a 30-minute heartbeat. Ansible is taking 45 minutes in some environments. What would you change and why?</li>
+    <li><span class="arn">04</span>You need to temporarily prevent one specific PF engine instance from being terminated during a scale-in event for maintenance debugging. How would you do this without modifying Terraform, and what Terraform change would make this permanent for certain instances?</li>
+    <li><span class="arn">05</span>A security audit finds that one instance is running with <code>http_tokens = "optional"</code> (IMDSv1 allowed) despite the Launch Template specifying <code>required</code>. How is this possible and how would you remediate it?</li>
+  </ul>
+</div>
+
+<!-- ── TAKEAWAY ── -->
+<div class="tk">
+  <div class="tkh">
+    <div class="tki">◆</div>
+    <div class="tkt">Module 06 — Key Takeaways</div>
+  </div>
+  <ul class="tk-list">
+    <li>The three-layer model: Launch Template (blueprint, Terraform-managed), ASG (fleet policy, Terraform-managed), EC2 Instances (ephemeral compute, ASG-managed, NOT in Terraform state).</li>
+    <li>The Launch Template references all prior modules: AMI from the data source (M02), security group IDs from M04, instance profile ARN from M05, S3 bucket name in user_data for M08.</li>
+    <li>user_data runs once on first boot, renders via <code>templatefile()</code>, is base64-encoded, and is the bridge between the blank AMI and a configured PF node. It pulls config from S3 using the IAM role's IMDS credentials.</li>
+    <li>The <code>instance_refresh</code> block with <code>triggers = ["launch_template"]</code> starts a rolling replacement whenever the LT version changes. It runs asynchronously after <code>terraform apply</code> completes.</li>
+    <li><code>ignore_changes = [desired_capacity]</code> is mandatory — without it, Terraform resets the fleet count on every apply, overriding any auto-scaling that occurred since the last apply.</li>
+    <li><code>health_check_type = "ELB"</code> is required for PF — it verifies PF is actually responding, not just that the instance is running. The <code>health_check_grace_period</code> must be longer than PF's startup time.</li>
+    <li><code>http_tokens = "required"</code> enforces IMDSv2, blocking SSRF-based credential theft. This is a non-negotiable security control in enterprise environments.</li>
+    <li>The lifecycle hook (<code>default_result = ABANDON</code>) prevents a misconfigured or incomplete PF instance from joining the fleet. Without it, half-configured instances accept traffic and cause federation errors.</li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="toc">
+    <div class="toc-l">In this module</div>
+    <a class="ti" href="#bridge">Bridge from M05</a>
+    <a class="ti" href="#compute-arch">Compute architecture</a>
+    <a class="ti" href="#launch-template">Launch Template</a>
+    <a class="ti" href="#userdata">user_data bootstrap</a>
+    <a class="ti" href="#asg">Auto Scaling Group</a>
+    <a class="ti" href="#instance-refresh">AMI refresh workflow</a>
+    <a class="ti" href="#imdsv2">IMDSv2 security</a>
+    <a class="ti" href="#capacity">Capacity planning</a>
+    <a class="ti" href="#knowledge-checks">Knowledge checks</a>
+    <a class="ti" href="#lab">Mini lab</a>
+  </div>
+  <div class="qr">
+    <div class="qr-l">Key Resources</div>
+    <div class="qi"><span class="qt">aws_launch_template</span><span class="qd">Instance blueprint</span></div>
+    <div class="qi"><span class="qt">aws_autoscaling_group</span><span class="qd">Fleet policy</span></div>
+    <div class="qi"><span class="qt">aws_autoscaling_policy</span><span class="qd">Scaling rules</span></div>
+  </div>
+  <div class="qr">
+    <div class="qr-l">Critical Attributes</div>
+    <div class="qi"><span class="qt">image_id</span><span class="qd">AMI from data source</span></div>
+    <div class="qi"><span class="qt">user_data</span><span class="qd">base64 bootstrap script</span></div>
+    <div class="qi"><span class="qt">iam_instance_profile</span><span class="qd">Profile ARN (not role!)</span></div>
+    <div class="qi"><span class="qt">instance_refresh</span><span class="qd">Rolling replacement trigger</span></div>
+    <div class="qi"><span class="qt">http_tokens = required</span><span class="qd">IMDSv2 enforcement</span></div>
+    <div class="qi"><span class="qt">ignore_changes</span><span class="qd">Preserve ASG scaling</span></div>
+    <div class="qi"><span class="qt">lifecycle_hook</span><span class="qd">Ansible completion gate</span></div>
+  </div>
+  <div class="qr">
+    <div class="qr-l">instance_refresh</div>
+    <div class="qi"><span class="qt">strategy</span><span class="qd">Rolling</span></div>
+    <div class="qi"><span class="qt">min_healthy_%</span><span class="qd">90 (recommended)</span></div>
+    <div class="qi"><span class="qt">instance_warmup</span><span class="qd">300s (match grace)</span></div>
+    <div class="qi"><span class="qt">auto_rollback</span><span class="qd">true (always)</span></div>
+    <div class="qi"><span class="qt">triggers</span><span class="qd">["launch_template"]</span></div>
+  </div>
+  <div class="qr">
+    <div class="qr-l">Series Progress</div>
+    <div style="padding:var(--sp8) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--sp8);background:var(--s2);border-radius:var(--r8)">
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rpill);background:var(--tg);border:1px solid var(--tdim);color:var(--tdim)">M01–M05</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rpill);background:var(--pg);border:1px solid var(--pc);color:var(--pc);font-weight:600;box-shadow:0 0 10px var(--pg)">M06</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rpill);background:var(--s3);border:1px solid var(--brb);color:var(--t3)">M07–10 ★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /layout -->
+
+<!-- BRIDGE -->
+<div class="bridge">
+  <div class="bc">
+    <div class="bc-ey">Coming up next · Module 07</div>
+    <div class="bc-t"><span>Load Balancers &amp; Route53</span> — Routing Traffic to Your Fleet</div>
+    <div class="bc-b">
+      The compute layer is complete. The ASG is launching PF engine nodes, user_data is bootstrapping configuration from S3, lifecycle hooks are gating traffic until Ansible completes, and instance_refresh will roll out new AMIs safely. But right now, nothing is routing traffic to those instances.<br><br>
+      Module 07 builds the traffic path: the Network Load Balancer that receives federation requests from the internet, the target group that the ASG registers instances into, the listeners that forward traffic to port 9031, the health checks that verify PF is responding, and the Route53 records that give the NLB a DNS name. This is the final piece that makes PingFederate reachable.
+    </div>
+    <div class="bc-cc">
+      <span class="b bn">NLB vs ALB</span>
+      <span class="b bn">Target groups</span>
+      <span class="b bn">Listeners</span>
+      <span class="b bn">Health checks</span>
+      <span class="b bn">Route53 alias records</span>
+      <span class="b bn">TLS passthrough</span>
+      <span class="b bn">Zero-downtime refresh</span>
+    </div>
+    <a href="module-07.html" class="bc-btn">Continue to Module 07 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="fl">M06 · EC2, Launch Templates &amp; Auto Scaling Groups · Phase 2 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--sp8);align-items:center">
+    <a href="module-05.html" class="b bq" style="text-decoration:none">← M05</a>
+    <a href="index.html" class="b bq" style="text-decoration:none">Index</a>
+    <a href="module-07.html" class="b bt" style="text-decoration:none">M07 →</a>
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+function toggleKC(el){el.classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.ti');
+  const secs=[];
+  items.forEach(i=>{const id=i.getAttribute('href').replace('#','');const el=document.getElementById(id);if(el)secs.push({el,item:i})});
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){items.forEach(i=>i.classList.remove('active'));const f=secs.find(s=>s.el===en.target);if(f)f.item.classList.add('active')}}),{rootMargin:'-20% 0px -70% 0px'});
+  secs.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target)}}),{threshold:.06});
+  document.querySelectorAll('.sec,.card,.dw,.lab,.ar,.tk,.bc,.kc,.hl-box').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .45s ease,transform .45s ease';io.observe(el)});
+})();
+</script>
+</body>
+</html>

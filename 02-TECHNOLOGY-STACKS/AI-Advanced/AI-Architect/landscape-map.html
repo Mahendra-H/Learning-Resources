@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en" data-playbook="0">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Landscape Map | AI Stack Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F3EE; --surface: #FFFFFF; --text: #1A1D24; --text-muted: #6B6F7A;
+    --border: #DEDAD1;
+    --accent-blue: #5B8FF0; --accent-amber: #E8A33D; --accent-green: #4FB286; --accent-violet: #7B6FE0;
+    --accent-red: #D9534F;
+    --accent-primary: #5B8FF0;
+    --radius: 12px;
+  }
+  html.dark { --bg: #0B0E14; --surface: #151A24; --text: #E8E6E1; --text-muted: #8A8F9C; --border: #262B38; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; font-family:"IBM Plex Sans",sans-serif; background:var(--bg); color:var(--text); transition: background .25s, color .25s; }
+  .top-bar { display:flex; justify-content:space-between; align-items:center; padding: 18px 32px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:10; backdrop-filter: blur(6px); }
+  .brand { font-family:"Inter Tight",sans-serif; font-weight:800; font-size:1.1rem; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px; }
+  .nav-links { display:flex; gap:18px; align-items:center; }
+  .nav-links a { font-size:.82rem; color:var(--text-muted); text-decoration:none; font-family:"IBM Plex Mono",monospace; }
+  .nav-links a:hover { color: var(--accent-primary); }
+  .toggle-btn { border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:20px; padding:6px 14px; font-size:.8rem; cursor:pointer; font-family:inherit; }
+  .content { max-width: 920px; margin:0 auto; padding: 0 32px 100px; line-height: 1.75; }
+
+  .hero { padding: 56px 0 32px; text-align:center; }
+  .hero-eyebrow { font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--accent-blue); letter-spacing:.15em; text-transform:uppercase; margin-bottom: 18px; }
+  .hero h1 { font-family:"Inter Tight",sans-serif; font-weight:900; font-size: 2.6rem; letter-spacing:-0.03em; line-height:1.15; margin: 0 0 18px; }
+  .hero-lede { font-size: 1.08rem; color: var(--text-muted); max-width: 680px; margin: 0 auto; }
+
+  h2 { font-family:"Inter Tight",sans-serif; font-weight:800; font-size: 1.6rem; letter-spacing:-0.01em; margin: 56px 0 16px; display:flex; align-items:center; gap:10px; padding-bottom:10px; border-bottom: 1px solid var(--border); }
+  h3 { font-family:"Inter Tight",sans-serif; font-weight:700; font-size: 1.1rem; margin: 24px 0 10px; }
+  h4 { font-family:"Inter Tight",sans-serif; font-weight:700; font-size:.95rem; margin: 18px 0 8px; }
+  p { margin: 0 0 16px; }
+  strong { font-weight: 600; }
+  ul, ol { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+
+  /* Zone map diagram */
+  .diagram-box { border:1px solid var(--border); border-radius: var(--radius); padding: 24px; background: var(--surface); margin: 24px 0; }
+  .diagram-caption { text-align:center; font-size:.78rem; color:var(--text-muted); margin-top: 10px; font-family:"IBM Plex Mono",monospace; }
+
+  /* Zone cards */
+  .zone-card {
+    border-radius: var(--radius); padding: 24px 26px; margin: 24px 0; border: 1px solid var(--border);
+    border-left: 5px solid var(--zone-color, var(--accent-blue));
+    background: color-mix(in srgb, var(--zone-color, var(--accent-blue)) 5%, var(--surface));
+  }
+  .zone-head { display:flex; align-items:center; gap:12px; margin-bottom: 6px; }
+  .zone-icon { font-size: 1.8rem; }
+  .zone-title { font-family:"Inter Tight",sans-serif; font-weight:800; font-size:1.25rem; }
+  .zone-sub { font-size: .88rem; color: var(--text-muted); margin-bottom: 14px; }
+  .player-grid { display:flex; flex-wrap:wrap; gap: 10px; margin: 14px 0; }
+  .player-chip {
+    font-family:"IBM Plex Mono",monospace; font-size:.82rem; padding: 8px 16px; border-radius: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+
+  /* Analogy box */
+  .analogy { border: 1.5px dashed var(--accent-blue); border-radius: var(--radius); padding: 18px 22px; margin: 22px 0; background: color-mix(in srgb, var(--accent-blue) 5%, var(--surface)); }
+  .analogy-title { font-family:"Inter Tight",sans-serif; font-weight:700; font-size:.82rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent-blue); margin-bottom:8px; }
+  .analogy.green { border-color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 5%, var(--surface)); }
+  .analogy.green .analogy-title { color: var(--accent-green); }
+  .analogy.violet { border-color: var(--accent-violet); background: color-mix(in srgb, var(--accent-violet) 5%, var(--surface)); }
+  .analogy.violet .analogy-title { color: var(--accent-violet); }
+  .analogy.amber { border-color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 5%, var(--surface)); }
+  .analogy.amber .analogy-title { color: var(--accent-amber); }
+
+  /* Callouts */
+  .callout { border-radius: var(--radius); padding: 16px 18px; margin: 20px 0; border-left: 4px solid; font-size: .92rem; }
+  .callout-title { font-family:"Inter Tight",sans-serif; font-weight:700; font-size:.82rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+  .callout-concept { background: color-mix(in srgb, var(--accent-blue) 10%, var(--surface)); border-color: var(--accent-blue); }
+  .callout-concept .callout-title { color: var(--accent-blue); }
+  .callout-cost { background: color-mix(in srgb, var(--accent-amber) 10%, var(--surface)); border-color: var(--accent-amber); }
+  .callout-cost .callout-title { color: var(--accent-amber); }
+  .callout-architect { background: color-mix(in srgb, var(--accent-green) 10%, var(--surface)); border-color: var(--accent-green); }
+  .callout-architect .callout-title { color: var(--accent-green); }
+  .callout-security { background: color-mix(in srgb, var(--accent-violet) 10%, var(--surface)); border-color: var(--accent-violet); }
+  .callout-security .callout-title { color: var(--accent-violet); }
+
+  /* Table */
+  table { width:100%; border-collapse: collapse; margin: 20px 0; font-size:.88rem; }
+  th, td { padding: 10px 12px; text-align:left; border-bottom: 1px solid var(--border); vertical-align:top; }
+  th { font-family:"Inter Tight",sans-serif; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color: var(--text-muted); }
+  tr:nth-child(even) td { background: color-mix(in srgb, var(--accent-blue) 4%, transparent); }
+
+  /* Timeline */
+  .timeline { display:flex; gap: 8px; margin: 24px 0; overflow-x:auto; padding-bottom: 8px; }
+  .timeline-item {
+    flex: 1; min-width: 140px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px;
+    background: var(--surface); text-align:center;
+  }
+  .timeline-year { font-family:"IBM Plex Mono",monospace; font-weight:700; color: var(--accent-blue); font-size:.85rem; }
+  .timeline-event { font-size: .8rem; color: var(--text-muted); margin-top: 6px; }
+
+  code, .mono { font-family:"IBM Plex Mono",monospace; font-size:.85em; }
+  code { background: var(--surface); padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); }
+
+  /* Bridge band */
+  .bridge-band { display:flex; border-radius: var(--radius); overflow:hidden; margin: 28px 0; border: 1px solid var(--border); }
+  .bridge-half { flex:1; padding: 22px 24px; }
+  .bridge-label { font-family:"IBM Plex Mono",monospace; font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-bottom:8px; }
+  .bridge-title { font-family:"Inter Tight",sans-serif; font-weight:700; font-size:1.1rem; margin-bottom: 8px; }
+
+  footer { text-align:center; padding: 40px 0; color: var(--text-muted); font-size:.85rem; border-top: 1px solid var(--border); margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="brand">🗺️ AI Stack Atlas</div>
+  <div class="nav-links">
+    <a href="index.html">← Index</a>
+    <a href="playbook1.html">Playbook 1 →</a>
+  </div>
+  <button class="toggle-btn" onclick="document.documentElement.classList.toggle('dark')">◐ Toggle theme</button>
+</div>
+
+<div class="content">
+
+  <div class="hero">
+    <div class="hero-eyebrow">🎭 Orientation · ~25 min · Before Playbook 1</div>
+    <h1>The AI Landscape Map</h1>
+    <p class="hero-lede">
+      Before we get into tokens, context windows, and architecture diagrams,
+      let's meet the cast. Who actually <em>builds</em> the models? Who builds
+      the hardware underneath them? What's this "open source AI" thing
+      everyone keeps mentioning? And what's all this tooling — LangChain,
+      vector databases, agent frameworks — that seems to sit between "the
+      model" and "the thing your engineers actually build"? This page is a
+      map, not a manual — by the end you'll recognize names and know roughly
+      where they sit, which is 80% of what you need to follow a conversation. 🧭
+    </p>
+  </div>
+
+  <div class="analogy">
+    <div class="analogy-title">🔵 Analogy — The Cloud Ecosystem, Five Years Ago</div>
+    Remember when "cloud" meant AWS, Azure, GCP, plus a constellation of SaaS
+    tools built <em>on top of</em> them, plus an open-source ecosystem
+    (Kubernetes, Terraform, etc.) that let you avoid lock-in if you wanted to?
+    The AI world right now has almost exactly that same shape — just five
+    years younger and moving faster. <strong>Foundation model providers</strong>
+    are the "cloud platforms." <strong>Infrastructure providers</strong> are the
+    chip and data-center layer underneath even those platforms. The
+    <strong>open model ecosystem</strong> is your "self-hosted Kubernetes"
+    option. And the <strong>developer ecosystem</strong> is the rapidly
+    multiplying layer of tools that sit between "raw model" and "thing your
+    team ships." If you've navigated one ecosystem shift, you already have the
+    instincts for this one. 🌊
+  </div>
+
+  <!-- ZONE MAP DIAGRAM -->
+  <h2>🗺️ The Four Zones, At a Glance</h2>
+  <p>
+    Here's the whole map as one picture. We'll walk through each zone in
+    detail below, but keep this shape in your head — almost everything you
+    read or hear about "the AI industry" is really news about one of these
+    four zones, and a lot of confusion comes from not knowing which zone a
+    headline is actually about. 📰
+  </p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 480" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+      <style>
+        .zlbl { font-family: 'Inter Tight', sans-serif; font-weight: 800; }
+        .zsub { font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; fill: var(--text-muted); }
+        .zitem { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--text); }
+        .zbox { rx: 12; }
+      </style>
+
+      <!-- Foundation Model Providers -->
+      <rect class="zbox" x="20" y="20" width="320" height="130" fill="color-mix(in srgb, var(--accent-blue) 10%, var(--surface))" stroke="var(--accent-blue)" stroke-width="2"/>
+      <text class="zlbl" x="40" y="50" font-size="16" fill="var(--accent-blue)">🧠 Foundation Model Providers</text>
+      <text class="zsub" x="40" y="70">The companies training frontier LLMs</text>
+      <text class="zitem" x="40" y="100">OpenAI · Anthropic · Google DeepMind</text>
+      <text class="zitem" x="40" y="120">Meta · xAI</text>
+
+      <!-- Infrastructure Providers -->
+      <rect class="zbox" x="360" y="20" width="320" height="130" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)" stroke-width="2"/>
+      <text class="zlbl" x="380" y="50" font-size="16" fill="var(--accent-green)">⚡ Infrastructure Providers</text>
+      <text class="zsub" x="380" y="70">The chips &amp; clouds everything runs on</text>
+      <text class="zitem" x="380" y="100">NVIDIA · AMD</text>
+      <text class="zitem" x="380" y="120">AWS · Azure · Google Cloud</text>
+
+      <!-- Connecting arrows down -->
+      <line x1="180" y1="150" x2="180" y2="190" stroke="var(--border)" stroke-width="2"/>
+      <line x1="520" y1="150" x2="520" y2="190" stroke="var(--border)" stroke-width="2"/>
+      <line x1="180" y1="190" x2="520" y2="190" stroke="var(--border)" stroke-width="2"/>
+
+      <!-- Open Model Ecosystem -->
+      <rect class="zbox" x="20" y="200" width="320" height="130" fill="color-mix(in srgb, var(--accent-amber) 10%, var(--surface))" stroke="var(--accent-amber)" stroke-width="2"/>
+      <text class="zlbl" x="40" y="230" font-size="16" fill="var(--accent-amber)">🦙 Open Model Ecosystem</text>
+      <text class="zsub" x="40" y="250">Models you can download &amp; self-host</text>
+      <text class="zitem" x="40" y="280">Llama · Qwen</text>
+      <text class="zitem" x="40" y="300">Gemma · Mistral</text>
+
+      <!-- Developer Ecosystem -->
+      <rect class="zbox" x="360" y="200" width="320" height="130" fill="color-mix(in srgb, var(--accent-violet) 10%, var(--surface))" stroke="var(--accent-violet)" stroke-width="2"/>
+      <text class="zlbl" x="380" y="230" font-size="16" fill="var(--accent-violet)">🔧 AI Developer Ecosystem</text>
+      <text class="zsub" x="380" y="250">The tooling layer between model &amp; app</text>
+      <text class="zitem" x="380" y="280">LangChain · LlamaIndex · Open WebUI</text>
+      <text class="zitem" x="380" y="300">Vector DBs · Agent frameworks</text>
+
+      <!-- "Your application" box at bottom -->
+      <line x1="350" y1="330" x2="350" y2="380" stroke="var(--border)" stroke-width="2" stroke-dasharray="4,4"/>
+      <rect class="zbox" x="190" y="390" width="320" height="70" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="2" stroke-dasharray="6,4"/>
+      <text class="zlbl" x="350" y="420" font-size="15" fill="var(--text)" text-anchor="middle">📱 Your Application</text>
+      <text class="zsub" x="350" y="440" text-anchor="middle">(the IAM assistant, the helpdesk bot, etc.)</text>
+    </svg>
+    <div class="diagram-caption">All four zones ultimately feed into the thing your team actually builds and ships</div>
+  </div>
+
+  <!-- ZONE 1: FOUNDATION MODEL PROVIDERS -->
+  <h2>🧠 Zone 1 — Foundation Model Providers</h2>
+  <div class="zone-card" style="--zone-color: var(--accent-blue);">
+    <div class="zone-head">
+      <div class="zone-icon">🧠</div>
+      <div class="zone-title">The companies that train the frontier LLMs</div>
+    </div>
+    <div class="zone-sub">
+      These are the names you'll see at the top of every "model evaluation"
+      conversation in Playbook 2 — they spend hundreds of millions to billions
+      of dollars training each new generation of model.
+    </div>
+    <div class="player-grid">
+      <span class="player-chip">OpenAI — GPT family, ChatGPT</span>
+      <span class="player-chip">Anthropic — Claude family</span>
+      <span class="player-chip">Google DeepMind — Gemini family</span>
+      <span class="player-chip">Meta — Llama family (also open-weight, see Zone 3)</span>
+      <span class="player-chip">xAI — Grok family</span>
+    </div>
+  </div>
+
+  <p>
+    Each of these companies typically ships multiple "tiers" of model at once
+    — a top-end "frontier" model that's expensive and slow but extremely
+    capable, a mid-tier model that balances cost and capability (this is
+    usually the one enterprises actually deploy), and a small/fast model for
+    high-volume, latency-sensitive tasks. Playbook 2 will teach you how to
+    evaluate across these tiers; for now, just know that <strong>"which company"
+    and "which tier" are two separate questions</strong>, and both matter.
+  </p>
+
+  <div class="analogy">
+    <div class="analogy-title">🔵 Analogy — Database Engines, Not Database Products</div>
+    Comparing OpenAI vs. Anthropic vs. Google is a bit like comparing Oracle
+    vs. PostgreSQL vs. SQL Server as database <em>engines</em> — except
+    instead of one engine per vendor, each vendor offers a whole product line
+    (think "Enterprise Edition," "Standard Edition," "Express Edition," except
+    they're called things like "Opus," "Sonnet," and "Haiku," or "o1," "GPT-4o,"
+    and "GPT-4o-mini"). The naming conventions are genuinely confusing even to
+    people who follow this closely — Playbook 2 gives you a framework so you
+    don't need to memorize every name, just understand the <em>shape</em> of
+    each vendor's lineup. 🏷️
+  </div>
+
+  <h3>A very compressed timeline 📅</h3>
+  <div class="timeline">
+    <div class="timeline-item"><div class="timeline-year">2017</div><div class="timeline-event">Transformer architecture published — the technical foundation for modern LLMs</div></div>
+    <div class="timeline-item"><div class="timeline-year">2020</div><div class="timeline-event">GPT-3 demonstrates large-scale "few-shot" capability</div></div>
+    <div class="timeline-item"><div class="timeline-year">2022</div><div class="timeline-event">ChatGPT launches — generative AI goes mainstream overnight</div></div>
+    <div class="timeline-item"><div class="timeline-year">2023</div><div class="timeline-event">Claude, Gemini, Llama all enter the race; "AI arms race" framing begins</div></div>
+    <div class="timeline-item"><div class="timeline-year">2024-25</div><div class="timeline-event">Reasoning models, agents, MCP, and massive context windows become mainstream</div></div>
+    <div class="timeline-item"><div class="timeline-year">2026</div><div class="timeline-event">You, reading this, getting up to speed 🎉</div></div>
+  </div>
+
+  <!-- ZONE 2: INFRASTRUCTURE PROVIDERS -->
+  <h2>⚡ Zone 2 — Infrastructure Providers</h2>
+  <div class="zone-card" style="--zone-color: var(--accent-green);">
+    <div class="zone-head">
+      <div class="zone-icon">⚡</div>
+      <div class="zone-title">The chips, servers, and clouds everything else depends on</div>
+    </div>
+    <div class="zone-sub">
+      Every model in Zone 1 — and every open-source model in Zone 3 — runs on
+      hardware from this zone. This is the layer Playbook 5 dives into deeply:
+      why GPUs specifically, what a modern AI data center looks like, and
+      where the enormous capital expenditure numbers you read about actually go.
+    </div>
+    <div class="player-grid">
+      <span class="player-chip">NVIDIA — dominant AI chip maker (GPUs)</span>
+      <span class="player-chip">AMD — growing GPU competitor</span>
+      <span class="player-chip">AWS — cloud + custom AI chips (Trainium/Inferentia)</span>
+      <span class="player-chip">Microsoft Azure — cloud + OpenAI partnership</span>
+      <span class="player-chip">Google Cloud — cloud + custom AI chips (TPUs)</span>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <div class="analogy-title">🟢 Analogy — The Power Grid Behind Every Data Center You've Ever Used</div>
+    You've never had to think hard about who generates the electricity for
+    your company's data centers — it's just "the grid," a layer so
+    foundational it's invisible until something goes wrong (a regional outage,
+    a price spike). NVIDIA and the major clouds are rapidly becoming that kind
+    of layer for AI: invisible to most application developers, but the actual
+    <em>reason</em> a new model release is delayed, or a provider's prices
+    change, or a region runs out of capacity for a new feature. When Playbook
+    5 explains "why GPUs are expensive," it's really explaining the new power
+    grid. 🔌
+  </div>
+
+  <div class="callout callout-cost">
+    <div class="callout-title">🟠 Why this zone matters to your budget</div>
+    Even if your team never touches a GPU directly — you're just calling an
+    API — the pricing of that API is downstream of this zone's economics. When
+    a foundation model provider's prices drop, it's often because their
+    underlying compute got cheaper or more efficient. We'll connect these dots
+    fully in Playbook 5.
+  </div>
+
+  <!-- ZONE 3: OPEN MODEL ECOSYSTEM -->
+  <h2>🦙 Zone 3 — The Open Model Ecosystem</h2>
+  <div class="zone-card" style="--zone-color: var(--accent-amber);">
+    <div class="zone-head">
+      <div class="zone-icon">🦙</div>
+      <div class="zone-title">Models you can download and run yourself</div>
+    </div>
+    <div class="zone-sub">
+      Unlike Zone 1's models (which you access only via API — you never touch
+      the actual model weights), these models can be downloaded and run on
+      your own infrastructure — your cloud, your data center, even a laptop
+      for smaller versions.
+    </div>
+    <div class="player-grid">
+      <span class="player-chip">Llama — Meta's open-weight family</span>
+      <span class="player-chip">Qwen — Alibaba's open-weight family</span>
+      <span class="player-chip">Gemma — Google's smaller open-weight family</span>
+      <span class="player-chip">Mistral — French open-weight specialist</span>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <div class="analogy-title">🟠 Analogy — SaaS vs. Self-Hosted Software, All Over Again</div>
+    This is the exact same conversation enterprises have had for two decades
+    about, say, email (Office 365/Gmail vs. self-hosted Exchange) or identity
+    (Okta/Entra ID vs. self-hosted AD/LDAP). Zone 1 models are "SaaS": someone
+    else runs the infrastructure, patches it, scales it — you just call an
+    API and get a bill. Zone 3 models are "self-hosted": you take on the
+    operational burden (and the infrastructure cost from Zone 2) in exchange
+    for control — over data residency, customization, and avoiding
+    per-token billing entirely. Neither is "right" — it's the same
+    build-vs-buy tradeoff you've made a dozen times before, just with a new
+    acronym. Playbook 3's "Open Source AI" module and "Build vs Buy" framework
+    dig into exactly when each direction makes sense. ⚖️
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 A preview of the tradeoff</div>
+    Roughly: choose Zone 1 (hosted) when you want the best raw capability with
+    minimal operational overhead and your data governance allows sending data
+    to a third party. Choose Zone 3 (open, self-hosted) when data residency is
+    non-negotiable, you have predictable high volume that makes the fixed
+    infrastructure cost worthwhile, or you need deep customization (fine-tuning
+    on proprietary data). Full decision tree in Playbook 3. 🌳
+  </div>
+
+  <!-- ZONE 4: DEVELOPER ECOSYSTEM -->
+  <h2>🔧 Zone 4 — The AI Developer Ecosystem</h2>
+  <div class="zone-card" style="--zone-color: var(--accent-violet);">
+    <div class="zone-head">
+      <div class="zone-icon">🔧</div>
+      <div class="zone-title">The tooling layer between "a model" and "a product"</div>
+    </div>
+    <div class="zone-sub">
+      A raw LLM, by itself, isn't a chatbot, an assistant, or an agent — it's
+      a prediction engine you talk to via API. This zone is the rapidly
+      growing collection of frameworks and tools that handle the plumbing:
+      connecting models to your data, your tools, and each other.
+    </div>
+    <div class="player-grid">
+      <span class="player-chip">LangChain — popular orchestration framework</span>
+      <span class="player-chip">LlamaIndex — data-connection / RAG framework</span>
+      <span class="player-chip">Open WebUI — self-hosted chat interface</span>
+      <span class="player-chip">Vector Databases — Pinecone, Weaviate, Chroma, pgvector…</span>
+      <span class="player-chip">Agent Frameworks — multiple competing approaches</span>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <div class="analogy-title">🟣 Analogy — The "Middleware" Layer You Already Know</div>
+    If Zone 1/3 models are like a powerful but generic compute engine (think:
+    a raw database engine with no ORM, no migrations tooling, no admin UI),
+    Zone 4 is the ecosystem of frameworks that make that engine usable in a
+    real application — your ORMs, your API gateways, your service meshes. Just
+    as "which ORM should we use" is a real but secondary decision compared to
+    "which database," <strong>"which agent framework"</strong> is a real but
+    secondary decision compared to "which model." This zone moves
+    <em>extremely</em> fast — new frameworks and patterns emerge monthly — which
+    is part of why Playbook 5 includes an "Industry Monitoring" system: you
+    don't need to track every new tool, but you do need a habit for noticing
+    when something becomes the new standard. 🔄
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🟣 A note for later</div>
+    Many of the security concerns in Playbook 4 — prompt injection, context
+    poisoning, data leakage — actually live in <em>this</em> zone, not in the
+    models themselves. The model is often just doing exactly what it was told;
+    the orchestration layer is where the "told by whom, with what data, with
+    what permissions" questions get decided (or not decided, which is the
+    problem).
+  </div>
+
+  <!-- HOW THE ZONES RELATE -->
+  <h2>🔗 How the Zones Relate — A Worked Example</h2>
+  <p>
+    Let's make this concrete with the running example from this whole series:
+    an <strong>internal IAM assistant</strong> that helps employees with
+    access requests, password resets, and policy questions.
+  </p>
+  <table>
+    <thead><tr><th>Zone</th><th>What it provides for the IAM assistant</th><th>Example choice</th></tr></thead>
+    <tbody>
+      <tr><td>🧠 Foundation Model</td><td>The "brain" that understands questions and drafts responses</td><td>Claude Sonnet via API</td></tr>
+      <tr><td>⚡ Infrastructure</td><td>What that model (and your own services) actually run on</td><td>Anthropic's infra (for the model) + your AWS account (for the app)</td></tr>
+      <tr><td>🦙 Open Models</td><td>An alternative if data residency requires self-hosting</td><td>Llama, self-hosted on your AWS GPUs — a fallback path</td></tr>
+      <tr><td>🔧 Developer Ecosystem</td><td>The glue: RAG over your IAM docs, tool calls to ServiceNow/CyberArk, agent orchestration</td><td>LlamaIndex for retrieval + an MCP-based tool layer</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Notice that a single project can touch <em>all four zones</em> — and most
+    real conversations about "which AI should we use" are actually
+    several separate decisions (one per zone) being discussed as if they were
+    one decision. Untangling that is half the battle in any AI architecture
+    conversation. 🧵
+  </p>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 What to remember from this page</div>
+    You don't need to memorize every name above — you need to recognize,
+    when you hear a name in a meeting, <em>which zone it belongs to</em>, because
+    that tells you what kind of decision is actually being discussed (a model
+    choice? an infrastructure commitment? a build-vs-buy call? a tooling
+    preference?). That's the whole point of this map. 🗺️
+  </div>
+
+  <!-- BRIDGE -->
+  <h2>🌉 Bridge to Playbook 1</h2>
+  <div class="bridge-band">
+    <div class="bridge-half" style="background: color-mix(in srgb, var(--accent-blue) 14%, var(--surface));">
+      <div class="bridge-label">You just finished · Landscape Map</div>
+      <div class="bridge-title">You can now place names in their zones 🗺️</div>
+      <p style="margin:0; font-size:.9rem;">
+        OpenAI, Anthropic, NVIDIA, Llama, LangChain — you know roughly what
+        kind of thing each one is, even if you don't yet know the technical
+        details of how they work.
+      </p>
+    </div>
+    <div class="bridge-half" style="background: color-mix(in srgb, var(--accent-blue) 22%, var(--surface));">
+      <div class="bridge-label">Up next · 🌅 Atlas Dawn — Playbook 1</div>
+      <div class="bridge-title">Now let's open the hood</div>
+      <p style="margin:0; font-size:.9rem;">
+        Playbook 1 builds the technical mental models — tokens, context
+        windows, training vs. inference, RAG, agents, MCP — so that everything
+        in this landscape actually <em>means</em> something to you, not just
+        sounds familiar.
+      </p>
+    </div>
+  </div>
+
+  <p style="text-align:center; margin-top: 32px;">
+    <a href="playbook1.html" style="font-family:'Inter Tight',sans-serif; font-weight:800; font-size:1.05rem; color:#fff; background:var(--accent-blue); padding: 12px 28px; border-radius: 24px; text-decoration:none; display:inline-block;">
+      Start Playbook 1: AI Foundations →
+    </a>
+  </p>
+
+</div>
+
+<footer>
+  AI Stack Atlas · AI Landscape Map · <a href="index.html" style="color:var(--text-muted);">Back to Index</a>
+</footer>
+</body>
+</html>

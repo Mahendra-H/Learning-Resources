@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-3">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M09 · Modules &amp; Enterprise Patterns — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E14;--s1:#111520;--s2:#181D2A;--s3:#1F2535;
+  --br:#1E2636;--brb:#2E3A52;
+  --teal:#00E5C3;--td:#00B89A;--tg:rgba(0,229,195,.12);
+  --cu:#E8873A;--cg:rgba(232,135,58,.15);
+  --sa:#4A9EFF;--sg:rgba(74,158,255,.12);
+  --ro:#FF5F7E;--rg:rgba(255,95,126,.12);
+  --jd:#3ECFA0;--vi:#9B7FFF;--vg:rgba(155,127,255,.13);
+  --t1:#E8EDF5;--t2:#8A95A8;--t3:#4A5568;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --xs:4px;--sm:8px;--md:16px;--lg:24px;--xl:40px;--x2:64px;--x3:96px;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--rp:999px;
+  --sh:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  --tf:150ms ease;--tb:250ms ease;
+  /* Phase 3 — Copper */
+  --pc:#E8873A;--pg:rgba(232,135,58,.15);--pd:#B86929;
+  --ac:#00E5C3;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--brb);border-radius:999px}
+::selection{background:var(--pg);color:var(--pc)}
+a{color:var(--sa);text-decoration:none;transition:color var(--tf)}a:hover{color:var(--teal)}
+code{font-family:var(--fm);font-size:.85em;background:var(--s3);border:1px solid var(--br);color:var(--teal);padding:1px 5px;border-radius:var(--r4)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 var(--xl)}
+@media(max-width:768px){.wrap{padding:0 var(--md)}}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--br);padding:0 var(--xl)}
+.ni{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--lg)}
+.nl{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.nl span{color:var(--t3);font-weight:400}
+.nd{width:1px;height:20px;background:var(--brb);flex-shrink:0}
+.np{flex:1;display:flex;align-items:center;gap:var(--sm)}
+.pt{flex:1;height:2px;background:var(--br);border-radius:var(--rp);overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,var(--pc),var(--ac));border-radius:var(--rp)}
+.pl{font-family:var(--fm);font-size:11px;color:var(--t3);white-space:nowrap}
+.nb{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);white-space:nowrap}
+/* HERO */
+.hero{position:relative;padding:var(--x3) 0 var(--x2);overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pg) 0%,transparent 55%),radial-gradient(ellipse 50% 40% at 82% 25%,rgba(0,229,195,.05) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--br) 1px,transparent 1px),linear-gradient(90deg,var(--br) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 70% 60% at 15% 50%,black 0%,transparent 70%);opacity:.4;pointer-events:none}
+.hi{position:relative;z-index:1}
+.hp{display:inline-flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.hdot{width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 8px var(--pc);animation:hd 2s ease-in-out infinite}
+@keyframes hd{0%,100%{opacity:1;box-shadow:0 0 8px var(--pc)}50%{opacity:.5;box-shadow:0 0 3px var(--pc)}}
+.ht{font-family:var(--fd);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-.02em;color:var(--t1);margin-bottom:var(--md);max-width:780px}
+.ht .ac{color:var(--pc)}.ht .at{color:var(--ac)}
+.hs{font-size:17px;font-weight:300;color:var(--t2);max-width:640px;line-height:1.65;margin-bottom:var(--xl)}
+.hm{display:flex;flex-wrap:wrap;gap:var(--sm)}
+/* BADGES */
+.b{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--rp);white-space:nowrap;letter-spacing:.04em}
+.bp{background:var(--pg);border:1px solid var(--pc);color:var(--pc)}
+.be{background:rgba(232,135,58,.1);border:1px solid rgba(232,135,58,.3);color:var(--cu)}
+.bs{background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:var(--sa)}
+.bq{background:var(--s2);border:1px solid var(--brb);color:var(--t2)}
+.bn{background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.3);color:var(--teal)}
+.bv{background:var(--vg);border:1px solid rgba(155,127,255,.35);color:var(--vi)}
+/* ORIENT */
+.orient{background:var(--s1);border:1px solid var(--br);border-radius:var(--r16);padding:var(--xl);margin-bottom:var(--x2);position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc) 0%,transparent 100%)}
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--lg)}
+.oil{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.oiv{font-size:14px;font-weight:500;color:var(--t1)}.oiv.ac{color:var(--pc)}
+.jrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--lg);padding-top:var(--lg);border-top:1px solid var(--br)}
+.jd{width:30px;height:30px;border-radius:var(--r4);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:500}
+.jdd{background:var(--tg);border:1px solid var(--td);color:var(--td)}
+.jdc{background:var(--pg);border:1px solid var(--pc);color:var(--pc);box-shadow:0 0 10px var(--pg)}
+.jdf{background:var(--s2);border:1px solid var(--br);color:var(--t3)}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:var(--x2);align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.main{min-width:0}.sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.sec{margin-bottom:var(--x2)}
+.sl{display:flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.sl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--brb) 0%,transparent 100%)}
+.st{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--t1);margin-bottom:var(--md);line-height:1.2}
+.sb{font-size:15px;color:var(--t2);line-height:1.8}
+.sb p{margin-bottom:var(--md)}.sb p:last-child{margin-bottom:0}
+.sb strong{color:var(--t1);font-weight:600}.sb em{color:var(--pc);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);transition:border-color var(--tb),box-shadow var(--tb)}
+.card:hover{border-color:var(--brb);box-shadow:var(--sh)}
+.cp{border-left:2px solid var(--pc);background:linear-gradient(135deg,var(--pg) 0%,var(--s1) 60%)}
+.ct{border-left:2px solid var(--teal);background:linear-gradient(135deg,var(--tg) 0%,var(--s1) 60%)}
+.cb{border-left:2px solid var(--sa);background:linear-gradient(135deg,var(--sg) 0%,var(--s1) 60%)}
+.cc{border-left:2px solid var(--cu);background:linear-gradient(135deg,var(--cg) 0%,var(--s1) 60%)}
+.cr{border-left:2px solid var(--ro);background:linear-gradient(135deg,var(--rg) 0%,var(--s1) 60%)}
+.cv{border-left:2px solid var(--vi);background:linear-gradient(135deg,var(--vg) 0%,var(--s1) 60%)}
+.clbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.cttl{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--t1);margin-bottom:var(--sm)}
+.cbdy{font-size:14px;color:var(--t2);line-height:1.7}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--md)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--md)}
+/* CONCEPT */
+.cblock{border-left:2px solid var(--pc);padding:var(--md) var(--lg);background:var(--pg);border-radius:0 var(--r8) var(--r8) 0;margin:var(--lg) 0}
+.cbt{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pc);margin-bottom:4px}
+.cbd{font-size:14px;color:var(--t2);line-height:1.65}
+.cb-t{border-left-color:var(--teal);background:var(--tg)}.cb-t .cbt{color:var(--teal)}
+.cb-c{border-left-color:var(--cu);background:var(--cg)}.cb-c .cbt{color:var(--cu)}
+.cb-r{border-left-color:var(--ro);background:var(--rg)}.cb-r .cbt{color:var(--ro)}
+.cb-v{border-left-color:var(--vi);background:var(--vg)}.cb-v .cbt{color:var(--vi)}
+/* DIAGRAM */
+.dw{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--xl);margin:var(--xl) 0;overflow-x:auto}
+.dwl{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--md);display:flex;align-items:center;gap:var(--sm)}
+.dwl::before{content:'◈';color:var(--pc);font-size:12px}
+/* CODE */
+.code{background:var(--s2);border:1px solid var(--br);border-radius:var(--r8);overflow:hidden;margin:var(--md) 0;font-family:var(--fm);font-size:12px}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:var(--sm) var(--md);background:var(--s3);border-bottom:1px solid var(--br)}
+.chl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.chf{font-size:11px;color:var(--t2)}
+.cbody{padding:var(--md);overflow-x:auto;line-height:1.7;color:var(--t2);tab-size:2}
+.cbody .k{color:#c792ea}.cbody .s{color:var(--jd)}.cbody .c{color:var(--t3);font-style:italic}
+.cbody .v{color:var(--cu)}.cbody .n{color:var(--teal)}.cbody .p{color:var(--sa)}.cbody .num{color:#f78c6c}
+/* KC */
+.kc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);overflow:hidden;margin:var(--md) 0}
+.kcq{padding:var(--md) var(--lg);font-size:14px;font-weight:500;color:var(--t1);display:flex;align-items:flex-start;gap:var(--sm);cursor:pointer;transition:background var(--tf);user-select:none}
+.kcq:hover{background:var(--s2)}
+.kci{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--pc);background:var(--pg);border:1px solid var(--pc);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kcc{margin-left:auto;flex-shrink:0;color:var(--t3);transition:transform var(--tb);font-size:12px}
+.kc.open .kcc{transform:rotate(180deg)}
+.kca{display:none;padding:var(--md) var(--lg);background:var(--s2);border-top:1px solid var(--br);font-size:14px;color:var(--t2);line-height:1.7}
+.kc.open .kca{display:block}
+/* SIDEBAR */
+.toc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.tl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.ti{display:block;padding:5px var(--sm);font-size:12px;color:var(--t2);border-radius:var(--r4);transition:all var(--tf);cursor:pointer;border-left:2px solid transparent}
+.ti:hover,.ti.active{background:var(--s2);color:var(--t1);border-left-color:var(--pc)}
+.qr{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.qrl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.qi{display:flex;gap:var(--sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--br);font-size:12px}
+.qi:last-child{border-bottom:none}
+.qt{font-family:var(--fm);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.qd{color:var(--t2);line-height:1.5}
+/* TK */
+.tk{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);margin:var(--xl) 0}
+.tkh{display:flex;align-items:center;gap:var(--sm);margin-bottom:var(--md);padding-bottom:var(--md);border-bottom:1px solid var(--br)}
+.tki{width:32px;height:32px;border-radius:var(--r4);background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--pc);flex-shrink:0}
+.tkt{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--t1)}
+.tkl{list-style:none;display:flex;flex-direction:column;gap:var(--sm)}
+.tkl li{font-size:14px;color:var(--t2);display:flex;align-items:flex-start;gap:var(--sm);line-height:1.65}
+.tkl li::before{content:'◆';color:var(--pc);font-size:8px;flex-shrink:0;margin-top:6px}
+/* AR */
+.ar{background:var(--s1);border:1px solid var(--cu);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.arh{background:var(--cg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.arb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cu);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--rp)}
+.art{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.arl{list-style:none;padding:var(--md) var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.arl li{font-size:14px;color:var(--t2);display:flex;gap:var(--sm);align-items:flex-start;line-height:1.65;padding:var(--sm) 0;border-bottom:1px solid var(--br)}
+.arl li:last-child{border-bottom:none}
+.arn{font-family:var(--fm);font-size:11px;color:var(--cu);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR */
+.mn{display:flex;gap:var(--md);padding:var(--lg);background:var(--s2);border:1px solid var(--br);border-radius:var(--r12);margin:var(--lg) 0}
+.mnav{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mnb{flex:1}
+.mnl{font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:4px}
+.mnt{font-size:14px;color:var(--t2);line-height:1.75}
+.mnt strong{color:var(--t1);font-weight:600}
+/* LAB */
+.lab{background:var(--s1);border:1px solid var(--td);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.labh{background:var(--tg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.labb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);background:var(--tg);border:1px solid rgba(0,229,195,.4);padding:2px 8px;border-radius:var(--rp)}
+.labt{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.labbody{padding:var(--lg)}
+.labbody ol{padding-left:var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.labbody ol li{font-size:14px;color:var(--t2);line-height:1.65;padding-left:4px}
+.labbody ol li strong{color:var(--t1)}
+/* BRIDGE */
+.bridge{margin-top:var(--x3);padding-top:var(--x2);border-top:1px solid var(--br)}
+.bc{background:linear-gradient(135deg,var(--s1) 0%,var(--s2) 100%);border:1px solid var(--brb);border-radius:var(--r16);padding:var(--xl);position:relative;overflow:hidden}
+.bc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc),var(--ro),transparent)}
+.bc::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--rg);pointer-events:none}
+.bce{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.bct{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--t1);margin-bottom:var(--md)}
+.bct span{color:var(--ro)}
+.bcb{font-size:14px;color:var(--t2);line-height:1.75;max-width:580px;margin-bottom:var(--lg)}
+.bcc{display:flex;flex-wrap:wrap;gap:var(--sm);margin-bottom:var(--lg)}
+.bcbtn{display:inline-flex;align-items:center;gap:var(--sm);background:var(--ro);color:var(--bg);font-family:var(--fd);font-size:14px;font-weight:700;padding:12px var(--lg);border-radius:var(--rp);text-decoration:none;transition:all var(--tb)}
+.bcbtn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--rg);color:var(--bg)}
+/* FOOTER */
+.foot{margin-top:var(--x3);padding:var(--xl) 0;border-top:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;gap:var(--md);flex-wrap:wrap}
+.fl{font-family:var(--fm);font-size:11px;color:var(--t3)}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:var(--lg) 0}
+.tbl th{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:var(--sm) var(--md);border-bottom:1px solid var(--brb);text-align:left}
+.tbl th:first-child{color:var(--pc)}
+.tbl td{padding:10px var(--md);border-bottom:1px solid var(--br);color:var(--t2);vertical-align:top;line-height:1.6}
+.tbl td:first-child{font-weight:500;color:var(--t1);font-family:var(--fm);font-size:12px;white-space:nowrap}
+.tbl tr:hover td{background:var(--s2)}
+.tbl tr:last-child td{border-bottom:none}
+/* FLOW */
+.flow{display:flex;flex-direction:column;gap:0;margin:var(--lg) 0}
+.fstep{display:flex;gap:var(--md);align-items:flex-start}
+.fconn{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:32px}
+.fnum{width:32px;height:32px;border-radius:50%;background:var(--s2);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:12px;font-weight:500;color:var(--pc);flex-shrink:0;z-index:1}
+.fline{width:1px;flex:1;min-height:24px;background:linear-gradient(var(--brb),var(--br))}
+.fstep:last-child .fline{display:none}
+.fbody{padding-bottom:var(--lg);padding-top:5px;flex:1}
+.ftitle{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.fdesc{font-size:13px;color:var(--t2);line-height:1.65}
+/* DIR TREE */
+.dir-tree{background:var(--s2);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);font-family:var(--fm);font-size:12px;line-height:1.8;overflow-x:auto;margin:var(--lg) 0}
+.dir-tree .d{color:var(--pc);font-weight:600}
+.dir-tree .f{color:var(--t2)}
+.dir-tree .fa{color:var(--teal)}
+.dir-tree .c{color:var(--t3);font-style:italic}
+/* ANIM */
+@keyframes fiu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fiu .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="ni">
+    <a href="index.html" class="nl" style="text-decoration:none">Terraform<span> · Mastery</span></a>
+    <div class="nd"></div>
+    <div class="np">
+      <div class="pt"><div class="pf" style="width:81%"></div></div>
+      <span class="pl">M09 / 10</span>
+    </div>
+    <span class="nb">M09 · Phase 3</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hi">
+    <div class="hp"><div class="hdot"></div>Phase 3 · Enterprise Terraform</div>
+    <h1 class="ht">Modules &amp; <span class="ac">Enterprise Patterns</span> —<br>Structuring Terraform<br>at <span class="at">Scale</span></h1>
+    <p class="hs">You can build any piece of the PingFederate stack from scratch. Now learn how enterprise teams structure those pieces into reusable, versionable, environment-aware modules — so that the same infrastructure can be safely deployed to Dev, Test, and Prod without duplication, drift, or accidental cross-environment contamination.</p>
+    <div class="hm">
+      <span class="b bp">Phase 3 · Enterprise</span>
+      <span class="b be">⬛⬛⬛⬛☐ 4–5 hrs</span>
+      <span class="b bs">Modules · Versioning · Patterns</span>
+      <span class="b bq">↳ Prereq: M01–M08</span>
+      <span class="b bv">Phase 3 begins</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="og">
+    <div><div class="oil">Current module</div><div class="oiv ac">M09 · Modules &amp; Enterprise Patterns</div></div>
+    <div><div class="oil">Phase</div><div class="oiv">Phase 3 — Enterprise Terraform</div></div>
+    <div><div class="oil">What you bring in</div><div class="oiv">Full Phase 2 stack (M04–M08)</div></div>
+    <div><div class="oil">Unlocks</div><div class="oiv">M10 · Troubleshooting &amp; Operations</div></div>
+  </div>
+  <div class="jrow">
+    <div class="jd jdd">M01</div><div class="jd jdd">M02</div><div class="jd jdd">M03</div>
+    <div class="jd jdd">M04</div><div class="jd jdd">M05</div><div class="jd jdd">M06</div>
+    <div class="jd jdd">M07</div><div class="jd jdd">M08</div>
+    <div class="jd jdc">M09</div>
+    <div class="jd jdf">M10</div>
+    <div class="jd jdf" style="background:linear-gradient(135deg,var(--cg),var(--tg));border:1px solid var(--cu);color:var(--cu)">★</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="main">
+
+<!-- SECTION 1: BRIDGE -->
+<section class="sec afu d3" id="bridge">
+  <div class="sl">Bridge from Module 08</div>
+  <h2 class="st">Phase 3 — from building to organising</h2>
+  <div class="sb">
+    <p>Across Phase 2 you built a complete PingFederate deployment in Terraform — VPC, IAM, compute, load balancers, DNS, and S3 persistence. You understand every resource, every attribute, and why every decision was made. You can read any part of the codebase and explain it.</p>
+    <p>Phase 3 asks a different question: <em>how do enterprise teams organise this code so it can be safely maintained, extended, and deployed across multiple environments by multiple engineers simultaneously?</em> The answer is the Terraform module system — the mechanism that turns one-off configurations into reusable, versionable, composable building blocks.</p>
+    <p>This module teaches you to navigate an enterprise Terraform codebase on day one, understand the module dependency tree, contribute changes safely, and reason about the Dev/Test/Prod environment strategy. It also settles the workspace vs directory debate — the most common source of confusion in enterprise Terraform adoption.</p>
+  </div>
+  <div class="mn">
+    <div class="mnav">🧑‍🏫</div>
+    <div class="mnb">
+      <div class="mnl">Mentor Note — this is where most engineers get stuck</div>
+      <div class="mnt">Engineers who learn Terraform by writing resources quickly run into a wall when they enter a real enterprise codebase: unfamiliar directory structure, nested module calls, environment-specific variable files, and version-pinned module sources. <strong>This module gives you the map to navigate that codebase confidently on day one.</strong> By the end, you will be able to identify where a change belongs, understand what it will affect, and make it safely.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: WHAT IS A MODULE -->
+<section class="sec" id="what-is-a-module">
+  <div class="sl">Module fundamentals</div>
+  <h2 class="st">What a Terraform module is and why it exists</h2>
+  <div class="sb">
+    <p>Every Terraform configuration is technically a module — the root module. But in practice, "module" refers to a reusable configuration block that encapsulates a group of related resources, exposes inputs (variables) and outputs, and can be called from multiple places with different values.</p>
+    <p>The motivation is the same as in software engineering: <strong>write once, use many times, fix once.</strong> Without modules, the PF network configuration would be duplicated across Dev, Test, and Prod — three copies to maintain, three places for bugs to diverge, three sets of changes to apply when a security group rule needs updating. With a module, it's written once and called three times with different variable values.</p>
+  </div>
+
+  <div class="cblock">
+    <div class="cbt">The module contract — inputs, outputs, no side effects</div>
+    <div class="cbd">A well-designed module exposes clearly named input variables, produces useful output values, and has no side effects outside its declared scope. It should be possible to call a module without knowing how it works internally — only what it requires as inputs and what it produces as outputs. This is the same principle as a well-designed function or API. The VPC module you built in M04 is a perfect candidate: it requires CIDR ranges, subnet configs, and tags as inputs; it produces VPC ID, subnet IDs, and security group IDs as outputs.</div>
+  </div>
+
+  <div class="g2">
+    <div class="card cp">
+      <div class="clbl">Without modules</div>
+      <div class="cttl">Configuration duplication</div>
+      <div class="cbdy">The same VPC configuration exists in <code>dev/</code>, <code>test/</code>, and <code>prod/</code> directories. A bug fix requires three PRs, three plans, three applies. Environments drift apart over time as each copy receives slightly different fixes. The prod VPC has a security group rule that dev and test don't — nobody remembers why.</div>
+    </div>
+    <div class="card ct">
+      <div class="clbl">With modules</div>
+      <div class="cttl">One source of truth, three call sites</div>
+      <div class="cbdy">The VPC module is written once in <code>modules/vpc/</code>. Dev, test, and prod each call it with environment-specific variable values. A bug fix requires one PR to the module. All environments pick it up on next apply. The module version is pinned so prod doesn't accidentally get a breaking change.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: MODULE STRUCTURE -->
+<section class="sec" id="module-structure">
+  <div class="sl">Module anatomy</div>
+  <h2 class="st">Standard module structure — the files every module must have</h2>
+  <div class="sb">
+    <p>A Terraform module is a directory containing <code>.tf</code> files. The community convention (reinforced by the Terraform Registry) defines a standard set of files. Following this convention makes modules immediately navigable by any engineer who has worked with Terraform before.</p>
+  </div>
+
+  <div class="dir-tree">
+<pre><span class="d">modules/</span>
+<span class="d">└── vpc/</span>                          <span class="c"># module directory — the unit of reuse</span>
+    <span class="fa">├── main.tf</span>                    <span class="c"># primary resource definitions</span>
+    <span class="fa">├── variables.tf</span>               <span class="c"># input variable declarations</span>
+    <span class="fa">├── outputs.tf</span>                 <span class="c"># output value declarations</span>
+    <span class="fa">├── versions.tf</span>                <span class="c"># required providers + version constraints</span>
+    <span class="fa">├── README.md</span>                  <span class="c"># module documentation (required for registry)</span>
+    <span class="d">└── examples/</span>                  <span class="c"># usage examples — runnable configurations</span>
+        <span class="d">└── complete/</span>
+            <span class="f">├── main.tf</span>
+            <span class="f">└── outputs.tf</span>
+
+<span class="d">modules/</span>
+<span class="d">├── vpc/</span>                          <span class="c"># M04 — networking</span>
+<span class="d">├── iam/</span>                          <span class="c"># M05 — IAM roles + profiles</span>
+<span class="d">├── compute/</span>                      <span class="c"># M06 — LT + ASG</span>
+<span class="d">├── loadbalancer/</span>                 <span class="c"># M07 — NLB + target groups</span>
+<span class="d">└── s3-config/</span>                    <span class="c"># M08 — config bucket</span></pre>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">HCL</span><span class="chf">modules/vpc/variables.tf — module inputs</span></div>
+    <div class="cbody"><pre><span class="c"># Every module variable needs a description — this is the module's API documentation</span>
+
+<span class="k">variable</span> <span class="s">"vpc_cidr"</span> {
+  <span class="k">description</span> = <span class="s">"CIDR block for the VPC. Must not overlap with other VPCs in the org."</span>
+  <span class="k">type</span>        = <span class="n">string</span>
+  <span class="c"># No default — caller must provide. Required inputs have no default.</span>
+}
+
+<span class="k">variable</span> <span class="s">"environment"</span> {
+  <span class="k">description</span> = <span class="s">"Deployment environment. Used in resource naming and tagging."</span>
+  <span class="k">type</span>        = <span class="n">string</span>
+  <span class="k">validation</span> {
+    <span class="k">condition</span>     = <span class="n">contains</span>([<span class="s">"dev"</span>, <span class="s">"test"</span>, <span class="s">"prod"</span>], <span class="v">var.environment</span>)
+    <span class="k">error_message</span> = <span class="s">"environment must be dev, test, or prod."</span>
+  }
+}
+
+<span class="k">variable</span> <span class="s">"public_subnets"</span> {
+  <span class="k">description</span> = <span class="s">"Map of public subnets. Key = subnet name, value = {cidr, az}."</span>
+  <span class="k">type</span>        = <span class="n">map</span>(<span class="n">object</span>({ <span class="n">cidr</span> = <span class="n">string</span>; <span class="n">az</span> = <span class="n">string</span> }))
+}
+
+<span class="k">variable</span> <span class="s">"private_subnets"</span> {
+  <span class="k">description</span> = <span class="s">"Map of private subnets. Key = subnet name, value = {cidr, az}."</span>
+  <span class="k">type</span>        = <span class="n">map</span>(<span class="n">object</span>({ <span class="n">cidr</span> = <span class="n">string</span>; <span class="n">az</span> = <span class="n">string</span> }))
+}
+
+<span class="k">variable</span> <span class="s">"common_tags"</span> {
+  <span class="k">description</span> = <span class="s">"Tags applied to all resources in this module."</span>
+  <span class="k">type</span>        = <span class="n">map</span>(<span class="n">string</span>)
+  <span class="k">default</span>     = {}   <span class="c"># optional — module works without tags</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">HCL</span><span class="chf">modules/vpc/outputs.tf — module outputs</span></div>
+    <div class="cbody"><pre><span class="c"># Outputs are the module's return values — what callers can reference</span>
+
+<span class="k">output</span> <span class="s">"vpc_id"</span> {
+  <span class="k">description</span> = <span class="s">"ID of the created VPC."</span>
+  <span class="k">value</span>       = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+}
+
+<span class="k">output</span> <span class="s">"private_subnet_ids"</span> {
+  <span class="k">description</span> = <span class="s">"List of private subnet IDs across all AZs."</span>
+  <span class="k">value</span>       = [<span class="k">for</span> <span class="n">s</span> <span class="k">in</span> <span class="n">aws_subnet</span>.<span class="v">private</span> : <span class="n">s</span>.<span class="v">id</span>]
+}
+
+<span class="k">output</span> <span class="s">"public_subnet_ids"</span> {
+  <span class="k">description</span> = <span class="s">"List of public subnet IDs across all AZs."</span>
+  <span class="k">value</span>       = [<span class="k">for</span> <span class="n">s</span> <span class="k">in</span> <span class="n">aws_subnet</span>.<span class="v">public</span> : <span class="n">s</span>.<span class="v">id</span>]
+}
+
+<span class="k">output</span> <span class="s">"pf_engine_sg_id"</span> {
+  <span class="k">description</span> = <span class="s">"Security group ID for PF engine nodes."</span>
+  <span class="k">value</span>       = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: CALLING MODULES -->
+<section class="sec" id="calling-modules">
+  <div class="sl">Calling modules</div>
+  <h2 class="st">Module calls — source, version, and input passing</h2>
+  <div class="sb">
+    <p>A module call is how a root configuration (or another module) uses a module. It specifies where to find the module (<code>source</code>), which version to use (<code>version</code>), and what inputs to pass. The output of a module call is accessed via <code>module.&lt;name&gt;.&lt;output_name&gt;</code>.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">HCL</span><span class="chf">environments/prod/main.tf — calling all modules</span></div>
+    <div class="cbody"><pre><span class="c"># ── NETWORKING ────────────────────────────────────────────────────────</span>
+<span class="k">module</span> <span class="s">"vpc"</span> {
+  <span class="c"># source: where the module lives</span>
+  <span class="c"># Options: local path, git URL, Terraform Registry, S3 bucket</span>
+  <span class="k">source</span>  = <span class="s">"git::https://github.com/company/terraform-modules.git//modules/vpc?ref=v2.1.0"</span>
+  <span class="c"># ref=v2.1.0 pins to a specific git tag — ALWAYS pin in production</span>
+
+  <span class="c"># Inputs — all required variables must be supplied</span>
+  <span class="k">vpc_cidr</span>        = <span class="v">var.vpc_cidr</span>          <span class="c"># "10.0.0.0/16" in prod.tfvars</span>
+  <span class="k">environment</span>     = <span class="v">var.environment</span>       <span class="c"># "prod"</span>
+  <span class="k">public_subnets</span>  = <span class="v">var.public_subnets</span>
+  <span class="k">private_subnets</span> = <span class="v">var.private_subnets</span>
+  <span class="k">common_tags</span>     = <span class="v">local.common_tags</span>
+}
+
+<span class="c"># ── IAM ───────────────────────────────────────────────────────────────</span>
+<span class="k">module</span> <span class="s">"iam"</span> {
+  <span class="k">source</span>      = <span class="s">"git::https://github.com/company/terraform-modules.git//modules/iam?ref=v2.1.0"</span>
+  <span class="k">environment</span> = <span class="v">var.environment</span>
+  <span class="c"># Receives the config bucket ARN from the s3-config module output</span>
+  <span class="k">config_bucket_arn</span> = <span class="n">module</span>.<span class="v">s3_config</span>.<span class="n">config_bucket_arn</span>
+  <span class="k">common_tags</span>       = <span class="v">local.common_tags</span>
+}
+
+<span class="c"># ── S3 CONFIG ─────────────────────────────────────────────────────────</span>
+<span class="k">module</span> <span class="s">"s3_config"</span> {
+  <span class="k">source</span>         = <span class="s">"git::https://github.com/company/terraform-modules.git//modules/s3-config?ref=v2.1.0"</span>
+  <span class="k">environment</span>    = <span class="v">var.environment</span>
+  <span class="k">cicd_role_arn</span>  = <span class="v">var.cicd_role_arn</span>
+  <span class="k">common_tags</span>    = <span class="v">local.common_tags</span>
+}
+
+<span class="c"># ── COMPUTE ───────────────────────────────────────────────────────────</span>
+<span class="k">module</span> <span class="s">"compute"</span> {
+  <span class="k">source</span>  = <span class="s">"git::https://github.com/company/terraform-modules.git//modules/compute?ref=v2.1.0"</span>
+
+  <span class="c"># Cross-module references — outputs from other module calls</span>
+  <span class="k">private_subnet_ids</span>   = <span class="n">module</span>.<span class="v">vpc</span>.<span class="n">private_subnet_ids</span>
+  <span class="k">pf_engine_sg_id</span>      = <span class="n">module</span>.<span class="v">vpc</span>.<span class="n">pf_engine_sg_id</span>
+  <span class="k">instance_profile_arn</span> = <span class="n">module</span>.<span class="v">iam</span>.<span class="n">pf_instance_profile_arn</span>
+  <span class="k">config_bucket_name</span>   = <span class="n">module</span>.<span class="v">s3_config</span>.<span class="n">config_bucket_name</span>
+  <span class="k">nlb_target_group_arn</span> = <span class="n">module</span>.<span class="v">loadbalancer</span>.<span class="n">federation_target_group_arn</span>
+
+  <span class="k">pf_instance_type</span>    = <span class="v">var.pf_instance_type</span>
+  <span class="k">pf_engine_desired</span>   = <span class="v">var.pf_engine_desired</span>
+  <span class="k">pf_engine_min</span>       = <span class="v">var.pf_engine_min</span>
+  <span class="k">pf_engine_max</span>       = <span class="v">var.pf_engine_max</span>
+  <span class="k">environment</span>         = <span class="v">var.environment</span>
+  <span class="k">aws_region</span>          = <span class="v">var.aws_region</span>
+  <span class="k">common_tags</span>         = <span class="v">local.common_tags</span>
+}
+
+<span class="c"># ── LOAD BALANCER ─────────────────────────────────────────────────────</span>
+<span class="k">module</span> <span class="s">"loadbalancer"</span> {
+  <span class="k">source</span>             = <span class="s">"git::https://github.com/company/terraform-modules.git//modules/loadbalancer?ref=v2.1.0"</span>
+  <span class="k">vpc_id</span>             = <span class="n">module</span>.<span class="v">vpc</span>.<span class="n">vpc_id</span>
+  <span class="k">public_subnet_ids</span>  = <span class="n">module</span>.<span class="v">vpc</span>.<span class="n">public_subnet_ids</span>
+  <span class="k">nlb_sg_id</span>          = <span class="n">module</span>.<span class="v">vpc</span>.<span class="n">nlb_sg_id</span>
+  <span class="k">hosted_zone_name</span>   = <span class="v">var.hosted_zone_name</span>
+  <span class="k">environment</span>        = <span class="v">var.environment</span>
+  <span class="k">common_tags</span>        = <span class="v">local.common_tags</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="cblock cb-c">
+    <div class="cbt">Always pin module versions in production</div>
+    <div class="cbd">Using <code>ref=v2.1.0</code> ensures that prod always gets exactly the module version that was tested. Using <code>ref=main</code> or omitting a version means the next <code>terraform init</code> might pull in breaking module changes. Enterprise teams maintain a module version upgrade process: update the ref in a dev branch, plan and apply to dev, promote to test, then prod. Never let prod see untested module versions.</div>
+  </div>
+</section>
+
+<!-- SECTION 5: ENTERPRISE DIRECTORY STRUCTURE -->
+<section class="sec" id="directory-structure">
+  <div class="sl">Enterprise structure</div>
+  <h2 class="st">Directory-per-environment — the production standard</h2>
+  <div class="sb">
+    <p>The most important structural decision in enterprise Terraform is how to manage multiple environments. There are two main approaches: workspaces (covered in M03) and directory-per-environment. Most enterprise teams settle on directory-per-environment for production workloads. Here is why, and what the directory structure looks like.</p>
+  </div>
+
+  <div class="dir-tree">
+<pre><span class="d">terraform-pingfederate/</span>
+<span class="d">├── modules/</span>                       <span class="c"># shared, versioned, reusable modules</span>
+<span class="d">│   ├── vpc/</span>                       <span class="c"># main.tf, variables.tf, outputs.tf</span>
+<span class="d">│   ├── iam/</span>
+<span class="d">│   ├── compute/</span>
+<span class="d">│   ├── loadbalancer/</span>
+<span class="d">│   └── s3-config/</span>
+<span class="d">│</span>
+<span class="d">└── environments/</span>                  <span class="c"># one directory per environment</span>
+<span class="d">    ├── dev/</span>
+<span class="d">    │   ├── main.tf</span>                <span class="c"># module calls for dev</span>
+<span class="fa">    │   ├── versions.tf</span>            <span class="c"># backend: key=pingfederate/dev/terraform.tfstate</span>
+<span class="fa">    │   ├── variables.tf</span>           <span class="c"># variable declarations</span>
+<span class="fa">    │   └── dev.tfvars</span>             <span class="c"># dev-specific values</span>
+<span class="d">    ├── test/</span>
+<span class="d">    │   ├── main.tf</span>
+<span class="fa">    │   ├── versions.tf</span>            <span class="c"># backend: key=pingfederate/test/terraform.tfstate</span>
+<span class="fa">    │   ├── variables.tf</span>
+<span class="fa">    │   └── test.tfvars</span>
+<span class="d">    └── prod/</span>
+<span class="d">        ├── main.tf</span>                <span class="c"># identical module calls to dev/test</span>
+<span class="fa">        ├── versions.tf</span>            <span class="c"># backend: key=pingfederate/prod/terraform.tfstate</span>
+<span class="fa">        ├── variables.tf</span>
+<span class="fa">        └── prod.tfvars</span>            <span class="c"># larger instances, higher ASG counts, etc.</span></pre>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">Directory-per-Env vs Workspaces — The Real-World Verdict</div>
+    <table class="tbl">
+      <thead><tr><th>Factor</th><th>Directory-per-Environment</th><th>Workspaces</th></tr></thead>
+      <tbody>
+        <tr><td>Config isolation</td><td><strong>Complete</strong> — each env has its own <code>.tf</code> files. Prod can use different module versions from dev.</td><td><strong>Shared</strong> — all envs share the same <code>.tf</code> files. Config changes affect all workspaces.</td></tr>
+        <tr><td>State isolation</td><td><strong>Complete</strong> — separate backend key per directory. Impossible to cross-contaminate.</td><td><strong>Partial</strong> — separate state files but same backend bucket. Lock confusion possible.</td></tr>
+        <tr><td>Module versioning</td><td>Each env can pin a different module version. Dev gets v2.2.0 while prod stays on v2.1.0.</td><td>All envs share the same <code>source</code> reference. Can't test module upgrades in dev alone.</td></tr>
+        <tr><td>CI/CD simplicity</td><td>Run <code>terraform apply</code> in the <code>environments/prod</code> directory. Clear and explicit.</td><td>Must pass <code>-workspace prod</code> flag. Easy to forget; confusing in parallel runs.</td></tr>
+        <tr><td>Blast radius</td><td>Small — a bug in prod configuration only affects prod.</td><td>Larger — a bug in the shared <code>.tf</code> affects all workspaces on next apply.</td></tr>
+        <tr><td>DRY compliance</td><td>Less DRY — each env directory has <code>main.tf</code> that duplicates module call structure</td><td>More DRY — one set of <code>.tf</code> files for all envs</td></tr>
+        <tr><td>Enterprise verdict</td><td><strong>Preferred for production.</strong> Safety over DRY. Module system handles DRY at the resource level.</td><td>Acceptable for simple identical environments (e.g. feature branch testing).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 6: ENVIRONMENT-SPECIFIC VALUES -->
+<section class="sec" id="env-values">
+  <div class="sl">Environment-specific values</div>
+  <h2 class="st">How Dev, Test, and Prod differ in practice</h2>
+  <div class="sb">
+    <p>The module calls in all three environment directories look almost identical — they call the same modules with the same structure. What differs is the variable values passed to those modules. Here is a representative comparison of the tfvars files for the PingFederate deployment.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">HCL</span><span class="chf">environments/dev/dev.tfvars vs environments/prod/prod.tfvars</span></div>
+    <div class="cbody"><pre><span class="c"># ── DEV (environments/dev/dev.tfvars) ─────────────────────────────────</span>
+<span class="n">environment</span>         = <span class="s">"dev"</span>
+<span class="n">aws_region</span>          = <span class="s">"us-east-1"</span>
+<span class="n">vpc_cidr</span>            = <span class="s">"10.10.0.0/16"</span>
+
+<span class="c"># Smaller instances — save cost in dev</span>
+<span class="n">pf_instance_type</span>    = <span class="s">"m5.large"</span>
+<span class="n">pf_engine_desired</span>   = <span class="num">1</span>    <span class="c"># single node in dev — no HA needed</span>
+<span class="n">pf_engine_min</span>       = <span class="num">1</span>
+<span class="n">pf_engine_max</span>       = <span class="num">2</span>
+
+<span class="n">hosted_zone_name</span>    = <span class="s">"dev.example.com"</span>
+
+<span class="c"># Module versions — dev tests newer versions first</span>
+<span class="n">module_version</span>      = <span class="s">"v2.2.0-rc1"</span>   <span class="c"># release candidate</span>
+
+<span class="c"># ── PROD (environments/prod/prod.tfvars) ──────────────────────────────</span>
+<span class="n">environment</span>         = <span class="s">"prod"</span>
+<span class="n">aws_region</span>          = <span class="s">"us-east-1"</span>
+<span class="n">vpc_cidr</span>            = <span class="s">"10.0.0.0/16"</span>
+
+<span class="c"># Production-grade instances</span>
+<span class="n">pf_instance_type</span>    = <span class="s">"m5.2xlarge"</span>
+<span class="n">pf_engine_desired</span>   = <span class="num">4</span>    <span class="c"># four nodes for HA + load distribution</span>
+<span class="n">pf_engine_min</span>       = <span class="num">2</span>    <span class="c"># never below 2 in prod</span>
+<span class="n">pf_engine_max</span>       = <span class="num">8</span>    <span class="c"># scale up to 8 during peak events</span>
+
+<span class="n">hosted_zone_name</span>    = <span class="s">"example.com"</span>
+
+<span class="c"># Module versions — prod stays on stable release</span>
+<span class="n">module_version</span>      = <span class="s">"v2.1.0"</span>       <span class="c"># stable, battle-tested</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: READING ENTERPRISE CODE ON DAY ONE -->
+<section class="sec" id="day-one">
+  <div class="sl">Day one in an enterprise codebase</div>
+  <h2 class="st">How to navigate an unfamiliar Terraform codebase</h2>
+  <div class="sb">
+    <p>When you open a real enterprise Terraform repository for the first time, it can look overwhelming — dozens of files, nested modules, cross-references, and environment-specific overrides. Here is the systematic approach that will orient you in any codebase within 30 minutes.</p>
+  </div>
+
+  <div class="flow">
+    <div class="fstep">
+      <div class="fconn"><div class="fnum">1</div><div class="fline"></div></div>
+      <div class="fbody">
+        <div class="ftitle">Find the backend configuration</div>
+        <div class="fdesc">Open <code>versions.tf</code> in the environment directory you are working in. Note the S3 bucket and state key. This tells you which environment's state this configuration manages — and prevents you from accidentally applying dev changes to prod.</div>
+      </div>
+    </div>
+    <div class="fstep">
+      <div class="fconn"><div class="fnum">2</div><div class="fline"></div></div>
+      <div class="fbody">
+        <div class="ftitle">Map the module dependency tree</div>
+        <div class="fdesc">Open <code>main.tf</code> and list every <code>module</code> block. Identify what outputs each module produces and what inputs each module consumes from other modules. Draw the dependency graph: VPC → IAM, VPC → Compute, S3Config → IAM, S3Config → Compute, Compute → LoadBalancer. This is the blast radius map.</div>
+      </div>
+    </div>
+    <div class="fstep">
+      <div class="fconn"><div class="fnum">3</div><div class="fline"></div></div>
+      <div class="fbody">
+        <div class="ftitle">Run <code>terraform graph</code></div>
+        <div class="fdesc"><code>terraform graph | dot -Tsvg > graph.svg</code> generates a visual dependency graph of all resources. Even without Graphviz, the text output shows which resources depend on which. For a change to a specific resource, this tells you what will be affected downstream.</div>
+      </div>
+    </div>
+    <div class="fstep">
+      <div class="fconn"><div class="fnum">4</div><div class="fline"></div></div>
+      <div class="fbody">
+        <div class="ftitle">Identify the module versions in use</div>
+        <div class="fdesc">Note the <code>ref=</code> or <code>version=</code> values on each module source. Compare across environments. If prod uses <code>v2.1.0</code> and dev uses <code>v2.2.0</code>, there is a version delta — anything that works in dev may not be available in prod. Never assume module parity without checking.</div>
+      </div>
+    </div>
+    <div class="fstep">
+      <div class="fconn"><div class="fnum">5</div><div class="fline"></div></div>
+      <div class="fbody">
+        <div class="ftitle">Run <code>terraform state list</code></div>
+        <div class="fdesc">Lists every resource currently managed in this environment's state. Confirm the expected resources are present. Identify any resources in state that don't appear in the <code>.tf</code> files — these are candidates for state surgery or documentation issues.</div>
+      </div>
+    </div>
+    <div class="fstep">
+      <div class="fconn"><div class="fnum">6</div><div class="fline"></div></div>
+      <div class="fbody">
+        <div class="ftitle">Run <code>terraform plan</code> before any change</div>
+        <div class="fdesc">Always run plan in the target environment before making any changes. This establishes a baseline: what is the current diff between the declared configuration and the real state? If plan shows unexpected changes, investigate before proceeding. In enterprise environments, an unexpected change in plan output is a signal that someone made an out-of-band modification.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8: DRY PATTERNS -->
+<section class="sec" id="dry-patterns">
+  <div class="sl">DRY patterns</div>
+  <h2 class="st">Reducing duplication at the module call level</h2>
+  <div class="sb">
+    <p>Even with the directory-per-environment approach, some duplication remains — each environment's <code>main.tf</code> has nearly identical module calls. Advanced teams use several patterns to reduce this duplication while keeping environment isolation intact.</p>
+  </div>
+
+  <div class="g2">
+    <div class="card cp">
+      <div class="clbl">Pattern 1</div>
+      <div class="cttl">Shared local values</div>
+      <div class="cbdy">Extract repeated expressions into <code>locals</code> blocks. The common tags map, name prefix, and conditional expressions that appear in every module call become locals defined once. <code>local.common_tags</code>, <code>local.name_prefix</code>, <code>local.is_prod</code> — all defined in a <code>locals.tf</code> file shared across the environment directory.</div>
+    </div>
+    <div class="card ct">
+      <div class="clbl">Pattern 2</div>
+      <div class="cttl">Terragrunt for DRY calls</div>
+      <div class="cbdy">Terragrunt is a thin wrapper around Terraform that generates backend configuration, manages module version inheritance, and allows DRY module call definitions. Large teams adopt Terragrunt to eliminate environment-level duplication. Awareness-level for your project — not used currently but valuable to recognise in the wild.</div>
+    </div>
+    <div class="card cb">
+      <div class="clbl">Pattern 3</div>
+      <div class="cttl">Module composition</div>
+      <div class="cbdy">Create a "top-level" or "stack" module that calls all five sub-modules (<code>vpc</code>, <code>iam</code>, <code>compute</code>, <code>loadbalancer</code>, <code>s3-config</code>) together. Each environment calls this single stack module with different inputs. The internal sub-module calls are encapsulated inside the stack module.</div>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">HCL</span><span class="chf">modules/pf-stack/main.tf — composed stack module</span></div>
+    <div class="cbody"><pre><span class="c"># A "stack" module calls all sub-modules together</span>
+<span class="c"># Each environment calls this one module instead of five separate ones</span>
+
+<span class="k">module</span> <span class="s">"vpc"</span> {
+  <span class="k">source</span>  = <span class="s">"../vpc"</span>
+  <span class="k">vpc_cidr</span>        = <span class="v">var.vpc_cidr</span>
+  <span class="k">environment</span>     = <span class="v">var.environment</span>
+  <span class="k">public_subnets</span>  = <span class="v">var.public_subnets</span>
+  <span class="k">private_subnets</span> = <span class="v">var.private_subnets</span>
+  <span class="k">common_tags</span>     = <span class="v">local.common_tags</span>
+}
+
+<span class="k">module</span> <span class="s">"s3_config"</span> { <span class="k">source</span> = <span class="s">"../s3-config"</span>; <span class="c">/* ... */</span> }
+<span class="k">module</span> <span class="s">"iam"</span>       { <span class="k">source</span> = <span class="s">"../iam"</span>;       <span class="k">config_bucket_arn</span> = <span class="n">module</span>.<span class="v">s3_config</span>.<span class="n">config_bucket_arn</span>; <span class="c">/* ... */</span> }
+<span class="k">module</span> <span class="s">"compute"</span>   { <span class="k">source</span> = <span class="s">"../compute"</span>;   <span class="k">private_subnet_ids</span> = <span class="n">module</span>.<span class="v">vpc</span>.<span class="n">private_subnet_ids</span>; <span class="c">/* ... */</span> }
+<span class="k">module</span> <span class="s">"lb"</span>       { <span class="k">source</span> = <span class="s">"../loadbalancer"</span>; <span class="k">vpc_id</span> = <span class="n">module</span>.<span class="v">vpc</span>.<span class="n">vpc_id</span>; <span class="c">/* ... */</span> }
+
+<span class="c"># Each environment now only calls one module:</span>
+<span class="c"># module "pf" {</span>
+<span class="c">#   source         = "git::github.com/company/modules.git//modules/pf-stack?ref=v2.1.0"</span>
+<span class="c">#   environment    = var.environment</span>
+<span class="c">#   vpc_cidr       = var.vpc_cidr</span>
+<span class="c">#   # ...</span>
+<span class="c"># }</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 9: MODULE VERSIONING -->
+<section class="sec" id="versioning">
+  <div class="sl">Module versioning</div>
+  <h2 class="st">Versioning strategy — semantic versioning for Terraform modules</h2>
+  <div class="sb">
+    <p>Enterprise teams version their Terraform modules using git tags following semantic versioning (semver). This gives downstream environments stable, predictable module behaviour and a clear path for controlled upgrades.</p>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">Semver for Terraform Modules</div>
+    <table class="tbl">
+      <thead><tr><th>Version type</th><th>Semver</th><th>Example trigger</th><th>Safe to auto-apply?</th></tr></thead>
+      <tbody>
+        <tr><td>Patch</td><td><code>v2.1.0 → v2.1.1</code></td><td>Bug fix in health check config, tag correction</td><td>Yes — no behaviour change</td></tr>
+        <tr><td>Minor</td><td><code>v2.1.0 → v2.2.0</code></td><td>New optional input variable added, new output added</td><td>Yes for backward-compatible changes — run plan first</td></tr>
+        <tr><td>Major</td><td><code>v2.1.0 → v3.0.0</code></td><td>Required variable renamed, resource type changed, output removed</td><td><strong>No</strong> — requires explicit version upgrade with plan review</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cblock cb-r">
+    <div class="cbt">The production version update process</div>
+    <div class="cbd">When a new module version is released: (1) Update the <code>ref=</code> in <code>environments/dev/main.tf</code> to the new version. (2) Run <code>terraform init -upgrade</code> to pull the new module. (3) Run <code>terraform plan</code> — review every change carefully. (4) Apply to dev. (5) Observe for 24 hours. (6) Repeat for test. (7) Repeat for prod with appropriate change window. Never skip environments. Never update module versions in prod directly.</div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="sec" id="knowledge-checks">
+  <div class="sl">Knowledge check</div>
+  <h2 class="st">Test your enterprise patterns understanding</h2>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>A colleague updates the VPC module to rename the output <code>private_subnet_ids</code> to <code>private_subnets_list</code> and bumps the version to v3.0.0. Your compute module call references <code>module.vpc.private_subnet_ids</code>. What happens when you run plan after updating the VPC module version in dev?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">The plan will fail with an error: "The object produced by this module does not have an attribute named 'private_subnet_ids'."</strong><br><br>When a module output is renamed, all callers that reference the old output name must also be updated. This is the definition of a breaking change — hence the major version bump to v3.0.0. The correct process: (1) Update <code>environments/dev/main.tf</code> to use <code>module.vpc.private_subnets_list</code> everywhere <code>module.vpc.private_subnet_ids</code> appears. (2) Update the compute module call variable that passes this value through. (3) Run plan — it should now succeed. (4) Apply and verify. The major version serves as a signal to check all references before applying. This is why you never auto-apply major version upgrades.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>You need to add a new optional input to the VPC module — an <code>enable_nat_gateway</code> bool with a default of <code>true</code>. What version bump is appropriate and why?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">A minor version bump (<code>v2.1.0 → v2.2.0</code>) is appropriate.</strong> Adding an optional variable with a sensible default is backward-compatible — all existing callers that don't pass <code>enable_nat_gateway</code> will get the <code>true</code> default and behaviour is unchanged. Callers that want the new feature can opt in by passing <code>enable_nat_gateway = false</code>. This is the definition of a minor (non-breaking) change. A major bump would only be warranted if: the variable was required (no default), the change altered existing behaviour for callers who don't set the variable, or an existing variable was removed or renamed.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>You are new to the project and just cloned the Terraform repository. How do you determine whether the current plan for prod will make any changes — without actually applying anything and without reading every <code>.tf</code> file first?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Navigate to <code>environments/prod/</code> and run: <code>terraform init &amp;&amp; terraform plan -var-file=prod.tfvars</code>.</strong><br><br>The plan output will show exactly what Terraform intends to change — creates (<code>+</code>), updates (<code>~</code>), destroys (<code>-</code>), or no changes. If plan shows <code>No changes. Your infrastructure matches the configuration.</code>, the environment is stable and no drift has occurred since the last apply. If plan shows changes, read the output carefully to understand why — is it a legitimate new configuration, or has someone made a manual change (drift)? Always run plan first when joining a team, before any other interaction with the infrastructure.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>Your compute module currently accepts <code>nlb_target_group_arn</code> as a direct input variable. The team wants to restructure so the compute module directly depends on the loadbalancer module output instead of receiving it as a variable. What is the problem with this approach?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">This would create a circular dependency and violate module encapsulation principles.</strong> If the compute module calls the loadbalancer module internally, the loadbalancer module would then need the ASG's target group ARN — creating a circular reference (A depends on B depends on A). More fundamentally, modules should not call other modules from outside their scope — this violates encapsulation and makes modules harder to test in isolation. The correct pattern is: the root configuration (or stack module) calls both the compute and loadbalancer modules and passes the target group ARN output from loadbalancer as an input to compute. This maintains clean module boundaries and avoids coupling.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>The team is debating whether to use Terraform workspaces or directory-per-environment for the PF deployment. Your architecture lead says "workspaces are simpler." How would you structure the counter-argument?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Workspaces are syntactically simpler but operationally riskier for production workloads.</strong><br><br><strong>The core problem:</strong> workspaces share the same <code>.tf</code> files. Any configuration change — a new variable, a modified resource, an updated module version — affects all workspaces simultaneously. If a module upgrade introduces a bug, you cannot test it in dev without it being immediately visible in prod's configuration on the next plan.<br><br><strong>The specific PF risks:</strong> (1) A misconfigured NLB health check in the shared configuration would affect prod the moment it's committed, not just dev. (2) Different instance types (m5.large in dev, m5.2xlarge in prod) require <code>terraform.workspace == "prod" ? ... : ...</code> conditionals scattered through the code — this is fragile and hard to audit. (3) State isolation is partial — the same backend bucket is used, and a confused engineer running apply in the wrong workspace can modify prod.<br><br><strong>The verdict:</strong> Workspaces are appropriate for identical, low-risk environments (e.g. parallel dev branches for feature testing). For Dev/Test/Prod with different configurations, capacities, and risk profiles, directory-per-environment is the safer choice.</div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section class="sec" id="lab">
+  <div class="sl">Mini lab</div>
+  <h2 class="st">Module design and navigation exercises</h2>
+
+  <div class="lab">
+    <div class="labh"><span class="labb">Lab 09-A</span><span class="labt">Design the interface for a reusable compute module</span></div>
+    <div class="labbody">
+      <p style="font-size:14px;color:var(--t2);margin-bottom:var(--md)">You are extracting the compute configuration (Launch Template + ASG) into a reusable module. Design the module's interface: what inputs must it declare in <code>variables.tf</code> and what values must it expose in <code>outputs.tf</code>? Do not write the internal implementation — only the interface.</p>
+      <ol>
+        <li>List all variables the compute module needs to receive as inputs. Include the type, whether it has a default, and a one-line description for each.</li>
+        <li>List all outputs the compute module should expose. Think about what other modules or the CI/CD pipeline will need to consume.</li>
+        <li>Identify which inputs should have defaults and what those defaults should be.</li>
+        <li>Identify one input that should have a <code>validation</code> block and write the condition.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sm)">
+    <div class="kcq"><span class="kci">✓</span>Reveal Lab 09-A solution<span class="kcc">▼</span></div>
+    <div class="kca">
+      <div class="code" style="margin:0">
+        <div class="ch"><span class="chl">HCL</span><span class="chf">modules/compute/variables.tf + outputs.tf — interface</span></div>
+        <div class="cbody"><pre><span class="c"># variables.tf — required inputs (no defaults)</span>
+<span class="k">variable</span> <span class="s">"private_subnet_ids"</span>   { <span class="k">type</span> = <span class="n">list</span>(<span class="n">string</span>); <span class="k">description</span> = <span class="s">"Private subnet IDs for ASG placement"</span> }
+<span class="k">variable</span> <span class="s">"pf_engine_sg_id"</span>     { <span class="k">type</span> = <span class="n">string</span>; <span class="k">description</span> = <span class="s">"PF engine security group ID"</span> }
+<span class="k">variable</span> <span class="s">"instance_profile_arn"</span> { <span class="k">type</span> = <span class="n">string</span>; <span class="k">description</span> = <span class="s">"IAM instance profile ARN"</span> }
+<span class="k">variable</span> <span class="s">"config_bucket_name"</span>  { <span class="k">type</span> = <span class="n">string</span>; <span class="k">description</span> = <span class="s">"S3 config bucket name for user_data"</span> }
+<span class="k">variable</span> <span class="s">"nlb_target_group_arn"</span> { <span class="k">type</span> = <span class="n">string</span>; <span class="k">description</span> = <span class="s">"NLB target group ARN for ASG registration"</span> }
+<span class="k">variable</span> <span class="s">"environment"</span>         { <span class="k">type</span> = <span class="n">string</span>; <span class="k">description</span> = <span class="s">"Deployment environment"</span> }
+<span class="k">variable</span> <span class="s">"aws_region"</span>          { <span class="k">type</span> = <span class="n">string</span>; <span class="k">description</span> = <span class="s">"AWS region for user_data"</span> }
+<span class="k">variable</span> <span class="s">"ami_owner_account_id"</span> { <span class="k">type</span> = <span class="n">string</span>; <span class="k">description</span> = <span class="s">"AWS account ID owning approved AMIs"</span> }
+
+<span class="c"># Optional inputs with sensible defaults</span>
+<span class="k">variable</span> <span class="s">"pf_instance_type"</span>  { <span class="k">type</span> = <span class="n">string</span>; <span class="k">default</span> = <span class="s">"m5.xlarge"</span>; <span class="k">description</span> = <span class="s">"EC2 instance type"</span> }
+<span class="k">variable</span> <span class="s">"pf_engine_desired"</span> { <span class="k">type</span> = <span class="n">number</span>; <span class="k">default</span> = <span class="num">2</span>; <span class="k">description</span> = <span class="s">"Desired ASG capacity"</span> }
+<span class="k">variable</span> <span class="s">"pf_engine_min"</span>     { <span class="k">type</span> = <span class="n">number</span>; <span class="k">default</span> = <span class="num">2</span>; <span class="k">description</span> = <span class="s">"Min ASG capacity"</span> }
+<span class="k">variable</span> <span class="s">"pf_engine_max"</span>     { <span class="k">type</span> = <span class="n">number</span>; <span class="k">default</span> = <span class="num">4</span>; <span class="k">description</span> = <span class="s">"Max ASG capacity"</span> }
+<span class="k">variable</span> <span class="s">"root_volume_size_gb"</span> { <span class="k">type</span> = <span class="n">number</span>; <span class="k">default</span> = <span class="num">50</span>; <span class="k">description</span> = <span class="s">"Root EBS volume size in GB"</span> }
+<span class="k">variable</span> <span class="s">"common_tags"</span>        { <span class="k">type</span> = <span class="n">map</span>(<span class="n">string</span>); <span class="k">default</span> = {}; <span class="k">description</span> = <span class="s">"Common tags for all resources"</span> }
+
+<span class="c"># Validation on pf_engine_min — never allow below 2 in any env</span>
+<span class="k">variable</span> <span class="s">"pf_engine_min"</span> {
+  <span class="k">type</span>    = <span class="n">number</span>
+  <span class="k">default</span> = <span class="num">2</span>
+  <span class="k">validation</span> {
+    <span class="k">condition</span>     = <span class="v">var.pf_engine_min</span> >= <span class="num">1</span>
+    <span class="k">error_message</span> = <span class="s">"pf_engine_min must be at least 1. Use 2 or higher for HA deployments."</span>
+  }
+}
+
+<span class="c"># outputs.tf</span>
+<span class="k">output</span> <span class="s">"asg_name"</span>            { <span class="k">description</span> = <span class="s">"ASG name for monitoring and refresh"</span>; <span class="k">value</span> = <span class="n">aws_autoscaling_group</span>.<span class="v">pf_engines</span>.<span class="n">name</span> }
+<span class="k">output</span> <span class="s">"launch_template_id"</span>  { <span class="k">description</span> = <span class="s">"Launch template ID"</span>; <span class="k">value</span> = <span class="n">aws_launch_template</span>.<span class="v">pf_engine</span>.<span class="n">id</span> }
+<span class="k">output</span> <span class="s">"launch_template_version"</span> { <span class="k">description</span> = <span class="s">"Latest LT version"</span>; <span class="k">value</span> = <span class="n">aws_launch_template</span>.<span class="v">pf_engine</span>.<span class="n">latest_version</span> }</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AR -->
+<div class="ar">
+  <div class="arh">
+    <span class="arb">Senior Review</span>
+    <span class="art">Module and enterprise architecture questions</span>
+  </div>
+  <ul class="arl">
+    <li><span class="arn">01</span>The security team wants to enforce that all Terraform modules used in production must come from the company's private module registry, not directly from GitHub or the public Terraform Registry. How would you implement this enforcement technically and operationally?</li>
+    <li><span class="arn">02</span>A junior engineer accidentally ran <code>terraform apply</code> in <code>environments/prod/</code> when they intended to apply to <code>environments/dev/</code>. Walk through the safeguards that should exist to prevent this, and how you would implement them in the CI/CD pipeline and in Terraform itself.</li>
+    <li><span class="arn">03</span>You are asked to split the PF compute module into two separate modules — one for the Launch Template and one for the ASG. What dependency challenge does this create, and how would you design the interface between the two modules?</li>
+    <li><span class="arn">04</span>The team wants to add a fourth environment — a "staging" environment that is identical to prod in configuration but uses smaller instances. What changes are needed to the directory structure and should staging use a separate state file?</li>
+    <li><span class="arn">05</span>After six months of development, the VPC module has 47 input variables. A new engineer finds it difficult to understand which are required, which are optional, and which depend on other variables. How would you refactor the module interface to improve clarity without breaking existing callers?</li>
+  </ul>
+</div>
+
+<!-- TK -->
+<div class="tk">
+  <div class="tkh">
+    <div class="tki">◆</div>
+    <div class="tkt">Module 09 — Key Takeaways</div>
+  </div>
+  <ul class="tkl">
+    <li>A module is a reusable group of resources with a defined input/output interface. The module contract: well-named inputs, useful outputs, no side effects outside the module's declared scope.</li>
+    <li>Standard module structure: <code>main.tf</code> (resources), <code>variables.tf</code> (inputs), <code>outputs.tf</code> (outputs), <code>versions.tf</code> (provider constraints), <code>README.md</code> (documentation).</li>
+    <li>Always pin module versions in production: <code>ref=v2.1.0</code> on git sources, <code>version = "2.1.0"</code> on registry sources. Unpinned modules are a reliability risk.</li>
+    <li>Directory-per-environment is the production standard. Each environment has its own directory, its own state file (separate S3 key), and its own module version pins. This provides complete config and state isolation.</li>
+    <li>Workspaces are acceptable for identical low-risk environments. They are not suitable when environments differ in configuration, capacity, or module versions — which is always true for Dev/Test/Prod in enterprise.</li>
+    <li>The day-one navigation sequence: find backend config → map module dependencies → run <code>terraform graph</code> → identify module versions → run <code>terraform state list</code> → run <code>terraform plan</code>.</li>
+    <li>Module version upgrades follow semver: patch = safe auto-apply, minor = backward compatible, major = requires manual review of all callers. Never apply major upgrades to prod without a staged rollout through dev and test first.</li>
+    <li>Cross-module references (<code>module.vpc.vpc_id</code>) create implicit dependencies. Terraform resolves these automatically. Circular module dependencies are not allowed — design module interfaces to avoid them.</li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="toc">
+    <div class="tl">In this module</div>
+    <a class="ti" href="#bridge">Bridge from M08</a>
+    <a class="ti" href="#what-is-a-module">What is a module</a>
+    <a class="ti" href="#module-structure">Module anatomy</a>
+    <a class="ti" href="#calling-modules">Calling modules</a>
+    <a class="ti" href="#directory-structure">Enterprise directory structure</a>
+    <a class="ti" href="#env-values">Env-specific values</a>
+    <a class="ti" href="#day-one">Day one navigation</a>
+    <a class="ti" href="#dry-patterns">DRY patterns</a>
+    <a class="ti" href="#versioning">Module versioning</a>
+    <a class="ti" href="#knowledge-checks">Knowledge checks</a>
+    <a class="ti" href="#lab">Mini lab</a>
+  </div>
+  <div class="qr">
+    <div class="qrl">Module Call Syntax</div>
+    <div class="qi"><span class="qt">source</span><span class="qd">Where module lives</span></div>
+    <div class="qi"><span class="qt">version / ref</span><span class="qd">Pin to specific release</span></div>
+    <div class="qi"><span class="qt">inputs</span><span class="qd">Variable values passed in</span></div>
+    <div class="qi"><span class="qt">module.X.output</span><span class="qd">Consume module output</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">Module Source Types</div>
+    <div class="qi"><span class="qt">./modules/vpc</span><span class="qd">Local path</span></div>
+    <div class="qi"><span class="qt">git::github.com/…</span><span class="qd">Git repo (pin with ref=)</span></div>
+    <div class="qi"><span class="qt">registry.terraform.io/…</span><span class="qd">Public or private registry</span></div>
+    <div class="qi"><span class="qt">s3::bucket/module.zip</span><span class="qd">S3 bucket (enterprise)</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">Series Progress</div>
+    <div style="padding:var(--sm) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--sm);background:var(--s2);border-radius:var(--r8)">
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--tg);border:1px solid var(--td);color:var(--td)">M01–M08</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);font-weight:600;box-shadow:0 0 10px var(--pg)">M09</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--s3);border:1px solid var(--brb);color:var(--t3)">M10 ★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /layout -->
+
+<!-- BRIDGE -->
+<div class="bridge">
+  <div class="bc">
+    <div class="bce">Coming up next · Module 10</div>
+    <div class="bct"><span>Troubleshooting &amp; Operations</span> — Reading Plans Like a Senior Engineer</div>
+    <div class="bcb">
+      You can build the complete PF stack (Phase 2) and structure it for enterprise operation at scale (Phase 3, M09). One capability remains before the capstone: knowing what to do when things go wrong.<br><br>
+      Module 10 covers reading Terraform plan output like a senior engineer, diagnosing failed applies, understanding state incidents, debugging the AMI refresh when it goes sideways, and the operational runbook for zero-downtime deployments. This is the module that turns a Terraform user into a Terraform operator — someone the team trusts to own a production deployment under time pressure.
+    </div>
+    <div class="bcc">
+      <span class="b bn">Reading plans</span>
+      <span class="b bn">Debugging failed applies</span>
+      <span class="b bn">State incidents</span>
+      <span class="b bn">AMI refresh failures</span>
+      <span class="b bn">Rollback strategies</span>
+      <span class="b bn">Operational runbooks</span>
+    </div>
+    <a href="module-10.html" class="bcbtn">Continue to Module 10 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="fl">M09 · Modules &amp; Enterprise Patterns · Phase 3 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--sm);align-items:center">
+    <a href="module-08.html" class="b bq" style="text-decoration:none">← M08</a>
+    <a href="index.html" class="b bq" style="text-decoration:none">Index</a>
+    <a href="module-10.html" class="b bp" style="text-decoration:none">M10 →</a>
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+function toggleKC(el){el.classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.ti');
+  const secs=[];
+  items.forEach(i=>{const id=i.getAttribute('href').replace('#','');const el=document.getElementById(id);if(el)secs.push({el,item:i})});
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){items.forEach(i=>i.classList.remove('active'));const f=secs.find(s=>s.el===en.target);if(f)f.item.classList.add('active')}}),{rootMargin:'-20% 0px -70% 0px'});
+  secs.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target)}}),{threshold:.06});
+  document.querySelectorAll('.sec,.card,.dw,.lab,.ar,.tk,.bc,.kc,.dir-tree').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .45s ease,transform .45s ease';io.observe(el)});
+})();
+</script>
+</body>
+</html>

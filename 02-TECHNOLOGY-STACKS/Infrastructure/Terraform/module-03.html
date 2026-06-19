@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-1">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M03 · State Management — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void:#0B0E14;--bg-surface-1:#111520;--bg-surface-2:#181D2A;--bg-surface-3:#1F2535;--bg-surface-4:#252D40;
+  --border:#1E2636;--border-bright:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);--teal-glow-md:rgba(0,229,195,0.20);
+  --copper:#E8873A;--copper-dim:#B86929;--copper-glow:rgba(232,135,58,0.15);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.12);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.12);
+  --jade:#3ECFA0;--violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.13);
+  --text-primary:#E8EDF5;--text-secondary:#8A95A8;--text-tertiary:#4A5568;--text-accent:#00E5C3;
+  --font-display:'Syne',sans-serif;--font-body:'IBM Plex Sans',sans-serif;--font-mono:'IBM Plex Mono',monospace;
+  --space-xs:4px;--space-sm:8px;--space-md:16px;--space-lg:24px;--space-xl:40px;--space-2xl:64px;--space-3xl:96px;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;--radius-pill:999px;
+  --shadow-card:0 1px 3px rgba(0,0,0,0.5),0 4px 16px rgba(0,0,0,0.3);
+  --transition-fast:150ms ease;--transition-base:250ms ease;
+  /* Phase 1 — Teal, slightly shifted for M03 identity */
+  --module-phase-color:#00E5C3;--module-phase-glow:rgba(0,229,195,0.15);--module-phase-dim:#00B89A;
+  --module-accent:#9B7FFF; /* violet accent for state — the "most dangerous file" */
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background-color:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);font-weight:400;line-height:1.7;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-size:128px 128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:999px}
+::selection{background:var(--module-phase-glow);color:var(--module-phase-color)}
+a{color:var(--sapphire);text-decoration:none;transition:color var(--transition-fast)}a:hover{color:var(--teal)}
+code{font-family:var(--font-mono);font-size:0.85em;background:var(--bg-surface-3);border:1px solid var(--border);color:var(--teal);padding:1px 5px;border-radius:var(--radius-sm)}
+mark{background:var(--module-phase-glow);color:var(--module-phase-color);padding:1px 4px;border-radius:2px}
+.portal-shell{max-width:1100px;margin:0 auto;padding:0 var(--space-xl)}
+@media(max-width:768px){.portal-shell{padding:0 var(--space-md)}}
+/* NAV */
+.portal-nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,0.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--border);padding:0 var(--space-xl)}
+.portal-nav__inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--space-lg)}
+.portal-nav__logo{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.portal-nav__logo span{color:var(--text-tertiary);font-weight:400}
+.nav-divider{width:1px;height:20px;background:var(--border-bright);flex-shrink:0}
+.portal-nav__progress{flex:1;display:flex;align-items:center;gap:var(--space-sm)}
+.progress-track{flex:1;height:2px;background:var(--border);border-radius:var(--radius-pill);overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--module-phase-color),var(--module-accent));border-radius:var(--radius-pill)}
+.progress-label{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);white-space:nowrap}
+.nav-module-badge{font-family:var(--font-mono);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--radius-pill);background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color);white-space:nowrap}
+/* HERO */
+.module-hero{position:relative;padding:var(--space-3xl) 0 var(--space-2xl);overflow:hidden}
+.module-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(155,127,255,0.07) 0%,var(--module-phase-glow) 50%,transparent 80%);pointer-events:none}
+.module-hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 60% at 20% 50%,black 0%,transparent 70%);opacity:0.4;pointer-events:none}
+.module-hero__content{position:relative;z-index:1}
+.module-hero__phase{display:inline-flex;align-items:center;gap:var(--space-sm);font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--module-phase-color);margin-bottom:var(--space-md)}
+.phase-dot{width:6px;height:6px;border-radius:50%;background:var(--module-phase-color);box-shadow:0 0 8px var(--module-phase-color);animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px var(--module-phase-color)}50%{opacity:.5;box-shadow:0 0 3px var(--module-phase-color)}}
+.module-hero__title{font-family:var(--font-display);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-0.02em;color:var(--text-primary);margin-bottom:var(--space-md);max-width:780px}
+.module-hero__title .accent{color:var(--module-phase-color)}
+.module-hero__title .accent-v{color:var(--module-accent)}
+.module-hero__subtitle{font-size:17px;font-weight:300;color:var(--text-secondary);max-width:640px;line-height:1.65;margin-bottom:var(--space-xl)}
+.module-hero__meta{display:flex;flex-wrap:wrap;gap:var(--space-sm);align-items:center}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--radius-pill);white-space:nowrap;letter-spacing:0.04em}
+.badge--phase{background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color)}
+.badge--effort{background:rgba(232,135,58,0.10);border:1px solid rgba(232,135,58,0.30);color:var(--copper)}
+.badge--track{background:rgba(74,158,255,0.10);border:1px solid rgba(74,158,255,0.30);color:var(--sapphire)}
+.badge--prereq{background:var(--bg-surface-2);border:1px solid var(--border-bright);color:var(--text-secondary)}
+.badge--new{background:rgba(0,229,195,0.10);border:1px solid rgba(0,229,195,0.30);color:var(--teal)}
+.badge--danger{background:rgba(255,95,126,0.10);border:1px solid rgba(255,95,126,0.35);color:var(--rose)}
+.badge--violet{background:var(--violet-glow);border:1px solid rgba(155,127,255,.35);color:var(--violet)}
+/* ORIENTATION */
+.orientation-panel{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-xl);margin-bottom:var(--space-2xl);position:relative;overflow:hidden}
+.orientation-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--module-accent),var(--module-phase-color) 60%,transparent)}
+.orientation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-lg)}
+.orientation-item__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px}
+.orientation-item__value{font-size:14px;font-weight:500;color:var(--text-primary)}
+.orientation-item__value.accent{color:var(--module-phase-color)}
+.journey-dots{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--space-lg);padding-top:var(--space-lg);border-top:1px solid var(--border)}
+.journey-dot{width:30px;height:30px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:500}
+.journey-dot--done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.journey-dot--current{background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color);box-shadow:0 0 12px var(--module-phase-glow)}
+.journey-dot--future{background:var(--bg-surface-2);border:1px solid var(--border);color:var(--text-tertiary)}
+/* LAYOUT */
+.module-content{display:grid;grid-template-columns:1fr 260px;gap:var(--space-2xl);align-items:start}
+@media(max-width:900px){.module-content{grid-template-columns:1fr}}
+.content-main{min-width:0}.content-sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.section{margin-bottom:var(--space-2xl)}
+.section-label{display:flex;align-items:center;gap:var(--space-sm);font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--module-phase-color);margin-bottom:var(--space-md)}
+.section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border-bright) 0%,transparent 100%)}
+.section-title{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);line-height:1.2}
+.section-body{font-size:15px;color:var(--text-secondary);line-height:1.8}
+.section-body p{margin-bottom:var(--space-md)}.section-body p:last-child{margin-bottom:0}
+.section-body strong{color:var(--text-primary);font-weight:600}
+.section-body em{color:var(--module-phase-color);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);transition:border-color var(--transition-base),box-shadow var(--transition-base)}
+.card:hover{border-color:var(--border-bright);box-shadow:var(--shadow-card)}
+.card--phase{border-left:2px solid var(--module-phase-color);background:linear-gradient(135deg,var(--module-phase-glow) 0%,var(--bg-surface-1) 60%)}
+.card--teal{border-left:2px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-surface-1) 60%)}
+.card--copper{border-left:2px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-surface-1) 60%)}
+.card--sapphire{border-left:2px solid var(--sapphire);background:linear-gradient(135deg,var(--sapphire-glow) 0%,var(--bg-surface-1) 60%)}
+.card--rose{border-left:2px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-surface-1) 60%)}
+.card--violet{border-left:2px solid var(--violet);background:linear-gradient(135deg,var(--violet-glow) 0%,var(--bg-surface-1) 60%)}
+.card__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm)}
+.card__title{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:var(--space-sm)}
+.card__body{font-size:14px;color:var(--text-secondary);line-height:1.7}
+.card-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--space-md)}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md)}
+/* DIAGRAM */
+.diagram-wrap{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);margin:var(--space-xl) 0;overflow-x:auto}
+.diagram-wrap__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-md);display:flex;align-items:center;gap:var(--space-sm)}
+.diagram-wrap__label::before{content:'◈';color:var(--module-phase-color);font-size:12px}
+/* CONCEPT BLOCKS */
+.concept-block{border-left:2px solid var(--module-phase-color);padding:var(--space-md) var(--space-lg);background:var(--module-phase-glow);border-radius:0 var(--radius-md) var(--radius-md) 0;margin:var(--space-lg) 0}
+.concept-block__term{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--module-phase-color);margin-bottom:4px}
+.concept-block__def{font-size:14px;color:var(--text-secondary);line-height:1.65}
+.concept-block--danger{border-left-color:var(--rose);background:var(--rose-glow)}
+.concept-block--danger .concept-block__term{color:var(--rose)}
+.concept-block--violet{border-left-color:var(--violet);background:var(--violet-glow)}
+.concept-block--violet .concept-block__term{color:var(--violet)}
+/* CODE BLOCKS */
+.code-block{background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;margin:var(--space-md) 0;font-family:var(--font-mono);font-size:12px}
+.code-block__header{display:flex;align-items:center;justify-content:space-between;padding:var(--space-sm) var(--space-md);background:var(--bg-surface-3);border-bottom:1px solid var(--border)}
+.code-block__lang{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary)}
+.code-block__file{font-size:11px;color:var(--text-secondary)}
+.code-block__body{padding:var(--space-md);overflow-x:auto;line-height:1.7;color:var(--text-secondary);tab-size:2}
+.code-block__body .k{color:#c792ea}.code-block__body .s{color:var(--jade)}.code-block__body .c{color:var(--text-tertiary);font-style:italic}
+.code-block__body .v{color:var(--copper)}.code-block__body .n{color:var(--teal)}.code-block__body .p{color:var(--sapphire)}.code-block__body .num{color:#f78c6c}
+.code-block__body .danger{color:var(--rose);font-weight:500}
+/* FLOW SEQUENCE */
+.flow-sequence{display:flex;flex-direction:column;gap:0;margin:var(--space-lg) 0}
+.flow-step{display:flex;gap:var(--space-md);align-items:flex-start}
+.flow-step__connector{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:32px}
+.flow-step__num{width:32px;height:32px;border-radius:50%;background:var(--bg-surface-2);border:1px solid var(--module-phase-color);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--module-phase-color);flex-shrink:0;position:relative;z-index:1}
+.flow-step__num--danger{border-color:var(--rose);color:var(--rose)}
+.flow-step__line{width:1px;flex:1;min-height:24px;background:linear-gradient(var(--border-bright),var(--border))}
+.flow-step:last-child .flow-step__line{display:none}
+.flow-step__body{padding-bottom:var(--space-lg);padding-top:5px;flex:1}
+.flow-step__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.flow-step__desc{font-size:13px;color:var(--text-secondary);line-height:1.65}
+/* KNOWLEDGE CHECK */
+.knowledge-check{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-md) 0}
+.knowledge-check__question{padding:var(--space-md) var(--space-lg);font-size:14px;font-weight:500;color:var(--text-primary);display:flex;align-items:flex-start;gap:var(--space-sm);cursor:pointer;transition:background var(--transition-fast);user-select:none}
+.knowledge-check__question:hover{background:var(--bg-surface-2)}
+.kc-icon{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--module-phase-color);background:var(--module-phase-glow);border:1px solid var(--module-phase-color);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kc-chevron{margin-left:auto;flex-shrink:0;color:var(--text-tertiary);transition:transform var(--transition-base);font-size:12px}
+.knowledge-check.open .kc-chevron{transform:rotate(180deg)}
+.knowledge-check__answer{display:none;padding:var(--space-md) var(--space-lg);background:var(--bg-surface-2);border-top:1px solid var(--border);font-size:14px;color:var(--text-secondary);line-height:1.7}
+.knowledge-check.open .knowledge-check__answer{display:block}
+/* SIDEBAR */
+.toc{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)}
+.toc__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm);padding-bottom:var(--space-sm);border-bottom:1px solid var(--border)}
+.toc__item{display:block;padding:5px var(--space-sm);font-size:12px;color:var(--text-secondary);border-radius:var(--radius-sm);transition:all var(--transition-fast);cursor:pointer;border-left:2px solid transparent}
+.toc__item:hover,.toc__item.active{background:var(--bg-surface-2);color:var(--text-primary);border-left-color:var(--module-phase-color)}
+.quick-ref{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)}
+.quick-ref__label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm);padding-bottom:var(--space-sm);border-bottom:1px solid var(--border)}
+.quick-ref__item{display:flex;gap:var(--space-sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.quick-ref__item:last-child{border-bottom:none}
+.quick-ref__term{font-family:var(--font-mono);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.quick-ref__def{color:var(--text-secondary);line-height:1.5}
+/* TAKEAWAY */
+.takeaway-box{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin:var(--space-xl) 0}
+.takeaway-box__header{display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);padding-bottom:var(--space-md);border-bottom:1px solid var(--border)}
+.takeaway-box__icon{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--module-phase-glow);border:1px solid var(--module-phase-color);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--module-phase-color);flex-shrink:0}
+.takeaway-box__title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text-primary)}
+.takeaway-list{list-style:none;display:flex;flex-direction:column;gap:var(--space-sm)}
+.takeaway-list li{font-size:14px;color:var(--text-secondary);display:flex;align-items:flex-start;gap:var(--space-sm);line-height:1.65}
+.takeaway-list li::before{content:'◆';color:var(--module-phase-color);font-size:8px;flex-shrink:0;margin-top:6px}
+/* ARCHITECT REVIEW */
+.architect-review{background:var(--bg-surface-1);border:1px solid var(--copper-dim);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-xl) 0}
+.architect-review__header{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--space-sm)}
+.architect-review__badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,0.15);border:1px solid rgba(232,135,58,0.4);padding:2px 8px;border-radius:var(--radius-pill)}
+.architect-review__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary)}
+.architect-review__list{list-style:none;padding:var(--space-md) var(--space-lg);display:flex;flex-direction:column;gap:var(--space-sm)}
+.architect-review__list li{font-size:14px;color:var(--text-secondary);display:flex;gap:var(--space-sm);align-items:flex-start;line-height:1.65;padding:var(--space-sm) 0;border-bottom:1px solid var(--border)}
+.architect-review__list li:last-child{border-bottom:none}
+.ar-num{font-family:var(--font-mono);font-size:11px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR NOTE */
+.mentor-note{display:flex;gap:var(--space-md);padding:var(--space-lg);background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);margin:var(--space-lg) 0}
+.mentor-note__avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--module-phase-glow);border:1px solid var(--module-phase-color);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mentor-note__body{flex:1}
+.mentor-note__label{font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--module-phase-color);margin-bottom:4px}
+.mentor-note__text{font-size:14px;color:var(--text-secondary);line-height:1.75}
+.mentor-note__text strong{color:var(--text-primary);font-weight:600}
+/* LAB */
+.lab-block{background:var(--bg-surface-1);border:1px solid var(--teal-dim);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-xl) 0}
+.lab-block__header{background:linear-gradient(135deg,var(--teal-glow),transparent);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--space-sm)}
+.lab-block__badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);background:var(--teal-glow);border:1px solid rgba(0,229,195,0.4);padding:2px 8px;border-radius:var(--radius-pill)}
+.lab-block__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary)}
+.lab-block__body{padding:var(--space-lg)}
+.lab-block__body ol{padding-left:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-sm)}
+.lab-block__body ol li{font-size:14px;color:var(--text-secondary);line-height:1.65;padding-left:4px}
+.lab-block__body ol li strong{color:var(--text-primary)}
+/* BRIDGE */
+.bridge-section{margin-top:var(--space-3xl);padding-top:var(--space-2xl);border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-surface-1) 0%,var(--bg-surface-2) 100%);border:1px solid var(--border-bright);border-radius:var(--radius-xl);padding:var(--space-xl);position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--module-phase-color),var(--sapphire),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:rgba(74,158,255,0.06);pointer-events:none}
+.bridge-card__eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm)}
+.bridge-card__title{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);position:relative}
+.bridge-card__title span{color:var(--sapphire)}
+.bridge-card__body{font-size:14px;color:var(--text-secondary);line-height:1.75;max-width:580px;margin-bottom:var(--space-lg)}
+.bridge-card__concepts{display:flex;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-lg)}
+.bridge-card__btn{display:inline-flex;align-items:center;gap:var(--space-sm);background:var(--sapphire);color:var(--bg-void);font-family:var(--font-display);font-size:14px;font-weight:700;padding:12px var(--space-lg);border-radius:var(--radius-pill);text-decoration:none;transition:all var(--transition-base)}
+.bridge-card__btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--sapphire-glow);color:var(--bg-void)}
+/* FOOTER */
+.portal-footer{margin-top:var(--space-3xl);padding:var(--space-xl) 0;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap}
+.portal-footer__left{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)}
+/* COMPARE TABLE */
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;margin:var(--space-lg) 0}
+.compare-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-tertiary);padding:var(--space-sm) var(--space-md);border-bottom:1px solid var(--border-bright);text-align:left;white-space:nowrap}
+.compare-table th:first-child{color:var(--module-phase-color)}
+.compare-table td{padding:10px var(--space-md);border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:top;line-height:1.6}
+.compare-table td:first-child{font-weight:500;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;white-space:nowrap}
+.compare-table tr:hover td{background:var(--bg-surface-2)}
+.compare-table tr:last-child td{border-bottom:none}
+/* INCIDENT BOX */
+.incident-box{background:linear-gradient(135deg,rgba(255,95,126,0.08) 0%,var(--bg-surface-1) 60%);border:1px solid rgba(255,95,126,0.35);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-xl) 0}
+.incident-box__header{background:rgba(255,95,126,0.1);padding:var(--space-md) var(--space-lg);border-bottom:1px solid rgba(255,95,126,0.2);display:flex;align-items:center;gap:var(--space-sm)}
+.incident-box__badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--rose);background:rgba(255,95,126,0.12);border:1px solid rgba(255,95,126,0.4);padding:2px 8px;border-radius:var(--radius-pill)}
+.incident-box__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary)}
+.incident-box__body{padding:var(--space-lg)}
+.incident-box__body p{font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:var(--space-md)}
+.incident-box__body p:last-child{margin-bottom:0}
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.animate-fade-up{animation:fadeInUp 0.5s ease both}.animate-fade{animation:fadeIn 0.4s ease both}
+.delay-1{animation-delay:.10s}.delay-2{animation-delay:.20s}.delay-3{animation-delay:.30s}
+/* STATE JSON display */
+.state-json{background:#080e18;border:1px solid rgba(155,127,255,.3);border-radius:var(--radius-md);padding:var(--space-lg);font-family:var(--font-mono);font-size:11.5px;line-height:1.7;overflow-x:auto;margin:var(--space-md) 0;color:var(--text-secondary)}
+.state-json .sk{color:#c792ea}.state-json .sv{color:var(--jade)}.state-json .sn{color:var(--copper)}.state-json .sc{color:var(--text-tertiary);font-style:italic}.state-json .sh{color:var(--rose)}
+/* DEP MAP */
+.dep-node{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:var(--radius-pill);white-space:nowrap}
+.dep-node--done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.dep-node--current{background:var(--module-phase-glow);border:1px solid var(--module-phase-color);color:var(--module-phase-color);font-weight:600;box-shadow:0 0 12px var(--module-phase-glow)}
+.dep-node--future{background:var(--bg-surface-3);border:1px solid var(--border-bright);color:var(--text-tertiary)}
+.dep-arrow{color:var(--text-tertiary);font-size:14px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="portal-nav">
+  <div class="portal-nav__inner">
+    <a href="index.html" class="portal-nav__logo" style="text-decoration:none;">Terraform<span> · Mastery</span></a>
+    <div class="nav-divider"></div>
+    <div class="portal-nav__progress">
+      <div class="progress-track"><div class="progress-fill" style="width:27%"></div></div>
+      <span class="progress-label">M03 / 10</span>
+    </div>
+    <span class="nav-module-badge">M03 · Phase 1</span>
+  </div>
+</nav>
+
+<div class="portal-shell">
+
+<!-- HERO -->
+<section class="module-hero animate-fade-up">
+  <div class="module-hero__content">
+    <div class="module-hero__phase"><div class="phase-dot"></div>Phase 1 · Core Language &amp; State</div>
+    <h1 class="module-hero__title">State Management —<br>The <span class="accent-v">Most Important</span><br><span class="accent">Concept</span> in Terraform</h1>
+    <p class="module-hero__subtitle">The state file is Terraform's memory. It is also the most sensitive artifact in your infrastructure stack. Understanding it — what it records, how it is protected, when it breaks, and how to repair it — is what separates engineers who use Terraform from engineers who truly own it.</p>
+    <div class="module-hero__meta">
+      <span class="badge badge--phase">Phase 1 · Core Concepts</span>
+      <span class="badge badge--effort">⬛⬛⬛⬛☐ 4–5 hrs</span>
+      <span class="badge badge--track">State · Backend · Operations</span>
+      <span class="badge badge--prereq">↳ Prereq: M01 + M02</span>
+      <span class="badge badge--danger">⚠ Most incident-prone topic</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orientation-panel animate-fade-up delay-2">
+  <div class="orientation-grid">
+    <div><div class="orientation-item__label">Current module</div><div class="orientation-item__value accent">M03 · State Management</div></div>
+    <div><div class="orientation-item__label">Phase</div><div class="orientation-item__value">Phase 1 — Core Language &amp; State</div></div>
+    <div><div class="orientation-item__label">What you bring in</div><div class="orientation-item__value">HCL fluency + dependency graph model</div></div>
+    <div><div class="orientation-item__label">Unlocks</div><div class="orientation-item__value">M04–M08 · AWS Infrastructure</div></div>
+  </div>
+  <div class="journey-dots">
+    <div class="journey-dot journey-dot--done">M01</div>
+    <div class="journey-dot journey-dot--done">M02</div>
+    <div class="journey-dot journey-dot--current">M03</div>
+    <div class="journey-dot journey-dot--future">M04</div>
+    <div class="journey-dot journey-dot--future">M05</div>
+    <div class="journey-dot journey-dot--future">M06</div>
+    <div class="journey-dot journey-dot--future">M07</div>
+    <div class="journey-dot journey-dot--future">M08</div>
+    <div class="journey-dot journey-dot--future">M09</div>
+    <div class="journey-dot journey-dot--future">M10</div>
+    <div class="journey-dot journey-dot--future" style="background:linear-gradient(135deg,var(--copper-glow),var(--teal-glow));border:1px solid var(--copper);color:var(--copper)">★</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="module-content">
+<div class="content-main">
+
+<!-- ── SECTION 1: BRIDGE ── -->
+<section class="section animate-fade-up delay-3" id="bridge">
+  <div class="section-label">Bridge from Module 02</div>
+  <h2 class="section-title">You can write the infrastructure. Now learn how Terraform remembers it.</h2>
+  <div class="section-body">
+    <p>In Module 02 you learned to declare infrastructure in HCL — resources, data sources, variables, outputs, locals. You can now write an S3 bucket, an IAM role, a security group. You understand how resource references create implicit dependencies and how the AMI data source resolves to the latest approved image at plan time.</p>
+    <p>But here is the question that HCL alone cannot answer: <strong>how does Terraform know the bucket already exists the second time you run plan?</strong> How does it know which EC2 instance belongs to which resource block? How does it prevent two engineers from applying changes simultaneously? How does it know what to destroy when you decommission an environment?</p>
+    <p>All of this is answered by one file: the <em>state file</em>. It is the most critical piece of Terraform's architecture, the most common source of serious incidents, and the topic that most engineers underestimate until something goes wrong. Module 03 ensures you never underestimate it.</p>
+  </div>
+  <div class="mentor-note">
+    <div class="mentor-note__avatar">🧑‍🏫</div>
+    <div class="mentor-note__body">
+      <div class="mentor-note__label">Mentor Note — why this module comes before the AWS resources</div>
+      <div class="mentor-note__text">You might wonder why we cover state before we cover VPCs and EC2. The reason is sequencing: every AWS resource module from M04 onward will reference state concepts — what gets tracked, what doesn't, what happens during a refresh. If you don't understand state first, those references will be confusing noise. Build the foundation now; everything else plugs cleanly into it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 2: WHAT IS STATE ── -->
+<section class="section" id="what-is-state">
+  <div class="section-label">What is state</div>
+  <h2 class="section-title">The state file — Terraform's source of truth</h2>
+  <div class="section-body">
+    <p>Every time you run <code>terraform apply</code>, Terraform creates or updates a JSON file called <code>terraform.tfstate</code>. This file records every resource that Terraform manages: its type, its ID in AWS, and the last-known values of all its attributes. This is the state file.</p>
+    <p>Without the state file, Terraform cannot function. It has no way to know whether the resources it declared already exist in AWS. It would attempt to create them again on every apply — or worse, fail silently. The state file is the bridge between your HCL declarations and the real world.</p>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">The three-way reconciliation</div>
+    <div class="concept-block__def">When you run <code>terraform plan</code>, Terraform performs a three-way comparison: (1) your <code>.tf</code> configuration — what you want to exist, (2) the state file — what Terraform last saw in AWS, and (3) the real AWS API — what currently exists. The plan output is the diff between what you want and what currently exists, informed by what Terraform last recorded. This is why <code>plan</code> makes live AWS API calls — it is not just comparing two text files.</div>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-wrap__label">The Three-Way Reconciliation at Plan Time</div>
+    <svg viewBox="0 0 820 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:540px;display:block;">
+      <defs>
+        <marker id="pa" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#9B7FFF"/></marker>
+        <marker id="pb" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#00E5C3"/></marker>
+        <marker id="pc" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#4A9EFF"/></marker>
+      </defs>
+      <!-- .tf config -->
+      <rect x="10" y="50" width="170" height="100" rx="8" fill="#0F1020" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="95" y="88" text-anchor="middle" fill="#9B7FFF" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">.tf CONFIGURATION</text>
+      <text x="95" y="106" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">What you want</text>
+      <text x="95" y="122" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">to exist</text>
+      <!-- State file -->
+      <rect x="320" y="10" width="180" height="100" rx="8" fill="#0a0610" stroke="rgba(155,127,255,.7)" stroke-width="2"/>
+      <text x="410" y="48" text-anchor="middle" fill="#9B7FFF" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">STATE FILE</text>
+      <text x="410" y="66" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">What Terraform last</text>
+      <text x="410" y="82" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">recorded in AWS</text>
+      <text x="410" y="98" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="9" font-family="IBM Plex Mono,monospace">terraform.tfstate</text>
+      <!-- AWS real -->
+      <rect x="320" y="130" width="180" height="60" rx="8" fill="#08100e" stroke="rgba(0,229,195,.45)" stroke-width="1.5"/>
+      <text x="410" y="157" text-anchor="middle" fill="#00E5C3" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">REAL AWS</text>
+      <text x="410" y="175" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">What actually exists now</text>
+      <!-- PLAN engine -->
+      <rect x="540" y="70" width="140" height="60" rx="8" fill="#060e18" stroke="rgba(0,229,195,.6)" stroke-width="2"/>
+      <text x="610" y="95" text-anchor="middle" fill="#00E5C3" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">terraform plan</text>
+      <text x="610" y="113" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">↳ diff = PLAN OUTPUT</text>
+      <!-- Arrows -->
+      <line x1="181" y1="100" x2="318" y2="68" stroke="rgba(155,127,255,.5)" stroke-width="1.5" marker-end="url(#pa)"/>
+      <line x1="501" y1="60" x2="538" y2="92" stroke="rgba(155,127,255,.45)" stroke-width="1.5" marker-end="url(#pa)"/>
+      <line x1="501" y1="160" x2="538" y2="118" stroke="rgba(0,229,195,.45)" stroke-width="1.5" marker-end="url(#pb)"/>
+      <!-- Labels -->
+      <text x="230" y="72" fill="rgba(155,127,255,.55)" font-size="9" font-family="IBM Plex Mono,monospace" text-anchor="middle">desired state</text>
+      <text x="690" y="98" fill="rgba(0,229,195,.5)" font-size="9" font-family="IBM Plex Mono,monospace">+  create</text>
+      <text x="690" y="112" fill="rgba(0,229,195,.5)" font-size="9" font-family="IBM Plex Mono,monospace">~  update</text>
+      <text x="690" y="126" fill="rgba(255,95,126,.5)" font-size="9" font-family="IBM Plex Mono,monospace">-  destroy</text>
+    </svg>
+  </div>
+
+  <div class="section-body" style="margin-top:var(--space-lg)">
+    <p>Here is a simplified but real excerpt from a Terraform state file for an S3 bucket. Notice what it records: the resource type, the Terraform address of the resource, the real AWS resource ID, and all the attribute values at the time of last apply.</p>
+  </div>
+
+  <div class="state-json">
+<pre><span class="sc">// terraform.tfstate — simplified excerpt</span>
+{
+  <span class="sk">"version"</span>: <span class="sn">4</span>,
+  <span class="sk">"terraform_version"</span>: <span class="sv">"1.6.4"</span>,
+  <span class="sk">"resources"</span>: [
+    {
+      <span class="sk">"type"</span>: <span class="sv">"aws_s3_bucket"</span>,
+      <span class="sk">"name"</span>: <span class="sv">"pf_config"</span>,                        <span class="sc">// ← local name from your .tf</span>
+      <span class="sk">"provider"</span>: <span class="sv">"provider[\"registry.terraform.io/hashicorp/aws\"]"</span>,
+      <span class="sk">"instances"</span>: [
+        {
+          <span class="sk">"schema_version"</span>: <span class="sn">0</span>,
+          <span class="sk">"attributes"</span>: {
+            <span class="sk">"bucket"</span>: <span class="sv">"pf-config-prod-123456789012"</span>,  <span class="sc">// ← real AWS bucket name</span>
+            <span class="sk">"arn"</span>:    <span class="sv">"arn:aws:s3:::pf-config-prod-123456789012"</span>,
+            <span class="sk">"region"</span>: <span class="sv">"us-east-1"</span>,
+            <span class="sk">"versioning"</span>: [{ <span class="sk">"enabled"</span>: <span class="sh">true</span>, <span class="sk">"mfa_delete"</span>: <span class="sh">false</span> }],
+            <span class="sk">"tags"</span>: {
+              <span class="sk">"Environment"</span>: <span class="sv">"prod"</span>,
+              <span class="sk">"ManagedBy"</span>:   <span class="sv">"terraform"</span>
+            }
+          }
+        }
+      ]
+    }
+  ]
+}</pre>
+  </div>
+
+  <div class="concept-block--danger concept-block">
+    <div class="concept-block__term">⚠ The state file contains sensitive data</div>
+    <div class="concept-block__def">The state file stores every attribute value of every resource — including values marked <code>sensitive = true</code> in HCL. Database passwords, secret ARNs, private keys output from resources — all appear in the state file in plain text. This is why remote state on S3 with server-side encryption and strict bucket policies is mandatory in enterprise environments. <strong>Never commit a state file to version control.</strong></div>
+  </div>
+</section>
+
+<!-- ── SECTION 3: REMOTE STATE ── -->
+<section class="section" id="remote-state">
+  <div class="section-label">Remote state</div>
+  <h2 class="section-title">Moving state off your laptop and into production</h2>
+  <div class="section-body">
+    <p>By default, Terraform stores the state file locally in the directory where you run it. This works for a single developer on a single machine — and fails completely in every other scenario: teams, CI/CD pipelines, multiple environments, disaster recovery. <strong>Local state is never acceptable in production.</strong></p>
+    <p>The solution is a remote backend. Your project uses the S3 backend — the industry standard for AWS-based Terraform deployments. The state file lives in a versioned, encrypted S3 bucket. Access is controlled by IAM policies. The file path uniquely identifies the environment and component being managed.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">versions.tf — S3 remote backend configuration</span></div>
+    <div class="code-block__body"><pre><span class="k">terraform</span> {
+  <span class="k">backend</span> <span class="s">"s3"</span> {
+    <span class="c"># The bucket that stores all state files for this organisation</span>
+    <span class="c"># Created once, managed separately — not by this configuration</span>
+    <span class="k">bucket</span> = <span class="s">"company-terraform-state-prod"</span>
+
+    <span class="c"># Unique key per environment + component</span>
+    <span class="c"># This is the "path" of the state file within the bucket</span>
+    <span class="k">key</span> = <span class="s">"pingfederate/prod/terraform.tfstate"</span>
+
+    <span class="k">region</span>  = <span class="s">"us-east-1"</span>
+    <span class="k">encrypt</span> = <span class="k">true</span>   <span class="c"># SSE-S3 encryption at rest</span>
+
+    <span class="c"># KMS key for SSE-KMS instead of SSE-S3 (stronger)</span>
+    <span class="c"># kms_key_id = "arn:aws:kms:us-east-1:123456789:key/abc-123"</span>
+
+    <span class="c"># DynamoDB table for state locking (covered in next section)</span>
+    <span class="k">dynamodb_table</span> = <span class="s">"company-terraform-locks"</span>
+  }
+}
+
+<span class="c"># Accessing another configuration's state as a data source</span>
+<span class="c"># This is how the PF compute layer reads VPC outputs from the network layer</span>
+<span class="k">data</span> <span class="s">"terraform_remote_state"</span> <span class="s">"network"</span> {
+  <span class="k">backend</span> = <span class="s">"s3"</span>
+
+  <span class="k">config</span> = {
+    <span class="k">bucket</span> = <span class="s">"company-terraform-state-prod"</span>
+    <span class="k">key</span>    = <span class="s">"networking/prod/terraform.tfstate"</span>
+    <span class="k">region</span> = <span class="s">"us-east-1"</span>
+  }
+}
+
+<span class="c"># Reference an output from the network state</span>
+<span class="c"># This is how the PF configuration gets the VPC ID</span>
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"pf_engine"</span> {
+  <span class="k">vpc_id</span> = <span class="n">data</span>.<span class="n">terraform_remote_state</span>.<span class="v">network</span>.<span class="n">outputs</span>.<span class="v">vpc_id</span>
+  <span class="c"># ...</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="card-grid-2" style="margin-top:var(--space-lg)">
+    <div class="card card--teal">
+      <div class="card__label">Why S3 for state storage</div>
+      <div class="card__title">Versioned, encrypted, auditable</div>
+      <div class="card__body">S3 bucket versioning means every state file change is recorded with a timestamp. If a bad apply corrupts the state, you can restore a previous version. CloudTrail logs every access. SSE-KMS encrypts the file. IAM policies control who can read or write it. This is exactly what a sensitive JSON file containing infrastructure IDs and secrets requires.</div>
+    </div>
+    <div class="card card--copper">
+      <div class="card__label">State file key conventions</div>
+      <div class="card__title">One state file per component per env</div>
+      <div class="card__body">Enterprise teams use a consistent key structure: <code>component/environment/terraform.tfstate</code>. For example: <code>pingfederate/prod/terraform.tfstate</code>, <code>networking/dev/terraform.tfstate</code>. This avoids accidentally applying changes from one environment's state onto another — a catastrophic mistake that has happened in real incidents.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 4: STATE LOCKING ── -->
+<section class="section" id="locking">
+  <div class="section-label">State locking</div>
+  <h2 class="section-title">DynamoDB locking — preventing simultaneous applies</h2>
+  <div class="section-body">
+    <p>Imagine two engineers — or two CI pipeline runs — executing <code>terraform apply</code> at the same time against the same state file. Both read the current state. Both compute their plan. Both begin writing changes. The state file is now corrupted: it reflects the last write, which has overwritten changes from the first write. Resources exist in AWS that state doesn't know about. Resources that state thinks exist have been modified or deleted.</p>
+    <p>State locking prevents this. When any Terraform operation that modifies state begins, Terraform creates a lock record in a DynamoDB table. Any other operation that tries to acquire the lock immediately fails with an error — the caller must wait or force-unlock manually. When the operation completes, the lock is released.</p>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-wrap__label">DynamoDB Lock Table — what a lock record looks like</div>
+    <div class="state-json">
+<pre><span class="sc">// DynamoDB lock record during an active terraform apply</span>
+{
+  <span class="sk">"LockID"</span>:   <span class="sv">"company-terraform-state-prod/pingfederate/prod/terraform.tfstate"</span>,
+  <span class="sk">"Info"</span>: {
+    <span class="sk">"ID"</span>:        <span class="sv">"a3f2c819-7b4e-4d2a-9f1c-3e8b204a6d7f"</span>,  <span class="sc">// UUID of this lock</span>
+    <span class="sk">"Operation"</span>: <span class="sv">"OperationTypeApply"</span>,
+    <span class="sk">"Who"</span>:       <span class="sv">"github-actions-runner@ip-10-0-1-45"</span>,     <span class="sc">// who holds the lock</span>
+    <span class="sk">"Version"</span>:   <span class="sv">"1.6.4"</span>,
+    <span class="sk">"Created"</span>:   <span class="sv">"2024-11-15T14:23:07.891Z"</span>,               <span class="sc">// when acquired</span>
+    <span class="sk">"Path"</span>:      <span class="sv">"company-terraform-state-prod/pingfederate/prod/terraform.tfstate"</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">Shell</span><span class="code-block__file">Dealing with stuck locks</span></div>
+    <div class="code-block__body"><pre><span class="c"># If an apply fails mid-run, the lock may not be released automatically</span>
+<span class="c"># You will see this error on the next plan/apply attempt:</span>
+<span class="danger"># Error: Error acquiring the state lock</span>
+<span class="danger"># Lock Info: ID: a3f2c819-7b4e-4d2a-9f1c-3e8b204a6d7f</span>
+<span class="danger"># Who: github-actions-runner@ip-10-0-1-45</span>
+
+<span class="c"># STEP 1: Verify the lock is genuinely stale (the operation has ended)</span>
+<span class="c"># Check GitHub Actions — is there an active run still in progress?</span>
+<span class="c"># Check DynamoDB directly to see the lock record</span>
+
+<span class="c"># STEP 2: Force-unlock ONLY when you are certain the operation is not running</span>
+<span class="c"># Use the lock ID from the error message</span>
+<span class="n">terraform</span> force-unlock <span class="v">a3f2c819-7b4e-4d2a-9f1c-3e8b204a6d7f</span>
+
+<span class="c"># ⚠ Never force-unlock a lock held by an active operation</span>
+<span class="c"># Doing so while apply is running WILL corrupt the state file</span></pre>
+    </div>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">The DynamoDB table setup — provisioned separately</div>
+    <div class="concept-block__def">The DynamoDB table used for locking must exist before the S3 backend can use it. It is provisioned once by the platform team using a bootstrap Terraform configuration (or manually) and is shared across all configurations that use the same backend bucket. The table requires a primary key named <code>LockID</code> of type <code>String</code>. Pay-per-request billing mode is standard — the table has very low traffic.</div>
+  </div>
+</section>
+
+<!-- ── SECTION 5: DRIFT ── -->
+<section class="section" id="drift">
+  <div class="section-label">Drift detection</div>
+  <h2 class="section-title">When reality diverges from state</h2>
+  <div class="section-body">
+    <p>Drift is the condition where the real infrastructure in AWS has diverged from what the Terraform state file records. It happens in four primary ways, and it is more common in enterprise environments than most teams admit.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin-top:var(--space-md)">
+    <div class="card card--rose">
+      <div class="card__label">Drift cause #1</div>
+      <div class="card__title">Manual changes (ClickOps)</div>
+      <div class="card__body">An engineer modifies a security group rule via the AWS console to fix an urgent production issue. The change is never committed to Terraform. The next plan detects the drift and shows the change will be reverted. The fix disappears silently on the next apply.</div>
+    </div>
+    <div class="card card--rose">
+      <div class="card__label">Drift cause #2</div>
+      <div class="card__title">AWS auto-modifications</div>
+      <div class="card__body">AWS modifies certain resource attributes automatically — rotating default certificates, updating AMI attributes, modifying instance metadata. Terraform detects these as drift on the next plan, even though no human made the change.</div>
+    </div>
+    <div class="card card--rose">
+      <div class="card__label">Drift cause #3</div>
+      <div class="card__title">Resources deleted outside Terraform</div>
+      <div class="card__body">A resource is deleted directly in AWS (via the console, CLI, or another tool) but not through <code>terraform destroy</code>. The state file still records it as existing. The next apply attempts to modify a resource that no longer exists, often resulting in a confusing error.</div>
+    </div>
+    <div class="card card--copper">
+      <div class="card__label">Drift cause #4 — benign</div>
+      <div class="card__title">Provider version differences</div>
+      <div class="card__body">A newer version of the AWS provider sometimes records additional resource attributes or normalises existing ones. An upgrade can cause a plan to show changes on resources that haven't actually changed in AWS — the provider is just representing them differently.</div>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:var(--space-lg)">
+    <div class="code-block__header"><span class="code-block__lang">Shell</span><span class="code-block__file">Detecting and handling drift</span></div>
+    <div class="code-block__body"><pre><span class="c"># The standard plan command detects drift automatically</span>
+<span class="c"># by comparing state against the real AWS API</span>
+<span class="n">terraform</span> plan
+
+<span class="c"># If you only want to check for drift without comparing .tf changes:</span>
+<span class="n">terraform</span> plan <span class="k">-refresh-only</span>
+<span class="c"># Shows only changes that AWS has made outside of Terraform</span>
+<span class="c"># Does NOT propose resource creation/deletion based on .tf changes</span>
+
+<span class="c"># Accept the drift — update state to match what AWS currently has</span>
+<span class="c"># Run this ONLY if the manual change was intentional and should persist</span>
+<span class="n">terraform</span> apply <span class="k">-refresh-only</span>
+
+<span class="c"># Force a full state refresh on the next plan</span>
+<span class="c"># Terraform queries AWS for every resource before computing the diff</span>
+<span class="n">terraform</span> refresh   <span class="c"># deprecated in favour of plan/apply -refresh-only</span>
+
+<span class="c"># If a resource was deleted outside Terraform and you want</span>
+<span class="c"># to remove it from state without recreating it:</span>
+<span class="n">terraform</span> state rm <span class="v">aws_s3_bucket.pf_config</span></pre>
+    </div>
+  </div>
+
+  <div class="incident-box">
+    <div class="incident-box__header">
+      <span class="incident-box__badge">Real Incident Pattern</span>
+      <span class="incident-box__title">The "emergency SG rule" problem</span>
+    </div>
+    <div class="incident-box__body">
+      <p>A common incident in enterprise environments: during a production outage, an engineer adds a security group rule directly in the AWS console to restore service. The incident is resolved. The post-mortem documents the change. But nobody updates the Terraform configuration.</p>
+      <p>Two weeks later, a routine infrastructure change is deployed. The GitHub Actions pipeline runs <code>terraform apply</code>. The plan shows the emergency security group rule as a change to revert — because it's not in the <code>.tf</code> files. Nobody notices. Apply runs. The rule is removed. Service degrades again.</p>
+      <p><strong>The fix:</strong> any manual change made to resolve an incident must be mirrored in Terraform within 24 hours. Some teams enforce this with a policy that triggers a <code>terraform plan -refresh-only</code> on a schedule and pages if drift is detected.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 6: IMPORT ── -->
+<section class="section" id="import">
+  <div class="section-label">Importing resources</div>
+  <h2 class="section-title">Bringing existing AWS resources under Terraform management</h2>
+  <div class="section-body">
+    <p>When you join an organisation that has existing AWS infrastructure not yet managed by Terraform, or when a resource was accidentally created outside Terraform and needs to be adopted, you use <code>terraform import</code>. This command takes a real AWS resource and adds it to the state file — after which Terraform manages it normally.</p>
+    <p>Importing does not write HCL for you. You must write the resource block yourself first, then import the real resource into it. The state file will then contain the real attributes, and the next plan will show any differences between your HCL and what actually exists in AWS.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">Shell + HCL</span><span class="code-block__file">Importing an existing S3 bucket</span></div>
+    <div class="code-block__body"><pre><span class="c"># SCENARIO: A config S3 bucket was created manually before Terraform existed.</span>
+<span class="c"># We want Terraform to manage it going forward.</span>
+
+<span class="c"># STEP 1: Write the resource block in HCL first</span>
+<span class="c"># (In s3.tf)</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="s">"pf-config-prod-123456789012"</span>  <span class="c"># must match real bucket name</span>
+  <span class="k">tags</span>   = <span class="v">local.common_tags</span>
+}
+
+<span class="c"># STEP 2: Import the real bucket into the state</span>
+<span class="c"># Syntax: terraform import RESOURCE_ADDRESS REAL_AWS_ID</span>
+<span class="n">terraform</span> import <span class="v">aws_s3_bucket.pf_config</span> <span class="s">pf-config-prod-123456789012</span>
+
+<span class="c"># STEP 3: Run plan — it will show differences between your HCL</span>
+<span class="c"># and what the real bucket currently has (tags, versioning, etc.)</span>
+<span class="n">terraform</span> plan
+
+<span class="c"># STEP 4: Update your HCL to match the real resource, then apply</span>
+<span class="c"># OR: adjust the real resource to match your HCL, then apply</span>
+
+<span class="c"># --- Modern approach (Terraform 1.5+): import block in HCL ---</span>
+<span class="k">import</span> {
+  <span class="k">to</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>
+  <span class="k">id</span> = <span class="s">"pf-config-prod-123456789012"</span>
+}
+<span class="c"># The import block is processed during plan/apply</span>
+<span class="c"># Terraform 1.5+ can also generate HCL from the import with:</span>
+<span class="c"># terraform plan -generate-config-out=generated.tf</span></pre>
+    </div>
+  </div>
+
+  <div class="diagram-wrap" style="padding:var(--space-lg)">
+    <div class="diagram-wrap__label">Common resource import IDs — the format AWS uses</div>
+    <table class="compare-table">
+      <thead><tr><th>Resource Type</th><th>Import ID Format</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>aws_s3_bucket</td><td>bucket name</td><td><code>pf-config-prod-123456789012</code></td></tr>
+        <tr><td>aws_security_group</td><td>security group ID</td><td><code>sg-0a1b2c3d4e5f6a7b8</code></td></tr>
+        <tr><td>aws_iam_role</td><td>role name</td><td><code>pf-instance-role-prod</code></td></tr>
+        <tr><td>aws_vpc</td><td>VPC ID</td><td><code>vpc-0a1b2c3d4e5f6a7b8</code></td></tr>
+        <tr><td>aws_lb</td><td>load balancer ARN</td><td><code>arn:aws:elasticloadbalancing:…</code></td></tr>
+        <tr><td>aws_autoscaling_group</td><td>ASG name</td><td><code>pf-prod-asg</code></td></tr>
+        <tr><td>aws_launch_template</td><td>launch template ID</td><td><code>lt-0a1b2c3d4e5f6a7b8</code></td></tr>
+        <tr><td>aws_route53_record</td><td>zone_id/name/type</td><td><code>Z3P5QSUBK4POTI/pf.example.com/A</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── SECTION 7: STATE COMMANDS ── -->
+<section class="section" id="state-commands">
+  <div class="section-label">State surgery</div>
+  <h2 class="section-title">The state manipulation commands — with extreme care</h2>
+  <div class="section-body">
+    <p>There are scenarios where the state file must be directly manipulated: moving a resource to a different address, removing a resource from state without destroying it, renaming a resource during a refactor. These operations are collectively called <em>state surgery</em>. They are powerful, irreversible, and require careful execution.</p>
+    <p>The cardinal rule: <strong>always backup the state file before any state surgery.</strong> On the S3 backend, enable bucket versioning so you can restore a previous state version if something goes wrong.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">Shell</span><span class="code-block__file">State surgery commands — the complete toolkit</span></div>
+    <div class="code-block__body"><pre><span class="c"># ── LIST — see everything Terraform currently manages ─────────────────</span>
+<span class="n">terraform</span> state list
+<span class="c"># aws_s3_bucket.pf_config</span>
+<span class="c"># aws_autoscaling_group.pf_engines</span>
+<span class="c"># module.vpc.aws_vpc.main</span>
+<span class="c"># ...</span>
+
+<span class="c"># ── SHOW — inspect a single resource's state attributes ───────────────</span>
+<span class="n">terraform</span> state show <span class="v">aws_autoscaling_group.pf_engines</span>
+<span class="c"># Prints all recorded attributes — useful for understanding current state</span>
+
+<span class="c"># ── MV — rename or move a resource in state ──────────────────────────</span>
+<span class="c"># Use when you refactor HCL (rename a resource or move it into a module)</span>
+<span class="c"># WITHOUT moving, next plan would destroy and recreate — often catastrophic</span>
+<span class="n">terraform</span> state mv <span class="v">aws_s3_bucket.config</span> <span class="v">aws_s3_bucket.pf_config</span>
+
+<span class="c"># Moving a resource into a module</span>
+<span class="n">terraform</span> state mv <span class="v">aws_security_group.pf_engine</span> <span class="v">module.pf_compute.aws_security_group.engine</span>
+
+<span class="c"># ── RM — remove from state without destroying in AWS ─────────────────</span>
+<span class="c"># Use when you want Terraform to stop managing a resource</span>
+<span class="c"># but NOT delete it from AWS (e.g. passing ownership to another tool)</span>
+<span class="n">terraform</span> state rm <span class="v">aws_s3_bucket.legacy_bucket</span>
+
+<span class="c"># ── PULL — download the current remote state ─────────────────────────</span>
+<span class="c"># Useful for inspection or manual backup</span>
+<span class="n">terraform</span> state pull > backup_$(date +%Y%m%d_%H%M%S).tfstate
+
+<span class="c"># ── PUSH — upload a local state file to the backend ──────────────────</span>
+<span class="c"># Use ONLY when restoring from backup after a known-bad apply</span>
+<span class="c"># ⚠ Overwrites the current remote state unconditionally</span>
+<span class="n">terraform</span> state push backup_20241115_142307.tfstate
+
+<span class="c"># ── TAINT (deprecated — use -replace instead) ─────────────────────────</span>
+<span class="c"># Mark a resource for forced recreation on next apply</span>
+<span class="n">terraform</span> apply <span class="k">-replace</span>=<span class="v">aws_instance.pf_engine_node</span></pre>
+    </div>
+  </div>
+
+  <div class="concept-block--violet concept-block">
+    <div class="concept-block__term">The moved block — the safe way to rename in HCL (Terraform 1.1+)</div>
+    <div class="concept-block__def">Instead of running <code>terraform state mv</code> manually, modern Terraform supports a <code>moved</code> block in HCL. When Terraform sees a moved block, it automatically updates the state during the next apply without requiring a separate command. This is safer, reviewable in a PR, and leaves an audit trail in version control.</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">HCL</span><span class="code-block__file">The moved block — safer state renames</span></div>
+    <div class="code-block__body"><pre><span class="c"># When you rename a resource in HCL, add a moved block</span>
+<span class="c"># so Terraform updates state instead of destroy/recreate</span>
+<span class="k">moved</span> {
+  <span class="k">from</span> = <span class="n">aws_s3_bucket</span>.<span class="v">config</span>
+  <span class="k">to</span>   = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>
+}
+
+<span class="c"># After the next apply, remove the moved block from HCL</span>
+<span class="c"># (it's a one-time migration instruction)</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 8: STATE AND ASG ── -->
+<section class="section" id="state-and-asg">
+  <div class="section-label">State &amp; your project</div>
+  <h2 class="section-title">What state records during an AMI refresh — and what it doesn't</h2>
+  <div class="section-body">
+    <p>This is the most project-specific insight in this entire module, and it is the one most engineers get wrong. Understanding it precisely changes how you think about the entire immutable infrastructure pattern.</p>
+  </div>
+
+  <div class="concept-block--violet concept-block">
+    <div class="concept-block__term">Terraform tracks the ASG — not the instances</div>
+    <div class="concept-block__def">When Terraform creates an Auto Scaling Group, the state file records the ASG resource — its name, desired capacity, min/max, launch template reference, health check configuration. It does NOT record the individual EC2 instances that the ASG launches. Those instances exist in AWS, but they are not Terraform-managed resources. When an AMI refresh replaces every instance in the ASG, the Terraform state file doesn't change at all — because the ASG resource itself hasn't changed.</div>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-wrap__label">State Scope During an AMI Refresh</div>
+    <svg viewBox="0 0 820 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:560px;display:block;">
+      <defs>
+        <marker id="sa" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#00E5C3"/></marker>
+        <marker id="sb" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#9B7FFF"/></marker>
+      </defs>
+      <!-- Terraform state scope box -->
+      <rect x="10" y="10" width="380" height="240" rx="10" fill="rgba(155,127,255,0.04)" stroke="rgba(155,127,255,.4)" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <text x="200" y="32" text-anchor="middle" fill="rgba(155,127,255,.6)" font-size="9.5" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">TERRAFORM STATE SCOPE</text>
+
+      <!-- Launch Template in state -->
+      <rect x="30" y="45" width="160" height="55" rx="6" fill="#0a0610" stroke="rgba(155,127,255,.6)" stroke-width="1.5"/>
+      <text x="110" y="68" text-anchor="middle" fill="#9B7FFF" font-size="10.5" font-weight="600" font-family="IBM Plex Mono,monospace">Launch Template</text>
+      <text x="110" y="84" text-anchor="middle" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">AMI ID recorded in state</text>
+      <text x="110" y="96" text-anchor="middle" fill="rgba(0,229,195,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">lt-0a1b2c3d...</text>
+
+      <!-- ASG in state -->
+      <rect x="210" y="45" width="160" height="55" rx="6" fill="#0a0610" stroke="rgba(155,127,255,.6)" stroke-width="1.5"/>
+      <text x="290" y="68" text-anchor="middle" fill="#9B7FFF" font-size="10.5" font-weight="600" font-family="IBM Plex Mono,monospace">Auto Scaling Group</text>
+      <text x="290" y="84" text-anchor="middle" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">Policy &amp; config recorded</text>
+      <text x="290" y="96" text-anchor="middle" fill="rgba(0,229,195,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">pf-prod-asg</text>
+
+      <!-- NLB in state -->
+      <rect x="30" y="120" width="160" height="50" rx="6" fill="#0a0610" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="110" y="142" text-anchor="middle" fill="#9B7FFF" font-size="10.5" font-weight="600" font-family="IBM Plex Mono,monospace">NLB / Target Group</text>
+      <text x="110" y="158" text-anchor="middle" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">DNS name recorded</text>
+
+      <!-- S3 in state -->
+      <rect x="210" y="120" width="160" height="50" rx="6" fill="#0a0610" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="290" y="142" text-anchor="middle" fill="#9B7FFF" font-size="10.5" font-weight="600" font-family="IBM Plex Mono,monospace">S3 Config Bucket</text>
+      <text x="290" y="158" text-anchor="middle" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">ARN + policy recorded</text>
+
+      <!-- Note: state doesn't change during refresh -->
+      <rect x="30" y="188" width="340" height="46" rx="5" fill="rgba(0,229,195,.05)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="200" y="208" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Mono,monospace">During AMI refresh: state file UNCHANGED</text>
+      <text x="200" y="224" text-anchor="middle" fill="rgba(0,229,195,.5)" font-size="9" font-family="IBM Plex Sans,sans-serif">Only the LT version number updates (if AMI ID changed)</text>
+
+      <!-- AWS — outside state -->
+      <rect x="430" y="10" width="380" height="240" rx="10" fill="rgba(0,229,195,0.03)" stroke="rgba(0,229,195,.25)" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <text x="620" y="32" text-anchor="middle" fill="rgba(0,229,195,.5)" font-size="9.5" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">AWS — OUTSIDE STATE SCOPE</text>
+
+      <!-- Old instances -->
+      <rect x="450" y="50" width="150" height="45" rx="5" fill="#0a100a" stroke="rgba(255,95,126,.3)" stroke-width="1"/>
+      <text x="525" y="71" text-anchor="middle" fill="rgba(255,95,126,.6)" font-size="10" font-family="IBM Plex Mono,monospace">Old EC2 Instances</text>
+      <text x="525" y="87" text-anchor="middle" fill="rgba(255,95,126,.4)" font-size="8.5" font-family="IBM Plex Sans,sans-serif">being terminated</text>
+
+      <!-- New instances -->
+      <rect x="620" y="50" width="160" height="45" rx="5" fill="#081408" stroke="rgba(62,207,160,.35)" stroke-width="1"/>
+      <text x="700" y="71" text-anchor="middle" fill="rgba(62,207,160,.7)" font-size="10" font-family="IBM Plex Mono,monospace">New EC2 Instances</text>
+      <text x="700" y="87" text-anchor="middle" fill="rgba(62,207,160,.5)" font-size="8.5" font-family="IBM Plex Sans,sans-serif">being launched</text>
+
+      <!-- ASG manages -->
+      <rect x="450" y="115" width="330" height="40" rx="5" fill="rgba(74,158,255,.05)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="615" y="139" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Mono,monospace">ASG manages all instance lifecycle — NOT Terraform</text>
+
+      <!-- Instance registration -->
+      <rect x="450" y="170" width="330" height="40" rx="5" fill="rgba(74,158,255,.04)" stroke="rgba(74,158,255,.18)" stroke-width="1"/>
+      <text x="615" y="189" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">NLB target registration / deregistration</text>
+      <text x="615" y="203" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="8.5" font-family="IBM Plex Sans,sans-serif">handled by ASG + NLB health checks</text>
+
+      <!-- TF State to ASG arrow -->
+      <line x1="371" y1="70" x2="448" y2="70" stroke="rgba(155,127,255,.4)" stroke-width="1.5" marker-end="url(#sb)"/>
+      <text x="410" y="64" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">controls</text>
+    </svg>
+  </div>
+
+  <div class="section-body" style="margin-top:var(--space-lg)">
+    <p>This distinction has a critical practical implication: if you run <code>terraform state list</code> during or after an AMI refresh, you will <em>not</em> see individual EC2 instances in the list — only the ASG resource. If you want to see the actual instances, you query the ASG directly via the AWS CLI: <code>aws autoscaling describe-auto-scaling-instances</code>. Terraform only cares about the policy and configuration it manages, not the ephemeral compute it spawned.</p>
+    <p>This is by design. The immutable infrastructure pattern works precisely because Terraform manages the durable infrastructure (the template, the policy, the load balancer, the storage) and the ASG manages the ephemeral compute. Neither tool needs to know about the internal workings of the other.</p>
+  </div>
+</section>
+
+<!-- ── SECTION 9: WORKSPACES ── -->
+<section class="section" id="workspaces">
+  <div class="section-label">Workspaces</div>
+  <h2 class="section-title">Terraform workspaces — what they are and when not to use them</h2>
+  <div class="section-body">
+    <p>Terraform workspaces allow you to maintain multiple state files from a single configuration directory. The default workspace is aptly named <code>default</code>. Creating a workspace named <code>prod</code> creates a separate state file at a <code>env:/prod/</code> key prefix within the same backend bucket.</p>
+    <p>Workspaces sound like the obvious way to manage dev/test/prod environments. In practice, most enterprise teams avoid them for multi-environment deployments and use directory-per-environment instead. Module 09 covers this decision in depth. For now, understand what workspaces are and the primary limitation.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header"><span class="code-block__lang">Shell</span><span class="code-block__file">Workspace commands</span></div>
+    <div class="code-block__body"><pre><span class="n">terraform</span> workspace list      <span class="c"># list all workspaces</span>
+<span class="n">terraform</span> workspace new prod  <span class="c"># create + switch to "prod" workspace</span>
+<span class="n">terraform</span> workspace select dev <span class="c"># switch to "dev" workspace</span>
+<span class="n">terraform</span> workspace show      <span class="c"># print current workspace name</span>
+
+<span class="c"># In HCL, the current workspace name is available as:</span>
+<span class="n">terraform</span>.<span class="v">workspace</span>   <span class="c"># e.g. "prod", "dev", "default"</span>
+
+<span class="c"># Common pattern: use workspace name in resource names</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="s">"pf-config-${</span><span class="v">terraform.workspace</span><span class="s">}"</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="card card--rose" style="margin-top:var(--space-lg)">
+    <div class="card__label">⚠ The workspace limitation</div>
+    <div class="card__title">All workspaces share the same configuration</div>
+    <div class="card__body">The fundamental problem with workspaces for environment management: all workspaces use the same <code>.tf</code> files. If prod needs a different instance type, different CIDR ranges, or a different module version from dev, you cannot express that cleanly in a single configuration. The code becomes cluttered with <code>terraform.workspace == "prod" ? ... : ...</code> conditionals. Directory-per-environment keeps configurations clean and independent. Use workspaces only for truly identical environments that differ only in variable values — for example, isolated test runs in CI.</div>
+  </div>
+</section>
+
+<!-- ── KNOWLEDGE CHECKS ── -->
+<section class="section" id="knowledge-checks">
+  <div class="section-label">Knowledge check</div>
+  <h2 class="section-title">Test your state understanding</h2>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      Two GitHub Actions pipeline runs start simultaneously — both run <code>terraform apply</code> against the same state backend. What happens?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">The second run fails immediately with a lock acquisition error.</strong> The first run to reach the DynamoDB table acquires the lock by writing a record keyed to the state file path. The second run attempts to write the same key, finds it already exists, and exits with an error message that includes the lock ID and the identity of who holds it. This is the correct behavior — no corruption occurs. The second run must either wait and retry, or be cancelled and re-triggered after the first completes. Some CI platforms support retry logic for this exact scenario.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      An engineer runs <code>terraform apply</code>. It fails halfway through — some resources were created, some weren't. What is the state of the state file?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">The state file reflects the resources that were successfully created before the failure.</strong> Terraform updates state incrementally as each resource operation completes. If apply fails after creating the VPC and security group but before creating the ASG, state records the VPC and SG as managed resources but not the ASG. The next <code>terraform apply</code> picks up where it left off — it sees the VPC and SG in state (so it won't try to create them again), and attempts to create the ASG. This partial-state behavior is one of Terraform's most important reliability features. The lock is released when apply exits, regardless of success or failure.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      An AMI refresh runs successfully. Twelve old EC2 instances were terminated and twelve new ones were launched. How many resources changed in the Terraform state file?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">Only one resource changed in state: the Launch Template (specifically, its latest version attribute pointing to the new AMI ID).</strong> The ASG resource's state may also show an updated <code>launch_template</code> version reference. But the twenty-four individual EC2 instances — twelve terminated, twelve created — do not appear in the Terraform state file at all. They are managed by the ASG, not by Terraform. This is the defining characteristic of the immutable infrastructure pattern: Terraform manages the durable infrastructure, the ASG manages the ephemeral compute, and the two concerns are cleanly separated.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      You want to rename <code>aws_s3_bucket.config</code> to <code>aws_s3_bucket.pf_config</code> in your HCL. What happens if you just rename the block and run plan?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">Terraform will plan to destroy the old bucket and create a new one — which is catastrophic if this is the live config bucket.</strong> Terraform identifies resources by their address (<code>type.name</code>). If you rename the block, the old address disappears from the configuration and the new address appears. Terraform sees: the resource at <code>aws_s3_bucket.config</code> is no longer declared → plan to destroy. The resource at <code>aws_s3_bucket.pf_config</code> is new → plan to create. The solution is to add a <code>moved</code> block (Terraform 1.1+) before renaming, or to run <code>terraform state mv aws_s3_bucket.config aws_s3_bucket.pf_config</code> first. Always check the plan output carefully when renaming — a destroy on a production S3 bucket with versioning may be recoverable; a destroy on a production database is not.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      What is the difference between <code>terraform state rm</code> and <code>terraform destroy -target</code>?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)"><code>terraform state rm</code> removes the resource from Terraform's state file but leaves it completely intact in AWS. <code>terraform destroy -target</code> destroys the resource in AWS and removes it from state.</strong> Use <code>state rm</code> when you want Terraform to forget about a resource — perhaps you are migrating it to another configuration's management, or handing it off to another team. The resource continues to exist and serve traffic. Use <code>destroy -target</code> when you actually want the resource gone from AWS. In production, <code>-target</code> should be used with extreme caution — it bypasses the dependency graph and can leave other resources in an inconsistent state.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      Your team notices that every Monday morning <code>terraform plan</code> shows unexpected changes to several security group rules — changes that match what was deployed on the previous Friday. No one is making manual changes. What is the most likely cause?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">The most likely cause is a scheduled CI pipeline that applies the Terraform configuration on a fixed schedule.</strong> Many teams run a weekly or daily "drift detection" pipeline that runs <code>terraform apply -auto-approve</code> to ensure the infrastructure matches the declared configuration. If manual changes were made on Friday evening (emergency fixes, load test tuning, etc.) that weren't committed to the Terraform codebase, the Monday morning apply reverts them. The correct fix is: all infrastructure changes must go through Terraform PRs. Emergency changes must be committed to the codebase within the same business day they are made. Some teams implement a pre-apply drift check that pages if unexpected changes are detected, requiring human approval before proceeding.
+    </div>
+  </div>
+</section>
+
+<!-- ── MINI LAB ── -->
+<section class="section" id="lab">
+  <div class="section-label">Mini lab</div>
+  <h2 class="section-title">State investigation and surgery exercises</h2>
+
+  <div class="lab-block">
+    <div class="lab-block__header">
+      <span class="lab-block__badge">Lab 03-A</span>
+      <span class="lab-block__title">Interpret a plan with drift</span>
+    </div>
+    <div class="lab-block__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">Review the following <code>terraform plan</code> output excerpt. For each change shown, identify: (1) what caused the change, (2) whether it is drift or a configuration change, and (3) whether it is safe to apply.</p>
+      <div class="code-block" style="margin:0">
+        <div class="code-block__header"><span class="code-block__lang">Plan Output</span><span class="code-block__file">terraform plan — excerpt</span></div>
+        <div class="code-block__body"><pre><span class="c"># Terraform will perform the following actions:</span>
+
+  <span class="c"># aws_security_group.pf_engine will be updated in-place</span>
+  ~ <span class="n">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"pf_engine"</span> {
+      <span class="c"># ingress block being removed</span>
+      - <span class="k">ingress</span> {
+          - <span class="k">from_port</span>   = <span class="danger">8443</span>
+          - <span class="k">to_port</span>     = <span class="danger">8443</span>
+          - <span class="k">protocol</span>    = <span class="s">"tcp"</span>
+          - <span class="k">cidr_blocks</span> = [<span class="s">"10.0.0.0/8"</span>]
+          - <span class="k">description</span> = <span class="s">"temp: load test access"</span>
+        }
+    }
+
+  <span class="c"># aws_launch_template.pf_engine must be replaced</span>
+  -/+ <span class="n">resource</span> <span class="s">"aws_launch_template"</span> <span class="s">"pf_engine"</span> {
+      ~ <span class="k">image_id</span> = <span class="danger">"ami-0a1b2c3d4e5f"</span> <span class="k">-></span> <span class="n">"ami-9z8y7x6w5v4u"</span>
+    }
+
+  <span class="c"># aws_s3_bucket.pf_config will be updated in-place</span>
+  ~ <span class="n">resource</span> <span class="s">"aws_s3_bucket"</span> <span class="s">"pf_config"</span> {
+      ~ <span class="k">tags</span> = {
+          + <span class="n">"CostCenter"</span> = <span class="s">"IAM-SSO-001"</span>
+        }
+    }</pre>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-tertiary);margin-top:var(--space-md);">For each of the three changes, answer: what caused it? Is it drift or a deliberate change? Is it safe to apply?</p>
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)" style="margin-top:var(--space-sm)">
+    <div class="knowledge-check__question"><span class="kc-icon">✓</span>Reveal Lab 03-A analysis<span class="kc-chevron">▼</span></div>
+    <div class="knowledge-check__answer">
+      <p style="margin-bottom:12px"><strong style="color:var(--rose)">Change 1 — SG ingress port 8443:</strong> This is drift. Someone added an inbound rule on port 8443 from <code>10.0.0.0/8</code> (the description says "temp: load test access") directly in the AWS console. It is not in the Terraform configuration. Terraform plans to remove it. <strong>Is it safe?</strong> Only if the load test is complete and the rule is no longer needed. If load testing is still in progress, applying this plan will break it. The team should either commit this rule to HCL (with a proper description and without the "temp" qualifier) or confirm the load test is done before applying.</p>
+      <p style="margin-bottom:12px"><strong style="color:var(--module-phase-color)">Change 2 — Launch Template AMI ID:</strong> This is a deliberate configuration change. Someone updated the AMI data source or AMI ID variable to point to a new approved AMI. The <code>-/+</code> symbol means the resource will be destroyed and recreated (a new Launch Template version is created; it is not updated in place). This will trigger an ASG instance refresh when applied. <strong>Is it safe?</strong> Yes — this is the intended AMI refresh workflow. Review the new AMI ID to confirm it is the correct approved image before applying.</p>
+      <p><strong style="color:var(--sapphire)">Change 3 — S3 bucket tag addition:</strong> This is a deliberate configuration change — someone added a <code>CostCenter</code> tag to the bucket. The <code>~</code> symbol means an in-place update (the bucket itself is not replaced). <strong>Is it safe?</strong> Yes — adding a tag is a non-destructive change that doesn't affect bucket availability, permissions, or data.</p>
+    </div>
+  </div>
+
+  <div class="lab-block" style="margin-top:var(--space-xl)">
+    <div class="lab-block__header">
+      <span class="lab-block__badge">Lab 03-B</span>
+      <span class="lab-block__title">Design the state backend for a multi-environment PF deployment</span>
+    </div>
+    <div class="lab-block__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">You are setting up Terraform state management for a PingFederate deployment across three environments (dev, test, prod) and two components (networking, compute). Design:</p>
+      <ol>
+        <li><strong>State file key structure</strong> — what should the S3 key be for each configuration? Write out all six keys.</li>
+        <li><strong>S3 bucket strategy</strong> — should you use one bucket for all environments or one bucket per environment? Justify your answer.</li>
+        <li><strong>DynamoDB table strategy</strong> — one table for all locking or one per environment? What is the primary key?</li>
+        <li><strong>IAM policy</strong> — what S3 and DynamoDB permissions does the GitHub Actions role need to operate the state backend?</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)" style="margin-top:var(--space-sm)">
+    <div class="knowledge-check__question"><span class="kc-icon">✓</span>Reveal Lab 03-B solution<span class="kc-chevron">▼</span></div>
+    <div class="knowledge-check__answer">
+      <p style="margin-bottom:10px"><strong style="color:var(--module-phase-color)">1. State file keys:</strong></p>
+      <div class="code-block" style="margin:0 0 12px">
+        <div class="code-block__body"><pre><span class="c"># Six state file S3 keys — component/environment/terraform.tfstate</span>
+<span class="n">networking/dev/terraform.tfstate</span>
+<span class="n">networking/test/terraform.tfstate</span>
+<span class="n">networking/prod/terraform.tfstate</span>
+<span class="n">compute/dev/terraform.tfstate</span>
+<span class="n">compute/test/terraform.tfstate</span>
+<span class="n">compute/prod/terraform.tfstate</span></pre>
+        </div>
+      </div>
+      <p style="margin-bottom:10px"><strong style="color:var(--module-phase-color)">2. S3 bucket strategy:</strong> One bucket for all environments is the standard approach. Separating by bucket adds overhead (separate bucket policies, separate replication configs, etc.) with no meaningful security benefit if IAM policies are correctly scoped. Apply bucket policies that restrict: the dev IAM role can only read/write the <code>*/dev/*</code> key prefix; the prod role can only read/write <code>*/prod/*</code>.</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--module-phase-color)">3. DynamoDB strategy:</strong> One table is sufficient. The LockID includes the full state file path, so locks across environments don't conflict. Primary key: <code>LockID</code>, type <code>String</code>. Use on-demand billing mode.</p>
+      <p><strong style="color:var(--module-phase-color)">4. IAM permissions for GitHub Actions:</strong> S3: <code>GetObject</code>, <code>PutObject</code>, <code>DeleteObject</code>, <code>ListBucket</code> — scoped to the state bucket ARN and relevant key prefix. DynamoDB: <code>GetItem</code>, <code>PutItem</code>, <code>DeleteItem</code> — scoped to the lock table ARN. For read-only operations (plan only): remove <code>PutObject</code>, <code>DeleteObject</code>, and <code>PutItem</code>, <code>DeleteItem</code> from the policy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECT REVIEW ── -->
+<div class="architect-review">
+  <div class="architect-review__header">
+    <span class="architect-review__badge">Senior Review</span>
+    <span class="architect-review__title">State questions a platform engineer might ask you</span>
+  </div>
+  <ul class="architect-review__list">
+    <li><span class="ar-num">01</span>The state file for our production PingFederate environment is showing resources that no longer exist in AWS — someone deleted them manually six months ago. How would you clean this up safely without affecting running infrastructure?</li>
+    <li><span class="ar-num">02</span>We need to split a large Terraform configuration into two separate configurations — one for networking, one for compute. The compute resources currently reference the networking resources directly. How would you perform this split without destroying and recreating anything?</li>
+    <li><span class="ar-num">03</span>A developer accidentally ran <code>terraform apply</code> with the wrong <code>-var-file</code> flag and applied dev configuration against the production state. The plan showed twelve changes. Apply completed. What is your recovery procedure?</li>
+    <li><span class="ar-num">04</span>Explain why the Terraform state file for our PingFederate ASG doesn't list individual EC2 instances, and what the implication is for how we monitor node health during an AMI refresh.</li>
+    <li><span class="ar-num">05</span>Someone force-unlocked the state while an apply was in progress "because it was taking too long." What are the potential consequences and how do you assess the damage?</li>
+  </ul>
+</div>
+
+<!-- ── TAKEAWAY ── -->
+<div class="takeaway-box">
+  <div class="takeaway-box__header">
+    <div class="takeaway-box__icon">◆</div>
+    <div class="takeaway-box__title">Module 03 — Key Takeaways</div>
+  </div>
+  <ul class="takeaway-list">
+    <li>The state file is the bridge between HCL declarations and real AWS infrastructure. Without it, Terraform cannot function. It records resource IDs, attribute values, and metadata — including sensitive values in plain text.</li>
+    <li>Remote state on S3 with DynamoDB locking is mandatory for all production Terraform. Never use local state in team or CI environments.</li>
+    <li>Use the key pattern <code>component/environment/terraform.tfstate</code> to uniquely identify each state file. Mixing state files across environments causes catastrophic cross-contamination.</li>
+    <li>Drift is when real AWS infrastructure diverges from state. Caused by manual changes, AWS auto-modifications, or out-of-band tooling. Detected by <code>terraform plan</code> — which makes live API calls to compare against reality.</li>
+    <li><code>terraform import</code> brings existing resources under Terraform management. Write the HCL block first, import second, reconcile the diff third.</li>
+    <li>State surgery commands (<code>state mv</code>, <code>state rm</code>, <code>state pull</code>) are powerful and irreversible. Always backup state before surgery. Use the <code>moved</code> block in HCL for resource renames in modern Terraform.</li>
+    <li>In the ASG model, Terraform tracks the Launch Template and ASG policy — not individual EC2 instances. An AMI refresh replaces all nodes without changing the Terraform state file (except the Launch Template's AMI reference).</li>
+    <li>Force-unlocking a state lock is safe only when the holding operation has definitively ended. Force-unlocking an active apply corrupts state. Verify before acting.</li>
+  </ul>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- SIDEBAR -->
+<div class="content-sidebar">
+  <div class="toc">
+    <div class="toc__label">In this module</div>
+    <a class="toc__item" href="#bridge">Bridge from M02</a>
+    <a class="toc__item" href="#what-is-state">What is state</a>
+    <a class="toc__item" href="#remote-state">Remote state (S3)</a>
+    <a class="toc__item" href="#locking">DynamoDB locking</a>
+    <a class="toc__item" href="#drift">Drift detection</a>
+    <a class="toc__item" href="#import">Importing resources</a>
+    <a class="toc__item" href="#state-commands">State surgery</a>
+    <a class="toc__item" href="#state-and-asg">State &amp; ASG refresh</a>
+    <a class="toc__item" href="#workspaces">Workspaces</a>
+    <a class="toc__item" href="#knowledge-checks">Knowledge checks</a>
+    <a class="toc__item" href="#lab">Mini lab</a>
+  </div>
+  <div class="quick-ref">
+    <div class="quick-ref__label">State Commands</div>
+    <div class="quick-ref__item"><span class="quick-ref__term">state list</span><span class="quick-ref__def">All managed resources</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">state show</span><span class="quick-ref__def">Single resource attributes</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">state mv</span><span class="quick-ref__def">Rename/move in state</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">state rm</span><span class="quick-ref__def">Remove without destroying</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">state pull</span><span class="quick-ref__def">Download remote state</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">state push</span><span class="quick-ref__def">Upload local state</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">import</span><span class="quick-ref__def">Adopt existing resource</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term">force-unlock</span><span class="quick-ref__def">Release stale lock</span></div>
+  </div>
+  <div class="quick-ref">
+    <div class="quick-ref__label">Plan Symbols</div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--jade)">+</span><span class="quick-ref__def">Create new resource</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--copper)">~</span><span class="quick-ref__def">Update in place</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--rose)">-</span><span class="quick-ref__def">Destroy resource</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--rose)">-/+</span><span class="quick-ref__def">Destroy &amp; recreate</span></div>
+    <div class="quick-ref__item"><span class="quick-ref__term" style="color:var(--teal)">&lt;=</span><span class="quick-ref__def">Read data source</span></div>
+  </div>
+  <div class="quick-ref">
+    <div class="quick-ref__label">Series Progress</div>
+    <div style="padding:var(--space-sm) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--space-sm);background:var(--bg-surface-2);border-radius:var(--radius-md)">
+        <span class="dep-node dep-node--done">M01</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--done">M02</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--current">M03</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">M04–10</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /module-content -->
+
+<!-- BRIDGE -->
+<div class="bridge-section">
+  <div class="bridge-card">
+    <div class="bridge-card__eyebrow">Coming up next · Module 04</div>
+    <div class="bridge-card__title"><span>VPC, Subnets &amp; Security Groups</span> — The Network Foundation</div>
+    <div class="bridge-card__body">
+      You now have the complete foundation. You know what Terraform is and where it fits (M01). You can read and write any HCL configuration (M02). You understand how state works, how it is protected, and how it behaves during the AMI refresh that is central to your project (M03).<br><br>
+      Phase 2 begins now. You are going to build the AWS infrastructure layer by layer — starting with the network foundation that every other resource in the PingFederate stack depends on. VPCs, subnets, route tables, internet gateways, NAT gateways, and security groups — expressed in Terraform, reasoned about through the lens of your existing security expertise, and anchored to the specific topology your project uses.
+    </div>
+    <div class="bridge-card__concepts">
+      <span class="badge badge--new">VPC</span>
+      <span class="badge badge--new">Public/private subnets</span>
+      <span class="badge badge--new">Route tables</span>
+      <span class="badge badge--new">NAT gateway</span>
+      <span class="badge badge--new">Security groups</span>
+      <span class="badge badge--new">PF port rules</span>
+    </div>
+    <a href="module-04.html" class="bridge-card__btn">Continue to Module 04 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="portal-footer">
+  <div class="portal-footer__left">M03 · State Management · Phase 1 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--space-sm);align-items:center;">
+    <a href="module-02.html" class="badge badge--prereq" style="text-decoration:none;">← M02</a>
+    <a href="index.html" class="badge badge--prereq" style="text-decoration:none;">Index</a>
+    <a href="module-04.html" class="badge badge--phase" style="text-decoration:none;">M04 →</a>
+  </div>
+</footer>
+
+</div><!-- /portal-shell -->
+
+<script>
+function toggleKC(el){ el.classList.toggle('open'); }
+(function(){
+  const items=document.querySelectorAll('.toc__item');
+  const sections=[];
+  items.forEach(i=>{ const id=i.getAttribute('href').replace('#',''); const el=document.getElementById(id); if(el) sections.push({el,item:i}); });
+  const io=new IntersectionObserver((entries)=>{ entries.forEach(e=>{ if(e.isIntersecting){ items.forEach(i=>i.classList.remove('active')); const found=sections.find(s=>s.el===e.target); if(found) found.item.classList.add('active'); } }); },{ rootMargin:'-20% 0px -70% 0px' });
+  sections.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver((entries)=>{ entries.forEach(e=>{ if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; io.unobserve(e.target); } }); },{ threshold:0.06 });
+  document.querySelectorAll('.section,.card,.diagram-wrap,.lab-block,.architect-review,.takeaway-box,.bridge-card,.incident-box').forEach(el=>{ el.style.opacity='0'; el.style.transform='translateY(12px)'; el.style.transition='opacity 0.45s ease,transform 0.45s ease'; io.observe(el); });
+})();
+</script>
+</body>
+</html>

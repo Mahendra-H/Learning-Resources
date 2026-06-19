@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doc 02 — The Intelligence Layer | GitHub Actions Mastery</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0a06;--bg2:#110e08;--bg-card:#161009;--bg-card2:#1a1410;--bg-code:#0a0806;
+  --accent:#fbbf24;--accent-dim:#d97706;--a2:#fb7185;
+  --success:#34d399;--info:#818cf8;--cyan:#22d3ee;--danger:#f87171;
+  --t1:#fff8ee;--t2:#e8d5b0;--t3:#a8906a;
+  --border:rgba(251,191,36,0.1);--border2:rgba(251,191,36,0.2);
+  --code-key:#7dd3fc;--code-val:#86efac;--code-str:#fde68a;
+  --code-num:#fca5a5;--code-cmt:#5a6a4a;--code-sp:#f0abfc;
+  --code-acc:#fbbf24;--code-text:#f0e8d8;
+  --sw:272px;
+  --font-d:'Fraunces',Georgia,serif;
+  --font-b:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-m:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:18px;line-height:1.82;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(251,191,36,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(251,191,36,.02) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0}
+
+/* SIDEBAR */
+.sb{position:fixed;top:0;left:0;width:var(--sw);height:100vh;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;z-index:100;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.sb-brand{padding:1.4rem 1.3rem 1rem;border-bottom:1px solid var(--border)}
+.sb-series{font-family:var(--font-m);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:5px}
+.sb-doc{font-family:var(--font-d);font-size:1rem;font-weight:700;color:var(--t1);line-height:1.25}
+.sb-sec{font-family:var(--font-m);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);padding:.9rem 1.3rem .35rem}
+.nav-a{display:flex;align-items:center;gap:9px;padding:.42rem 1.3rem;text-decoration:none;color:var(--t2);font-size:.855rem;font-weight:500;border-left:2px solid transparent;transition:all .2s;line-height:1.35}
+.nav-a:hover,.nav-a.on{color:var(--accent);border-left-color:var(--accent);background:rgba(251,191,36,.05)}
+.nd{width:5px;height:5px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .2s}
+.nav-a:hover .nd,.nav-a.on .nd{background:var(--accent)}
+.xp-box{margin:auto 1.2rem 1.4rem;padding:.9rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px}
+.xp-top{font-family:var(--font-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:flex;justify-content:space-between;margin-bottom:7px}
+.xp-bar{height:5px;background:var(--bg);border-radius:10px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));border-radius:10px;transition:width .4s ease;width:0%}
+
+/* MAIN */
+.main{margin-left:var(--sw);position:relative;z-index:1}
+.content{max-width:870px;margin:0 auto;padding:2.8rem 3rem 7rem}
+
+/* HEADER */
+.doc-hdr{padding:3rem 0 2.8rem;border-bottom:1px solid var(--border);margin-bottom:3rem;animation:fadeUp .6s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);color:var(--accent);font-family:var(--font-m);font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:1.4rem}
+.badge .dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.doc-title{font-family:var(--font-d);font-size:clamp(2.2rem,5vw,3.6rem);font-weight:700;line-height:1.08;letter-spacing:-.025em;color:var(--t1);margin-bottom:.55rem}
+.doc-title .hi{color:var(--accent)}
+.doc-sub{font-size:1.1rem;color:var(--t2);font-weight:400;margin-bottom:1.8rem;line-height:1.65;max-width:640px}
+.doc-meta{display:flex;gap:1rem;flex-wrap:wrap}
+.mpill{font-family:var(--font-m);font-size:.7rem;color:var(--t2);background:var(--bg-card);border:1px solid var(--border);padding:4px 12px;border-radius:100px;letter-spacing:.05em}
+
+/* BREADCRUMB */
+.bc{display:inline-flex;align-items:center;gap:6px;color:var(--t3);font-family:var(--font-m);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;margin-bottom:1.8rem;transition:color .2s}
+.bc:hover{color:var(--accent)}
+
+/* WHERE */
+.where{background:var(--bg-card);border:1px solid rgba(251,191,36,.22);border-left:4px solid var(--accent);border-radius:12px;padding:1.5rem 1.8rem;margin-bottom:3rem}
+.where h3{font-family:var(--font-m);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem}
+.where p{color:var(--t2);font-size:.975rem;line-height:1.78;margin-bottom:.5rem}
+.where p:last-child{margin-bottom:0}
+
+/* SECTIONS */
+.sec{margin-bottom:3.5rem}
+.eyebrow{font-family:var(--font-m);font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:.55rem;display:block}
+h2.stitle{font-family:var(--font-d);font-size:1.95rem;font-weight:700;color:var(--t1);letter-spacing:-.02em;line-height:1.15;margin-bottom:1.1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+h3.ssub{font-family:var(--font-d);font-size:1.3rem;font-weight:600;color:var(--t1);letter-spacing:-.01em;margin:2rem 0 .75rem}
+p{color:var(--t2);margin-bottom:1rem;font-size:1rem;line-height:1.85}
+p:last-child{margin-bottom:0}
+p strong{color:var(--t1);font-weight:600}
+
+/* CALLOUTS */
+.box{border-radius:12px;padding:1.35rem 1.55rem;margin:1.8rem 0;border:1px solid}
+.box-hd{font-family:var(--font-m);font-size:.67rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:.55rem;display:flex;align-items:center;gap:8px}
+.box p{font-size:.96rem;margin-bottom:.45rem}
+.box p:last-child{margin-bottom:0}
+.box ul{margin:.4rem 0 0 1.2rem}
+.box ul li{font-size:.93rem;color:var(--t2);margin-bottom:.35rem;line-height:1.6}
+.box-war{background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.25)}
+.box-war .box-hd{color:var(--danger)}
+.box-war p,.box-war li{color:#e8b8b8}
+.box-tip{background:rgba(129,140,248,.07);border-color:rgba(129,140,248,.25)}
+.box-tip .box-hd{color:var(--info)}
+.box-tip p,.box-tip li{color:#c5c9f5}
+.box-iam{background:rgba(34,211,238,.06);border-color:rgba(34,211,238,.2)}
+.box-iam .box-hd{color:var(--cyan)}
+.box-iam p,.box-iam li{color:var(--t2)}
+.box-warn{background:rgba(251,191,36,.07);border-color:rgba(251,191,36,.25)}
+.box-warn .box-hd{color:var(--accent)}
+.box-warn p,.box-warn li{color:#e8d4a0}
+.box-ok{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.25)}
+.box-ok .box-hd{color:var(--success)}
+.box-ok p,.box-ok li{color:#a8e8d0}
+
+/* CODE BLOCKS */
+.cb{background:var(--bg-code);border:1px solid rgba(251,191,36,.15);border-radius:10px;margin:1.5rem 0;overflow:hidden}
+.cb-hd{display:flex;align-items:center;justify-content:space-between;padding:.55rem 1.15rem;background:rgba(251,191,36,.05);border-bottom:1px solid rgba(251,191,36,.12)}
+.cb-fn{font-family:var(--font-m);font-size:.7rem;color:var(--accent);letter-spacing:.04em}
+.cb-right{display:flex;gap:8px;align-items:center}
+.cb-lang{font-family:var(--font-m);font-size:.62rem;color:var(--t3);letter-spacing:.1em;text-transform:uppercase}
+.cb-copy{background:none;border:1px solid var(--border);color:var(--t3);font-family:var(--font-m);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 9px;border-radius:4px;cursor:pointer;transition:all .2s}
+.cb-copy:hover{color:var(--accent);border-color:var(--accent)}
+pre{padding:1.35rem;overflow-x:auto;font-family:var(--font-m);font-size:.875rem;line-height:1.72;color:var(--code-text);scrollbar-width:thin}
+.k{color:var(--code-key)}.v{color:var(--code-val)}.s{color:var(--code-str)}
+.n{color:var(--code-num)}.c{color:var(--code-cmt);font-style:italic}
+.sp{color:var(--code-sp)}.ac{color:var(--code-acc)}.ex{color:#a3e635}
+
+/* INLINE CODE */
+code{font-family:var(--font-m);font-size:.855rem;background:rgba(251,191,36,.1);color:var(--accent);padding:1px 6px;border-radius:4px}
+
+/* TABLES */
+.tw{overflow-x:auto;margin:1.5rem 0;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.91rem}
+thead th{background:var(--bg-card2);color:var(--t1);font-family:var(--font-m);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.85rem 1.15rem;text-align:left;border-bottom:1px solid var(--border)}
+tbody td{padding:.82rem 1.15rem;color:var(--t2);border-bottom:1px solid rgba(251,191,36,.06);line-height:1.55;vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(251,191,36,.025)}
+td strong{color:var(--t1)}
+td code{background:rgba(251,191,36,.1);color:var(--accent)}
+
+/* CTX CARDS */
+.ctx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:1rem;margin:1.5rem 0}
+.ctx-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.2rem;transition:border-color .25s,transform .2s}
+.ctx-card:hover{border-color:rgba(251,191,36,.35);transform:translateY(-2px)}
+.ctx-label{font-family:var(--font-m);font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.5rem}
+.ctx-title{font-weight:700;color:var(--t1);font-size:.98rem;margin-bottom:.3rem}
+.ctx-card p{font-size:.855rem;color:var(--t2);margin:0;line-height:1.6}
+
+/* SCOPE LADDER */
+.scope-ladder{display:flex;flex-direction:column;gap:0;margin:1.5rem 0}
+.scope-rung{display:flex;align-items:stretch}
+.scope-level{width:120px;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;padding-right:1rem}
+.scope-label{font-family:var(--font-m);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.scope-bar{flex:1;padding:.9rem 1.2rem}
+.scope-rung:first-child .scope-bar{border-radius:10px 10px 0 0}
+.scope-rung:last-child .scope-bar{border-radius:0 0 10px 10px}
+.scope-bar-title{font-weight:700;color:var(--t1);font-size:.95rem;margin-bottom:.25rem}
+.scope-bar-desc{font-size:.875rem;color:var(--t2);line-height:1.55}
+.scope-org{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-bottom:none}
+.scope-org .scope-label{color:var(--accent)}
+.scope-repo{background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.2);border-bottom:none}
+.scope-repo .scope-label{color:var(--cyan)}
+.scope-env{background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.2)}
+.scope-env .scope-label{color:var(--success)}
+
+/* SPOT BUG */
+.bug{background:var(--bg-card);border:1px solid rgba(248,113,113,.25);border-radius:14px;margin:2rem 0;overflow:hidden}
+.bug-hd{background:rgba(248,113,113,.08);padding:.75rem 1.35rem;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(248,113,113,.18)}
+.bug-hd span{font-family:var(--font-m);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--danger);font-weight:600}
+.bug-body{padding:1.15rem 1.35rem}
+.bug-body p{color:var(--t2);font-size:.95rem;margin-bottom:.9rem}
+.reveal-btn{background:none;border:1px solid rgba(251,191,36,.3);color:var(--accent);font-family:var(--font-m);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;padding:6px 16px;border-radius:6px;cursor:pointer;transition:all .2s;margin-top:.3rem}
+.reveal-btn:hover{background:rgba(251,191,36,.1)}
+.bug-ans{display:none;margin-top:1rem;padding:1rem 1.1rem;background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:8px}
+.bug-ans p{color:var(--t2);font-size:.92rem;margin:0}
+.bug-ans strong{color:var(--accent)}
+
+/* LAB */
+.lab{background:var(--bg-card);border:1px solid rgba(251,191,36,.28);border-radius:16px;margin:2.5rem 0;overflow:hidden}
+.lab-hd{background:rgba(251,191,36,.07);padding:1.1rem 1.7rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(251,191,36,.18)}
+.lab-title{font-family:var(--font-d);font-size:1.08rem;font-weight:700;color:var(--t1)}
+.lab-badge{font-family:var(--font-m);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.28);padding:3px 12px;border-radius:100px}
+.lab-body{padding:1.7rem}
+.lab-obj{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.18);border-radius:8px;padding:.95rem 1.15rem;margin-bottom:1.4rem;font-size:.96rem;color:var(--t2)}
+.lab-obj strong{color:var(--cyan)}
+.lab-steps{list-style:none;counter-reset:lc;display:flex;flex-direction:column;gap:.9rem}
+.lab-steps li{counter-increment:lc;display:flex;gap:.9rem;align-items:flex-start;color:var(--t2);font-size:.97rem;line-height:1.72}
+.lab-steps li::before{content:counter(lc);background:rgba(251,191,36,.14);color:var(--accent);font-family:var(--font-m);font-size:.7rem;font-weight:600;width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:3px}
+.lab-steps li strong{color:var(--t1)}
+
+/* EXPR TESTER */
+.expr-tester{background:var(--bg-card);border:1px solid rgba(251,191,36,.25);border-radius:14px;margin:2rem 0;overflow:hidden}
+.expr-hd{background:rgba(251,191,36,.07);padding:.8rem 1.35rem;border-bottom:1px solid rgba(251,191,36,.15);font-family:var(--font-m);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.expr-body{padding:1.35rem}
+.expr-body p{font-size:.93rem;margin-bottom:1rem}
+.expr-row{display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:.9rem}
+.expr-btn{background:var(--bg);border:1px solid var(--border);color:var(--t2);font-family:var(--font-m);font-size:.75rem;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s}
+.expr-btn:hover,.expr-btn.active{background:rgba(251,191,36,.1);border-color:var(--accent);color:var(--accent)}
+.expr-output{background:var(--bg-code);border:1px solid rgba(251,191,36,.15);border-radius:8px;padding:1rem 1.15rem;min-height:60px;font-family:var(--font-m);font-size:.85rem;color:var(--code-text);line-height:1.65;white-space:pre-wrap}
+
+/* DIVIDER */
+.hr{height:1px;background:var(--border);margin:3rem 0}
+
+/* BRIDGE */
+.bridge{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:2rem 2.2rem;margin-top:4rem;position:relative;overflow:hidden}
+.bridge::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--a2),var(--success))}
+.bridge-eye{font-family:var(--font-m);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.7rem}
+.bridge h2{font-family:var(--font-d);font-size:1.55rem;font-weight:700;color:var(--t1);margin-bottom:1rem;letter-spacing:-.01em}
+.bridge p{color:var(--t2);font-size:.97rem}
+.learned{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 1.8rem;margin:1.2rem 0 1.6rem}
+.li{display:flex;align-items:flex-start;gap:8px;font-size:.9rem;color:var(--t2)}
+.li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;margin-top:2px}
+.next-box{padding:1.15rem 1.35rem;background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.18);border-radius:10px;margin-top:1.4rem}
+.next-label{font-family:var(--font-m);font-size:.63rem;letter-spacing:.15em;text-transform:uppercase;color:var(--success);margin-bottom:.5rem}
+.next-box p{font-size:.95rem;color:var(--t2);margin:0}
+.next-cta{display:inline-flex;align-items:center;gap:8px;margin-top:1.2rem;padding:10px 22px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--accent);font-family:var(--font-m);font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;border-radius:8px;cursor:default;transition:all .2s}
+.next-cta:hover{background:rgba(251,191,36,.18)}
+
+@media(max-width:768px){.sb{display:none}.main{margin-left:0}.content{padding:1.8rem 1.1rem 5rem}.learned{grid-template-columns:1fr}.ctx-grid{grid-template-columns:1fr}.scope-level{display:none}}
+</style>
+</head>
+<body>
+<nav class="sb">
+  <div class="sb-brand">
+    <span class="sb-series">GitHub Actions Mastery · Doc 02 / 04</span>
+    <div class="sb-doc">The Intelligence Layer</div>
+  </div>
+  <div class="sb-sec">// orientation</div>
+  <a href="#where" class="nav-a on"><span class="nd"></span>📍 Where You Are</a>
+  <div class="sb-sec">// data flow</div>
+  <a href="#contexts" class="nav-a"><span class="nd"></span>GitHub Contexts</a>
+  <a href="#variables" class="nav-a"><span class="nd"></span>Variables &amp; Scoping</a>
+  <a href="#env-files" class="nav-a"><span class="nd"></span>Environment Files</a>
+  <div class="sb-sec">// secrets &amp; access</div>
+  <a href="#secrets" class="nav-a"><span class="nd"></span>Secrets — Three Levels</a>
+  <a href="#permissions" class="nav-a"><span class="nd"></span>Permissions Scoping</a>
+  <div class="sb-sec">// logic &amp; decisions</div>
+  <a href="#expressions" class="nav-a"><span class="nd"></span>Expressions</a>
+  <a href="#conditions" class="nav-a"><span class="nd"></span>Conditions &amp; if:</a>
+  <a href="#continue-error" class="nav-a"><span class="nd"></span>continue-on-error vs failure()</a>
+  <div class="sb-sec">// flow control</div>
+  <a href="#concurrency" class="nav-a"><span class="nd"></span>Concurrency Control</a>
+  <a href="#step-outputs" class="nav-a"><span class="nd"></span>Step &amp; Job Outputs</a>
+  <div class="sb-sec">// labs</div>
+  <a href="#lab1" class="nav-a"><span class="nd"></span>Lab 1 — Smart CI Pipeline</a>
+  <a href="#lab2" class="nav-a"><span class="nd"></span>Lab 2 — Secrets &amp; Concurrency</a>
+  <a href="#lab3" class="nav-a"><span class="nd"></span>Lab 3 — Output Chaining</a>
+  <div class="sb-sec">// wrap up</div>
+  <a href="#bridge" class="nav-a"><span class="nd"></span>What You Learned + Next →</a>
+  <div class="xp-box">
+    <div class="xp-top"><span>Progress</span><span id="xpn">0%</span></div>
+    <div class="xp-bar"><div class="xp-fill" id="xpf"></div></div>
+  </div>
+</nav>
+<main class="main">
+<div class="content">
+  <a href="github-actions-index.html" class="bc">← Index</a>
+  <header class="doc-hdr">
+    <div class="badge"><span class="dot"></span>Module 02 of 04 · Intermediate · Amber &amp; Rose</div>
+    <h1 class="doc-title">The <span class="hi">Intelligence Layer</span></h1>
+    <p class="doc-sub">Variables, secrets, contexts, expressions, conditions, concurrency, and permissions — the layer where workflows stop being scripts and start making smart decisions.</p>
+    <div class="doc-meta">
+      <span class="mpill">⏱ 3–4 hours</span>
+      <span class="mpill">🧪 3 Labs</span>
+      <span class="mpill">🐛 3 Spot-the-Bug exercises</span>
+      <span class="mpill">🎯 Intermediate Level</span>
+    </div>
+  </header>
+
+  <div id="where" class="where">
+    <h3>📍 Where You Are</h3>
+    <p>You finished Doc 1 with a working multi-job pipeline that builds and tests a Node.js/TypeScript project. It runs, passes, and fails when things break. But it has no intelligence — it cannot make decisions, has no access to credentials, doesn't know which environment it's deploying to, and if two engineers push simultaneously it races itself.</p>
+    <p>This document fixes all of that. By the end your workflows will read context about who triggered them, access secrets at the right scope, make conditional decisions based on branch and job outcomes, pass data between jobs cleanly, and use concurrency groups to prevent deployment races. This is the layer that separates a toy pipeline from a production one.</p>
+  </div>
+
+  <!-- S1: CONTEXTS -->
+  <section id="contexts" class="sec">
+    <span class="eyebrow">// section 01</span>
+    <h2 class="stitle">GitHub Contexts — The Data Universe of a Workflow Run</h2>
+    <p>Every time a workflow runs, GitHub populates a set of <strong>context objects</strong> containing information about the run, the repository, the triggering event, the runner, and more. You access this data using <code>${{ context.property }}</code>. Contexts are read-only — GitHub sets them, you read them.</p>
+    <div class="ctx-grid">
+      <div class="ctx-card"><div class="ctx-label" style="color:var(--accent)">github.*</div><div class="ctx-title">Event &amp; Repo Info</div><p>Who triggered the run, which branch, commit SHA, repo name, event type, and the full event payload.</p></div>
+      <div class="ctx-card"><div class="ctx-label" style="color:var(--a2)">secrets.*</div><div class="ctx-title">Secret Values</div><p>Encrypted secrets from repo, org, or environment scope. Never logged — always masked in output.</p></div>
+      <div class="ctx-card"><div class="ctx-label" style="color:var(--cyan)">vars.*</div><div class="ctx-title">Config Variables</div><p>Non-sensitive config values set at repo/org/environment level in GitHub UI. Unlike secrets, visible in logs.</p></div>
+      <div class="ctx-card"><div class="ctx-label" style="color:var(--success)">env.*</div><div class="ctx-title">Environment Variables</div><p>Variables set via <code>env:</code> key at workflow, job, or step level. Scoped to where they're defined.</p></div>
+      <div class="ctx-card"><div class="ctx-label" style="color:var(--info)">steps.*</div><div class="ctx-title">Step Outputs</div><p>Output values and outcome status from previous steps in the same job via <code>steps.step-id.outputs.key</code>.</p></div>
+      <div class="ctx-card"><div class="ctx-label" style="color:#fb923c">needs.*</div><div class="ctx-title">Job Outputs</div><p>Outputs and status from upstream jobs declared in <code>needs:</code>. The bridge for data between jobs.</p></div>
+      <div class="ctx-card"><div class="ctx-label" style="color:var(--accent)">runner.*</div><div class="ctx-title">Runner Info</div><p>The OS, architecture, and temp directory of the runner executing the current job.</p></div>
+      <div class="ctx-card"><div class="ctx-label" style="color:var(--a2)">job.*</div><div class="ctx-title">Current Job Status</div><p>Status of the current job and container info. Useful in post-job cleanup and notification steps.</p></div>
+    </div>
+    <h3 class="ssub">The github Context — Your Most-Used Context</h3>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">github-context-examples.yml</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">steps</span>:
+  - <span class="k">name</span>: <span class="s">Print useful context values</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">echo "Triggered by : ${{ github.actor }}"</span>        <span class="c"># who pushed / opened PR</span>
+      <span class="s">echo "Event type   : ${{ github.event_name }}"</span>    <span class="c"># push, pull_request, etc.</span>
+      <span class="s">echo "Branch       : ${{ github.ref_name }}"</span>      <span class="c"># main, feature/auth</span>
+      <span class="s">echo "Full ref     : ${{ github.ref }}"</span>           <span class="c"># refs/heads/main</span>
+      <span class="s">echo "Commit SHA   : ${{ github.sha }}"</span>           <span class="c"># full 40-char SHA</span>
+      <span class="s">echo "Repo         : ${{ github.repository }}"</span>    <span class="c"># org/repo-name</span>
+      <span class="s">echo "Run number   : ${{ github.run_number }}"</span>    <span class="c"># sequential counter</span>
+
+  - <span class="k">name</span>: <span class="s">Use SHA for Docker image tagging</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">SHORT_SHA="${{ github.sha }}"</span>
+      <span class="s">docker build -t myapp:${SHORT_SHA:0:8} .</span>
+
+  - <span class="k">name</span>: <span class="s">Skip fork PRs — no secrets access</span>
+    <span class="k">if</span>: <span class="ex">${{ github.event.pull_request.head.repo.full_name == github.repository }}</span>
+    <span class="k">run</span>: <span class="s">echo "Not a fork — safe to access secrets"</span></pre>
+    </div>
+    <div class="box box-warn">
+      <div class="box-hd">⚠️ github.ref vs github.ref_name</div>
+      <p><code>github.ref</code> returns the full ref: <code>refs/heads/main</code>. <code>github.ref_name</code> returns just the short name: <code>main</code>. In conditions, use the form that matches your comparison. Writing <code>github.ref == 'main'</code> is always false — the actual value is <code>refs/heads/main</code>. This is the most common context mistake.</p>
+    </div>
+  </section>
+
+  <!-- S2: VARIABLES -->
+  <section id="variables" class="sec">
+    <span class="eyebrow">// section 02</span>
+    <h2 class="stitle">Variables &amp; Scoping — Where Values Live</h2>
+    <p>GitHub Actions has four distinct ways to define variables, each with different scope, lifetime, and visibility. Using the wrong one is the most common source of "why isn't my variable available here?" bugs.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Type</th><th>Defined with</th><th>Scope</th><th>Visible in logs?</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Workflow env</strong></td><td><code>env:</code> at workflow level</td><td>All jobs and steps</td><td>Yes</td><td>Non-sensitive config shared across all jobs</td></tr>
+          <tr><td><strong>Job env</strong></td><td><code>env:</code> inside a job</td><td>All steps in that job only</td><td>Yes</td><td>Job-specific config — not visible in other jobs</td></tr>
+          <tr><td><strong>Step env</strong></td><td><code>env:</code> inside a step</td><td>That step only</td><td>Yes</td><td>Step-level overrides of job or workflow vars</td></tr>
+          <tr><td><strong>Repository/Org vars</strong></td><td>GitHub UI → Settings → Variables</td><td>All workflows in repo/org</td><td>Yes</td><td>API URLs, feature flags, non-sensitive config</td></tr>
+          <tr><td><strong>Secrets</strong></td><td>GitHub UI → Settings → Secrets</td><td>Repo, org, or environment</td><td>Never</td><td>Passwords, tokens, private keys</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">variable-scoping.yml — all four levels in one file</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">name</span>: <span class="s">Variable Scoping Demo</span>
+
+<span class="c"># Workflow-level env — available in ALL jobs and steps</span>
+<span class="k">env</span>:
+  <span class="k">NODE_VERSION</span>: <span class="s">'20'</span>
+  <span class="k">APP_NAME</span>: <span class="s">iam-api</span>
+
+<span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="c"># Job-level env — only available in steps of THIS job</span>
+    <span class="k">env</span>:
+      <span class="k">BUILD_TARGET</span>: <span class="s">production</span>
+      <span class="k">API_URL</span>: <span class="s">${{ vars.PF_API_URL }}</span>   <span class="c"># from GitHub UI → Variables</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Setup Node</span>
+        <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>:
+          <span class="k">node-version</span>: <span class="s">${{ env.NODE_VERSION }}</span>   <span class="c"># workflow-level var</span>
+      - <span class="k">name</span>: <span class="s">Build with step-level override</span>
+        <span class="k">env</span>:
+          <span class="k">BUILD_TARGET</span>: <span class="s">staging</span>    <span class="c"># overrides job-level for THIS step only</span>
+        <span class="k">run</span>: <span class="s">echo "Building $APP_NAME for $BUILD_TARGET on Node $NODE_VERSION"</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">echo "APP_NAME=$APP_NAME"</span>        <span class="c"># ✅ workflow-level — available</span>
+          <span class="s">echo "BUILD_TARGET=$BUILD_TARGET"</span>  <span class="c"># ⚠️ empty — job-level from build job</span></pre>
+    </div>
+    <div class="box box-warn">
+      <div class="box-hd">⚠️ env: vs vars: — Easy to Confuse</div>
+      <p><code>env.*</code> reads variables from the <code>env:</code> key in your YAML. <code>vars.*</code> reads configuration variables set in GitHub UI under Settings → Variables → Actions. They are completely different sources. <code>${{ env.MY_VAR }}</code> reads your YAML definition. <code>${{ vars.MY_VAR }}</code> reads from GitHub settings. Getting these wrong produces silent empty values with no error.</p>
+    </div>
+  </section>
+
+  <!-- S3: ENV FILES -->
+  <section id="env-files" class="sec">
+    <span class="eyebrow">// section 03</span>
+    <h2 class="stitle">Environment Files — How Steps Share Data Within a Job</h2>
+    <p>Steps in the same job run sequentially on the same runner, but a value set in one <code>run:</code> script doesn't carry to the next step automatically. GitHub Actions solves this with three special environment files written to disk between steps.</p>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">env-files.yml — GITHUB_ENV, GITHUB_OUTPUT, GITHUB_STEP_SUMMARY</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">steps</span>:
+  <span class="c"># ── GITHUB_ENV — set a variable for all subsequent steps in this job ──</span>
+  - <span class="k">name</span>: <span class="s">Extract version</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">VERSION=$(node -p "require('./package.json').version")</span>
+      <span class="s">echo "APP_VERSION=$VERSION" >> $GITHUB_ENV</span>
+
+  - <span class="k">name</span>: <span class="s">Use version in next step</span>
+    <span class="k">run</span>: <span class="s">echo "Building version $APP_VERSION"</span>   <span class="c"># ✅ available now</span>
+
+  <span class="c"># ── GITHUB_OUTPUT — expose named outputs for use in conditions and other steps ──</span>
+  - <span class="k">name</span>: <span class="s">Generate build metadata</span>
+    <span class="k">id</span>: <span class="s">meta</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">SHORT_SHA="${{ github.sha }}"</span>
+      <span class="s">echo "short_sha=${SHORT_SHA:0:8}" >> $GITHUB_OUTPUT</span>
+      <span class="s">echo "image_tag=myapp-${SHORT_SHA:0:8}" >> $GITHUB_OUTPUT</span>
+
+  - <span class="k">name</span>: <span class="s">Use step output</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">echo "SHA:       ${{ steps.meta.outputs.short_sha }}"</span>
+      <span class="s">echo "Image tag: ${{ steps.meta.outputs.image_tag }}"</span>
+
+  <span class="c"># ── GITHUB_STEP_SUMMARY — write Markdown visible in the GitHub Actions UI ──</span>
+  - <span class="k">name</span>: <span class="s">Write deployment summary</span>
+    <span class="k">if</span>: <span class="ex">always()</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY</span>
+      <span class="s">echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY</span>
+      <span class="s">echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY</span>
+      <span class="s">echo "| Version | $APP_VERSION |" >> $GITHUB_STEP_SUMMARY</span>
+      <span class="s">echo "| Commit  | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY</span>
+      <span class="s">echo "| Actor   | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY</span></pre>
+    </div>
+    <div class="box box-tip">
+      <div class="box-hd">💡 GITHUB_STEP_SUMMARY is Underused</div>
+      <p>The step summary renders Markdown directly in the GitHub Actions UI on the run page — no external dashboard needed. For your PingFederate pipeline, write a summary after each deploy showing config version, target environment, who triggered it, and the result. Engineers and managers see it instantly without digging into raw log lines.</p>
+    </div>
+    <div class="box box-war">
+      <div class="box-hd">💀 War Story — The :: Syntax That Silently Stopped Working</div>
+      <p>You may encounter older workflows using <code>echo "::set-output name=key::value"</code> or <code>echo "::set-env name=KEY::value"</code>. This was the original GitHub Actions syntax before 2022. It was deprecated and then <strong>disabled entirely</strong> on all GitHub-hosted runners because it allowed script injection attacks. If you inherit a workflow where step outputs are empty for no obvious reason, this is the likely cause. Replace immediately with <code>$GITHUB_OUTPUT</code> and <code>$GITHUB_ENV</code>.</p>
+    </div>
+  </section>
+
+  <!-- BUG 1 -->
+  <div class="bug">
+    <div class="bug-hd"><span>🐛 Spot the Bug #1 — Variable Not Available in Deploy Job</span></div>
+    <div class="bug-body">
+      <p>This workflow tries to use a version string set in the build job inside the deploy job. The deploy step always prints an empty value. What is wrong?</p>
+      <div class="cb" style="margin:0 0 1rem">
+        <pre style="padding:1rem"><span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">env</span>:
+      <span class="k">APP_VERSION</span>: <span class="s">1.4.2</span>
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: <span class="s">npm run build</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: <span class="s">echo "Deploying version $APP_VERSION"</span>  <span class="c"># always empty</span></pre>
+      </div>
+      <button class="reveal-btn" onclick="reveal(this)">Reveal Answer</button>
+      <div class="bug-ans"><p><strong>The bug:</strong> <code>APP_VERSION</code> is a <strong>job-level</strong> env variable in the <code>build</code> job. Job-level env variables are scoped to that job only — they never cross job boundaries. The <code>deploy</code> job runs on a separate VM with no knowledge of the build job's environment. <strong>Fix:</strong> Either move to workflow-level <code>env:</code>, or write it with <code>echo "APP_VERSION=1.4.2" >> $GITHUB_ENV</code> inside a step and expose it as a job <code>output</code> using <code>$GITHUB_OUTPUT</code>, then access via <code>needs.build.outputs.app_version</code>.</p></div>
+    </div>
+  </div>
+
+  <!-- S4: SECRETS -->
+  <section id="secrets" class="sec">
+    <span class="eyebrow">// section 04</span>
+    <h2 class="stitle">Secrets — Three Levels, One Precedence Rule</h2>
+    <p>GitHub Actions secrets are encrypted key-value pairs that are never exposed in logs — GitHub masks any value that matches a stored secret. They exist at three scopes. Understanding the hierarchy is critical for enterprise IAM environments where different teams own different credentials.</p>
+    <div class="scope-ladder">
+      <div class="scope-rung">
+        <div class="scope-level"><span class="scope-label" style="color:var(--accent)">Org Level</span></div>
+        <div class="scope-bar scope-org">
+          <div class="scope-bar-title">Organization Secrets</div>
+          <div class="scope-bar-desc">Defined at the GitHub organization level. Available to all repos in the org (or a policy-restricted subset). Ideal for shared credentials: corporate npm registry token, shared Slack webhook, cross-repo bot PAT.</div>
+        </div>
+      </div>
+      <div class="scope-rung">
+        <div class="scope-level"><span class="scope-label" style="color:var(--cyan)">Repo Level</span></div>
+        <div class="scope-bar scope-repo">
+          <div class="scope-bar-title">Repository Secrets</div>
+          <div class="scope-bar-desc">Defined per repository. Available to all workflows in that repo regardless of environment. Ideal for repo-specific credentials like a Docker Hub token or a staging API key that does not need environment gating.</div>
+        </div>
+      </div>
+      <div class="scope-rung">
+        <div class="scope-level"><span class="scope-label" style="color:var(--success)">Env Level</span></div>
+        <div class="scope-bar scope-env">
+          <div class="scope-bar-title">Environment Secrets</div>
+          <div class="scope-bar-desc">Defined per deployment environment (staging, production). Only available to jobs that specify <code>environment:</code>. Can be protected with approval gates — a job cannot access production secrets until a reviewer approves. Ideal for production AWS credentials and PingFederate admin tokens.</div>
+        </div>
+      </div>
+    </div>
+    <div class="box box-warn" style="margin-top:1.2rem">
+      <div class="box-hd">⚠️ Precedence — Most Specific Level Wins</div>
+      <p>If the same secret name exists at all three levels, the <strong>environment secret wins</strong> over repo, which wins over org. Use this intentionally: define a default <code>AWS_ROLE_ARN</code> at org level pointing to a read-only staging role, and override it at the production environment level with the production role ARN that has write access.</p>
+    </div>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">secrets-usage.yml — accessing secrets at all three levels</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Authenticate to private registry</span>
+        <span class="k">run</span>: <span class="s">npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}</span>
+        <span class="c"># NPM_TOKEN is a repo-level secret</span>
+
+  <span class="k">deploy-staging</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">environment</span>: <span class="s">staging</span>            <span class="c"># unlocks environment-scoped secrets</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">aws-actions/configure-aws-credentials@v4</span>
+        <span class="k">with</span>:
+          <span class="k">role-to-assume</span>: <span class="s">${{ secrets.AWS_ROLE_ARN }}</span>   <span class="c"># staging env secret</span>
+          <span class="k">aws-region</span>: <span class="s">us-east-1</span>
+
+  <span class="k">deploy-prod</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">environment</span>: <span class="s">production</span>          <span class="c"># different env — different secrets + approval gate</span>
+    <span class="k">needs</span>: <span class="s">deploy-staging</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">aws-actions/configure-aws-credentials@v4</span>
+        <span class="k">with</span>:
+          <span class="k">role-to-assume</span>: <span class="s">${{ secrets.AWS_ROLE_ARN }}</span>   <span class="c"># same name, different value</span>
+          <span class="k">aws-region</span>: <span class="s">us-east-1</span></pre>
+    </div>
+    <div class="box box-iam">
+      <div class="box-hd">🔐 PingFederate Migration — Secret Architecture</div>
+      <p>Structure your secrets for enterprise scale:</p>
+      <ul>
+        <li><strong>Org secrets:</strong> Shared Slack webhook URL, npm registry token, GitHub bot PAT for cross-repo automation</li>
+        <li><strong>Repo secrets:</strong> PingFederate admin API credentials for the specific PF instance, Docker registry credentials</li>
+        <li><strong>Staging environment secrets:</strong> AWS role ARN for staging, staging RDS password, staging PF OAuth client secret</li>
+        <li><strong>Production environment secrets:</strong> AWS role ARN for prod (with required reviewer approval gate), prod RDS password, prod PF OAuth client secret — nobody accesses these without explicit approval</li>
+      </ul>
+    </div>
+    <h3 class="ssub">Passing Secrets to Reusable Workflows</h3>
+    <p>When calling a reusable workflow (covered in Doc 3), secrets are not automatically passed. Use <code>secrets: inherit</code> for simplicity or pass them explicitly for least-privilege access.</p>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">secrets-inherit.yml</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="k">call-deploy-all</span>:
+    <span class="k">uses</span>: <span class="s">org/shared/.github/workflows/deploy.yml@main</span>
+    <span class="k">secrets</span>: <span class="s">inherit</span>         <span class="c"># passes ALL secrets — convenient but broad</span>
+
+  <span class="k">call-deploy-explicit</span>:
+    <span class="k">uses</span>: <span class="s">org/shared/.github/workflows/deploy.yml@main</span>
+    <span class="k">secrets</span>:                  <span class="c"># explicit — only what the workflow needs</span>
+      <span class="k">AWS_ROLE_ARN</span>: <span class="s">${{ secrets.AWS_ROLE_ARN }}</span>
+      <span class="k">DEPLOY_TOKEN</span>: <span class="s">${{ secrets.DEPLOY_TOKEN }}</span></pre>
+    </div>
+  </section>
+
+  <!-- S5: PERMISSIONS -->
+  <section id="permissions" class="sec">
+    <span class="eyebrow">// section 05</span>
+    <h2 class="stitle">Permissions Scoping — Least Privilege for GITHUB_TOKEN</h2>
+    <p>Every workflow run receives a <strong>GITHUB_TOKEN</strong> — an automatically generated token that lasts for the duration of the run. By default this token has broad repository write permissions. In enterprise workflows, always scope it to the minimum your jobs actually need.</p>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">permissions.yml — workflow and job level scoping</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">name</span>: <span class="s">Secure Pipeline</span>
+
+<span class="c"># Start locked down at workflow level</span>
+<span class="k">permissions</span>: <span class="s">read-all</span>
+
+<span class="k">jobs</span>:
+  <span class="k">test</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">permissions</span>:
+      <span class="k">contents</span>: <span class="s">read</span>          <span class="c"># read repo code only</span>
+      <span class="k">checks</span>: <span class="s">write</span>           <span class="c"># write test result checks to PRs</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">run</span>: <span class="s">npm test</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">permissions</span>:
+      <span class="k">contents</span>: <span class="s">read</span>
+      <span class="k">id-token</span>: <span class="s">write</span>         <span class="c"># REQUIRED for OIDC — requesting JWT from GitHub</span>
+      <span class="k">deployments</span>: <span class="s">write</span>      <span class="c"># update deployment status in GitHub UI</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">aws-actions/configure-aws-credentials@v4</span>
+        <span class="k">with</span>:
+          <span class="k">role-to-assume</span>: <span class="s">${{ secrets.AWS_ROLE_ARN }}</span>
+          <span class="k">aws-region</span>: <span class="s">us-east-1</span>
+
+  <span class="k">release</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">permissions</span>:
+      <span class="k">contents</span>: <span class="s">write</span>         <span class="c"># create releases, push tags</span>
+      <span class="k">pull-requests</span>: <span class="s">write</span>    <span class="c"># update PR with release notes</span></pre>
+    </div>
+    <div class="box box-war">
+      <div class="box-hd">💀 War Story — id-token: write Missing from OIDC Job</div>
+      <p>A team had AWS OIDC authentication working perfectly on one repo but failing on a newer one with: <em>"Error: Credentials could not be loaded"</em>. After an hour of debugging AWS trust policies, the fix was one line — the newer repo had an org-level policy setting default permissions to <code>read-all</code>, and the OIDC action needs <code>id-token: write</code> to request a JWT from GitHub's token endpoint. Without it, the token request is silently blocked. <strong>Rule:</strong> any job using OIDC must have <code>id-token: write</code> at the job permissions level.</p>
+    </div>
+  <!-- S6: EXPRESSIONS -->
+  <section id="expressions" class="sec">
+    <span class="eyebrow">// section 06</span>
+    <h2 class="stitle">Expressions — The ${{ }} Syntax</h2>
+    <p>Expressions are evaluated at runtime to produce values. They appear inside <code>${{ }}</code> and can access contexts, call functions, and perform comparisons. They work in <code>if:</code> conditions, <code>env:</code> values, step <code>with:</code> inputs, and <code>run:</code> commands.</p>
+    <h3 class="ssub">Essential Built-in Functions</h3>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">expressions.yml — the functions you'll use constantly</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">steps</span>:
+  <span class="c"># contains() — string or array membership check</span>
+  - <span class="k">name</span>: <span class="s">Notify only on main or release</span>
+    <span class="k">if</span>: <span class="ex">${{ contains(fromJson('["main","release"]'), github.ref_name) }}</span>
+    <span class="k">run</span>: <span class="s">echo "Sending release notification"</span>
+
+  <span class="c"># startsWith() / endsWith()</span>
+  - <span class="k">name</span>: <span class="s">Deploy on version tags only</span>
+    <span class="k">if</span>: <span class="ex">${{ startsWith(github.ref, 'refs/tags/v') }}</span>
+    <span class="k">run</span>: <span class="s">echo "Deploying tagged release"</span>
+
+  <span class="c"># format() — safe string interpolation</span>
+  - <span class="k">name</span>: <span class="s">Build image tag</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">echo "IMAGE=${{ format('{0}/{1}:{2}', vars.REGISTRY, github.repository, github.sha) }}"</span>
+
+  <span class="c"># toJson() — serialize context to JSON for debugging</span>
+  - <span class="k">name</span>: <span class="s">Debug full event payload</span>
+    <span class="k">run</span>: <span class="s">echo '${{ toJson(github.event) }}'</span>
+
+  <span class="c"># fromJson() — parse JSON strings</span>
+  - <span class="k">name</span>: <span class="s">Get first service from JSON array input</span>
+    <span class="k">run</span>: <span class="s">echo "Service: ${{ fromJson(inputs.services)[0] }}"</span>
+
+  <span class="c"># join() — array to string</span>
+  - <span class="k">name</span>: <span class="s">List PR labels</span>
+    <span class="k">run</span>: <span class="s">echo "${{ join(github.event.pull_request.labels.*.name, ', ') }}"</span>
+
+  <span class="c"># hashFiles() — generate stable cache key from file contents</span>
+  - <span class="k">name</span>: <span class="s">Cache node_modules</span>
+    <span class="k">uses</span>: <span class="s">actions/cache@v4</span>
+    <span class="k">with</span>:
+      <span class="k">path</span>: <span class="s">node_modules</span>
+      <span class="k">key</span>: <span class="s">node-${{ runner.os }}-${{ hashFiles('package-lock.json') }}</span></pre>
+    </div>
+
+    <!-- INTERACTIVE EXPRESSION EXPLORER -->
+    <div class="expr-tester">
+      <div class="expr-hd">⚡ Interactive — Expression Pattern Explorer</div>
+      <div class="expr-body">
+        <p>Click any pattern to see the expression, what it evaluates to, and when to use it in a real pipeline:</p>
+        <div class="expr-row">
+          <button class="expr-btn" onclick="showExpr(this,'main-only')">Main branch only</button>
+          <button class="expr-btn" onclick="showExpr(this,'tag-release')">Version tag deploy</button>
+          <button class="expr-btn" onclick="showExpr(this,'pr-author')">Skip bot PRs</button>
+          <button class="expr-btn" onclick="showExpr(this,'manual-env')">Manual env input</button>
+          <button class="expr-btn" onclick="showExpr(this,'failed-prev')">After failure only</button>
+          <button class="expr-btn" onclick="showExpr(this,'fork-check')">Fork safety</button>
+        </div>
+        <div class="expr-output" id="expr-out">← Click a pattern above to see the expression and when to use it</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S7: CONDITIONS -->
+  <section id="conditions" class="sec">
+    <span class="eyebrow">// section 07</span>
+    <h2 class="stitle">Conditions &amp; if: — Making Jobs and Steps Conditional</h2>
+    <p>The <code>if:</code> key can be placed on both jobs and steps. When it evaluates to false, the job or step is <strong>skipped</strong> — not failed. A skipped job shows a grey checkmark in the UI, not a red X. This is an important distinction for pipeline status reporting.</p>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">conditions.yml — real-world patterns</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="c"># Job condition — entire job skipped if false</span>
+  <span class="k">deploy-prod</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="s">deploy-staging</span>
+    <span class="k">if</span>: <span class="ex">github.ref == 'refs/heads/main' && github.event_name == 'push'</span>
+    <span class="k">steps</span>:
+      - <span class="k">run</span>: <span class="s">echo "Deploying to production"</span>
+
+  <span class="k">ci</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      <span class="c"># Step condition — only post PR comment on pull_request events</span>
+      - <span class="k">name</span>: <span class="s">Comment on PR</span>
+        <span class="k">if</span>: <span class="ex">${{ github.event_name == 'pull_request' }}</span>
+        <span class="k">run</span>: <span class="s">echo "Posting results to PR..."</span>
+
+      <span class="c"># Run only if a previous step wrote a specific output</span>
+      - <span class="k">name</span>: <span class="s">Check for migrations</span>
+        <span class="k">id</span>: <span class="s">db-check</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">if git diff --name-only HEAD~1 | grep -q "migrations/"; then</span>
+          <span class="s">  echo "needed=true" >> $GITHUB_OUTPUT</span>
+          <span class="s">fi</span>
+
+      - <span class="k">name</span>: <span class="s">Run DB migration</span>
+        <span class="k">if</span>: <span class="ex">${{ steps.db-check.outputs.needed == 'true' }}</span>
+        <span class="k">run</span>: <span class="s">npm run db:migrate</span>
+
+      <span class="c"># Skip bot-triggered workflows entirely at job level</span>
+      - <span class="k">name</span>: <span class="s">Skip renovate bumps</span>
+        <span class="k">if</span>: <span class="ex">${{ github.actor != 'renovate[bot]' && github.actor != 'dependabot[bot]' }}</span>
+        <span class="k">run</span>: <span class="s">echo "Human-triggered run"</span></pre>
+    </div>
+
+    <h3 class="ssub">Status Check Functions — The Four You Must Know</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Function</th><th>Returns true when</th><th>Common use</th></tr></thead>
+        <tbody>
+          <tr><td><code>success()</code></td><td>All previous steps/jobs succeeded. <strong>Default behaviour</strong> — omitting <code>if:</code> is the same as <code>if: success()</code></td><td>Normal happy-path steps</td></tr>
+          <tr><td><code>failure()</code></td><td>Any previous step/job failed or was cancelled</td><td>Rollback steps, error notifications, on-call paging</td></tr>
+          <tr><td><code>cancelled()</code></td><td>The workflow was manually cancelled</td><td>Cleanup of partially-created cloud resources</td></tr>
+          <tr><td><code>always()</code></td><td>Always — regardless of any previous outcome</td><td>Upload logs, post final Slack status, release distributed locks</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">status-functions.yml — failure handling and always-run cleanup</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">steps</span>:
+  - <span class="k">name</span>: <span class="s">Deploy to AWS</span>
+    <span class="k">id</span>: <span class="s">deploy</span>
+    <span class="k">run</span>: <span class="s">./deploy.sh</span>
+
+  <span class="c"># Runs only if the deploy step specifically failed</span>
+  - <span class="k">name</span>: <span class="s">Rollback on failure</span>
+    <span class="k">if</span>: <span class="ex">${{ failure() && steps.deploy.outcome == 'failure' }}</span>
+    <span class="k">run</span>: <span class="s">./rollback.sh</span>
+
+  <span class="c"># Always sends notification — success or failure</span>
+  - <span class="k">name</span>: <span class="s">Notify Slack — always</span>
+    <span class="k">if</span>: <span class="ex">always()</span>
+    <span class="k">run</span>: <span class="sp">|</span>
+      <span class="s">curl -X POST ${{ secrets.SLACK_WEBHOOK }} \</span>
+        <span class="s">-d "{\"text\": \"Deploy ${{ job.status }} — ${{ github.repository }}\"}"</span>
+
+  <span class="c"># Upload test results even when tests fail — needed to diagnose failures</span>
+  - <span class="k">name</span>: <span class="s">Upload test results</span>
+    <span class="k">if</span>: <span class="ex">always()</span>
+    <span class="k">uses</span>: <span class="s">actions/upload-artifact@v4</span>
+    <span class="k">with</span>: {<span class="k">name</span>: <span class="s">test-results</span>, <span class="k">path</span>: <span class="s">coverage/</span>}</pre>
+    </div>
+  </section>
+
+  <!-- S8: CONTINUE ON ERROR -->
+  <section id="continue-error" class="sec">
+    <span class="eyebrow">// section 08</span>
+    <h2 class="stitle">continue-on-error vs failure() — A Critical Distinction</h2>
+    <p>These two mechanisms both involve failures but behave very differently. Confusing them leads to pipelines that either block when they shouldn't, or silently pass when they should have failed.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th></th><th>continue-on-error: true</th><th>if: failure()</th></tr></thead>
+        <tbody>
+          <tr><td><strong>What it does</strong></td><td>Lets the workflow continue even if this step fails. The step is marked failed but subsequent steps still run.</td><td>Runs a step ONLY IF a previous step has already failed. Used for cleanup, rollback, and error alerts.</td></tr>
+          <tr><td><strong>Job outcome</strong></td><td>Job still reports as <strong>failed</strong> — it just doesn't stop executing</td><td>No effect on job outcome — it is a trigger condition</td></tr>
+          <tr><td><strong>Step outcome</strong></td><td>outcome = <code>failure</code>, conclusion = <code>success</code></td><td>The conditional step runs normally and has its own outcome</td></tr>
+          <tr><td><strong>Use for</strong></td><td>Optional best-effort steps: coverage checks, lint warnings that should not block a hotfix deploy</td><td>Mandatory recovery steps: cleanup, notification, rollback that must run precisely because something broke</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">continue-vs-failure.yml</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">steps</span>:
+  <span class="c"># continue-on-error: optional gate — failing won't block the pipeline</span>
+  - <span class="k">name</span>: <span class="s">Check code coverage</span>
+    <span class="k">continue-on-error</span>: <span class="n">true</span>
+    <span class="k">run</span>: <span class="s">npm run coverage:check</span>
+
+  - <span class="k">name</span>: <span class="s">Build Docker image</span>
+    <span class="k">id</span>: <span class="s">docker-build</span>
+    <span class="k">run</span>: <span class="s">docker build -t myapp .</span>
+
+  <span class="c"># if: failure() — must run precisely BECAUSE the build failed</span>
+  - <span class="k">name</span>: <span class="s">Page on-call for build failure</span>
+    <span class="k">if</span>: <span class="ex">${{ failure() && steps.docker-build.outcome == 'failure' }}</span>
+    <span class="k">run</span>: <span class="s">echo "Docker build failed — alerting on-call"</span>
+
+  <span class="c"># Using both: always upload scan results, don't block on them</span>
+  - <span class="k">name</span>: <span class="s">Upload security scan</span>
+    <span class="k">if</span>: <span class="ex">always()</span>
+    <span class="k">continue-on-error</span>: <span class="n">true</span>
+    <span class="k">uses</span>: <span class="s">actions/upload-artifact@v4</span>
+    <span class="k">with</span>: {<span class="k">name</span>: <span class="s">scan-results</span>, <span class="k">path</span>: <span class="s">scan-output/</span>}</pre>
+    </div>
+  </section>
+
+  <!-- BUG 2 -->
+  <div class="bug">
+    <div class="bug-hd"><span>🐛 Spot the Bug #2 — Slack Notification Only Fires on Success</span></div>
+    <div class="bug-body">
+      <p>This pipeline should notify Slack whether the deployment succeeds or fails. Engineers report they only get notified on success — failures go completely unannounced at 2am. What is wrong?</p>
+      <div class="cb" style="margin:0 0 1rem">
+        <pre style="padding:1rem"><span class="k">steps</span>:
+  - <span class="k">name</span>: <span class="s">Deploy to production</span>
+    <span class="k">id</span>: <span class="s">deploy</span>
+    <span class="k">run</span>: <span class="s">./deploy.sh</span>
+
+  - <span class="k">name</span>: <span class="s">Run smoke tests</span>
+    <span class="k">run</span>: <span class="s">./smoke-test.sh</span>
+
+  - <span class="k">name</span>: <span class="s">Notify Slack</span>
+    <span class="k">run</span>: <span class="s">curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{"text":"Deploy done"}'</span></pre>
+      </div>
+      <button class="reveal-btn" onclick="reveal(this)">Reveal Answer</button>
+      <div class="bug-ans"><p><strong>The bug:</strong> The Notify Slack step has no <code>if:</code> condition, so it implicitly uses <code>if: success()</code>. When deploy or smoke tests fail, the job enters a failure state and subsequent steps with no <code>if:</code> are skipped. <strong>Fix:</strong> Add <code>if: always()</code> to the Notify Slack step. This is one of the most common enterprise pipeline gaps — monitoring that only works when everything is already fine. The steps that most need to always run are notifications and cleanup, yet they're the ones most often written without <code>if: always()</code>.</p></div>
+    </div>
+  </div>
+
+  <!-- S9: CONCURRENCY -->
+  <section id="concurrency" class="sec">
+    <span class="eyebrow">// section 09</span>
+    <h2 class="stitle">Concurrency Control — Preventing Deployment Race Conditions</h2>
+    <p>Without concurrency control, two engineers pushing to <code>main</code> within seconds of each other start two deployment workflows simultaneously. Both pull the same artifact and deploy to the same environment — racing each other, potentially leaving the environment in an inconsistent state mid-deploy.</p>
+    <p>The <code>concurrency:</code> key defines a named group. GitHub ensures only one workflow run in that group is active at a time. Others either queue or get cancelled depending on your configuration.</p>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">concurrency.yml — the four patterns that matter</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="c"># Pattern 1 — Cancel old runs. Latest push wins.</span>
+<span class="c"># Safe for CI — no point checking stale commits when new ones arrive.</span>
+<span class="k">concurrency</span>:
+  <span class="k">group</span>: <span class="s">ci-${{ github.ref }}</span>
+  <span class="k">cancel-in-progress</span>: <span class="n">true</span>
+
+<span class="c">---</span>
+<span class="c"># Pattern 2 — Queue. One at a time. Never cancel.</span>
+<span class="c"># CRITICAL for deployments — never cancel a deploy mid-flight.</span>
+<span class="k">concurrency</span>:
+  <span class="k">group</span>: <span class="s">deploy-production</span>
+  <span class="k">cancel-in-progress</span>: <span class="n">false</span>
+
+<span class="c">---</span>
+<span class="c"># Pattern 3 — Per-environment. Staging and prod can run simultaneously</span>
+<span class="c"># but two staging deploys cannot overlap.</span>
+<span class="k">concurrency</span>:
+  <span class="k">group</span>: <span class="s">deploy-${{ inputs.environment || 'staging' }}</span>
+  <span class="k">cancel-in-progress</span>: <span class="n">false</span>
+
+<span class="c">---</span>
+<span class="c"># Pattern 4 — Per-PR. Cancel old checks when new commits arrive.</span>
+<span class="k">concurrency</span>:
+  <span class="k">group</span>: <span class="s">pr-checks-${{ github.event.pull_request.number }}</span>
+  <span class="k">cancel-in-progress</span>: <span class="n">true</span></pre>
+    </div>
+    <div class="box box-iam">
+      <div class="box-hd">🔐 PingFederate Deployment — Two Concurrency Groups</div>
+      <p>Use separate groups for CI and CD:</p>
+      <ul>
+        <li><strong>CI:</strong> <code>group: ci-${{ github.ref }}</code> with <code>cancel-in-progress: true</code>. Old commit checks are wasted work when new pushes arrive.</li>
+        <li><strong>Deploy:</strong> <code>group: deploy-pf-${{ github.ref_name }}</code> with <code>cancel-in-progress: false</code>. Never cancel a PingFederate config push mid-flight. A partial config can leave authentication broken for all users. Queue and wait.</li>
+      </ul>
+    </div>
+    <div class="box box-war">
+      <div class="box-hd">💀 War Story — cancel-in-progress on a Live Production Deploy</div>
+      <p>A team used a single concurrency group with <code>cancel-in-progress: true</code> covering both CI and deployments. An engineer pushed a hotfix seconds after a release. The hotfix CI run cancelled the in-progress production deployment at the exact moment it was updating the ECS task definition. The service came up with half the containers on the old task, half on the new — a split-brain state. It took two hours to diagnose and restore service. The fix was adding separate concurrency groups for CI and CD.</p>
+    </div>
+  </section>
+
+  <!-- S10: STEP & JOB OUTPUTS -->
+  <section id="step-outputs" class="sec">
+    <span class="eyebrow">// section 10</span>
+    <h2 class="stitle">Step &amp; Job Outputs — Passing Data Through Your Pipeline</h2>
+    <p>Data flows through a pipeline in two hops: <strong>step → job</strong> (via <code>$GITHUB_OUTPUT</code> + <code>steps.id.outputs</code>), and <strong>job → job</strong> (via job-level <code>outputs:</code> + <code>needs.job.outputs</code>). You must explicitly wire both hops — nothing crosses a boundary automatically.</p>
+    <div class="cb">
+      <div class="cb-hd"><span class="cb-fn">outputs-full-chain.yml — complete step → job → job data flow</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+      <pre><span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="c"># Declare which step outputs to expose to downstream jobs</span>
+    <span class="k">outputs</span>:
+      <span class="k">version</span>:         <span class="ex">${{ steps.meta.outputs.version }}</span>
+      <span class="k">image_tag</span>:       <span class="ex">${{ steps.meta.outputs.image_tag }}</span>
+      <span class="k">has_migrations</span>:  <span class="ex">${{ steps.db-check.outputs.has_migrations }}</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+        <span class="k">with</span>: {<span class="k">fetch-depth</span>: <span class="n">2</span>}
+
+      - <span class="k">name</span>: <span class="s">Generate metadata</span>
+        <span class="k">id</span>: <span class="s">meta</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">VERSION=$(node -p "require('./package.json').version")</span>
+          <span class="s">SHORT="${{ github.sha }}"</span>
+          <span class="s">echo "version=$VERSION" >> $GITHUB_OUTPUT</span>
+          <span class="s">echo "image_tag=$VERSION-${SHORT:0:8}" >> $GITHUB_OUTPUT</span>
+
+      - <span class="k">name</span>: <span class="s">Check for DB migrations</span>
+        <span class="k">id</span>: <span class="s">db-check</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">if git diff --name-only HEAD~1 HEAD | grep -q "^migrations/"; then</span>
+          <span class="s">  echo "has_migrations=true" >> $GITHUB_OUTPUT</span>
+          <span class="s">else</span>
+          <span class="s">  echo "has_migrations=false" >> $GITHUB_OUTPUT</span>
+          <span class="s">fi</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Deploy with version from build job</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">echo "Version:   ${{ needs.build.outputs.version }}"</span>
+          <span class="s">echo "Image tag: ${{ needs.build.outputs.image_tag }}"</span>
+          <span class="s">aws ecs update-service \</span>
+          <span class="s">  --service iam-api \</span>
+          <span class="s">  --task-definition iam-api:${{ needs.build.outputs.image_tag }}</span>
+
+      - <span class="k">name</span>: <span class="s">Run migrations if needed</span>
+        <span class="k">if</span>: <span class="ex">${{ needs.build.outputs.has_migrations == 'true' }}</span>
+        <span class="k">run</span>: <span class="s">npm run db:migrate:prod</span></pre>
+    </div>
+    <div class="box box-warn">
+      <div class="box-hd">⚠️ Outputs Are Always Strings — Quote Your Comparisons</div>
+      <p>All step and job outputs are strings. Even <code>echo "count=42"</code> produces the string <code>"42"</code>, not the number <code>42</code>. When comparing in <code>if:</code> conditions always use single quotes: <code>needs.build.outputs.has_migrations == 'true'</code> not <code>== true</code>. The unquoted <code>true</code> is a YAML boolean. This is the single most common output-related bug in GitHub Actions — it trips up experienced engineers regularly because YAML booleans look identical to the string you're comparing against.</p>
+    </div>
+  </section>
+
+  <!-- BUG 3 -->
+  <div class="bug">
+    <div class="bug-hd"><span>🐛 Spot the Bug #3 — Output Comparison Always False</span></div>
+    <div class="bug-body">
+      <p>The migration step should run when the build job detects schema changes. The build job correctly writes <code>has_migrations=true</code> to <code>$GITHUB_OUTPUT</code>. The migration step is always skipped. What is wrong?</p>
+      <div class="cb" style="margin:0 0 1rem">
+        <pre style="padding:1rem"><span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">outputs</span>:
+      <span class="k">has_migrations</span>: <span class="ex">${{ steps.check.outputs.has_migrations }}</span>
+    <span class="k">steps</span>:
+      - <span class="k">id</span>: <span class="s">check</span>
+        <span class="k">run</span>: <span class="s">echo "has_migrations=true" >> $GITHUB_OUTPUT</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Run migrations</span>
+        <span class="k">if</span>: <span class="ex">${{ needs.build.outputs.has_migrations == true }}</span>
+        <span class="k">run</span>: <span class="s">npm run db:migrate</span></pre>
+      </div>
+      <button class="reveal-btn" onclick="reveal(this)">Reveal Answer</button>
+      <div class="bug-ans"><p><strong>The bug:</strong> The condition compares against <code>true</code> (YAML boolean). But <code>$GITHUB_OUTPUT</code> always produces strings — the actual value is the string <code>"true"</code>. The comparison <code>"true" == true</code> evaluates to false in GitHub's expression engine. <strong>Fix:</strong> Quote the comparison: <code>${{ needs.build.outputs.has_migrations == 'true' }}</code>. This affects every boolean-like output you'll ever write — always quote the right-hand side in output comparisons.</p></div>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- LAB 1 -->
+  <div id="lab1" class="lab">
+    <div class="lab-hd">
+      <div class="lab-title">🧪 Lab 1 — Smart Context-Aware CI Pipeline</div>
+      <span class="lab-badge">Hands-On · ~45 min</span>
+    </div>
+    <div class="lab-body">
+      <div class="lab-obj"><strong>Objective:</strong> Upgrade your Doc 1 pipeline to be context-aware — behaving differently based on who triggered it, which branch it's on, and whether it's a PR or direct push. Add a rich deployment summary visible in the GitHub Actions UI.</div>
+      <ol class="lab-steps">
+        <li><strong>Add a workflow-level env block</strong> with <code>NODE_VERSION: '20'</code>, <code>APP_NAME</code> set to your project name, and reference these throughout instead of hardcoding values.</li>
+        <li><strong>Add a "print context" step</strong> at the start of your CI job printing <code>github.actor</code>, <code>github.event_name</code>, <code>github.ref_name</code>, and <code>github.sha</code>. Trigger it as both a push and a PR and observe what each value looks like differently.</li>
+        <li><strong>Make the deploy-staging job conditional</strong> using <code>github.ref == 'refs/heads/main' && github.event_name == 'push'</code>. This prevents accidental staging deploys from PR checks.</li>
+        <li><strong>Add an always-run notification step</strong> at the end of your deploy job with <code>if: always()</code>. Have it echo <code>job.status</code>. This is the pattern — form the habit now.</li>
+        <li><strong>Add a GITHUB_STEP_SUMMARY step</strong> that writes a Markdown table showing app name, version (from package.json), commit SHA, triggered by, and branch. After pushing, check the Actions UI → run → Summary tab to see it rendered.</li>
+        <li><strong>Add a bot-skip condition</strong> at job level: <code>if: github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]'</code> so automated dependency bumps don't trigger deployment pipelines.</li>
+      </ol>
+      <div class="cb" style="margin-top:1.5rem">
+        <div class="cb-hd"><span class="cb-fn">.github/workflows/ci.yml — Lab 1 solution</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+        <pre><span class="k">name</span>: <span class="s">CI Pipeline</span>
+<span class="k">on</span>:
+  <span class="k">push</span>:
+    <span class="k">branches</span>: <span class="sp">[main]</span>
+    <span class="k">paths</span>: <span class="sp">['src/**', 'package.json', 'tsconfig.json']</span>
+  <span class="k">pull_request</span>:
+    <span class="k">branches</span>: <span class="sp">[main]</span>
+  <span class="k">workflow_dispatch</span>:
+
+<span class="k">env</span>:
+  <span class="k">NODE_VERSION</span>: <span class="s">'20'</span>
+  <span class="k">APP_NAME</span>: <span class="s">iam-api</span>
+
+<span class="k">jobs</span>:
+  <span class="k">ci</span>:
+    <span class="k">name</span>: <span class="s">Build &amp; Test</span>
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">15</span>
+    <span class="k">if</span>: <span class="ex">github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]'</span>
+    <span class="k">concurrency</span>:
+      <span class="k">group</span>: <span class="s">ci-${{ github.ref }}</span>
+      <span class="k">cancel-in-progress</span>: <span class="n">true</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Print run context</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">echo "Actor:  ${{ github.actor }}"</span>
+          <span class="s">echo "Event:  ${{ github.event_name }}"</span>
+          <span class="s">echo "Branch: ${{ github.ref_name }}"</span>
+          <span class="s">echo "SHA:    ${{ github.sha }}"</span>
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">${{ env.NODE_VERSION }}</span>}
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm run build &amp;&amp; npm test</span>
+      - <span class="k">name</span>: <span class="s">Write workflow summary</span>
+        <span class="k">if</span>: <span class="ex">always()</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")</span>
+          <span class="s">echo "## ${{ env.APP_NAME }} CI Summary" >> $GITHUB_STEP_SUMMARY</span>
+          <span class="s">echo "| | |" >> $GITHUB_STEP_SUMMARY</span>
+          <span class="s">echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY</span>
+          <span class="s">echo "| **Version** | $VERSION |" >> $GITHUB_STEP_SUMMARY</span>
+          <span class="s">echo "| **Branch** | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY</span>
+          <span class="s">echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY</span>
+          <span class="s">echo "| **Status** | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY</span>
+
+  <span class="k">deploy-staging</span>:
+    <span class="k">name</span>: <span class="s">Deploy to Staging</span>
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">20</span>
+    <span class="k">needs</span>: <span class="s">ci</span>
+    <span class="k">if</span>: <span class="ex">github.ref == 'refs/heads/main' && github.event_name == 'push'</span>
+    <span class="k">concurrency</span>:
+      <span class="k">group</span>: <span class="s">deploy-staging</span>
+      <span class="k">cancel-in-progress</span>: <span class="n">false</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Deploy</span>
+        <span class="k">run</span>: <span class="s">echo "Deploying ${{ env.APP_NAME }} to staging..."</span>
+      - <span class="k">name</span>: <span class="s">Notify outcome</span>
+        <span class="k">if</span>: <span class="ex">always()</span>
+        <span class="k">run</span>: <span class="s">echo "Staging deploy status: ${{ job.status }}"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAB 2 -->
+  <div id="lab2" class="lab">
+    <div class="lab-hd">
+      <div class="lab-title">🧪 Lab 2 — Secrets, Permissions &amp; Concurrency</div>
+      <span class="lab-badge">Hands-On · ~40 min</span>
+    </div>
+    <div class="lab-body">
+      <div class="lab-obj"><strong>Objective:</strong> Add real secrets, proper least-privilege permissions scoping, and safe concurrency control to your pipeline. By the end your workflow follows enterprise security patterns.</div>
+      <ol class="lab-steps">
+        <li><strong>Create a repository secret</strong> called <code>DEPLOY_TOKEN</code> in GitHub Settings → Secrets → Actions → New repository secret. Give it any value for now to simulate a real credential.</li>
+        <li><strong>Add <code>permissions: read-all</code> at workflow level</strong> to lock down the default GITHUB_TOKEN. Then add job-level <code>permissions:</code> blocks: the CI job needs <code>contents: read</code> and <code>checks: write</code>; the deploy job needs <code>contents: read</code> and <code>id-token: write</code>.</li>
+        <li><strong>Reference <code>${{ secrets.DEPLOY_TOKEN }}</code></strong> in your deploy job. Add a step that echoes it and observe how GitHub masks the value with <code>***</code> in the logs. This is the masking behaviour working correctly.</li>
+        <li><strong>Add a repository variable</strong> called <code>PF_ADMIN_URL</code> in Settings → Variables → Actions. Use <code>${{ vars.PF_ADMIN_URL }}</code> in a step. Notice it appears unmasked in logs — appropriate for non-sensitive config like API endpoint URLs.</li>
+        <li><strong>Add concurrency groups</strong> — CI: <code>group: ci-${{ github.ref }}</code> with <code>cancel-in-progress: true</code>. Deploy: <code>group: deploy-staging</code> with <code>cancel-in-progress: false</code>.</li>
+        <li><strong>Test the queue behaviour</strong> by triggering two manual runs simultaneously from the Actions tab → Run workflow. Watch the second run wait for the first to finish before starting.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- LAB 3 -->
+  <div id="lab3" class="lab">
+    <div class="lab-hd">
+      <div class="lab-title">🧪 Lab 3 — Full Output Chaining Across Three Jobs</div>
+      <span class="lab-badge">Hands-On · ~50 min</span>
+    </div>
+    <div class="lab-body">
+      <div class="lab-obj"><strong>Objective:</strong> Build a three-job pipeline where each job passes typed data to the next. Build computes metadata. Deploy uses it. Notify reports the final outcome — always.</div>
+      <ol class="lab-steps">
+        <li><strong>In your build job</strong>, add a step with <code>id: meta</code> writing two outputs to <code>$GITHUB_OUTPUT</code>: <code>version</code> (from package.json) and <code>short_sha</code> (first 8 chars of <code>github.sha</code>).</li>
+        <li><strong>Declare job-level <code>outputs:</code></strong> in the build job mapping to the step outputs. Without this explicit declaration the values will not cross the job boundary — this step is required and easy to forget.</li>
+        <li><strong>In the deploy job</strong>, access via <code>needs.build.outputs.version</code> and construct an image tag like <code>myapp:${{ needs.build.outputs.version }}-${{ needs.build.outputs.short_sha }}</code>. Print it and verify the value flows correctly end to end.</li>
+        <li><strong>Add a migration detection step</strong> that writes <code>has_migrations=true</code> or <code>false</code> based on whether a <code>migrations/</code> directory was touched. In deploy, use <code>needs.build.outputs.has_migrations == 'true'</code> (single quotes — remember the string comparison) to gate a migration step.</li>
+        <li><strong>Add a notify job</strong> with <code>needs: [build, deploy]</code> and <code>if: always()</code>. Print version, short SHA, build result from <code>needs.build.result</code>, and deploy result from <code>needs.deploy.result</code>.</li>
+        <li><strong>Force a failure</strong> in the deploy job with <code>exit 1</code>. Run the pipeline and verify: deploy fails, notify job still runs (because of <code>always()</code>), and correctly shows <code>deploy: failure</code> in its summary.</li>
+      </ol>
+      <div class="cb" style="margin-top:1.5rem">
+        <div class="cb-hd"><span class="cb-fn">.github/workflows/ci.yml — Lab 3 complete output chaining solution</span><div class="cb-right"><span class="cb-lang">yaml</span><button class="cb-copy" onclick="copyCode(this)">Copy</button></div></div>
+        <pre><span class="k">name</span>: <span class="s">CI Pipeline</span>
+<span class="k">on</span>:
+  <span class="k">push</span>: {<span class="k">branches</span>: <span class="sp">[main]</span>}
+  <span class="k">workflow_dispatch</span>:
+
+<span class="k">permissions</span>: <span class="s">read-all</span>
+
+<span class="k">jobs</span>:
+  <span class="k">build</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">15</span>
+    <span class="k">permissions</span>:
+      <span class="k">contents</span>: <span class="s">read</span>
+    <span class="k">outputs</span>:
+      <span class="k">version</span>:        <span class="ex">${{ steps.meta.outputs.version }}</span>
+      <span class="k">short_sha</span>:      <span class="ex">${{ steps.meta.outputs.short_sha }}</span>
+      <span class="k">has_migrations</span>: <span class="ex">${{ steps.migration.outputs.has_migrations }}</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="s">actions/checkout@v4</span>
+        <span class="k">with</span>: {<span class="k">fetch-depth</span>: <span class="n">2</span>}
+      - <span class="k">name</span>: <span class="s">Generate metadata</span>
+        <span class="k">id</span>: <span class="s">meta</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0")</span>
+          <span class="s">SHORT="${{ github.sha }}"</span>
+          <span class="s">echo "version=$VERSION" >> $GITHUB_OUTPUT</span>
+          <span class="s">echo "short_sha=${SHORT:0:8}" >> $GITHUB_OUTPUT</span>
+      - <span class="k">name</span>: <span class="s">Check for DB migrations</span>
+        <span class="k">id</span>: <span class="s">migration</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">if git diff --name-only HEAD~1 HEAD | grep -q "^migrations/"; then</span>
+          <span class="s">  echo "has_migrations=true" >> $GITHUB_OUTPUT</span>
+          <span class="s">else</span>
+          <span class="s">  echo "has_migrations=false" >> $GITHUB_OUTPUT</span>
+          <span class="s">fi</span>
+      - <span class="k">uses</span>: <span class="s">actions/setup-node@v4</span>
+        <span class="k">with</span>: {<span class="k">node-version</span>: <span class="s">'20'</span>}
+      - <span class="k">run</span>: <span class="s">npm ci &amp;&amp; npm run build &amp;&amp; npm test</span>
+
+  <span class="k">deploy</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">timeout-minutes</span>: <span class="n">20</span>
+    <span class="k">needs</span>: <span class="s">build</span>
+    <span class="k">permissions</span>:
+      <span class="k">contents</span>: <span class="s">read</span>
+      <span class="k">id-token</span>: <span class="s">write</span>
+    <span class="k">concurrency</span>:
+      <span class="k">group</span>: <span class="s">deploy-staging</span>
+      <span class="k">cancel-in-progress</span>: <span class="n">false</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Deploy image</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">IMAGE="myapp:${{ needs.build.outputs.version }}-${{ needs.build.outputs.short_sha }}"</span>
+          <span class="s">echo "Deploying $IMAGE to staging"</span>
+      - <span class="k">name</span>: <span class="s">Run DB migrations if needed</span>
+        <span class="k">if</span>: <span class="ex">${{ needs.build.outputs.has_migrations == 'true' }}</span>
+        <span class="k">run</span>: <span class="s">echo "Running migrations for v${{ needs.build.outputs.version }}"</span>
+
+  <span class="k">notify</span>:
+    <span class="k">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="k">needs</span>: <span class="sp">[build, deploy]</span>
+    <span class="k">if</span>: <span class="ex">always()</span>
+    <span class="k">steps</span>:
+      - <span class="k">name</span>: <span class="s">Deployment summary</span>
+        <span class="k">run</span>: <span class="sp">|</span>
+          <span class="s">echo "Version:    ${{ needs.build.outputs.version }}"</span>
+          <span class="s">echo "SHA:        ${{ needs.build.outputs.short_sha }}"</span>
+          <span class="s">echo "Migrations: ${{ needs.build.outputs.has_migrations }}"</span>
+          <span class="s">echo "Build:      ${{ needs.build.result }}"</span>
+          <span class="s">echo "Deploy:     ${{ needs.deploy.result }}"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- BRIDGE -->
+  <div id="bridge" class="bridge">
+    <div class="bridge-eye">// doc 02 — complete</div>
+    <h2>What You Built &amp; What Comes Next</h2>
+    <p>Your workflows evolved from running scripts to making context-aware decisions. Here is what you now have:</p>
+    <div class="learned">
+      <div class="li">All eight GitHub contexts and when each one matters</div>
+      <div class="li">Variable scoping — workflow, job, and step levels</div>
+      <div class="li">GITHUB_ENV, GITHUB_OUTPUT, and GITHUB_STEP_SUMMARY</div>
+      <div class="li">Secrets at three scopes with correct precedence rules</div>
+      <div class="li">Least-privilege GITHUB_TOKEN permissions scoping</div>
+      <div class="li">id-token: write for OIDC authentication to AWS</div>
+      <div class="li">Expressions and seven essential built-in functions</div>
+      <div class="li">Conditional jobs and steps with all four status functions</div>
+      <div class="li">continue-on-error vs if: failure() and when each applies</div>
+      <div class="li">Concurrency groups — cancel-in-progress for CI, queue for deploys</div>
+      <div class="li">Full step → job → job output chaining with string-safe comparisons</div>
+    </div>
+    <div class="next-box">
+      <div class="next-label">// what's waiting in doc 03 — scale &amp; reusability</div>
+      <p>You can build smart, secure single-workflow pipelines. Doc 3 teaches you to build at <strong>scale</strong> — reusable workflows callable across dozens of repositories, composite actions that package multiple steps into one reusable unit, matrix strategies for multi-environment deployments, dependency caching that cuts pipeline time in half, service containers for integration testing, and release automation. This is where your PingFederate migration pipeline starts looking like a proper enterprise CI/CD platform.</p>
+    </div>
+    <div class="next-cta">Doc 03 — Scale &amp; Reusability → coming next</div>
+  </div>
+
+</div>
+</main>
+
+<script>
+function copyCode(btn){
+  const pre=btn.closest('.cb').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    const orig=btn.textContent;btn.textContent='Copied!';
+    btn.style.color='var(--accent)';btn.style.borderColor='var(--accent)';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},1800);
+  });
+}
+function reveal(btn){btn.nextElementSibling.style.display='block';btn.style.display='none';}
+
+const exprData={
+  'main-only':{
+    expr:`if: github.ref == 'refs/heads/main' && github.event_name == 'push'`,
+    when:`True only when a commit is directly pushed to main.\nFalse for: PRs targeting main, pushes to other branches, manual runs.`,
+    use:`Use on deploy jobs that should only fire on real merges — not on PR checks.\nPair with concurrency: deploy-main and cancel-in-progress: false.`
+  },
+  'tag-release':{
+    expr:`if: startsWith(github.ref, 'refs/tags/v')`,
+    when:`True when the triggering ref is a tag starting with 'v'.\nMatches: v1.0.0, v2.1.3-rc1. Not: feature/v2, main.`,
+    use:`Use on release publish steps: npm publish, Docker image tagging, GitHub Release creation.\nPair with on: push: tags: ['v*'] in your trigger block.`
+  },
+  'pr-author':{
+    expr:`if: github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]'`,
+    when:`True for all human actors.\nFalse for automated dependency bump PRs from Dependabot or Renovate.`,
+    use:`Use at job level to skip expensive deploy jobs for bot PRs.\nSaves minutes-per-run across every automated dependency update your repo receives.`
+  },
+  'manual-env':{
+    expr:`if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'`,
+    when:`True only for manual runs where the environment input was set to production.\nFalse for: push triggers, PR triggers, manual runs targeting staging.`,
+    use:`Use on high-stakes steps that should only fire on intentional manual production deploys.\nPrevents a staging workflow_dispatch from hitting production-specific steps.`
+  },
+  'failed-prev':{
+    expr:`if: failure() && steps.deploy.outcome == 'failure'`,
+    when:`True only if the workflow is in failure state AND specifically the deploy step failed.\nFalse if deploy succeeded, or failure came from a different step.`,
+    use:`Use on targeted rollback steps. More precise than bare failure() which fires for ANY failure.\nCombine with the step id to react only to the specific step you care about.`
+  },
+  'fork-check':{
+    expr:`if: github.event.pull_request.head.repo.full_name == github.repository`,
+    when:`True when the PR comes from a branch in the same repository (not a fork).`,
+    use:`Gate steps that access secrets. Fork PRs cannot access repo secrets — this is intentional GitHub security.\nAlways check this before running deploy or integration steps in pull_request workflows.`
+  }
+};
+
+function showExpr(btn,key){
+  document.querySelectorAll('.expr-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const d=exprData[key];
+  document.getElementById('expr-out').textContent=
+    `EXPRESSION:\n${d.expr}\n\nWHEN TRUE / FALSE:\n${d.when}\n\nWHEN TO USE:\n${d.use}`;
+}
+
+const sectionIds=['where','contexts','variables','env-files','secrets','permissions','expressions','conditions','continue-error','concurrency','step-outputs','lab1','lab2','lab3','bridge'];
+const navLinks=document.querySelectorAll('.nav-a');
+const xpf=document.getElementById('xpf');
+const xpn=document.getElementById('xpn');
+
+const spy=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting) navLinks.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id));
+  });
+},{rootMargin:'-20% 0px -60% 0px'});
+
+sectionIds.forEach(id=>{const el=document.getElementById(id);if(el)spy.observe(el);});
+
+window.addEventListener('scroll',()=>{
+  const pct=Math.min(100,Math.round((window.scrollY/(document.documentElement.scrollHeight-window.innerHeight))*100));
+  xpf.style.width=pct+'%';xpn.textContent=pct+'%';
+},{passive:true});
+</script>
+</body>
+</html>

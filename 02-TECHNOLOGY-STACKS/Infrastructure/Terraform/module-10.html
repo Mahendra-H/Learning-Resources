@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-3">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M10 · Troubleshooting &amp; Operations — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E14;--s1:#111520;--s2:#181D2A;--s3:#1F2535;
+  --br:#1E2636;--brb:#2E3A52;
+  --teal:#00E5C3;--td:#00B89A;--tg:rgba(0,229,195,.12);
+  --cu:#E8873A;--cg:rgba(232,135,58,.15);
+  --sa:#4A9EFF;--sg:rgba(74,158,255,.12);
+  --ro:#FF5F7E;--rg:rgba(255,95,126,.12);
+  --jd:#3ECFA0;--vi:#9B7FFF;--vg:rgba(155,127,255,.13);
+  --t1:#E8EDF5;--t2:#8A95A8;--t3:#4A5568;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --xs:4px;--sm:8px;--md:16px;--lg:24px;--xl:40px;--x2:64px;--x3:96px;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--rp:999px;
+  --sh:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  --tf:150ms ease;--tb:250ms ease;
+  /* Phase 3 — Copper, rose accent (ops/danger theme) */
+  --pc:#E8873A;--pg:rgba(232,135,58,.15);--pd:#B86929;
+  --ac:#FF5F7E;--ag:rgba(255,95,126,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--brb);border-radius:999px}
+::selection{background:var(--pg);color:var(--pc)}
+a{color:var(--sa);text-decoration:none;transition:color var(--tf)}a:hover{color:var(--teal)}
+code{font-family:var(--fm);font-size:.85em;background:var(--s3);border:1px solid var(--br);color:var(--teal);padding:1px 5px;border-radius:var(--r4)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 var(--xl)}
+@media(max-width:768px){.wrap{padding:0 var(--md)}}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--br);padding:0 var(--xl)}
+.ni{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--lg)}
+.nl{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.nl span{color:var(--t3);font-weight:400}
+.nd{width:1px;height:20px;background:var(--brb);flex-shrink:0}
+.np{flex:1;display:flex;align-items:center;gap:var(--sm)}
+.pt{flex:1;height:2px;background:var(--br);border-radius:var(--rp);overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,var(--pc),var(--ac));border-radius:var(--rp)}
+.pl{font-family:var(--fm);font-size:11px;color:var(--t3);white-space:nowrap}
+.nb{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);white-space:nowrap}
+/* HERO */
+.hero{position:relative;padding:var(--x3) 0 var(--x2);overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pg) 0%,transparent 50%),radial-gradient(ellipse 50% 40% at 82% 25%,rgba(255,95,126,.06) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--br) 1px,transparent 1px),linear-gradient(90deg,var(--br) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 70% 60% at 15% 50%,black 0%,transparent 70%);opacity:.4;pointer-events:none}
+.hi{position:relative;z-index:1}
+.hp{display:inline-flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.hdot{width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 8px var(--pc);animation:hd 2s ease-in-out infinite}
+@keyframes hd{0%,100%{opacity:1;box-shadow:0 0 8px var(--pc)}50%{opacity:.5;box-shadow:0 0 3px var(--pc)}}
+.ht{font-family:var(--fd);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-.02em;color:var(--t1);margin-bottom:var(--md);max-width:780px}
+.ht .ac{color:var(--pc)}.ht .ar{color:var(--ac)}
+.hs{font-size:17px;font-weight:300;color:var(--t2);max-width:640px;line-height:1.65;margin-bottom:var(--xl)}
+.hm{display:flex;flex-wrap:wrap;gap:var(--sm)}
+/* BADGES */
+.b{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--rp);white-space:nowrap;letter-spacing:.04em}
+.bp{background:var(--pg);border:1px solid var(--pc);color:var(--pc)}
+.be{background:rgba(232,135,58,.1);border:1px solid rgba(232,135,58,.3);color:var(--cu)}
+.bs{background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:var(--sa)}
+.bq{background:var(--s2);border:1px solid var(--brb);color:var(--t2)}
+.bn{background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.3);color:var(--teal)}
+.br2{background:var(--ag);border:1px solid rgba(255,95,126,.35);color:var(--ro)}
+/* ORIENT */
+.orient{background:var(--s1);border:1px solid var(--br);border-radius:var(--r16);padding:var(--xl);margin-bottom:var(--x2);position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc),var(--ac) 60%,transparent)}
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--lg)}
+.oil{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.oiv{font-size:14px;font-weight:500;color:var(--t1)}.oiv.ac{color:var(--pc)}
+.jrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--lg);padding-top:var(--lg);border-top:1px solid var(--br)}
+.jd{width:30px;height:30px;border-radius:var(--r4);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:500}
+.jdd{background:var(--tg);border:1px solid var(--td);color:var(--td)}
+.jdc{background:var(--pg);border:1px solid var(--pc);color:var(--pc);box-shadow:0 0 10px var(--pg)}
+.jdf{background:var(--s2);border:1px solid var(--br);color:var(--t3)}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:var(--x2);align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.main{min-width:0}.sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.sec{margin-bottom:var(--x2)}
+.sl{display:flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.sl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--brb) 0%,transparent 100%)}
+.st{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--t1);margin-bottom:var(--md);line-height:1.2}
+.sb{font-size:15px;color:var(--t2);line-height:1.8}
+.sb p{margin-bottom:var(--md)}.sb p:last-child{margin-bottom:0}
+.sb strong{color:var(--t1);font-weight:600}.sb em{color:var(--pc);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);transition:border-color var(--tb),box-shadow var(--tb)}
+.card:hover{border-color:var(--brb);box-shadow:var(--sh)}
+.cp{border-left:2px solid var(--pc);background:linear-gradient(135deg,var(--pg) 0%,var(--s1) 60%)}
+.ct{border-left:2px solid var(--teal);background:linear-gradient(135deg,var(--tg) 0%,var(--s1) 60%)}
+.cb2{border-left:2px solid var(--sa);background:linear-gradient(135deg,var(--sg) 0%,var(--s1) 60%)}
+.cc{border-left:2px solid var(--cu);background:linear-gradient(135deg,var(--cg) 0%,var(--s1) 60%)}
+.cr{border-left:2px solid var(--ro);background:linear-gradient(135deg,var(--rg) 0%,var(--s1) 60%)}
+.clbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.cttl{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--t1);margin-bottom:var(--sm)}
+.cbdy{font-size:14px;color:var(--t2);line-height:1.7}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--md)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--md)}
+/* CONCEPT */
+.cblock{border-left:2px solid var(--pc);padding:var(--md) var(--lg);background:var(--pg);border-radius:0 var(--r8) var(--r8) 0;margin:var(--lg) 0}
+.cbt{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pc);margin-bottom:4px}
+.cbd{font-size:14px;color:var(--t2);line-height:1.65}
+.cb-t{border-left-color:var(--teal);background:var(--tg)}.cb-t .cbt{color:var(--teal)}
+.cb-r{border-left-color:var(--ro);background:var(--rg)}.cb-r .cbt{color:var(--ro)}
+.cb-v{border-left-color:var(--vi);background:var(--vg)}.cb-v .cbt{color:var(--vi)}
+/* DIAGRAM */
+.dw{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--xl);margin:var(--xl) 0;overflow-x:auto}
+.dwl{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--md);display:flex;align-items:center;gap:var(--sm)}
+.dwl::before{content:'◈';color:var(--pc);font-size:12px}
+/* CODE */
+.code{background:var(--s2);border:1px solid var(--br);border-radius:var(--r8);overflow:hidden;margin:var(--md) 0;font-family:var(--fm);font-size:12px}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:var(--sm) var(--md);background:var(--s3);border-bottom:1px solid var(--br)}
+.chl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.chf{font-size:11px;color:var(--t2)}
+.cbody{padding:var(--md);overflow-x:auto;line-height:1.7;color:var(--t2);tab-size:2}
+.cbody .k{color:#c792ea}.cbody .s{color:var(--jd)}.cbody .c{color:var(--t3);font-style:italic}
+.cbody .v{color:var(--cu)}.cbody .n{color:var(--teal)}.cbody .p{color:var(--sa)}.cbody .num{color:#f78c6c}
+.cbody .err{color:var(--ro);font-weight:500}
+.cbody .ok{color:var(--jd);font-weight:500}
+/* KC */
+.kc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);overflow:hidden;margin:var(--md) 0}
+.kcq{padding:var(--md) var(--lg);font-size:14px;font-weight:500;color:var(--t1);display:flex;align-items:flex-start;gap:var(--sm);cursor:pointer;transition:background var(--tf);user-select:none}
+.kcq:hover{background:var(--s2)}
+.kci{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--pc);background:var(--pg);border:1px solid var(--pc);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kcc{margin-left:auto;flex-shrink:0;color:var(--t3);transition:transform var(--tb);font-size:12px}
+.kc.open .kcc{transform:rotate(180deg)}
+.kca{display:none;padding:var(--md) var(--lg);background:var(--s2);border-top:1px solid var(--br);font-size:14px;color:var(--t2);line-height:1.7}
+.kc.open .kca{display:block}
+/* SIDEBAR */
+.toc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.tl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.ti{display:block;padding:5px var(--sm);font-size:12px;color:var(--t2);border-radius:var(--r4);transition:all var(--tf);cursor:pointer;border-left:2px solid transparent}
+.ti:hover,.ti.active{background:var(--s2);color:var(--t1);border-left-color:var(--pc)}
+.qr{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.qrl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.qi{display:flex;gap:var(--sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--br);font-size:12px}
+.qi:last-child{border-bottom:none}
+.qt{font-family:var(--fm);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.qd{color:var(--t2);line-height:1.5}
+/* TK */
+.tk{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);margin:var(--xl) 0}
+.tkh{display:flex;align-items:center;gap:var(--sm);margin-bottom:var(--md);padding-bottom:var(--md);border-bottom:1px solid var(--br)}
+.tki{width:32px;height:32px;border-radius:var(--r4);background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--pc);flex-shrink:0}
+.tkt{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--t1)}
+.tkl{list-style:none;display:flex;flex-direction:column;gap:var(--sm)}
+.tkl li{font-size:14px;color:var(--t2);display:flex;align-items:flex-start;gap:var(--sm);line-height:1.65}
+.tkl li::before{content:'◆';color:var(--pc);font-size:8px;flex-shrink:0;margin-top:6px}
+/* AR */
+.ar{background:var(--s1);border:1px solid var(--cu);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.arh{background:var(--cg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.arb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cu);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--rp)}
+.art{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.arl{list-style:none;padding:var(--md) var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.arl li{font-size:14px;color:var(--t2);display:flex;gap:var(--sm);align-items:flex-start;line-height:1.65;padding:var(--sm) 0;border-bottom:1px solid var(--br)}
+.arl li:last-child{border-bottom:none}
+.arn{font-family:var(--fm);font-size:11px;color:var(--cu);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR */
+.mn{display:flex;gap:var(--md);padding:var(--lg);background:var(--s2);border:1px solid var(--br);border-radius:var(--r12);margin:var(--lg) 0}
+.mnav{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mnb{flex:1}
+.mnl{font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:4px}
+.mnt{font-size:14px;color:var(--t2);line-height:1.75}
+.mnt strong{color:var(--t1);font-weight:600}
+/* LAB */
+.lab{background:var(--s1);border:1px solid var(--td);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.labh{background:var(--tg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.labb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);background:var(--tg);border:1px solid rgba(0,229,195,.4);padding:2px 8px;border-radius:var(--rp)}
+.labt{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.labbody{padding:var(--lg)}
+.labbody ol{padding-left:var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.labbody ol li{font-size:14px;color:var(--t2);line-height:1.65;padding-left:4px}
+.labbody ol li strong{color:var(--t1)}
+/* INCIDENT BOX */
+.incident{background:linear-gradient(135deg,rgba(255,95,126,.07) 0%,var(--s1) 60%);border:1px solid rgba(255,95,126,.35);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.incident-h{background:rgba(255,95,126,.1);padding:var(--md) var(--lg);border-bottom:1px solid rgba(255,95,126,.2);display:flex;align-items:center;gap:var(--sm)}
+.incident-badge{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ro);background:rgba(255,95,126,.12);border:1px solid rgba(255,95,126,.4);padding:2px 8px;border-radius:var(--rp)}
+.incident-title{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.incident-body{padding:var(--lg)}
+.incident-body p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:var(--md)}
+.incident-body p:last-child{margin-bottom:0}
+/* BRIDGE / COMPLETION */
+.completion{margin-top:var(--x3);padding-top:var(--x2);border-top:1px solid var(--br)}
+.comp-card{background:linear-gradient(135deg,var(--s1) 0%,var(--s2) 100%);border:1px solid var(--brb);border-radius:var(--r16);padding:var(--xl);position:relative;overflow:hidden}
+.comp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--vi),var(--teal),var(--sa),var(--pc))}
+.comp-card::after{content:'';position:absolute;bottom:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(155,127,255,.06);pointer-events:none}
+.comp-ey{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.comp-t{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--t1);margin-bottom:var(--md);letter-spacing:-.02em}
+.comp-t span{color:var(--teal)}
+.comp-b{font-size:15px;color:var(--t2);line-height:1.75;max-width:600px;margin-bottom:var(--lg)}
+.comp-cc{display:flex;flex-wrap:wrap;gap:var(--sm);margin-bottom:var(--lg)}
+.comp-btn{display:inline-flex;align-items:center;gap:var(--sm);background:var(--vi);color:var(--bg);font-family:var(--fd);font-size:15px;font-weight:700;padding:14px var(--xl);border-radius:var(--rp);text-decoration:none;transition:all var(--tb)}
+.comp-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(155,127,255,.35);color:var(--bg)}
+/* FOOTER */
+.foot{margin-top:var(--x3);padding:var(--xl) 0;border-top:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;gap:var(--md);flex-wrap:wrap}
+.fl{font-family:var(--fm);font-size:11px;color:var(--t3)}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:var(--lg) 0}
+.tbl th{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:var(--sm) var(--md);border-bottom:1px solid var(--brb);text-align:left}
+.tbl th:first-child{color:var(--pc)}
+.tbl td{padding:10px var(--md);border-bottom:1px solid var(--br);color:var(--t2);vertical-align:top;line-height:1.6}
+.tbl td:first-child{font-weight:500;color:var(--t1);font-family:var(--fm);font-size:12px;white-space:nowrap}
+.tbl tr:hover td{background:var(--s2)}
+.tbl tr:last-child td{border-bottom:none}
+/* ANIM */
+@keyframes fiu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fiu .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="ni">
+    <a href="index.html" class="nl" style="text-decoration:none">Terraform<span> · Mastery</span></a>
+    <div class="nd"></div>
+    <div class="np">
+      <div class="pt"><div class="pf" style="width:90%"></div></div>
+      <span class="pl">M10 / 10</span>
+    </div>
+    <span class="nb">M10 · Phase 3 · Final</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hi">
+    <div class="hp"><div class="hdot"></div>Phase 3 · Enterprise Terraform — Final Module</div>
+    <h1 class="ht">Troubleshooting &amp; <span class="ac">Operations</span> —<br>Reading Plans Like a<br><span class="ar">Senior Engineer</span></h1>
+    <p class="hs">Ten modules of knowledge culminate here: the operational skills that separate an engineer who can write Terraform from one who can own a production deployment under pressure. Reading plan output precisely, diagnosing failed applies, recovering from state incidents, and running a clean AMI refresh from start to finish without surprises.</p>
+    <div class="hm">
+      <span class="b bp">Phase 3 · Operations</span>
+      <span class="b be">⬛⬛⬛⬛☐ 4–5 hrs</span>
+      <span class="b bs">Debugging · State · Runbooks</span>
+      <span class="b bq">↳ Prereq: M01–M09</span>
+      <span class="b br2">Final module before Capstone</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="og">
+    <div><div class="oil">Current module</div><div class="oiv ac">M10 · Troubleshooting &amp; Operations</div></div>
+    <div><div class="oil">Phase</div><div class="oiv">Phase 3 — Enterprise Terraform (final)</div></div>
+    <div><div class="oil">What you bring in</div><div class="oiv">Complete series knowledge M01–M09</div></div>
+    <div><div class="oil">Unlocks</div><div class="oiv">★ Capstone — build the full stack</div></div>
+  </div>
+  <div class="jrow">
+    <div class="jd jdd">M01</div><div class="jd jdd">M02</div><div class="jd jdd">M03</div>
+    <div class="jd jdd">M04</div><div class="jd jdd">M05</div><div class="jd jdd">M06</div>
+    <div class="jd jdd">M07</div><div class="jd jdd">M08</div><div class="jd jdd">M09</div>
+    <div class="jd jdc">M10</div>
+    <div class="jd" style="background:linear-gradient(135deg,var(--cg),var(--tg));border:1px solid var(--cu);color:var(--cu)">★</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="main">
+
+<!-- SECTION 1: BRIDGE -->
+<section class="sec afu d3" id="bridge">
+  <div class="sl">Bridge from Module 09</div>
+  <h2 class="st">The final module — from builder to operator</h2>
+  <div class="sb">
+    <p>Across nine modules you have built the complete PingFederate AWS infrastructure stack and learned to structure it for enterprise operation. You understand every resource, every design decision, and how the pieces connect. You can navigate an enterprise codebase on day one and contribute changes safely.</p>
+    <p>Module 10 covers the last dimension: what happens when things go wrong. In production Terraform, things go wrong regularly — a plan shows unexpected changes, an apply fails mid-way, a state file gets corrupted, an AMI refresh stalls. The engineers who are trusted to own production deployments are not the ones who have never made mistakes — they are the ones who know exactly what to do when something goes sideways, and who can do it without making it worse.</p>
+    <p>This module is your operational handbook. Read it carefully. You will use this knowledge on your first week contributing to the real project.</p>
+  </div>
+  <div class="mn">
+    <div class="mnav">🧑‍🏫</div>
+    <div class="mnb">
+      <div class="mnl">Mentor Note — the discipline that matters most</div>
+      <div class="mnt">The most important operational discipline in Terraform is: <strong>all changes go through Terraform, always, even in an incident.</strong> The moment you make a manual change outside Terraform to resolve a production issue, the state file diverges from reality, and the next apply is unpredictable. Build the habit now — before you're under pressure — and it will serve you for the rest of your infrastructure career.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: READING PLANS -->
+<section class="sec" id="reading-plans">
+  <div class="sl">Reading plan output</div>
+  <h2 class="st">How a senior engineer reads a <code>terraform plan</code></h2>
+  <div class="sb">
+    <p>Plan output is the most important document in a Terraform deployment. Reading it correctly — not just skimming it — is a core production skill. Here is a systematic approach to reviewing any plan, followed by a real-world PF plan annotated line by line.</p>
+  </div>
+
+  <div class="g3">
+    <div class="card cp">
+      <div class="clbl">Step 1 — Check the summary line</div>
+      <div class="cttl">How many changes?</div>
+      <div class="cbdy">Scroll to the bottom first: <code>Plan: 3 to add, 1 to change, 0 to destroy.</code> The destroy count is the most important number. Any unexpected destroy warrants careful investigation before applying.</div>
+    </div>
+    <div class="card cc">
+      <div class="clbl">Step 2 — Find the destroys</div>
+      <div class="cttl">Every <code>-</code> and <code>-/+</code> must be justified</div>
+      <div class="cbdy">Search the plan output for lines starting with <code>-</code> (destroy) and <code>-/+</code> (destroy and recreate). For each one: is this expected? Is there a change window? Will this cause downtime? Never apply unexplained destroys to production.</div>
+    </div>
+    <div class="card ct">
+      <div class="clbl">Step 3 — Verify the creates</div>
+      <div class="cttl">Confirm <code>+</code> additions are intentional</div>
+      <div class="cbdy">For each new resource being created, confirm it is expected. A create with no corresponding PR change is a sign of drift or a missing <code>ignore_changes</code>. Unexpected creates usually indicate a resource that Terraform believes doesn't exist but actually does.</div>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">Plan Output</span><span class="chf">Annotated AMI refresh plan — every line explained</span></div>
+    <div class="cbody"><pre><span class="c"># terraform plan output — AMI refresh deployment</span>
+<span class="c"># Summary line at bottom FIRST: 1 to add, 1 to change, 0 to destroy ✓ No destroys</span>
+
+<span class="c"># ── CHANGE 1: Launch Template replacement (expected) ──────────────────</span>
+<span class="c"># -/+ means destroy old resource and create new one</span>
+<span class="c"># create_before_destroy=true means new LT version created BEFORE old is removed</span>
+<span class="err">-/+</span> resource <span class="s">"aws_launch_template"</span> <span class="s">"pf_engine"</span> {
+    <span class="c"># ~ means this attribute value is changing</span>
+  <span class="p">~</span> id             = <span class="s">"lt-0a1b2c3d4e5f"</span> -> (known after apply)
+  <span class="p">~</span> latest_version = <span class="num">4</span> -> (known after apply)
+
+    <span class="c"># The AMI ID change — the REASON for this deployment</span>
+    <span class="c"># OLD ami: ami-0OLD — verify this is the previous approved AMI</span>
+    <span class="c"># NEW ami: ami-0NEW — verify with infra team this is the correct new AMI</span>
+  <span class="p">~</span> image_id       = <span class="err">"ami-0OLD1a2b3c4d5e6f"</span> -> <span class="ok">"ami-0NEW9z8y7x6w5v4u"</span>
+
+    <span class="c"># Forces replacement: changing image_id creates a new LT version</span>
+    <span class="c"># This is normal and expected for AMI refreshes</span>
+  <span class="p">+</span> (forces replacement)
+}
+
+<span class="c"># ── CHANGE 2: ASG in-place update (expected) ──────────────────────────</span>
+<span class="c"># ~ means in-place update: ASG stays running, only version reference changes</span>
+<span class="c"># NO instances are replaced during apply — instance_refresh handles that</span>
+<span class="p">~</span> resource <span class="s">"aws_autoscaling_group"</span> <span class="s">"pf_engines"</span> {
+    <span class="p">~</span> launch_template {
+        <span class="c"># Version changing from the old number to $Latest</span>
+        <span class="c"># $Latest = always use the newest LT version = triggers instance_refresh</span>
+        <span class="p">~</span> version = <span class="err">"4"</span> -> <span class="ok">"$Latest"</span>
+      }
+  }
+
+<span class="c"># ── PLAN SUMMARY ─────────────────────────────────────────────────────</span>
+<span class="ok">Plan: 1 to add, 1 to change, 0 to destroy.</span>
+
+<span class="c"># Senior engineer checklist before approving this plan:</span>
+<span class="c"># ✓ AMI ID is the correct approved image (confirmed with infra team)</span>
+<span class="c"># ✓ Zero destroys — no running infrastructure will be removed</span>
+<span class="c"># ✓ LT uses create_before_destroy — no gap in template availability</span>
+<span class="c"># ✓ Appropriate maintenance window — instance_refresh will run 20-40 min after apply</span>
+<span class="c"># ✓ Monitoring is active — CloudWatch alarms are enabled</span>
+<span class="c"># ✓ Rollback plan ready — previous LT version available, S3 config versioned</span></pre>
+    </div>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">Plan Symbol Reference — What Each Symbol Means</div>
+    <table class="tbl">
+      <thead><tr><th>Symbol</th><th>Meaning</th><th>Risk level</th><th>Action required</th></tr></thead>
+      <tbody>
+        <tr><td><code style="color:var(--jd)">+</code></td><td>Create new resource</td><td>Low — adds something new</td><td>Confirm the resource is expected and in the right environment</td></tr>
+        <tr><td><code style="color:var(--cu)">~</code></td><td>Update in place</td><td>Low-Medium — modifies existing resource without recreating</td><td>Verify the attribute change is intended. Check if it triggers downstream changes.</td></tr>
+        <tr><td><code style="color:var(--ro)">-</code></td><td>Destroy resource</td><td><strong>High — permanently deletes</strong></td><td>Every destroy must be justified. Confirm no running workloads depend on this resource.</td></tr>
+        <tr><td><code style="color:var(--ro)">-/+</code></td><td>Destroy and recreate</td><td><strong>High — brief gap in availability</strong></td><td>Confirm <code>create_before_destroy</code> is set. Verify downtime is acceptable or mitigated.</td></tr>
+        <tr><td><code style="color:var(--sa)">&lt;=</code></td><td>Read data source</td><td>None — read-only query</td><td>No action needed. Data sources are always refreshed at plan time.</td></tr>
+        <tr><td><code style="color:var(--vi)">~</code> with <code>(known after apply)</code></td><td>Value computed at apply time</td><td>Low — expected for new resources</td><td>Verify the computed attribute is a stable, deterministic value (not a random ID that changes every apply).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 3: DEBUGGING FAILED APPLIES -->
+<section class="sec" id="debugging">
+  <div class="sl">Debugging failed applies</div>
+  <h2 class="st">What to do when <code>terraform apply</code> fails</h2>
+  <div class="sb">
+    <p>A failed apply is not a disaster — Terraform's incremental state management means the partial apply is recoverable. The key is understanding what state was written before the failure, what was not, and how to safely resume.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">Shell</span><span class="chf">Diagnosing a failed apply — systematic approach</span></div>
+    <div class="cbody"><pre><span class="c"># ── STEP 1: Read the error message carefully ──────────────────────────</span>
+<span class="c"># The last few lines of the apply output contain the specific error</span>
+<span class="c"># Common error patterns:</span>
+<span class="err"># Error: error creating Security Group: InvalidGroup.Duplicate</span>
+<span class="c"># → The SG already exists in AWS but not in state. Use terraform import.</span>
+
+<span class="err"># Error: Error modifying DB instance: InvalidParameterCombination</span>
+<span class="c"># → Invalid attribute combination. Fix the HCL and re-apply.</span>
+
+<span class="err"># Error: timeout while waiting for resource to be created</span>
+<span class="c"># → AWS API timeout. Check AWS service health. Re-apply — Terraform will retry.</span>
+
+<span class="err"># Error: Error acquiring the state lock</span>
+<span class="c"># → Another operation holds the lock. Wait or force-unlock if stale.</span>
+
+<span class="c"># ── STEP 2: Check what was created before failure ─────────────────────</span>
+<span class="n">terraform</span> state list
+<span class="c"># Compare this list against what the plan said would be created</span>
+<span class="c"># Resources in state = successfully created. Not in state = failed or not reached.</span>
+
+<span class="c"># ── STEP 3: Verify resources exist in AWS ────────────────────────────</span>
+<span class="c"># Spot-check a few resources from state</span>
+<span class="n">terraform</span> state show <span class="v">aws_security_group.pf_engine</span>
+<span class="c"># If it's in state, it should exist in AWS. If the resource was deleted out-of-band,</span>
+<span class="c"># state show will show stale data until next plan refreshes it.</span>
+
+<span class="c"># ── STEP 4: Fix the root cause ────────────────────────────────────────</span>
+<span class="c"># Address whatever caused the failure (fix HCL, wait for AWS, import existing resource)</span>
+
+<span class="c"># ── STEP 5: Re-apply ─────────────────────────────────────────────────</span>
+<span class="n">terraform</span> plan    <span class="c"># verify the remaining changes look correct</span>
+<span class="n">terraform</span> apply   <span class="c"># Terraform picks up where it left off — only applies what's missing</span>
+
+<span class="c"># ── ENABLING DEBUG LOGGING ────────────────────────────────────────────</span>
+<span class="c"># For hard-to-diagnose errors, enable detailed logging</span>
+<span class="k">export</span> <span class="n">TF_LOG</span>=DEBUG
+<span class="n">terraform</span> apply 2>&1 | tee terraform-debug.log
+<span class="c"># TF_LOG levels: TRACE > DEBUG > INFO > WARN > ERROR</span>
+<span class="c"># DEBUG shows every AWS API call and response — powerful but verbose</span>
+<span class="k">export</span> <span class="n">TF_LOG</span>=   <span class="c"># clear after debugging</span></pre>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:var(--lg)">
+    <div class="card cr">
+      <div class="clbl">Most dangerous mistake</div>
+      <div class="cttl">Making manual fixes after a partial apply</div>
+      <div class="cbdy">When an apply fails, the instinct is to log into the AWS console and fix the broken resource manually. <strong>Resist this.</strong> Manual changes after a partial apply cause state drift. The next plan will show unexpected changes. Fix the root cause in HCL, then re-apply. Terraform handles partial apply recovery correctly — human intervention usually makes it worse.</div>
+    </div>
+    <div class="card ct">
+      <div class="clbl">Safe recovery pattern</div>
+      <div class="cttl">Fix-in-code → plan → apply</div>
+      <div class="cbdy">For any failed apply: identify the error, fix the root cause in the <code>.tf</code> files (or variables), run plan to verify the remaining changes are correct, then apply again. Terraform will not recreate successfully-created resources — it picks up from where the failure occurred. This is one of Terraform's most valuable reliability features.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: COMMON ERROR PATTERNS -->
+<section class="sec" id="errors">
+  <div class="sl">Common error patterns</div>
+  <h2 class="st">The errors you will encounter — and how to resolve them</h2>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">Terraform Error Patterns — PingFederate Deployment Context</div>
+    <table class="tbl">
+      <thead><tr><th>Error pattern</th><th>Root cause</th><th>Resolution</th></tr></thead>
+      <tbody>
+        <tr><td><code>Error acquiring state lock</code></td><td>Another apply is running, or previous apply crashed and left a stale lock</td><td>Wait for active operation. If stale: <code>terraform force-unlock &lt;lock-id&gt;</code> — verify no active operation first.</td></tr>
+        <tr><td><code>InvalidGroup.Duplicate: already exists</code></td><td>Resource exists in AWS but not in Terraform state (created out-of-band)</td><td>Import the existing resource: <code>terraform import aws_security_group.pf_engine sg-xxx</code></td></tr>
+        <tr><td><code>ResourceNotFoundException: ... does not exist</code></td><td>Resource in Terraform state was deleted outside Terraform</td><td>Remove from state: <code>terraform state rm &lt;address&gt;</code> then re-apply to recreate</td></tr>
+        <tr><td><code>Error: Unsupported argument</code></td><td>HCL attribute not supported by the current provider version</td><td>Check provider version. Update or remove the unsupported attribute. Run <code>terraform init -upgrade</code>.</td></tr>
+        <tr><td><code>Error: Cycle: A → B → A</code></td><td>Circular dependency between resources</td><td>Break the cycle by using <code>depends_on</code> explicitly or restructuring resource references</td></tr>
+        <tr><td><code>AccessDenied: ... is not authorized</code></td><td>Terraform IAM role lacks permission for the required action</td><td>Add the missing permission to the Terraform CI/CD role's IAM policy. Use IAM simulator to verify.</td></tr>
+        <tr><td><code>timeout waiting for ... to be created</code></td><td>AWS resource taking longer than Terraform's default wait</td><td>Re-apply (Terraform will retry). If persistent: check AWS service health. Increase timeouts via <code>timeouts</code> block.</td></tr>
+        <tr><td><code>Error: inconsistent result after apply</code></td><td>Provider returned unexpected value after create — provider bug or API inconsistency</td><td>Check provider changelog for known issues. Pin provider to previous stable version. File provider issue.</td></tr>
+        <tr><td><code>Error: launch template version ... not found</code></td><td>ASG references a specific LT version that was deleted</td><td>Update ASG to use <code>$Latest</code> or a valid version. Avoid pinning ASGs to specific LT version numbers.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 5: STATE INCIDENTS -->
+<section class="sec" id="state-incidents">
+  <div class="sl">State incidents</div>
+  <h2 class="st">Recovering from state problems — the most stressful scenarios</h2>
+  <div class="sb">
+    <p>State incidents are the most stressful scenarios in Terraform operations because the consequences of getting recovery wrong can cascade into production outages. The following are the most common state incidents in enterprise environments and the safe recovery procedure for each.</p>
+  </div>
+
+  <div class="incident">
+    <div class="incident-h">
+      <span class="incident-badge">Incident 1</span>
+      <span class="incident-title">Plan shows unexpected resource destruction after a routine change</span>
+    </div>
+    <div class="incident-body">
+      <p><strong>Symptom:</strong> You commit a small variable change and run plan. The output shows 15 resources being destroyed — far more than expected.</p>
+      <p><strong>Most likely cause:</strong> A resource rename or module restructure caused Terraform to lose track of existing resources. When a resource address changes (e.g. <code>aws_subnet.private</code> becomes <code>module.vpc.aws_subnet.private</code>), Terraform sees the old address as "to destroy" and the new address as "to create" — even though it's the same resource.</p>
+      <p><strong>Safe recovery:</strong> <strong>Do not apply.</strong> Add a <code>moved</code> block (Terraform 1.1+) mapping old addresses to new addresses, or run <code>terraform state mv</code> for each affected resource. Run plan again — the unexpected destroys should disappear. Only apply when the plan shows zero unexpected destroys.</p>
+    </div>
+  </div>
+
+  <div class="incident">
+    <div class="incident-h">
+      <span class="incident-badge">Incident 2</span>
+      <span class="incident-title">State file corrupted after a crash mid-apply</span>
+    </div>
+    <div class="incident-body">
+      <p><strong>Symptom:</strong> terraform plan fails with a JSON parse error or reports resources in impossible states (e.g. a VPC that "exists" with no ID).</p>
+      <p><strong>Root cause:</strong> The apply process was killed mid-write to the state file, leaving a partial or malformed JSON document in S3.</p>
+      <p><strong>Safe recovery:</strong> S3 versioning saves you here. (1) List state file versions: <code>aws s3api list-object-versions --bucket company-tf-state --prefix pingfederate/prod/terraform.tfstate</code>. (2) Identify the last valid version (before the crash). (3) Restore: <code>aws s3api copy-object --copy-source bucket/key?versionId=VALID_VERSION_ID --bucket bucket --key key</code>. (4) Run plan to see the difference between restored state and current AWS reality. (5) Apply carefully to reconcile.</p>
+    </div>
+  </div>
+
+  <div class="incident">
+    <div class="incident-h">
+      <span class="incident-badge">Incident 3</span>
+      <span class="incident-title">Wrong environment applied — dev tfvars applied to prod state</span>
+    </div>
+    <div class="incident-body">
+      <p><strong>Symptom:</strong> After a confused <code>terraform apply -var-file=dev.tfvars</code> run against the prod backend, the plan shows dozens of changes — smaller instances, different CIDR ranges, missing prod-specific resources.</p>
+      <p><strong>Immediate action:</strong> If apply has not started: exit immediately, do not apply. If apply is in progress: do not interrupt it (partial apply is safer than crash). If apply completed: (1) Restore the state file from S3 backup (before the bad apply). (2) Run plan with the correct prod.tfvars — it will show what needs to be re-applied. (3) Apply to restore prod configuration. (4) Audit the AWS console for any resources that were partially modified.</p>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">Shell</span><span class="chf">State recovery toolkit</span></div>
+    <div class="cbody"><pre><span class="c"># ── BACKUP STATE BEFORE ANY SURGERY ──────────────────────────────────</span>
+<span class="n">terraform</span> state pull > backup_$(date +%Y%m%d_%H%M%S).tfstate
+<span class="c"># Keep this backup until you are certain the environment is stable</span>
+
+<span class="c"># ── FIND DIVERGENT RESOURCES ──────────────────────────────────────────</span>
+<span class="c"># Resources in state but plan says will be created (→ state thinks they don't exist)</span>
+<span class="n">terraform</span> plan 2>&1 | grep "^  + resource" | grep -v "known after apply"
+
+<span class="c"># ── REMOVE GHOST RESOURCES FROM STATE ────────────────────────────────</span>
+<span class="c"># Resource is in state but was deleted in AWS — remove from state</span>
+<span class="n">terraform</span> state rm <span class="v">aws_security_group.pf_engine</span>
+
+<span class="c"># ── MOVE RESOURCE TO NEW ADDRESS ─────────────────────────────────────</span>
+<span class="c"># After module refactor: old address → new address</span>
+<span class="n">terraform</span> state mv \
+  <span class="v">aws_security_group.pf_engine</span> \
+  <span class="v">module.vpc.aws_security_group.pf_engine</span>
+
+<span class="c"># ── IMPORT UNTRACKED RESOURCE ─────────────────────────────────────────</span>
+<span class="c"># Resource exists in AWS but not in state</span>
+<span class="n">terraform</span> import <span class="v">aws_s3_bucket.pf_config</span> <span class="s">pf-prod-config-123456789012</span>
+
+<span class="c"># ── VERIFY AFTER SURGERY ─────────────────────────────────────────────</span>
+<span class="c"># Always run plan after state surgery before doing anything else</span>
+<span class="n">terraform</span> plan
+<span class="c"># Expected: No changes. Your infrastructure matches the configuration.</span>
+<span class="c"># Or: expected changes from intentional modifications only</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: AMI REFRESH OPERATIONAL RUNBOOK -->
+<section class="sec" id="ami-refresh-runbook">
+  <div class="sl">Operational runbook</div>
+  <h2 class="st">AMI refresh — the complete operational runbook</h2>
+  <div class="sb">
+    <p>This is the end-to-end procedure for executing a PingFederate AMI refresh. It incorporates every concept from every module in this series. This is the runbook you hand to an on-call engineer. It should be executable without any additional context beyond what is written here.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">Runbook</span><span class="chf">PingFederate AMI Refresh — Production Runbook</span></div>
+    <div class="cbody"><pre><span class="c">═══════════════════════════════════════════════════════════════
+ PINGFEDERATE AMI REFRESH — PRODUCTION RUNBOOK
+ Owner: IAM/SSO Team | Environment: prod | Duration: ~45 min
+═══════════════════════════════════════════════════════════════</span>
+
+<span class="ok">PRE-FLIGHT CHECKS (15 minutes before deployment window)</span>
+
+<span class="c"># 1. Confirm the new AMI ID with the infrastructure team</span>
+<span class="n">aws</span> ec2 describe-images \
+  --filters "Name=tag:ApprovalStatus,Values=approved" "Name=state,Values=available" \
+  --owners INFRA_ACCOUNT_ID \
+  --query 'sort_by(Images, &CreationDate)[-1].{ID:ImageId,Name:Name,Created:CreationDate}'
+
+<span class="c"># 2. Verify current fleet health — all instances should be InService</span>
+<span class="n">aws</span> autoscaling describe-auto-scaling-instances \
+  --query 'AutoScalingInstances[?AutoScalingGroupName==`pf-prod-pf-engines`].{ID:InstanceId,State:LifecycleState,Health:HealthStatus}'
+
+<span class="c"># 3. Verify NLB health — all targets should show healthy</span>
+<span class="n">aws</span> elbv2 describe-target-health \
+  --target-group-arn $(terraform output -raw federation_target_group_arn)
+
+<span class="c"># 4. Confirm CloudWatch alarms are in OK state (not alarming)</span>
+<span class="n">aws</span> cloudwatch describe-alarms \
+  --alarm-name-prefix pf-prod \
+  --state-value ALARM
+
+<span class="c"># 5. Notify stakeholders: deployment window is open</span>
+
+<span class="ok">DEPLOYMENT (5 minutes)</span>
+
+<span class="c"># Change to the prod environment directory</span>
+<span class="n">cd</span> environments/prod
+
+<span class="c"># Pull latest code</span>
+<span class="n">git</span> pull origin main
+
+<span class="c"># Initialise (download any new module versions)</span>
+<span class="n">terraform</span> init
+
+<span class="c"># Run plan and save output for review</span>
+<span class="n">terraform</span> plan -var-file=prod.tfvars -out=tfplan.bin
+<span class="n">terraform</span> show tfplan.bin > tfplan.txt
+
+<span class="c"># MANDATORY REVIEW of tfplan.txt:</span>
+<span class="c"># ✓ Only LT and ASG are changing</span>
+<span class="c"># ✓ New AMI ID matches confirmed value from pre-flight step 1</span>
+<span class="c"># ✓ Destroy count = 0</span>
+<span class="c"># ✓ No unexpected resources changing</span>
+
+<span class="c"># Apply — two-person rule: one applies, one monitors</span>
+<span class="n">terraform</span> apply tfplan.bin
+
+<span class="ok">MONITORING (30 minutes — from apply completion)</span>
+
+<span class="c"># Watch instance refresh status</span>
+<span class="n">watch</span> -n 30 "aws autoscaling describe-instance-refreshes \
+  --auto-scaling-group-name pf-prod-pf-engines \
+  --query 'InstanceRefreshes[0].{Status:Status,Updated:InstancesUpdated,Total:InstancesToUpdate,Pct:PercentageComplete}'"
+
+<span class="c"># Monitor NLB target health during refresh</span>
+<span class="n">watch</span> -n 15 "aws elbv2 describe-target-health \
+  --target-group-arn TG_ARN \
+  --query 'TargetHealthDescriptions[*].{ID:Target.Id,State:TargetHealth.State,Reason:TargetHealth.Reason}'"
+
+<span class="c"># Watch CloudWatch logs for PF errors during refresh</span>
+<span class="n">aws</span> logs tail /pingfederate/prod --follow --filter-pattern "ERROR"
+
+<span class="ok">SUCCESS CRITERIA</span>
+<span class="c"># ✓ Instance refresh status = Successful</span>
+<span class="c"># ✓ All instances show LifecycleState = InService</span>
+<span class="c"># ✓ All NLB targets show TargetHealth.State = healthy</span>
+<span class="c"># ✓ No ERROR entries in CloudWatch logs during refresh</span>
+<span class="c"># ✓ A manual SAML test SSO flow completes successfully</span>
+<span class="c"># ✓ Notify stakeholders: deployment complete</span>
+
+<span class="ok">ROLLBACK PROCEDURE (if any success criterion fails)</span>
+
+<span class="c"># Option A: Auto-rollback (if configured) — wait for ASG to self-recover</span>
+<span class="c"># Option B: Manual rollback via Terraform — revert AMI data source and re-apply</span>
+<span class="c"># Option C: Direct instance refresh to previous LT version</span>
+<span class="n">aws</span> autoscaling start-instance-refresh \
+  --auto-scaling-group-name pf-prod-pf-engines \
+  --desired-configuration '{"LaunchTemplate":{"LaunchTemplateName":"pf-prod-engine-lt","Version":"PREVIOUS_GOOD_VERSION"}}'
+
+<span class="c"># Option D: S3 config rollback (if config was also updated)</span>
+<span class="c"># See M08 rollback procedure</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: DEPENDENCY AND CYCLE ISSUES -->
+<section class="sec" id="dependency-issues">
+  <div class="sl">Dependency problems</div>
+  <h2 class="st">Resource ordering and dependency cycle issues</h2>
+  <div class="sb">
+    <p>Terraform builds an implicit dependency graph from resource references. Most of the time this works perfectly. The cases where it breaks — dependency cycles, incorrect ordering, missing explicit dependencies — are well-defined and solvable.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">HCL + Shell</span><span class="chf">Dependency problems and solutions</span></div>
+    <div class="cbody"><pre><span class="c"># ── PROBLEM 1: Missing dependency — resources created in wrong order ──</span>
+<span class="c"># Symptom: apply fails because resource B can't find resource A</span>
+<span class="c"># but A hasn't been created yet in this run</span>
+
+<span class="c"># Wrong: S3 bucket policy applied before bucket exists</span>
+<span class="c"># (actually handled by implicit reference, but explicit is safer)</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_policy"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>   <span class="ok">← implicit dep: bucket created first</span>
+  <span class="c"># but public_access_block MUST be applied before bucket policy</span>
+  <span class="k">depends_on</span> = [<span class="n">aws_s3_bucket_public_access_block</span>.<span class="v">pf_config</span>]  <span class="ok">← explicit dep</span>
+}
+
+<span class="c"># ── PROBLEM 2: Dependency cycle ───────────────────────────────────────</span>
+<span class="c"># Symptom: Error: Cycle: aws_security_group.a → aws_security_group.b → aws_security_group.a</span>
+<span class="c"># Common cause: SGs referencing each other</span>
+
+<span class="c"># Wrong: circular SG reference</span>
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"nlb"</span> {
+  <span class="err">ingress { source_security_group_id = aws_security_group.pf_engine.id }</span>  <span class="err">← CYCLE</span>
+}
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"pf_engine"</span> {
+  <span class="err">ingress { source_security_group_id = aws_security_group.nlb.id }</span>        <span class="err">← CYCLE</span>
+}
+
+<span class="c"># Fix: use separate aws_security_group_rule resources</span>
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"nlb"</span>       { <span class="c">/* no inline ingress rules */</span> }
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"pf_engine"</span> { <span class="c">/* no inline ingress rules */</span> }
+<span class="c"># Separate rule resources allow one-directional references</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"pf_from_nlb"</span> {
+  <span class="k">source_security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">nlb</span>.<span class="n">id</span>   <span class="ok">← no cycle</span>
+}
+
+<span class="c"># ── PROBLEM 3: Provider unavailable during plan ───────────────────────</span>
+<span class="c"># Symptom: Error: Failed to query available provider packages</span>
+<span class="c"># Fix: check network connectivity to registry.terraform.io</span>
+<span class="c"># In air-gapped environments: configure a private mirror</span>
+<span class="c"># provider.hostname in .terraformrc</span>
+
+<span class="c"># ── DIAGNOSING DEPENDENCY ORDER ───────────────────────────────────────</span>
+<span class="c"># Generate dependency graph to visualise resource order</span>
+<span class="n">terraform</span> graph | <span class="n">dot</span> -Tsvg > dependency-graph.svg
+<span class="c"># Opens in browser — shows directed graph of resource dependencies</span>
+<span class="c"># Useful for understanding why a resource is being created before another</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8: ZERO-DOWNTIME PATTERNS -->
+<section class="sec" id="zero-downtime">
+  <div class="sl">Zero-downtime patterns</div>
+  <h2 class="st">Making dangerous Terraform changes safely</h2>
+  <div class="sb">
+    <p>Some Terraform changes are inherently risky — they involve resource recreation that could cause downtime if executed naively. Here are the proven patterns for making these changes safely in a production PF environment.</p>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">High-Risk Change Patterns — Safe Execution Approaches</div>
+    <table class="tbl">
+      <thead><tr><th>Change type</th><th>Risk</th><th>Safe pattern</th></tr></thead>
+      <tbody>
+        <tr><td>AMI ID update</td><td>All instances replaced</td><td>instance_refresh with min_healthy_percentage=90, auto_rollback=true. Health checks gate traffic. Already covered in M06.</td></tr>
+        <tr><td>Security group rule change</td><td>Brief traffic interruption if wrong rule removed</td><td>Use <code>aws_security_group_rule</code> separate resources. Terraform updates rules in-place for <code>~</code> changes. Add new rule first, verify traffic, then remove old rule in a separate apply.</td></tr>
+        <tr><td>NLB target group port change</td><td>All existing connections dropped</td><td>Create new target group with new port (<code>create_before_destroy</code>). Update listener to point to new TG. ASG registers to new TG. Old TG has deregistration delay for connection drain. Delete old TG after drain completes.</td></tr>
+        <tr><td>VPC CIDR change</td><td>All subnets and compute must be recreated</td><td>Blue/green VPC migration: provision new VPC, migrate workloads, update DNS, decommission old VPC. Never in-place in production.</td></tr>
+        <tr><td>IAM role name change</td><td>New role created, old role referenced by existing instances</td><td>Use <code>moved</code> block to rename without recreating. Or: add new role, update instances to use new role via LT update and refresh, then remove old role after all instances are using new role.</td></tr>
+        <tr><td>KMS key rotation</td><td>Existing encrypted objects inaccessible if key is deleted</td><td>Never delete old KMS key — just schedule deletion with 30-day window. Rotate key (new key version, same key ID). All new S3 objects use new key version. Existing objects remain accessible via old key version until re-encrypted.</td></tr>
+        <tr><td>Instance type change</td><td>All instances in ASG replaced</td><td>Same as AMI refresh: update LT, instance_refresh handles rolling replacement. No additional steps needed.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="sec" id="knowledge-checks">
+  <div class="sl">Knowledge check</div>
+  <h2 class="st">Final module — operational scenario questions</h2>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>You run <code>terraform plan</code> on a Monday morning and it shows 47 resources to destroy and 47 to create. No code changes were made over the weekend. What is the most likely cause and what do you do first?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">The most likely cause is a module refactor where resource addresses changed — old addresses are shown as destroys, new addresses as creates.</strong><br><br>This pattern is almost always caused by: (1) someone moved resources into a module without adding <code>moved</code> blocks, (2) a <code>for_each</code> key changed, causing all resources in the for_each to be recreated, or (3) the resource type changed (e.g. <code>aws_security_group</code> with inline rules being replaced by <code>aws_security_group</code> + separate <code>aws_security_group_rule</code> resources).<br><br><strong>First step: Do not apply.</strong> Run <code>terraform state list | sort</code> and compare to what <code>terraform plan</code> shows as destroys. If the destroy addresses match the create addresses but with different module prefixes, it's an address change. Use <code>moved</code> blocks or <code>terraform state mv</code> to map old addresses to new ones. Run plan again — the 47 destroys should disappear. Only apply when the plan shows the expected small set of changes.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>During a PF AMI refresh, the instance_refresh status shows "Failed" with the reason "Launch template version not found". The auto_rollback triggered and restored old instances. What happened and how do you prevent it next time?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">The ASG was configured to use a specific LT version number (e.g. <code>version = "4"</code>) instead of <code>$Latest</code>. When the new LT version (v5) was created and the old version was deleted during cleanup, the ASG could no longer find version 4.</strong><br><br>Prevention: Always configure the ASG to use <code>version = aws_launch_template.pf_engine.latest_version</code> (which resolves to <code>$Latest</code>) rather than a hardcoded version number. When <code>$Latest</code> is used, the ASG always uses the newest version regardless of version number. Additionally, never manually delete Launch Template versions that are still referenced by an ASG. Use the AWS console or CLI to check which versions are in use before deleting old versions during cleanup.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>A <code>terraform plan</code> shows a security group rule being added that you didn't write. You check the <code>.tf</code> files and the rule isn't there. The rule also doesn't appear to be in the state file. What's happening?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">This is most likely a provider-managed default rule being added by Terraform during a refresh.</strong> Some AWS resources, when created, automatically receive default rules or attributes that aren't specified in the original HCL. When Terraform refreshes state at plan time, it reads the real AWS configuration and compares it to what the HCL declares. If the HCL is more restrictive than what's in AWS, Terraform plans to remove the auto-added rule.<br><br>But if the rule appears as a <em>create</em> (not a destroy), and it's not in your HCL, the most likely explanation is: the rule was removed from AWS manually, and Terraform is planning to restore it to match what the HCL declares. This means there is a rule declared somewhere in your HCL that doesn't currently exist in AWS — perhaps in a for_each that's being iterated from a variable. Check the HCL carefully, including for_each iterations, to find where this rule is declared.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>An apply is running in CI. The GitHub Actions runner crashes mid-apply (out of memory). The DynamoDB lock is still held. What are your steps?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Five steps, in order:</strong><br><br>
+    <strong>1. Verify the runner is truly dead.</strong> Check GitHub Actions — confirm the job is in a failed/cancelled state, not still running. Do not force-unlock a lock held by an active operation.<br><br>
+    <strong>2. Check what was applied.</strong> Look at the GitHub Actions log before the crash. Note which resources were successfully created/modified before the OOM kill. Run <code>terraform state list</code> to see current state.<br><br>
+    <strong>3. Spot-check critical resources in AWS.</strong> Confirm that key resources (ASG, NLB target group) are in the expected state. A partially applied LT change with no instance_refresh started is generally safe.<br><br>
+    <strong>4. Force-unlock the stale lock.</strong> Get the lock ID from the DynamoDB table or from the error message on the next plan attempt. Run <code>terraform force-unlock &lt;lock-id&gt;</code>.<br><br>
+    <strong>5. Re-run the apply.</strong> Run <code>terraform plan</code> to see remaining changes. Run <code>terraform apply</code> to complete the deployment. Terraform picks up where it left off — it will not re-apply changes that already succeeded.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>You need to rename the <code>aws_autoscaling_group</code> resource from <code>pf_engines</code> to <code>pf_engine_nodes</code> to align with a new naming convention. What is the complete procedure to do this without destroying and recreating the running ASG?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Use a <code>moved</code> block to rename the resource address without destroying the ASG.</strong><br><br>
+    <strong>Step 1:</strong> Add a <code>moved</code> block to the configuration:<br><code>moved { from = aws_autoscaling_group.pf_engines; to = aws_autoscaling_group.pf_engine_nodes }</code><br><br>
+    <strong>Step 2:</strong> Rename the resource block in your HCL from <code>"pf_engines"</code> to <code>"pf_engine_nodes"</code>.<br><br>
+    <strong>Step 3:</strong> Update all references to this resource throughout the configuration (any place that references <code>aws_autoscaling_group.pf_engines</code> must be updated to <code>aws_autoscaling_group.pf_engine_nodes</code>).<br><br>
+    <strong>Step 4:</strong> Run <code>terraform plan</code>. The output should show: <code>aws_autoscaling_group.pf_engines has moved to aws_autoscaling_group.pf_engine_nodes</code> — with zero destroys and zero creates. The ASG is not recreated; only the Terraform state address changes.<br><br>
+    <strong>Step 5:</strong> Apply. Remove the <code>moved</code> block after the apply (it's a one-time migration instruction).<br><br>
+    Note: The <code>name</code> attribute of the ASG in AWS does not change — only the Terraform address changes. If you also want to rename the actual ASG name in AWS, that requires a separate change that <em>will</em> recreate the ASG (ASG names are immutable). Always separate address renames from name attribute changes.</div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section class="sec" id="lab">
+  <div class="sl">Final lab</div>
+  <h2 class="st">Operational scenario exercises</h2>
+
+  <div class="lab">
+    <div class="labh"><span class="labb">Lab 10-A</span><span class="labt">Diagnose a broken plan — five anomalies</span></div>
+    <div class="labbody">
+      <p style="font-size:14px;color:var(--t2);margin-bottom:var(--md)">Review the following terraform plan excerpt. Identify: (1) what is wrong with each change, (2) whether it is safe to apply, and (3) what remediation is needed before applying.</p>
+      <div class="code" style="margin:var(--md) 0">
+        <div class="ch"><span class="chl">Plan Output</span><span class="chf">Five anomalies — identify each</span></div>
+        <div class="cbody"><pre><span class="err">Plan: 3 to add, 2 to change, 2 to destroy.</span>
+
+<span class="err">- resource "aws_s3_bucket" "pf_config" {}</span>
+<span class="err">+ resource "aws_s3_bucket" "pf_configuration" {}</span>
+
+<span class="p">~</span> resource "aws_autoscaling_group" "pf_engines" {
+    <span class="p">~</span> desired_capacity = <span class="num">4</span> -> <span class="err">1</span>
+  }
+
+<span class="p">~</span> resource "aws_security_group" "pf_engine" {
+    <span class="p">~</span> ingress {
+        <span class="p">+</span> cidr_blocks = ["<span class="ok">0.0.0.0/0</span>"]
+          from_port = 9999
+      }
+  }
+
+<span class="err">- resource "aws_kms_key" "pf_config" {}</span>
+
+<span class="p">+</span> resource "aws_launch_template" "pf_engine" {
+    <span class="p">+</span> image_id = "<span class="v">ami-0NEW9z8y7x6w5v4u</span>"
+  }</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sm)">
+    <div class="kcq"><span class="kci">✓</span>Reveal Lab 10-A analysis<span class="kcc">▼</span></div>
+    <div class="kca">
+      <p style="margin-bottom:10px"><strong style="color:var(--ro)">Anomaly 1 — S3 bucket destroy + recreate:</strong> The bucket was renamed from <code>pf_config</code> to <code>pf_configuration</code>. Terraform plans to destroy the existing bucket and create a new one. <strong>CRITICAL — do not apply.</strong> This would delete the production PF config bucket including all versioned config objects. Fix: add a <code>moved</code> block mapping the old address to the new one, or revert the rename.</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--ro)">Anomaly 2 — ASG desired_capacity drop from 4 to 1:</strong> The <code>ignore_changes = [desired_capacity]</code> lifecycle rule is missing from the ASG. The auto-scaler raised desired_capacity to 4; Terraform is now planning to reduce it back to the variable default of 1. <strong>Do not apply.</strong> Fix: restore the lifecycle rule. Run <code>terraform refresh-only</code> to update state to reflect the current 4, then plan again — the change should disappear.</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--ro)">Anomaly 3 — Admin port 9999 open to 0.0.0.0/0:</strong> Someone is about to expose the PF admin console to the entire internet. <strong>Do not apply.</strong> This is a critical security misconfiguration. The cidr_blocks should be the bastion security group ID (SG-to-SG reference), not a public CIDR. Reject the PR, fix the security group rule.</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--ro)">Anomaly 4 — KMS key destroy:</strong> The KMS key used to encrypt the config bucket is being destroyed. <strong>CRITICAL — do not apply.</strong> This would make the encrypted config objects unreadable. The 30-day deletion window protects you if caught in time, but this should be investigated immediately. Root cause: someone likely removed the KMS key resource block. Restore it.</p>
+      <p><strong style="color:var(--teal)">Anomaly 5 — Launch Template create with new AMI:</strong> This appears to be a legitimate AMI refresh — a new LT is being created with a new AMI ID. <strong>Safe to apply IF</strong> the other four anomalies are resolved first, the AMI ID is confirmed with the infrastructure team, and it's an appropriate maintenance window. The LT create alone doesn't trigger instance refresh — the ASG must also reference the new LT version.</p>
+    </div>
+  </div>
+</section>
+
+<!-- AR -->
+<div class="ar">
+  <div class="arh">
+    <span class="arb">Final Senior Review</span>
+    <span class="art">Operations and troubleshooting — the questions that matter in production</span>
+  </div>
+  <ul class="arl">
+    <li><span class="arn">01</span>You are paged at 2 AM: PF authentication is down. Monitoring shows all NLB targets are unhealthy. A Terraform apply ran 3 hours ago. Walk through your complete incident response procedure — from first action to root cause identified.</li>
+    <li><span class="arn">02</span>The team wants to implement a "Terraform policy as code" system that automatically rejects plans containing destroys of production S3 buckets, KMS keys, or ASGs. What tools would you use and how would you integrate them into the CI/CD pipeline?</li>
+    <li><span class="arn">03</span>After six months of AMI refreshes, the state file for prod is 45MB and growing. <code>terraform plan</code> takes 8 minutes to run. What are the likely causes and what would you do to address each?</li>
+    <li><span class="arn">04</span>A new team member runs <code>terraform destroy</code> in the prod environment directory "just to see what it would do" and accidentally confirms the destroy prompt. The entire PF stack begins shutting down. You have 60 seconds before the ASG terminates all instances. What do you do?</li>
+    <li><span class="arn">05</span>The infrastructure team released a new AMI. The data source lookup in Terraform returns the new AMI ID at plan time, but you want to defer the instance refresh until a specific maintenance window next week. How do you prevent the AMI from being automatically deployed on the next routine plan/apply run?</li>
+  </ul>
+</div>
+
+<!-- TK -->
+<div class="tk">
+  <div class="tkh">
+    <div class="tki">◆</div>
+    <div class="tkt">Module 10 — Key Takeaways</div>
+  </div>
+  <ul class="tkl">
+    <li>Read plan output summary line first (bottom): check destroy count. Every unexpected destroy must be explained before applying. A plan with unexplained destroys should never be applied to production.</li>
+    <li>Failed applies are recoverable. Terraform writes state incrementally. After fixing the root cause, re-apply — Terraform picks up where it left off without recreating already-successful resources.</li>
+    <li>All changes must go through Terraform, even in an incident. Manual changes after a partial apply cause state drift that makes subsequent plans unpredictable — and usually more dangerous than the original problem.</li>
+    <li>S3 versioning is your state recovery mechanism. Keep bucket versioning enabled on all state backends. A corrupted state file can be restored from the previous S3 version.</li>
+    <li>Dependency cycles (resource A references B references A) are resolved by using separate <code>aws_security_group_rule</code> resources instead of inline rules. Never mix inline and external rules on the same security group.</li>
+    <li>Resource address renames require <code>moved</code> blocks (Terraform 1.1+). Without them, Terraform destroys the old resource and creates a new one — which is catastrophic for S3 buckets, KMS keys, ASGs, and any stateful resource.</li>
+    <li>The AMI refresh runbook is the capstone of this series: it integrates every module — network (M04), IAM (M05), compute (M06), load balancers (M07), S3 (M08), module structure (M09), and operational discipline (M10).</li>
+    <li>The operational disciplines that matter most: run plan before every apply, check the summary line, justify every destroy, keep monitoring active during deployments, and always have a tested rollback plan before starting.</li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="toc">
+    <div class="tl">In this module</div>
+    <a class="ti" href="#bridge">Bridge from M09</a>
+    <a class="ti" href="#reading-plans">Reading plans</a>
+    <a class="ti" href="#debugging">Debugging failed applies</a>
+    <a class="ti" href="#errors">Common error patterns</a>
+    <a class="ti" href="#state-incidents">State incidents</a>
+    <a class="ti" href="#ami-refresh-runbook">AMI refresh runbook</a>
+    <a class="ti" href="#dependency-issues">Dependency issues</a>
+    <a class="ti" href="#zero-downtime">Zero-downtime patterns</a>
+    <a class="ti" href="#knowledge-checks">Knowledge checks</a>
+    <a class="ti" href="#lab">Final lab</a>
+  </div>
+  <div class="qr">
+    <div class="qrl">Plan Symbol Reference</div>
+    <div class="qi"><span class="qt" style="color:var(--jd)">+</span><span class="qd">Create — low risk</span></div>
+    <div class="qi"><span class="qt" style="color:var(--cu)">~</span><span class="qd">Update in-place — verify</span></div>
+    <div class="qi"><span class="qt" style="color:var(--ro)">-</span><span class="qd">Destroy — must justify</span></div>
+    <div class="qi"><span class="qt" style="color:var(--ro)">-/+</span><span class="qd">Recreate — check CBD</span></div>
+    <div class="qi"><span class="qt" style="color:var(--sa)">&lt;=</span><span class="qd">Data source read</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">Ops Toolkit</div>
+    <div class="qi"><span class="qt">TF_LOG=DEBUG</span><span class="qd">Full API call logging</span></div>
+    <div class="qi"><span class="qt">plan -out=f.bin</span><span class="qd">Save plan for review</span></div>
+    <div class="qi"><span class="qt">show tfplan.bin</span><span class="qd">Read saved plan</span></div>
+    <div class="qi"><span class="qt">state pull</span><span class="qd">Backup state</span></div>
+    <div class="qi"><span class="qt">force-unlock</span><span class="qd">Release stale lock</span></div>
+    <div class="qi"><span class="qt">plan -refresh-only</span><span class="qd">Detect drift only</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">Series Progress</div>
+    <div style="padding:var(--sm) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--sm);background:var(--s2);border-radius:var(--r8)">
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--tg);border:1px solid var(--td);color:var(--td)">M01–M09</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);font-weight:600;box-shadow:0 0 10px var(--pg)">M10 ✓</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:linear-gradient(135deg,var(--cg),var(--tg));border:1px solid var(--cu);color:var(--cu)">★ Capstone</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /layout -->
+
+<!-- COMPLETION SECTION -->
+<div class="completion">
+  <div class="comp-card">
+    <div class="comp-ey">All 10 modules complete · You are ready</div>
+    <div class="comp-t">The series is complete.<br><span>One challenge remains.</span></div>
+    <div class="comp-b">
+      You have covered every concept in this series: the mental model, HCL fluency, state management, the full AWS infrastructure stack layer by layer, enterprise module patterns, and operational discipline. Across ten modules you have built and understood the complete PingFederate deployment — every resource, every design decision, every operational pattern.<br><br>
+      The Capstone is the final test: build the entire PingFederate AWS stack from an empty directory, guided by meaningful prompts rather than handed the answers. VPC → Security Groups → IAM → S3 → Launch Template → Auto Scaling Group → NLB → Route53. Complete it and pass the 25-point readiness checklist — and you are ready to contribute to the real project.
+    </div>
+    <div class="comp-cc">
+      <span class="b bn">VPC foundation</span>
+      <span class="b bn">IAM roles</span>
+      <span class="b bn">S3 config bucket</span>
+      <span class="b bn">Launch Template</span>
+      <span class="b bn">ASG + refresh</span>
+      <span class="b bn">NLB + Route53</span>
+      <span class="b bn">25-point readiness checklist</span>
+    </div>
+    <a href="capstone.html" class="comp-btn">Begin the Capstone →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="fl">M10 · Troubleshooting &amp; Operations · Phase 3 · Terraform Mastery Series — Final Module</div>
+  <div style="display:flex;gap:var(--sm);align-items:center">
+    <a href="module-09.html" class="b bq" style="text-decoration:none">← M09</a>
+    <a href="index.html" class="b bq" style="text-decoration:none">Index</a>
+    <a href="capstone.html" class="b bp" style="text-decoration:none">★ Capstone →</a>
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+function toggleKC(el){el.classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.ti');
+  const secs=[];
+  items.forEach(i=>{const id=i.getAttribute('href').replace('#','');const el=document.getElementById(id);if(el)secs.push({el,item:i})});
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){items.forEach(i=>i.classList.remove('active'));const f=secs.find(s=>s.el===en.target);if(f)f.item.classList.add('active')}}),{rootMargin:'-20% 0px -70% 0px'});
+  secs.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target)}}),{threshold:.06});
+  document.querySelectorAll('.sec,.card,.dw,.lab,.ar,.tk,.comp-card,.kc,.incident').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .45s ease,transform .45s ease';io.observe(el)});
+})();
+</script>
+</body>
+</html>

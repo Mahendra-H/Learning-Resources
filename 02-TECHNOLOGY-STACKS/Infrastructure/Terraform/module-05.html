@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-2">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M05 · IAM &amp; Instance Profiles — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void:#0B0E14;--bg-s1:#111520;--bg-s2:#181D2A;--bg-s3:#1F2535;
+  --border:#1E2636;--border-b:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);
+  --copper:#E8873A;--copper-glow:rgba(232,135,58,0.15);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.12);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.12);
+  --jade:#3ECFA0;--violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.13);
+  --text-p:#E8EDF5;--text-s:#8A95A8;--text-t:#4A5568;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --xs:4px;--sm:8px;--md:16px;--lg:24px;--xl:40px;--x2:64px;--x3:96px;
+  --rsm:4px;--rmd:8px;--rlg:12px;--rxl:16px;--rpill:999px;
+  --shadow:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  --tf:150ms ease;--tb:250ms ease;
+  /* Phase 2 — Sapphire, violet accent for IAM identity */
+  --pc:#4A9EFF;--pg:rgba(74,158,255,0.15);--pd:#1A68CC;
+  --ac:#9B7FFF;--ag:rgba(155,127,255,0.13);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg-void);color:var(--text-p);font-family:var(--fb);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:999px}
+::selection{background:var(--pg);color:var(--pc)}
+a{color:var(--sapphire);text-decoration:none;transition:color var(--tf)}a:hover{color:var(--teal)}
+code{font-family:var(--fm);font-size:.85em;background:var(--bg-s3);border:1px solid var(--border);color:var(--teal);padding:1px 5px;border-radius:var(--rsm)}
+.shell{max-width:1100px;margin:0 auto;padding:0 var(--xl)}
+@media(max-width:768px){.shell{padding:0 var(--md)}}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--border);padding:0 var(--xl)}
+.nav-i{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--lg)}
+.nav-logo{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.nav-logo span{color:var(--text-t);font-weight:400}
+.nav-div{width:1px;height:20px;background:var(--border-b);flex-shrink:0}
+.nav-prog{flex:1;display:flex;align-items:center;gap:var(--sm)}
+.prog-t{flex:1;height:2px;background:var(--border);border-radius:var(--rpill);overflow:hidden}
+.prog-f{height:100%;background:linear-gradient(90deg,var(--pc),var(--ac));border-radius:var(--rpill)}
+.prog-l{font-family:var(--fm);font-size:11px;color:var(--text-t);white-space:nowrap}
+.nav-badge{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--rpill);background:var(--pg);border:1px solid var(--pc);color:var(--pc);white-space:nowrap}
+/* HERO */
+.hero{position:relative;padding:var(--x3) 0 var(--x2);overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--ag) 0%,var(--pg) 40%,transparent 70%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 70% 60% at 15% 50%,black 0%,transparent 70%);opacity:.4;pointer-events:none}
+.hero-in{position:relative;z-index:1}
+.hero-ph{display:inline-flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.pd{width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 8px var(--pc);animation:pd 2s ease-in-out infinite}
+@keyframes pd{0%,100%{opacity:1;box-shadow:0 0 8px var(--pc)}50%{opacity:.5;box-shadow:0 0 3px var(--pc)}}
+.hero-t{font-family:var(--fd);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-.02em;color:var(--text-p);margin-bottom:var(--md);max-width:780px}
+.hero-t .ac{color:var(--ac)}.hero-t .acp{color:var(--pc)}
+.hero-sub{font-size:17px;font-weight:300;color:var(--text-s);max-width:640px;line-height:1.65;margin-bottom:var(--xl)}
+.hero-m{display:flex;flex-wrap:wrap;gap:var(--sm)}
+/* BADGES */
+.b{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--rpill);white-space:nowrap;letter-spacing:.04em}
+.bp{background:var(--pg);border:1px solid var(--pc);color:var(--pc)}
+.be{background:rgba(232,135,58,.10);border:1px solid rgba(232,135,58,.30);color:var(--copper)}
+.bt{background:rgba(74,158,255,.10);border:1px solid rgba(74,158,255,.30);color:var(--sapphire)}
+.bq{background:var(--bg-s2);border:1px solid var(--border-b);color:var(--text-s)}
+.bn{background:rgba(0,229,195,.10);border:1px solid rgba(0,229,195,.30);color:var(--teal)}
+.bv{background:var(--violet-glow);border:1px solid rgba(155,127,255,.35);color:var(--violet)}
+/* ORIENT */
+.orient{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--rxl);padding:var(--xl);margin-bottom:var(--x2);position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--ac),var(--pc) 60%,transparent)}
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--lg)}
+.oi-l{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-t);margin-bottom:6px}
+.oi-v{font-size:14px;font-weight:500;color:var(--text-p)}
+.oi-v.ac{color:var(--pc)}
+.jd-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--lg);padding-top:var(--lg);border-top:1px solid var(--border)}
+.jd{width:30px;height:30px;border-radius:var(--rsm);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:500}
+.jd-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.jd-cur{background:var(--pg);border:1px solid var(--pc);color:var(--pc);box-shadow:0 0 10px var(--pg)}
+.jd-fut{background:var(--bg-s2);border:1px solid var(--border);color:var(--text-t)}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:var(--x2);align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.main{min-width:0}.sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.sec{margin-bottom:var(--x2)}
+.sl{display:flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.sl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border-b) 0%,transparent 100%)}
+.st{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--text-p);margin-bottom:var(--md);line-height:1.2}
+.sb{font-size:15px;color:var(--text-s);line-height:1.8}
+.sb p{margin-bottom:var(--md)}.sb p:last-child{margin-bottom:0}
+.sb strong{color:var(--text-p);font-weight:600}
+.sb em{color:var(--pc);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--rlg);padding:var(--lg);transition:border-color var(--tb),box-shadow var(--tb)}
+.card:hover{border-color:var(--border-b);box-shadow:var(--shadow)}
+.c-p{border-left:2px solid var(--pc);background:linear-gradient(135deg,var(--pg) 0%,var(--bg-s1) 60%)}
+.c-v{border-left:2px solid var(--ac);background:linear-gradient(135deg,var(--ag) 0%,var(--bg-s1) 60%)}
+.c-t{border-left:2px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-s1) 60%)}
+.c-c{border-left:2px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-s1) 60%)}
+.c-r{border-left:2px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-s1) 60%)}
+.c-lbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-t);margin-bottom:var(--sm)}
+.c-ttl{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--text-p);margin-bottom:var(--sm)}
+.c-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--md)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--md)}
+/* CONCEPT BLOCKS */
+.cb{border-left:2px solid var(--pc);padding:var(--md) var(--lg);background:var(--pg);border-radius:0 var(--rmd) var(--rmd) 0;margin:var(--lg) 0}
+.cb-t{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pc);margin-bottom:4px}
+.cb-d{font-size:14px;color:var(--text-s);line-height:1.65}
+.cb-v{border-left-color:var(--ac);background:var(--ag)}.cb-v .cb-t{color:var(--ac)}
+.cb-c{border-left-color:var(--copper);background:var(--copper-glow)}.cb-c .cb-t{color:var(--copper)}
+.cb-r{border-left-color:var(--rose);background:var(--rose-glow)}.cb-r .cb-t{color:var(--rose)}
+/* DIAGRAM */
+.dw{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--rlg);padding:var(--xl);margin:var(--xl) 0;overflow-x:auto}
+.dw-l{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-t);margin-bottom:var(--md);display:flex;align-items:center;gap:var(--sm)}
+.dw-l::before{content:'◈';color:var(--pc);font-size:12px}
+/* CODE */
+.code{background:var(--bg-s2);border:1px solid var(--border);border-radius:var(--rmd);overflow:hidden;margin:var(--md) 0;font-family:var(--fm);font-size:12px}
+.code-h{display:flex;align-items:center;justify-content:space-between;padding:var(--sm) var(--md);background:var(--bg-s3);border-bottom:1px solid var(--border)}
+.code-lang{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-t)}
+.code-file{font-size:11px;color:var(--text-s)}
+.code-b{padding:var(--md);overflow-x:auto;line-height:1.7;color:var(--text-s);tab-size:2}
+.code-b .k{color:#c792ea}.code-b .s{color:var(--jade)}.code-b .c{color:var(--text-t);font-style:italic}
+.code-b .v{color:var(--copper)}.code-b .n{color:var(--teal)}.code-b .p{color:var(--sapphire)}.code-b .num{color:#f78c6c}
+/* KC */
+.kc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin:var(--md) 0}
+.kc-q{padding:var(--md) var(--lg);font-size:14px;font-weight:500;color:var(--text-p);display:flex;align-items:flex-start;gap:var(--sm);cursor:pointer;transition:background var(--tf);user-select:none}
+.kc-q:hover{background:var(--bg-s2)}
+.kc-i{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--pc);background:var(--pg);border:1px solid var(--pc);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kc-chev{margin-left:auto;flex-shrink:0;color:var(--text-t);transition:transform var(--tb);font-size:12px}
+.kc.open .kc-chev{transform:rotate(180deg)}
+.kc-a{display:none;padding:var(--md) var(--lg);background:var(--bg-s2);border-top:1px solid var(--border);font-size:14px;color:var(--text-s);line-height:1.7}
+.kc.open .kc-a{display:block}
+/* SIDEBAR */
+.toc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--rlg);padding:var(--md);margin-bottom:var(--md)}
+.toc-l{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-t);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--border)}
+.toc-item{display:block;padding:5px var(--sm);font-size:12px;color:var(--text-s);border-radius:var(--rsm);transition:all var(--tf);cursor:pointer;border-left:2px solid transparent}
+.toc-item:hover,.toc-item.active{background:var(--bg-s2);color:var(--text-p);border-left-color:var(--pc)}
+.qr{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--rlg);padding:var(--md);margin-bottom:var(--md)}
+.qr-l{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-t);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--border)}
+.qr-item{display:flex;gap:var(--sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.qr-item:last-child{border-bottom:none}
+.qr-t{font-family:var(--fm);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.qr-d{color:var(--text-s);line-height:1.5}
+/* TAKEAWAY */
+.tk{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--rlg);padding:var(--lg);margin:var(--xl) 0}
+.tk-h{display:flex;align-items:center;gap:var(--sm);margin-bottom:var(--md);padding-bottom:var(--md);border-bottom:1px solid var(--border)}
+.tk-icon{width:32px;height:32px;border-radius:var(--rsm);background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--pc);flex-shrink:0}
+.tk-title{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--text-p)}
+.tk-list{list-style:none;display:flex;flex-direction:column;gap:var(--sm)}
+.tk-list li{font-size:14px;color:var(--text-s);display:flex;align-items:flex-start;gap:var(--sm);line-height:1.65}
+.tk-list li::before{content:'◆';color:var(--pc);font-size:8px;flex-shrink:0;margin-top:6px}
+/* AR */
+.ar{background:var(--bg-s1);border:1px solid var(--copper);border-radius:var(--rlg);overflow:hidden;margin:var(--xl) 0}
+.ar-h{background:var(--copper-glow);padding:var(--md) var(--lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--sm)}
+.ar-badge{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--rpill)}
+.ar-title{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--text-p)}
+.ar-list{list-style:none;padding:var(--md) var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.ar-list li{font-size:14px;color:var(--text-s);display:flex;gap:var(--sm);align-items:flex-start;line-height:1.65;padding:var(--sm) 0;border-bottom:1px solid var(--border)}
+.ar-list li:last-child{border-bottom:none}
+.ar-n{font-family:var(--fm);font-size:11px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR */
+.mn{display:flex;gap:var(--md);padding:var(--lg);background:var(--bg-s2);border:1px solid var(--border);border-radius:var(--rlg);margin:var(--lg) 0}
+.mn-av{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--ag);border:1px solid var(--ac);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mn-body{flex:1}
+.mn-lbl{font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);margin-bottom:4px}
+.mn-text{font-size:14px;color:var(--text-s);line-height:1.75}
+.mn-text strong{color:var(--text-p);font-weight:600}
+/* LAB */
+.lab{background:var(--bg-s1);border:1px solid var(--teal-dim);border-radius:var(--rlg);overflow:hidden;margin:var(--xl) 0}
+.lab-h{background:var(--teal-glow);padding:var(--md) var(--lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--sm)}
+.lab-badge{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);background:var(--teal-glow);border:1px solid rgba(0,229,195,.4);padding:2px 8px;border-radius:var(--rpill)}
+.lab-title{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--text-p)}
+.lab-body{padding:var(--lg)}
+.lab-body ol{padding-left:var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.lab-body ol li{font-size:14px;color:var(--text-s);line-height:1.65;padding-left:4px}
+.lab-body ol li strong{color:var(--text-p)}
+/* BRIDGE */
+.bridge{margin-top:var(--x3);padding-top:var(--x2);border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-s1) 0%,var(--bg-s2) 100%);border:1px solid var(--border-b);border-radius:var(--rxl);padding:var(--xl);position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc),var(--teal),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--teal-glow);pointer-events:none}
+.bc-ey{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-t);margin-bottom:var(--sm)}
+.bc-t{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--text-p);margin-bottom:var(--md)}
+.bc-t span{color:var(--teal)}
+.bc-b{font-size:14px;color:var(--text-s);line-height:1.75;max-width:580px;margin-bottom:var(--lg)}
+.bc-concepts{display:flex;flex-wrap:wrap;gap:var(--sm);margin-bottom:var(--lg)}
+.bc-btn{display:inline-flex;align-items:center;gap:var(--sm);background:var(--teal);color:var(--bg-void);font-family:var(--fd);font-size:14px;font-weight:700;padding:12px var(--lg);border-radius:var(--rpill);text-decoration:none;transition:all var(--tb)}
+.bc-btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--teal-glow);color:var(--bg-void)}
+/* FOOTER */
+.footer{margin-top:var(--x3);padding:var(--xl) 0;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:var(--md);flex-wrap:wrap}
+.footer-l{font-family:var(--fm);font-size:11px;color:var(--text-t)}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:var(--lg) 0}
+.tbl th{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-t);padding:var(--sm) var(--md);border-bottom:1px solid var(--border-b);text-align:left}
+.tbl th:first-child{color:var(--pc)}
+.tbl td{padding:10px var(--md);border-bottom:1px solid var(--border);color:var(--text-s);vertical-align:top;line-height:1.6}
+.tbl td:first-child{font-weight:500;color:var(--text-p);font-family:var(--fm);font-size:12px;white-space:nowrap}
+.tbl tr:hover td{background:var(--bg-s2)}
+.tbl tr:last-child td{border-bottom:none}
+/* FLOW */
+.flow{display:flex;flex-direction:column;gap:0;margin:var(--lg) 0}
+.fs{display:flex;gap:var(--md);align-items:flex-start}
+.fc{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:32px}
+.fn{width:32px;height:32px;border-radius:50%;background:var(--bg-s2);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:12px;font-weight:500;color:var(--pc);flex-shrink:0;z-index:1}
+.fn-v{border-color:var(--ac);color:var(--ac)}
+.fl{width:1px;flex:1;min-height:24px;background:linear-gradient(var(--border-b),var(--border))}
+.fs:last-child .fl{display:none}
+.fb{padding-bottom:var(--lg);padding-top:5px;flex:1}
+.ft{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--text-p);margin-bottom:4px}
+.fd{font-size:13px;color:var(--text-s);line-height:1.65}
+/* ANIM */
+@keyframes fiu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fiu .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+/* IAM trust diagram specific */
+.trust-box{background:var(--bg-s2);border:1px solid var(--border);border-radius:var(--rlg);padding:var(--lg);margin:var(--lg) 0}
+.trust-row{display:flex;align-items:center;gap:var(--md);flex-wrap:wrap;margin-bottom:var(--md)}
+.trust-row:last-child{margin-bottom:0}
+.trust-entity{font-family:var(--fm);font-size:11px;font-weight:600;padding:6px 14px;border-radius:var(--rsm)}
+.te-ec2{background:rgba(232,135,58,.12);border:1px solid rgba(232,135,58,.4);color:var(--copper)}
+.te-role{background:var(--ag);border:1px solid rgba(155,127,255,.4);color:var(--ac)}
+.te-s3{background:var(--teal-glow);border:1px solid rgba(0,229,195,.35);color:var(--teal)}
+.te-ssm{background:var(--pg);border:1px solid rgba(74,158,255,.35);color:var(--sapphire)}
+.trust-arrow{color:var(--text-t);font-size:16px;flex-shrink:0}
+.trust-lbl{font-family:var(--fm);font-size:10px;color:var(--text-t);letter-spacing:.06em}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-i">
+    <a href="index.html" class="nav-logo" style="text-decoration:none">Terraform<span> · Mastery</span></a>
+    <div class="nav-div"></div>
+    <div class="nav-prog">
+      <div class="prog-t"><div class="prog-f" style="width:45%"></div></div>
+      <span class="prog-l">M05 / 10</span>
+    </div>
+    <span class="nav-badge">M05 · Phase 2</span>
+  </div>
+</nav>
+
+<div class="shell">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero-in">
+    <div class="hero-ph"><div class="pd"></div>Phase 2 · AWS Infrastructure — Layer by Layer</div>
+    <h1 class="hero-t">IAM &amp; Instance Profiles —<br>Your <span class="ac">Domain</span>, Applied to<br><span class="acp">Infrastructure</span></h1>
+    <p class="hero-sub">You have 18+ years of IAM expertise. This module is not about learning identity concepts — it's about recognising how the IAM model you already own maps onto Terraform resources, and building the exact role that allows PingFederate EC2 instances to authenticate to AWS services without storing a single credential on the instance.</p>
+    <div class="hero-m">
+      <span class="b bp">Phase 2 · Identity</span>
+      <span class="b be">⬛⬛⬛☐☐ 3–4 hrs</span>
+      <span class="b bt">IAM · Instance Profiles</span>
+      <span class="b bq">↳ Prereq: M01–M04</span>
+      <span class="b bv">Your IAM depth = structural advantage</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="og">
+    <div><div class="oi-l">Current module</div><div class="oi-v ac">M05 · IAM &amp; Instance Profiles</div></div>
+    <div><div class="oi-l">Phase</div><div class="oi-v">Phase 2 — AWS Infrastructure</div></div>
+    <div><div class="oi-l">What you bring in</div><div class="oi-v">VPC, SGs, subnet IDs from M04</div></div>
+    <div><div class="oi-l">Unlocks</div><div class="oi-v">M06 · EC2, Launch Templates &amp; ASG</div></div>
+  </div>
+  <div class="jd-row">
+    <div class="jd jd-done">M01</div><div class="jd jd-done">M02</div><div class="jd jd-done">M03</div><div class="jd jd-done">M04</div>
+    <div class="jd jd-cur">M05</div>
+    <div class="jd jd-fut">M06</div><div class="jd jd-fut">M07</div><div class="jd jd-fut">M08</div>
+    <div class="jd jd-fut">M09</div><div class="jd jd-fut">M10</div>
+    <div class="jd jd-fut" style="background:linear-gradient(135deg,var(--copper-glow),var(--teal-glow));border:1px solid var(--copper);color:var(--copper)">★</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="layout">
+<div class="main">
+
+<!-- ── SECTION 1: BRIDGE ── -->
+<section class="sec afu d3" id="bridge">
+  <div class="sl">Bridge from Module 04</div>
+  <h2 class="st">The network is ready. Now give the instances an identity.</h2>
+  <div class="sb">
+    <p>In Module 04 you built the network foundation — the VPC, private subnets where PF engines will live, public subnets where NLB nodes sit, route tables, NAT gateways, and the security groups that control which traffic can reach which component. The subnet IDs and security group IDs are now outputs, ready to be consumed by downstream modules.</p>
+    <p>But before you can launch a single EC2 instance that does anything useful, it needs an identity. The PingFederate engine node must be able to: read configuration from an S3 bucket on startup, write logs to CloudWatch, use AWS Systems Manager for remote access, and call STS to verify its own identity. All of this without credentials baked into the AMI or passed as environment variables.</p>
+    <p>That is what an IAM instance profile provides. And this is the module where your deep identity expertise becomes a structural advantage — you already understand trust policies, permission policies, and the principle of least privilege at a depth that most infrastructure engineers don't reach. You are learning new Terraform syntax, not new IAM concepts.</p>
+  </div>
+  <div class="mn">
+    <div class="mn-av">🧑‍🏫</div>
+    <div class="mn-body">
+      <div class="mn-lbl">Mentor Note — the linchpin between modules</div>
+      <div class="mn-text">This module is shorter than the others because the concepts are not new to you — only the Terraform expression of them is. Pay special attention to the relationship between the role, the instance profile, and how the profile is referenced in the Launch Template (M06). <strong>That chain — role → profile → launch template → user_data → S3 — is the connective tissue of the entire immutable infrastructure pattern.</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 2: IAM MODEL ── -->
+<section class="sec" id="iam-model">
+  <div class="sl">IAM fundamentals in AWS context</div>
+  <h2 class="st">The IAM model — how EC2 instances get credentials</h2>
+  <div class="sb">
+    <p>In the traditional model, applications authenticate to AWS using access key IDs and secret access keys — static credentials stored in configuration files, environment variables, or secrets managers. These credentials can be leaked, rotated incorrectly, or left behind on decommissioned instances. In the immutable infrastructure model, this approach is not viable at all — instances are replaced regularly and should not hold long-lived secrets.</p>
+    <p>The solution is the IAM instance role. An EC2 instance assumes an IAM role at launch time. The AWS metadata service (IMDS at 169.254.169.254) provides temporary, automatically rotated credentials to any process running on the instance. The credentials are scoped to the permissions of the role. When the instance is terminated, the credentials expire and are worthless.</p>
+  </div>
+
+  <div class="dw">
+    <div class="dw-l">EC2 Credential Flow — Instance Profile in Action</div>
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:560px;display:block;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#9B7FFF"/></marker>
+        <marker id="a2" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#00E5C3"/></marker>
+        <marker id="a3" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#4A9EFF"/></marker>
+      </defs>
+
+      <!-- EC2 Instance box -->
+      <rect x="10" y="80" width="190" height="140" rx="10" fill="#0c0814" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="105" y="106" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">EC2 INSTANCE</text>
+      <rect x="25" y="118" width="160" height="36" rx="5" fill="rgba(232,135,58,.08)" stroke="rgba(232,135,58,.3)" stroke-width="1"/>
+      <text x="105" y="134" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">PingFederate Process</text>
+      <text x="105" y="148" text-anchor="middle" fill="rgba(232,135,58,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">needs S3 access</text>
+      <rect x="25" y="164" width="160" height="36" rx="5" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="105" y="180" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">AWS SDK / boto3</text>
+      <text x="105" y="194" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="8" font-family="IBM Plex Mono,monospace">calls IMDS endpoint</text>
+
+      <!-- Step 1 arrow: instance → IMDS -->
+      <line x1="201" y1="182" x2="250" y2="182" stroke="rgba(155,127,255,.5)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="225" y="173" text-anchor="middle" fill="rgba(155,127,255,.45)" font-size="8.5" font-family="IBM Plex Mono,monospace">1. GET /latest/</text>
+      <text x="225" y="185" text-anchor="middle" fill="rgba(155,127,255,.45)" font-size="8.5" font-family="IBM Plex Mono,monospace">meta-data/iam/</text>
+      <text x="225" y="197" text-anchor="middle" fill="rgba(155,127,255,.45)" font-size="8.5" font-family="IBM Plex Mono,monospace">security-credentials/</text>
+
+      <!-- IMDS box -->
+      <rect x="252" y="110" width="170" height="100" rx="8" fill="#0a0814" stroke="rgba(155,127,255,.6)" stroke-width="2"/>
+      <text x="337" y="138" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="700" font-family="IBM Plex Mono,monospace">IMDS</text>
+      <text x="337" y="154" text-anchor="middle" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">169.254.169.254</text>
+      <text x="337" y="174" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Returns temporary</text>
+      <text x="337" y="188" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">credentials from STS</text>
+      <text x="337" y="202" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">AccessKeyId, SecretKey,</text>
+
+      <!-- Step 2 arrow: IMDS → STS -->
+      <line x1="423" y1="160" x2="470" y2="135" stroke="rgba(155,127,255,.4)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="450" y="140" fill="rgba(155,127,255,.4)" font-size="8.5" font-family="IBM Plex Mono,monospace">2. AssumeRole</text>
+
+      <!-- STS box -->
+      <rect x="472" y="60" width="160" height="75" rx="8" fill="#080610" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="552" y="88" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="700" font-family="IBM Plex Mono,monospace">AWS STS</text>
+      <text x="552" y="104" text-anchor="middle" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">Issues temp credentials</text>
+      <text x="552" y="120" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8.5" font-family="IBM Plex Mono,monospace">TTL: 1–12 hrs</text>
+
+      <!-- IAM Role box -->
+      <rect x="472" y="165" width="160" height="90" rx="8" fill="#0c0814" stroke="rgba(155,127,255,.6)" stroke-width="2"/>
+      <text x="552" y="190" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="700" font-family="IBM Plex Mono,monospace">IAM ROLE</text>
+      <text x="552" y="206" text-anchor="middle" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">pf-instance-role-prod</text>
+      <text x="552" y="224" text-anchor="middle" fill="rgba(0,229,195,.6)" font-size="8.5" font-family="IBM Plex Mono,monospace">Trust: ec2.amazonaws.com</text>
+      <text x="552" y="238" text-anchor="middle" fill="rgba(74,158,255,.6)" font-size="8.5" font-family="IBM Plex Mono,monospace">Permissions: S3, SSM, CW</text>
+
+      <!-- Step 3: credentials back to instance -->
+      <line x1="471" y1="100" x2="422" y2="148" stroke="rgba(0,229,195,.4)" stroke-width="1.5" marker-end="url(#a2)"/>
+      <text x="442" y="118" fill="rgba(0,229,195,.4)" font-size="8.5" font-family="IBM Plex Mono,monospace">3. Temp creds</text>
+
+      <!-- Instance uses credentials for S3 -->
+      <rect x="660" y="80" width="150" height="140" rx="8" fill="#060e14" stroke="rgba(0,229,195,.35)" stroke-width="1.5"/>
+      <text x="735" y="106" text-anchor="middle" fill="#00E5C3" font-size="10" font-weight="700" font-family="IBM Plex Mono,monospace">AWS SERVICES</text>
+      <rect x="675" y="118" width="120" height="28" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="735" y="136" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">S3 (config bucket)</text>
+      <rect x="675" y="154" width="120" height="28" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="735" y="172" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">SSM Parameter Store</text>
+      <rect x="675" y="190" width="120" height="28" rx="4" fill="rgba(62,207,160,.05)" stroke="rgba(62,207,160,.2)" stroke-width="1"/>
+      <text x="735" y="208" text-anchor="middle" fill="#3ECFA0" font-size="9" font-family="IBM Plex Mono,monospace">CloudWatch Logs</text>
+
+      <!-- Step 4: instance uses creds to call S3 -->
+      <line x1="201" y1="150" x2="658" y2="132" stroke="rgba(0,229,195,.3)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a2)"/>
+      <text x="430" y="127" text-anchor="middle" fill="rgba(0,229,195,.4)" font-size="8.5" font-family="IBM Plex Mono,monospace">4. Authenticated API calls using temp credentials</text>
+    </svg>
+  </div>
+
+  <div class="g2" style="margin-top:var(--lg)">
+    <div class="card c-v">
+      <div class="c-lbl">Key insight</div>
+      <div class="c-ttl">No credentials on the instance</div>
+      <div class="c-body">The PingFederate process never sees a static access key or secret. The AWS SDK automatically calls the IMDS endpoint to get temporary credentials before every API call. Credentials are short-lived (1–12 hours), automatically rotated, and tied to the instance's attached role. When the instance is terminated in an AMI refresh, the credentials become worthless immediately.</div>
+    </div>
+    <div class="card c-c">
+      <div class="c-lbl">The immutable infra connection</div>
+      <div class="c-ttl">Why this pattern enables instance replacement</div>
+      <div class="c-body">In the traditional long-lived server model, credentials might be baked into config files or loaded once and cached. In the immutable model, every new instance gets fresh temporary credentials from IMDS on every API call. No credential rotation ceremony needed. No risk of stale secrets on decommissioned instances. The role policy controls what the instance can do — not what is stored on it.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 3: FOUR TERRAFORM RESOURCES ── -->
+<section class="sec" id="four-resources">
+  <div class="sl">The four Terraform resources</div>
+  <h2 class="st">The IAM building blocks — four resources, one pattern</h2>
+  <div class="sb">
+    <p>Creating an IAM instance profile in Terraform requires exactly four resource types, always in this order of dependency: the role, the policy, the policy attachment, and the instance profile. Understanding why each one exists as a separate resource — rather than one monolithic block — reflects AWS's own design philosophy of composable identity primitives.</p>
+  </div>
+
+  <div class="flow" style="margin-top:var(--lg)">
+    <div class="fs">
+      <div class="fc"><div class="fn fn-v">1</div><div class="fl"></div></div>
+      <div class="fb">
+        <div class="ft"><code>aws_iam_role</code> — the identity primitive</div>
+        <div class="fd">Defines the IAM role itself — its name, description, and critically its trust policy. The trust policy answers: <em>who is allowed to assume this role?</em> For an EC2 instance, the trust principal is <code>ec2.amazonaws.com</code>. Without the correct trust policy, no EC2 instance can assume the role, regardless of what permissions it has.</div>
+      </div>
+    </div>
+    <div class="fs">
+      <div class="fc"><div class="fn fn-v">2</div><div class="fl"></div></div>
+      <div class="fb">
+        <div class="ft"><code>aws_iam_policy</code> — the permission document</div>
+        <div class="fd">Defines what the role is allowed to do — the permission policy. Separate from the role so the same policy can be attached to multiple roles, and the same role can have multiple policies attached. This matches the IAM best practice of modular, reusable permission documents.</div>
+      </div>
+    </div>
+    <div class="fs">
+      <div class="fc"><div class="fn fn-v">3</div><div class="fl"></div></div>
+      <div class="fb">
+        <div class="ft"><code>aws_iam_role_policy_attachment</code> — the binding</div>
+        <div class="fd">Attaches a policy (either customer-managed or AWS-managed) to a role. The role and policy exist independently; the attachment is the relationship. Multiple attachments can exist per role — the permissions are unioned (all attached policies apply). This is the resource that most commonly causes confusion in plan output: if you remove an attachment, the policy is detached from the role but neither the policy nor the role is deleted.</div>
+      </div>
+    </div>
+    <div class="fs">
+      <div class="fc"><div class="fn fn-v">4</div><div class="fl"></div></div>
+      <div class="fb">
+        <div class="ft"><code>aws_iam_instance_profile</code> — the EC2 wrapper</div>
+        <div class="fd">Wraps the IAM role in a container that EC2 understands. EC2 does not directly attach IAM roles to instances — it attaches instance profiles. An instance profile holds exactly one role. The instance profile is what you reference in the Launch Template — not the role directly. This is a common source of confusion: you configure the profile, not the role, in the EC2 Launch Template.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cb cb-v">
+    <div class="cb-t">Why EC2 uses instance profiles instead of roles directly</div>
+    <div class="cb-d">This is an AWS legacy design decision. Instance profiles were introduced before IAM roles existed, and the indirection layer remains for backward compatibility. In practice, a 1:1 relationship always exists between a role and its instance profile in a well-designed system. The separation allows the instance profile to be created, deleted, or updated independently of the role — useful in some migration scenarios. Terraform handles this transparently; you create both resources and reference the profile in the launch template.</div>
+  </div>
+</section>
+
+<!-- ── SECTION 4: COMPLETE TERRAFORM CODE ── -->
+<section class="sec" id="terraform-code">
+  <div class="sl">Complete Terraform implementation</div>
+  <h2 class="st">Building the PingFederate instance role from scratch</h2>
+  <div class="sb">
+    <p>The following is the complete, production-ready Terraform code for the PingFederate instance role. Every decision is annotated — not just <em>what</em> it does but <em>why</em> each permission exists and what minimum access was chosen.</p>
+  </div>
+
+  <div class="code">
+    <div class="code-h"><span class="code-lang">HCL</span><span class="code-file">iam.tf — PingFederate instance role (complete)</span></div>
+    <div class="code-b"><pre><span class="c"># ── 1. THE IAM ROLE ───────────────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_iam_role"</span> <span class="s">"pf_instance"</span> {
+  <span class="k">name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}instance-role"</span>
+  <span class="k">description</span> = <span class="s">"IAM role for PingFederate EC2 engine nodes"</span>
+  <span class="k">path</span>        = <span class="s">"/pingfederate/"</span>   <span class="c"># IAM path for organisational grouping</span>
+
+  <span class="c"># Trust policy — ONLY EC2 service can assume this role</span>
+  <span class="c"># This is the answer to: "who can assume this role?"</span>
+  <span class="k">assume_role_policy</span> = <span class="n">jsonencode</span>({
+    <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+    <span class="n">Statement</span> = [
+      {
+        <span class="n">Sid</span>       = <span class="s">"AllowEC2AssumeRole"</span>
+        <span class="n">Effect</span>    = <span class="s">"Allow"</span>
+        <span class="n">Principal</span> = { <span class="n">Service</span> = <span class="s">"ec2.amazonaws.com"</span> }
+        <span class="n">Action</span>    = <span class="s">"sts:AssumeRole"</span>
+      }
+    ]
+  })
+
+  <span class="c"># Maximum session duration — default is 1 hour (3600 seconds)</span>
+  <span class="c"># Increase only if long-running operations need it</span>
+  <span class="k">max_session_duration</span> = <span class="num">3600</span>
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+    <span class="n">Name</span>    = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}instance-role"</span>
+    <span class="n">Purpose</span> = <span class="s">"PingFederate EC2 instance identity"</span>
+  })
+}
+
+<span class="c"># ── 2. THE PERMISSION POLICY ──────────────────────────────────────────</span>
+<span class="c"># Customer-managed policy for PF-specific permissions</span>
+<span class="k">resource</span> <span class="s">"aws_iam_policy"</span> <span class="s">"pf_instance"</span> {
+  <span class="k">name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}instance-policy"</span>
+  <span class="k">description</span> = <span class="s">"Permissions for PingFederate EC2 engine nodes"</span>
+  <span class="k">path</span>        = <span class="s">"/pingfederate/"</span>
+
+  <span class="k">policy</span> = <span class="n">jsonencode</span>({
+    <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+    <span class="n">Statement</span> = [
+
+      <span class="c"># S3 — read configuration from the PF config bucket</span>
+      <span class="c"># Scoped to the specific bucket and key prefix, not all S3</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"ReadPFConfig"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Action</span> = [
+          <span class="s">"s3:GetObject"</span>,
+          <span class="s">"s3:GetObjectVersion"</span>,
+          <span class="s">"s3:ListBucket"</span>
+        ]
+        <span class="n">Resource</span> = [
+          <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span>,
+          <span class="s">"${</span><span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span><span class="s">}/*"</span>
+        ]
+      },
+
+      <span class="c"># S3 — write audit logs to a separate audit bucket</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"WriteAuditLogs"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Action</span> = [<span class="s">"s3:PutObject"</span>]
+        <span class="n">Resource</span> = [<span class="s">"${</span><span class="n">aws_s3_bucket</span>.<span class="v">pf_audit</span>.<span class="n">arn</span><span class="s">}/audit/*"</span>]
+      },
+
+      <span class="c"># CloudWatch Logs — write PF runtime and error logs</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"WriteCloudWatchLogs"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Action</span> = [
+          <span class="s">"logs:CreateLogGroup"</span>,
+          <span class="s">"logs:CreateLogStream"</span>,
+          <span class="s">"logs:PutLogEvents"</span>,
+          <span class="s">"logs:DescribeLogStreams"</span>
+        ]
+        <span class="n">Resource</span> = [
+          <span class="s">"arn:aws:logs:${</span><span class="v">var.aws_region</span><span class="s">}:${</span><span class="v">data.aws_caller_identity.current.account_id</span><span class="s">}:log-group:/pingfederate/*"</span>
+        ]
+      },
+
+      <span class="c"># SSM — allow Systems Manager agent, parameter reads</span>
+      <span class="c"># Required for Session Manager (no SSH key needed)</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"SSMParameterRead"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Action</span> = [
+          <span class="s">"ssm:GetParameter"</span>,
+          <span class="s">"ssm:GetParameters"</span>,
+          <span class="s">"ssm:GetParametersByPath"</span>
+        ]
+        <span class="n">Resource</span> = [
+          <span class="s">"arn:aws:ssm:${</span><span class="v">var.aws_region</span><span class="s">}:${</span><span class="v">data.aws_caller_identity.current.account_id</span><span class="s">}:parameter/pingfederate/*"</span>
+        ]
+      },
+
+      <span class="c"># KMS — decrypt S3 objects and SSM parameters encrypted with CMK</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"KMSDecrypt"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Action</span> = [
+          <span class="s">"kms:Decrypt"</span>,
+          <span class="s">"kms:GenerateDataKey"</span>
+        ]
+        <span class="n">Resource</span> = [<span class="v">var.config_kms_key_arn</span>]
+      },
+
+      <span class="c"># EC2 — read instance metadata for cluster auto-discovery</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"EC2DescribeForCluster"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Action</span> = [
+          <span class="s">"ec2:DescribeInstances"</span>,
+          <span class="s">"ec2:DescribeTags"</span>
+        ]
+        <span class="n">Resource</span> = [<span class="s">"*"</span>]   <span class="c"># EC2 Describe actions don't support resource-level perms</span>
+      }
+    ]
+  })
+
+  <span class="k">tags</span> = <span class="v">local.common_tags</span>
+}
+
+<span class="c"># ── 3. POLICY ATTACHMENTS ─────────────────────────────────────────────</span>
+
+<span class="c"># Attach the custom PF policy</span>
+<span class="k">resource</span> <span class="s">"aws_iam_role_policy_attachment"</span> <span class="s">"pf_custom"</span> {
+  <span class="k">role</span>       = <span class="n">aws_iam_role</span>.<span class="v">pf_instance</span>.<span class="n">name</span>
+  <span class="k">policy_arn</span> = <span class="n">aws_iam_policy</span>.<span class="v">pf_instance</span>.<span class="n">arn</span>
+}
+
+<span class="c"># Attach AWS-managed SSM policy for Session Manager</span>
+<span class="c"># Provides ssmmessages, ec2messages, s3 access for session data</span>
+<span class="k">resource</span> <span class="s">"aws_iam_role_policy_attachment"</span> <span class="s">"pf_ssm_core"</span> {
+  <span class="k">role</span>       = <span class="n">aws_iam_role</span>.<span class="v">pf_instance</span>.<span class="n">name</span>
+  <span class="k">policy_arn</span> = <span class="s">"arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"</span>
+}
+
+<span class="c"># ── 4. INSTANCE PROFILE — the EC2 wrapper ────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_iam_instance_profile"</span> <span class="s">"pf_instance"</span> {
+  <span class="k">name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}instance-profile"</span>
+  <span class="k">role</span> = <span class="n">aws_iam_role</span>.<span class="v">pf_instance</span>.<span class="n">name</span>
+  <span class="k">path</span> = <span class="s">"/pingfederate/"</span>
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+    <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}instance-profile"</span>
+  })
+}
+
+<span class="c"># ── OUTPUT — consumed by Launch Template in M06 ───────────────────────</span>
+<span class="k">output</span> <span class="s">"pf_instance_profile_arn"</span> {
+  <span class="k">description</span> = <span class="s">"Instance profile ARN — referenced in Launch Template"</span>
+  <span class="k">value</span>       = <span class="n">aws_iam_instance_profile</span>.<span class="v">pf_instance</span>.<span class="n">arn</span>
+}
+
+<span class="k">output</span> <span class="s">"pf_instance_role_arn"</span> {
+  <span class="k">description</span> = <span class="s">"Role ARN — used for cross-account or monitoring purposes"</span>
+  <span class="k">value</span>       = <span class="n">aws_iam_role</span>.<span class="v">pf_instance</span>.<span class="n">arn</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 5: TRUST vs PERMISSION ── -->
+<section class="sec" id="trust-vs-permission">
+  <div class="sl">Trust policy vs permission policy</div>
+  <h2 class="st">The two-policy model — trust and permissions are separate</h2>
+  <div class="sb">
+    <p>This is fundamental IAM architecture that you already know deeply — but it maps onto Terraform in a specific way that's worth making explicit. Every IAM role has two distinct policy layers, each answering a different question.</p>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dw-l">IAM Role — Two-Policy Model</div>
+    <table class="tbl">
+      <thead><tr><th>Policy Type</th><th>Question it answers</th><th>Where it lives in Terraform</th><th>PF example</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Trust Policy</td>
+          <td>"Who can assume this role?"</td>
+          <td>Inside the <code>aws_iam_role</code> resource, in the <code>assume_role_policy</code> argument</td>
+          <td><code>ec2.amazonaws.com</code> — only EC2 service can assume the PF instance role</td>
+        </tr>
+        <tr>
+          <td>Permission Policy</td>
+          <td>"What can the role do once assumed?"</td>
+          <td>Separate <code>aws_iam_policy</code> resource, attached via <code>aws_iam_role_policy_attachment</code></td>
+          <td>S3 GetObject on config bucket, SSM GetParameter, CloudWatch PutLogEvents</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="trust-box">
+    <div class="trust-row">
+      <span class="trust-entity te-ec2">EC2 Service</span>
+      <span class="trust-arrow">─ AssumeRole →</span>
+      <span class="trust-entity te-role">pf-instance-role</span>
+      <span class="trust-arrow">─ grants →</span>
+      <span class="trust-entity te-s3">S3 GetObject</span>
+    </div>
+    <div class="trust-row">
+      <span class="trust-lbl">ec2.amazonaws.com</span>
+      <span class="trust-arrow" style="margin-left:8px">         </span>
+      <span class="trust-lbl" style="margin-left:8px">Trust policy: ✓</span>
+      <span class="trust-arrow" style="margin-left:8px">         </span>
+      <span class="trust-entity te-ssm" style="margin-left:8px">SSM GetParameter</span>
+    </div>
+  </div>
+
+  <div class="cb cb-c">
+    <div class="cb-t">Common mistake: inline policy vs attached policy</div>
+    <div class="cb-d">You will encounter two patterns in the wild. The <code>aws_iam_role_policy</code> resource creates an <em>inline policy</em> — embedded directly in the role, not reusable, deleted when the role is deleted. The <code>aws_iam_policy</code> + <code>aws_iam_role_policy_attachment</code> pattern creates a <em>customer-managed policy</em> that exists independently and can be attached to multiple roles. The enterprise standard is always the managed policy pattern — it's versionable, reusable, and auditable via IAM console without needing to inspect the role directly.</div>
+  </div>
+</section>
+
+<!-- ── SECTION 6: LEAST PRIVILEGE ── -->
+<section class="sec" id="least-privilege">
+  <div class="sl">Least privilege in practice</div>
+  <h2 class="st">What the PF instance role should and should not have</h2>
+  <div class="sb">
+    <p>The most common IAM mistake in infrastructure automation is granting overly broad permissions because it is easier. The PF instance role is attached to long-running nodes that process authentication traffic — the blast radius of a compromised node depends entirely on what that role is permitted to do. Least privilege is not just a compliance requirement here; it is a direct security control.</p>
+  </div>
+
+  <div class="g2">
+    <div class="card c-t">
+      <div class="c-lbl">✓ Should have</div>
+      <div class="c-ttl">Minimum required permissions</div>
+      <div class="c-body">
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-s)">
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--teal);flex-shrink:0">◆</span>S3 <code>GetObject</code> / <code>ListBucket</code> on the specific config bucket only</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--teal);flex-shrink:0">◆</span>CloudWatch <code>PutLogEvents</code> scoped to <code>/pingfederate/*</code> log group prefix</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--teal);flex-shrink:0">◆</span>SSM <code>GetParameter</code> scoped to <code>/pingfederate/*</code> parameter path</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--teal);flex-shrink:0">◆</span>KMS <code>Decrypt</code> scoped to the specific CMK ARN used for config encryption</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--teal);flex-shrink:0">◆</span>EC2 <code>DescribeInstances</code> / <code>DescribeTags</code> for JGroups cluster discovery (resource: *)</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--teal);flex-shrink:0">◆</span>AWS managed policy <code>AmazonSSMManagedInstanceCore</code> for Session Manager</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card c-r">
+      <div class="c-lbl">✗ Should NOT have</div>
+      <div class="c-ttl">Over-privileged patterns to avoid</div>
+      <div class="c-body">
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-s)">
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--rose);flex-shrink:0">✗</span><code>s3:*</code> — never allow full S3 access; scope to specific bucket and actions</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--rose);flex-shrink:0">✗</span><code>iam:*</code> — instance roles should never be able to modify IAM</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--rose);flex-shrink:0">✗</span><code>ec2:*</code> — DescribeInstances is needed; CreateInstance, TerminateInstance are not</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--rose);flex-shrink:0">✗</span><code>AdministratorAccess</code> managed policy — never on an instance role</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--rose);flex-shrink:0">✗</span>S3 <code>DeleteObject</code> on the config bucket — PF reads config, never deletes it</li>
+          <li style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--rose);flex-shrink:0">✗</span>Cross-account permissions without explicit justification and review</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="mn">
+    <div class="mn-av">🧑‍🏫</div>
+    <div class="mn-body">
+      <div class="mn-lbl">The wildcard resource asterisk — when it's unavoidable</div>
+      <div class="mn-text">Some AWS actions simply cannot be resource-scoped — <code>ec2:DescribeInstances</code> is one of them. AWS does not support resource-level permissions for Describe actions in EC2. The only option is <code>"Resource": ["*"]</code>. This is documented and expected — it does not violate least privilege in intent, only in expression. In any security review, the important distinction is: <strong>is the <code>*</code> in the Resource because it's required by the API, or because someone was lazy?</strong> The PF role has one justified <code>*</code> (EC2 Describe) and all other permissions are resource-scoped.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 7: IAM PATH ── -->
+<section class="sec" id="iam-path">
+  <div class="sl">IAM paths and naming</div>
+  <h2 class="st">Organising IAM resources at enterprise scale</h2>
+  <div class="sb">
+    <p>IAM paths are a namespacing mechanism that most teams ignore until their IAM namespace becomes unmanageable. In an enterprise with hundreds of roles, clear path conventions make it possible to scope permission boundaries, write service control policies, and audit IAM resources by application or team.</p>
+  </div>
+
+  <div class="code">
+    <div class="code-h"><span class="code-lang">HCL</span><span class="code-file">IAM naming and path conventions</span></div>
+    <div class="code-b"><pre><span class="c"># IAM path organises resources in the IAM namespace</span>
+<span class="c"># Path: /application/environment/ or /team/application/</span>
+
+<span class="k">resource</span> <span class="s">"aws_iam_role"</span> <span class="s">"pf_instance"</span> {
+  <span class="k">name</span> = <span class="s">"pf-prod-instance-role"</span>   <span class="c"># globally unique in the account</span>
+  <span class="k">path</span> = <span class="s">"/pingfederate/"</span>          <span class="c"># logical grouping in IAM console</span>
+  <span class="c"># ...</span>
+}
+
+<span class="c"># With a path, the full ARN becomes:</span>
+<span class="c"># arn:aws:iam::123456789012:role/pingfederate/pf-prod-instance-role</span>
+<span class="c">#                                   ↑ path ↑</span>
+
+<span class="c"># Permission boundaries — restrict the maximum permissions a role can have</span>
+<span class="c"># Even if the policy grants AdministratorAccess, the boundary limits it</span>
+<span class="k">resource</span> <span class="s">"aws_iam_role"</span> <span class="s">"pf_instance"</span> {
+  <span class="k">name</span>                 = <span class="s">"pf-prod-instance-role"</span>
+  <span class="k">path</span>                 = <span class="s">"/pingfederate/"</span>
+  <span class="k">permissions_boundary</span> = <span class="v">var.permissions_boundary_arn</span>
+  <span class="c"># var.permissions_boundary_arn is an ARN of a managed policy</span>
+  <span class="c"># that caps the maximum effective permissions of this role</span>
+  <span class="k">assume_role_policy</span>   = <span class="n">jsonencode</span>({ <span class="c">/* ... */</span> })
+}
+
+<span class="c"># Permissions boundary pattern in enterprise:</span>
+<span class="c"># - Platform team defines a boundary policy per application class</span>
+<span class="c"># - Application teams must apply boundary when creating roles</span>
+<span class="c"># - SCPs in AWS Organizations enforce that boundary usage is mandatory</span>
+<span class="c"># - Boundary prevents privilege escalation even if policy is misconfigured</span></pre>
+    </div>
+  </div>
+
+  <div class="g3" style="margin-top:var(--lg)">
+    <div class="card c-p">
+      <div class="c-lbl">Naming convention</div>
+      <div class="c-ttl"><code>{app}-{env}-{purpose}</code></div>
+      <div class="c-body">Example: <code>pf-prod-instance-role</code>. Consistent naming enables CloudTrail filtering, cost allocation, and IAM console navigation without documentation lookup. Apply the same convention to policies and profiles.</div>
+    </div>
+    <div class="card c-p">
+      <div class="c-lbl">IAM path</div>
+      <div class="c-ttl"><code>/application/</code></div>
+      <div class="c-body">IAM paths scope resource-based policies and permission boundaries. Use <code>/pingfederate/</code> for all PF IAM resources. Makes SCPs and permission boundaries easier to target precisely without affecting other application roles.</div>
+    </div>
+    <div class="card c-v">
+      <div class="c-lbl">Permissions boundary</div>
+      <div class="c-ttl">Maximum effective permissions</div>
+      <div class="c-body">A boundary policy caps the maximum permissions, regardless of attached policies. Even if someone mistakenly attaches AdministratorAccess, the boundary limits what the role can actually do. Enterprise best practice for all application-facing roles.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 8: TESTING IAM ── -->
+<section class="sec" id="testing">
+  <div class="sl">Validating IAM in Terraform</div>
+  <h2 class="st">How to verify your IAM configuration before and after apply</h2>
+
+  <div class="code">
+    <div class="code-h"><span class="code-lang">Shell</span><span class="code-file">Validating IAM resources</span></div>
+    <div class="code-b"><pre><span class="c"># After terraform apply, verify the role was created correctly</span>
+<span class="n">aws</span> iam get-role <span class="k">--role-name</span> pf-prod-instance-role
+<span class="c"># → Shows trust policy, path, ARN, tags</span>
+
+<span class="c"># Check attached policies</span>
+<span class="n">aws</span> iam list-attached-role-policies <span class="k">--role-name</span> pf-prod-instance-role
+<span class="c"># → Lists: pf-prod-instance-policy + AmazonSSMManagedInstanceCore</span>
+
+<span class="c"># Simulate the permissions — what can this role actually do?</span>
+<span class="n">aws</span> iam simulate-principal-policy \
+  <span class="k">--policy-source-arn</span> arn:aws:iam::123456789012:role/pingfederate/pf-prod-instance-role \
+  <span class="k">--action-names</span> s3:GetObject \
+  <span class="k">--resource-arns</span> arn:aws:s3:::pf-config-prod-123456789012/config/pingfederate.zip
+<span class="c"># → EvaluationResults: [{EvalActionName: s3:GetObject, EvalDecision: allowed}]</span>
+
+<span class="c"># Verify the instance profile exists and has the role</span>
+<span class="n">aws</span> iam get-instance-profile <span class="k">--instance-profile-name</span> pf-prod-instance-profile
+<span class="c"># → Shows the role attached to the profile</span>
+
+<span class="c"># From within a running PF instance — verify the IMDS is providing credentials</span>
+<span class="c"># (Run on the EC2 instance via SSM Session Manager)</span>
+<span class="n">curl</span> http://169.254.169.254/latest/meta-data/iam/security-credentials/
+<span class="c"># → pf-prod-instance-role</span>
+
+<span class="n">curl</span> http://169.254.169.254/latest/meta-data/iam/security-credentials/pf-prod-instance-role
+<span class="c"># → {"Code":"Success","AccessKeyId":"ASIA...","Expiration":"2024-11-15T16:23:07Z",...}</span></pre>
+    </div>
+  </div>
+
+  <div class="cb cb-v">
+    <div class="cb-t"><code>iam:simulate-principal-policy</code> — your most valuable IAM debugging tool</div>
+    <div class="cb-d">The IAM policy simulator is the authoritative way to verify what a role can do without having to actually attempt the action. You can test any combination of actions, resources, and conditions. In Terraform context, run the simulation after every IAM apply to confirm the effective permissions match your intention — especially when permission boundaries or SCPs are in play. Add it to your deployment runbook for the PF role.</div>
+  </div>
+</section>
+
+<!-- ── KNOWLEDGE CHECKS ── -->
+<section class="sec" id="knowledge-checks">
+  <div class="sl">Knowledge check</div>
+  <h2 class="st">Test your IAM-to-Terraform mapping</h2>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>What is the difference between <code>aws_iam_role_policy</code> and <code>aws_iam_policy</code> + <code>aws_iam_role_policy_attachment</code>? When would you use each?<span class="kc-chev">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)"><code>aws_iam_role_policy</code> creates an inline policy embedded directly in the role. The combined pattern creates a customer-managed policy that exists independently.</strong> Use inline policies (<code>aws_iam_role_policy</code>) when: the policy is specific to exactly one role and will never be reused, you want the policy to be automatically deleted when the role is deleted, and you want the permissions to be clearly visible in the role definition without navigating to a separate policy. Use the managed policy pattern (<code>aws_iam_policy</code> + attachment) when: the policy might be reused across multiple roles, you want to version the policy independently, you want the policy to appear in IAM's list of managed policies for auditing, or your organisation requires all permissions to be customer-managed policies for compliance. In enterprise environments, the managed policy pattern is almost always preferred — it is more auditable, more modular, and compatible with permission boundary enforcement.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>A PingFederate instance starts but fails to read the configuration from S3. The S3 bucket exists and the file is there. What are the three most likely IAM-related causes?<span class="kc-chev">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">Three most likely IAM causes, in order of frequency:</strong><br><br>
+    <strong>1. Instance profile not attached to the Launch Template.</strong> The role exists in IAM but the instance was launched without the profile — either because the Launch Template was missing the <code>iam_instance_profile</code> block or because the Launch Template version in use predates the profile addition. Check: <code>aws ec2 describe-instances --instance-ids i-xxx --query "Reservations[].Instances[].IamInstanceProfile"</code><br><br>
+    <strong>2. S3 bucket resource in the policy doesn't match the actual bucket ARN.</strong> A common mistake is specifying <code>arn:aws:s3:::pf-config-bucket/*</code> in the policy but the actual bucket name is different, or missing the bucket-level ARN alongside the object-level ARN (both are needed for ListBucket + GetObject). Check with <code>iam:simulate-principal-policy</code>.<br><br>
+    <strong>3. KMS key policy denies the role.</strong> If the S3 objects are encrypted with SSE-KMS, the KMS key policy must explicitly allow the instance role to perform <code>kms:Decrypt</code>. An IAM policy that grants KMS permissions is necessary but not sufficient — the KMS key policy itself must also allow the principal. Both policies must allow the action (resource-based AND identity-based). This is the "two-door" model of KMS access control.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>Why is the Launch Template configured with <code>iam_instance_profile.arn</code> rather than the IAM role ARN directly? What would happen if you put the role ARN in instead?<span class="kc-chev">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">EC2 does not accept IAM role ARNs — it only accepts instance profile ARNs or names.</strong> The <code>iam_instance_profile</code> argument in a Launch Template must reference an instance profile, not the role itself. If you attempt to use a role ARN, the API call to create or update the Launch Template will fail with a validation error. The instance profile is the EC2-specific wrapper around the role. In Terraform, you reference the profile's ARN via <code>aws_iam_instance_profile.pf_instance.arn</code> — not the role's ARN. This is one of the most common sources of confusion when engineers first set up EC2 IAM in Terraform, because in the IAM console the role and profile look almost identical and the distinction seems arbitrary at first.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>You add a new S3 bucket for PF audit logs and want the instance role to be able to write to it. What Terraform changes are required? Will any resources need to be recreated?<span class="kc-chev">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">One resource is modified: the <code>aws_iam_policy</code> resource gets an updated policy document. No resources need to be recreated.</strong> IAM policies support in-place updates — Terraform will call <code>iam:CreatePolicyVersion</code> to create a new version of the customer-managed policy and set it as the default. The role, profile, attachment, and Launch Template are completely unaffected. The change takes effect immediately — the next time an instance's AWS SDK calls STS to refresh its temporary credentials, the new permissions will be included. Running instances do not need to be restarted to pick up IAM policy changes. This is one of the key advantages of the role-based model over static credentials — access policy changes propagate to all running instances automatically without any instance-level intervention.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc-q"><span class="kc-i">Q</span>Your security team wants to prevent the PF instance role from being able to call IAM or STS APIs at all — not even to verify its own identity. Is this safe and how would you implement it?<span class="kc-chev">▼</span></div>
+    <div class="kc-a"><strong style="color:var(--pc)">Blocking STS is not safe — the instance role mechanism requires STS. Blocking IAM management actions is both safe and recommended.</strong> The IMDS credential mechanism works by having the AWS hypervisor call STS on behalf of the instance to generate temporary credentials. The PF process itself does not directly call STS — the SDK calls it automatically. However, you should NOT add <code>sts:AssumeRole</code> to the permission policy unless the PF process needs to assume a different role. To prevent IAM manipulation, add an explicit deny in a permission boundary or SCP: deny <code>iam:CreateRole</code>, <code>iam:AttachRolePolicy</code>, <code>iam:PutRolePolicy</code>, and similar IAM write actions. These denies should live in the permission boundary policy, not in the role policy itself — a permission boundary applies even if the role policy mistakenly grants IAM permissions.</div>
+  </div>
+</section>
+
+<!-- ── LAB ── -->
+<section class="sec" id="lab">
+  <div class="sl">Mini lab</div>
+  <h2 class="st">IAM Terraform exercises</h2>
+
+  <div class="lab">
+    <div class="lab-h"><span class="lab-badge">Lab 05-A</span><span class="lab-title">Write the trust policy for a cross-account role</span></div>
+    <div class="lab-body">
+      <p style="font-size:14px;color:var(--text-s);margin-bottom:var(--md)">The PingFederate team wants to allow a monitoring account (account ID <code>987654321098</code>) to assume the PF instance role for read-only inspection. Write the updated <code>assume_role_policy</code> block that allows BOTH the EC2 service AND the monitoring account's IAM role (<code>arn:aws:iam::987654321098:role/pf-monitoring-role</code>) to assume this role. Add an ExternalId condition to the cross-account statement for added security.</p>
+      <ol>
+        <li>Keep the existing EC2 trust statement</li>
+        <li>Add a second statement for the monitoring role with an ExternalId condition</li>
+        <li>Use <code>sts:AssumeRole</code> as the action for both</li>
+        <li>The ExternalId value should come from a variable: <code>var.monitoring_external_id</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sm)">
+    <div class="kc-q"><span class="kc-i">✓</span>Reveal Lab 05-A solution<span class="kc-chev">▼</span></div>
+    <div class="kc-a">
+      <div class="code" style="margin:0">
+        <div class="code-h"><span class="code-lang">HCL</span><span class="code-file">Cross-account trust policy</span></div>
+        <div class="code-b"><pre><span class="k">assume_role_policy</span> = <span class="n">jsonencode</span>({
+  <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+  <span class="n">Statement</span> = [
+    <span class="c"># Statement 1: EC2 service (unchanged)</span>
+    {
+      <span class="n">Sid</span>       = <span class="s">"AllowEC2AssumeRole"</span>
+      <span class="n">Effect</span>    = <span class="s">"Allow"</span>
+      <span class="n">Principal</span> = { <span class="n">Service</span> = <span class="s">"ec2.amazonaws.com"</span> }
+      <span class="n">Action</span>    = <span class="s">"sts:AssumeRole"</span>
+    },
+    <span class="c"># Statement 2: cross-account monitoring role with ExternalId</span>
+    {
+      <span class="n">Sid</span>       = <span class="s">"AllowMonitoringAccountAssumeRole"</span>
+      <span class="n">Effect</span>    = <span class="s">"Allow"</span>
+      <span class="n">Principal</span> = {
+        <span class="n">AWS</span> = <span class="s">"arn:aws:iam::987654321098:role/pf-monitoring-role"</span>
+      }
+      <span class="n">Action</span>    = <span class="s">"sts:AssumeRole"</span>
+      <span class="n">Condition</span> = {
+        <span class="n">StringEquals</span> = {
+          <span class="s">"sts:ExternalId"</span> = <span class="v">var.monitoring_external_id</span>
+        }
+      }
+    }
+  ]
+})</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab" style="margin-top:var(--xl)">
+    <div class="lab-h"><span class="lab-badge">Lab 05-B</span><span class="lab-title">Add a permission boundary to the PF instance role</span></div>
+    <div class="lab-body">
+      <p style="font-size:14px;color:var(--text-s);margin-bottom:var(--md)">Your organisation's security policy requires all application IAM roles to have a permission boundary attached. The boundary policy ARN is stored in SSM Parameter Store and should be read dynamically. Modify the existing PF instance role to add the permission boundary.</p>
+      <ol>
+        <li>Add a <code>data "aws_ssm_parameter"</code> block to read the boundary ARN from <code>/company/iam/application-boundary-arn</code></li>
+        <li>Reference the boundary ARN in the <code>aws_iam_role</code> resource using <code>permissions_boundary</code></li>
+        <li>The parameter is of type <code>String</code> — no decryption needed</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sm)">
+    <div class="kc-q"><span class="kc-i">✓</span>Reveal Lab 05-B solution<span class="kc-chev">▼</span></div>
+    <div class="kc-a">
+      <div class="code" style="margin:0">
+        <div class="code-h"><span class="code-lang">HCL</span><span class="code-file">Permission boundary from SSM</span></div>
+        <div class="code-b"><pre><span class="c"># Read the boundary ARN from SSM at plan time</span>
+<span class="k">data</span> <span class="s">"aws_ssm_parameter"</span> <span class="s">"iam_boundary"</span> {
+  <span class="k">name</span>            = <span class="s">"/company/iam/application-boundary-arn"</span>
+  <span class="k">with_decryption</span> = <span class="k">false</span>   <span class="c"># String type, not SecureString</span>
+}
+
+<span class="c"># Update the role to include the boundary</span>
+<span class="k">resource</span> <span class="s">"aws_iam_role"</span> <span class="s">"pf_instance"</span> {
+  <span class="k">name</span>                 = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}instance-role"</span>
+  <span class="k">path</span>                 = <span class="s">"/pingfederate/"</span>
+  <span class="k">permissions_boundary</span> = <span class="n">data</span>.<span class="n">aws_ssm_parameter</span>.<span class="v">iam_boundary</span>.<span class="n">value</span>
+  <span class="k">assume_role_policy</span>   = <span class="n">jsonencode</span>({ <span class="c">/* ... existing trust policy ... */</span> })
+  <span class="k">tags</span>                 = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}instance-role"</span> })
+}
+
+<span class="c"># Plan output will show the permissions_boundary attribute added</span>
+<span class="c"># to the role. This is an in-place update — no role recreation needed.</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECT REVIEW ── -->
+<div class="ar">
+  <div class="ar-h">
+    <span class="ar-badge">Senior Review</span>
+    <span class="ar-title">IAM questions a platform or security engineer might ask you</span>
+  </div>
+  <ul class="ar-list">
+    <li><span class="ar-n">01</span>The PF instance role currently has <code>"Resource": ["*"]</code> for EC2 Describe actions. A junior engineer wants to add <code>ec2:StartInstances</code> and <code>ec2:StopInstances</code> to "make operations easier." Walk through why this is a significant security concern and what the correct operational approach is.</li>
+    <li><span class="ar-n">02</span>After the AMI refresh, you need to verify that the new instances have the correct IAM role attached and can reach S3. What is your verification procedure using only AWS CLI and IAM simulator — without SSHing into the instance?</li>
+    <li><span class="ar-n">03</span>The security team reports that the PF instance role has been assuming another role in a different AWS account. The trust policy only has <code>ec2.amazonaws.com</code> as the principal. How is this possible and how would you investigate?</li>
+    <li><span class="ar-n">04</span>You are designing the IAM strategy for a new PingFederate environment in a different AWS account (divestiture scenario). The config S3 bucket stays in the original account. How do you design the IAM roles and trust policies to allow the new account's PF instances to read from the original account's config bucket?</li>
+    <li><span class="ar-n">05</span>A compliance audit finds that the PF instance role has been granted <code>kms:*</code> on the CMK instead of just <code>kms:Decrypt</code>. Who is allowed to make this change in Terraform and how would you ensure it doesn't happen again?</li>
+  </ul>
+</div>
+
+<!-- ── TAKEAWAY ── -->
+<div class="tk">
+  <div class="tk-h">
+    <div class="tk-icon">◆</div>
+    <div class="tk-title">Module 05 — Key Takeaways</div>
+  </div>
+  <ul class="tk-list">
+    <li>IAM instance roles give EC2 instances temporary, automatically rotated credentials via the IMDS. No static credentials are stored on the instance — this is what enables safe immutable compute.</li>
+    <li>Four Terraform resources create the complete IAM stack: <code>aws_iam_role</code> (trust), <code>aws_iam_policy</code> (permissions), <code>aws_iam_role_policy_attachment</code> (binding), <code>aws_iam_instance_profile</code> (EC2 wrapper).</li>
+    <li>The trust policy answers "who can assume this role?" — for PF engines, that's <code>ec2.amazonaws.com</code>. The permission policy answers "what can the role do once assumed?" — S3 read, CloudWatch write, SSM read, KMS decrypt.</li>
+    <li>The Launch Template references the instance profile ARN, not the role ARN. EC2 cannot directly use roles — only profiles. This is the most common misconfiguration in IAM + EC2 Terraform code.</li>
+    <li>Customer-managed policy (<code>aws_iam_policy</code>) is preferred over inline policy (<code>aws_iam_role_policy</code>) in enterprise environments — it's reusable, independently versioned, and auditable.</li>
+    <li>Least privilege: scope S3 and SSM permissions to specific bucket ARNs and parameter path prefixes. The only justified <code>Resource: ["*"]</code> is for EC2 Describe actions, which don't support resource-level permissions.</li>
+    <li>IAM permission boundary provides a maximum permissions cap — even if the policy is misconfigured to grant too much, the boundary limits the effective permissions. Required in most enterprise environments.</li>
+    <li>IAM policy changes propagate to running instances automatically — the next credential refresh from IMDS picks up new permissions. No instance restart required.</li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="toc">
+    <div class="toc-l">In this module</div>
+    <a class="toc-item" href="#bridge">Bridge from M04</a>
+    <a class="toc-item" href="#iam-model">EC2 credential flow</a>
+    <a class="toc-item" href="#four-resources">Four Terraform resources</a>
+    <a class="toc-item" href="#terraform-code">Complete code</a>
+    <a class="toc-item" href="#trust-vs-permission">Trust vs permission</a>
+    <a class="toc-item" href="#least-privilege">Least privilege</a>
+    <a class="toc-item" href="#iam-path">IAM paths &amp; naming</a>
+    <a class="toc-item" href="#testing">Validating IAM</a>
+    <a class="toc-item" href="#knowledge-checks">Knowledge checks</a>
+    <a class="toc-item" href="#lab">Mini lab</a>
+  </div>
+  <div class="qr">
+    <div class="qr-l">IAM Resources</div>
+    <div class="qr-item"><span class="qr-t">aws_iam_role</span><span class="qr-d">Role + trust policy</span></div>
+    <div class="qr-item"><span class="qr-t">aws_iam_policy</span><span class="qr-d">Managed permission policy</span></div>
+    <div class="qr-item"><span class="qr-t">role_policy_attachment</span><span class="qr-d">Role ↔ policy binding</span></div>
+    <div class="qr-item"><span class="qr-t">instance_profile</span><span class="qr-d">EC2 role wrapper</span></div>
+    <div class="qr-item"><span class="qr-t">role_policy</span><span class="qr-d">Inline policy (avoid)</span></div>
+  </div>
+  <div class="qr">
+    <div class="qr-l">PF Role Permissions</div>
+    <div class="qr-item"><span class="qr-t">s3:GetObject</span><span class="qr-d">Config bucket (scoped)</span></div>
+    <div class="qr-item"><span class="qr-t">logs:PutLogEvents</span><span class="qr-d">CloudWatch (scoped)</span></div>
+    <div class="qr-item"><span class="qr-t">ssm:GetParameter</span><span class="qr-d">SSM path (scoped)</span></div>
+    <div class="qr-item"><span class="qr-t">kms:Decrypt</span><span class="qr-d">Specific CMK ARN</span></div>
+    <div class="qr-item"><span class="qr-t">ec2:Describe*</span><span class="qr-d">Cluster discovery (*)</span></div>
+  </div>
+  <div class="qr">
+    <div class="qr-l">Series Progress</div>
+    <div style="padding:var(--sm) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--sm);background:var(--bg-s2);border-radius:var(--rmd)">
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rpill);background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)">M01–M04</span>
+        <span style="color:var(--text-t);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rpill);background:var(--pg);border:1px solid var(--pc);color:var(--pc);font-weight:600;box-shadow:0 0 10px var(--pg)">M05</span>
+        <span style="color:var(--text-t);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rpill);background:var(--bg-s3);border:1px solid var(--border-b);color:var(--text-t)">M06–10 ★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /layout -->
+
+<!-- BRIDGE -->
+<div class="bridge">
+  <div class="bridge-card">
+    <div class="bc-ey">Coming up next · Module 06</div>
+    <div class="bc-t"><span>EC2, Launch Templates &amp; Auto Scaling Groups</span> — The Heart of Immutable Infrastructure</div>
+    <div class="bc-b">
+      The network is in place (M04). The identity is established (M05). You now have a VPC with private subnets, a security group for the PF engines, and an IAM instance profile ready to be attached. Every dependency for compute is satisfied.<br><br>
+      Module 06 is the most important module in the series — it covers the exact Terraform resources that implement the immutable infrastructure pattern your project runs on. Launch Templates define what each instance looks like (AMI, instance type, security groups, instance profile, user_data). Auto Scaling Groups define the fleet policy (desired/min/max, health checks, multi-AZ). The <code>instance_refresh</code> block is what triggers the rolling AMI replacement when you run apply. This is where the entire mental model from M01 gets expressed in real Terraform code.
+    </div>
+    <div class="bc-concepts">
+      <span class="b bn">Launch Templates</span>
+      <span class="b bn">AMI data source</span>
+      <span class="b bn">user_data bootstrap</span>
+      <span class="b bn">Auto Scaling Groups</span>
+      <span class="b bn">instance_refresh</span>
+      <span class="b bn">Health checks</span>
+      <span class="b bn">Lifecycle hooks</span>
+    </div>
+    <a href="module-06.html" class="bc-btn">Continue to Module 06 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-l">M05 · IAM &amp; Instance Profiles · Phase 2 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--sm);align-items:center">
+    <a href="module-04.html" class="b bq" style="text-decoration:none">← M04</a>
+    <a href="index.html" class="b bq" style="text-decoration:none">Index</a>
+    <a href="module-06.html" class="b bp" style="text-decoration:none">M06 →</a>
+  </div>
+</footer>
+
+</div><!-- /shell -->
+
+<script>
+function toggleKC(el){el.classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.toc-item');
+  const secs=[];
+  items.forEach(i=>{const id=i.getAttribute('href').replace('#','');const el=document.getElementById(id);if(el)secs.push({el,item:i})});
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){items.forEach(i=>i.classList.remove('active'));const f=secs.find(s=>s.el===en.target);if(f)f.item.classList.add('active')}}),{rootMargin:'-20% 0px -70% 0px'});
+  secs.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target)}}),{threshold:.06});
+  document.querySelectorAll('.sec,.card,.dw,.lab,.ar,.tk,.bridge-card,.kc,.trust-box').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .45s ease,transform .45s ease';io.observe(el)});
+})();
+</script>
+</body>
+</html>

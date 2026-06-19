@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-2">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M08 · S3 &amp; Config Externalisation — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E14;--s1:#111520;--s2:#181D2A;--s3:#1F2535;
+  --br:#1E2636;--brb:#2E3A52;
+  --teal:#00E5C3;--td:#00B89A;--tg:rgba(0,229,195,.12);
+  --cu:#E8873A;--cg:rgba(232,135,58,.15);
+  --sa:#4A9EFF;--sg:rgba(74,158,255,.12);
+  --ro:#FF5F7E;--rg:rgba(255,95,126,.12);
+  --jd:#3ECFA0;--vi:#9B7FFF;--vg:rgba(155,127,255,.13);
+  --t1:#E8EDF5;--t2:#8A95A8;--t3:#4A5568;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --xs:4px;--sm:8px;--md:16px;--lg:24px;--xl:40px;--x2:64px;--x3:96px;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--rp:999px;
+  --sh:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  --tf:150ms ease;--tb:250ms ease;
+  /* Phase 2 — Teal for M08 (storage/persistence theme) */
+  --pc:#00E5C3;--pg:rgba(0,229,195,.15);--pd:#00B89A;
+  --ac:#4A9EFF;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--brb);border-radius:999px}
+::selection{background:var(--pg);color:var(--pc)}
+a{color:var(--sa);text-decoration:none;transition:color var(--tf)}a:hover{color:var(--teal)}
+code{font-family:var(--fm);font-size:.85em;background:var(--s3);border:1px solid var(--br);color:var(--teal);padding:1px 5px;border-radius:var(--r4)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 var(--xl)}
+@media(max-width:768px){.wrap{padding:0 var(--md)}}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--br);padding:0 var(--xl)}
+.ni{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--lg)}
+.nl{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.nl span{color:var(--t3);font-weight:400}
+.nd{width:1px;height:20px;background:var(--brb);flex-shrink:0}
+.np{flex:1;display:flex;align-items:center;gap:var(--sm)}
+.pt{flex:1;height:2px;background:var(--br);border-radius:var(--rp);overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,var(--pc),var(--ac));border-radius:var(--rp)}
+.pl{font-family:var(--fm);font-size:11px;color:var(--t3);white-space:nowrap}
+.nb2{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);white-space:nowrap}
+/* HERO */
+.hero{position:relative;padding:var(--x3) 0 var(--x2);overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pg) 0%,transparent 55%),radial-gradient(ellipse 55% 45% at 82% 25%,rgba(74,158,255,.05) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--br) 1px,transparent 1px),linear-gradient(90deg,var(--br) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 70% 60% at 15% 50%,black 0%,transparent 70%);opacity:.4;pointer-events:none}
+.hi{position:relative;z-index:1}
+.hp{display:inline-flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.hd{width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 8px var(--pc);animation:hd 2s ease-in-out infinite}
+@keyframes hd{0%,100%{opacity:1;box-shadow:0 0 8px var(--pc)}50%{opacity:.5;box-shadow:0 0 3px var(--pc)}}
+.ht{font-family:var(--fd);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-.02em;color:var(--t1);margin-bottom:var(--md);max-width:780px}
+.ht .ap{color:var(--pc)}.ht .aa{color:var(--ac)}
+.hs{font-size:17px;font-weight:300;color:var(--t2);max-width:640px;line-height:1.65;margin-bottom:var(--xl)}
+.hm{display:flex;flex-wrap:wrap;gap:var(--sm)}
+/* BADGES */
+.b{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--rp);white-space:nowrap;letter-spacing:.04em}
+.bt{background:var(--pg);border:1px solid var(--pc);color:var(--pc)}
+.be{background:rgba(232,135,58,.1);border:1px solid rgba(232,135,58,.3);color:var(--cu)}
+.bs{background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:var(--sa)}
+.bq{background:var(--s2);border:1px solid var(--brb);color:var(--t2)}
+.bn{background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.3);color:var(--teal)}
+.bv{background:var(--vg);border:1px solid rgba(155,127,255,.35);color:var(--vi)}
+/* ORIENT */
+.orient{background:var(--s1);border:1px solid var(--br);border-radius:var(--r16);padding:var(--xl);margin-bottom:var(--x2);position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc) 0%,transparent 100%)}
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--lg)}
+.oil{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.oiv{font-size:14px;font-weight:500;color:var(--t1)}.oiv.ac{color:var(--pc)}
+.jrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--lg);padding-top:var(--lg);border-top:1px solid var(--br)}
+.jd{width:30px;height:30px;border-radius:var(--r4);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:500}
+.jdd{background:var(--tg);border:1px solid var(--td);color:var(--td)}
+.jdc{background:var(--pg);border:1px solid var(--pc);color:var(--pc);box-shadow:0 0 10px var(--pg)}
+.jdf{background:var(--s2);border:1px solid var(--br);color:var(--t3)}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:var(--x2);align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.main{min-width:0}.sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.sec{margin-bottom:var(--x2)}
+.sl{display:flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.sl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--brb) 0%,transparent 100%)}
+.st{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--t1);margin-bottom:var(--md);line-height:1.2}
+.sb{font-size:15px;color:var(--t2);line-height:1.8}
+.sb p{margin-bottom:var(--md)}.sb p:last-child{margin-bottom:0}
+.sb strong{color:var(--t1);font-weight:600}.sb em{color:var(--pc);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);transition:border-color var(--tb),box-shadow var(--tb)}
+.card:hover{border-color:var(--brb);box-shadow:var(--sh)}
+.ct{border-left:2px solid var(--pc);background:linear-gradient(135deg,var(--pg) 0%,var(--s1) 60%)}
+.cb{border-left:2px solid var(--sa);background:linear-gradient(135deg,var(--sg) 0%,var(--s1) 60%)}
+.cc{border-left:2px solid var(--cu);background:linear-gradient(135deg,var(--cg) 0%,var(--s1) 60%)}
+.cr{border-left:2px solid var(--ro);background:linear-gradient(135deg,var(--rg) 0%,var(--s1) 60%)}
+.cv{border-left:2px solid var(--vi);background:linear-gradient(135deg,var(--vg) 0%,var(--s1) 60%)}
+.clbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.cttl{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--t1);margin-bottom:var(--sm)}
+.cbdy{font-size:14px;color:var(--t2);line-height:1.7}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--md)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--md)}
+/* CONCEPT */
+.cblock{border-left:2px solid var(--pc);padding:var(--md) var(--lg);background:var(--pg);border-radius:0 var(--r8) var(--r8) 0;margin:var(--lg) 0}
+.cbt{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pc);margin-bottom:4px}
+.cbd{font-size:14px;color:var(--t2);line-height:1.65}
+.cb-c{border-left-color:var(--cu);background:var(--cg)}.cb-c .cbt{color:var(--cu)}
+.cb-r{border-left-color:var(--ro);background:var(--rg)}.cb-r .cbt{color:var(--ro)}
+.cb-v{border-left-color:var(--vi);background:var(--vg)}.cb-v .cbt{color:var(--vi)}
+.cb-s{border-left-color:var(--sa);background:var(--sg)}.cb-s .cbt{color:var(--sa)}
+/* DIAGRAM */
+.dw{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--xl);margin:var(--xl) 0;overflow-x:auto}
+.dwl{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--md);display:flex;align-items:center;gap:var(--sm)}
+.dwl::before{content:'◈';color:var(--pc);font-size:12px}
+/* CODE */
+.code{background:var(--s2);border:1px solid var(--br);border-radius:var(--r8);overflow:hidden;margin:var(--md) 0;font-family:var(--fm);font-size:12px}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:var(--sm) var(--md);background:var(--s3);border-bottom:1px solid var(--br)}
+.chl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.chf{font-size:11px;color:var(--t2)}
+.cbody{padding:var(--md);overflow-x:auto;line-height:1.7;color:var(--t2);tab-size:2}
+.cbody .k{color:#c792ea}.cbody .s{color:var(--jd)}.cbody .c{color:var(--t3);font-style:italic}
+.cbody .v{color:var(--cu)}.cbody .n{color:var(--teal)}.cbody .p{color:var(--sa)}.cbody .num{color:#f78c6c}
+/* KC */
+.kc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);overflow:hidden;margin:var(--md) 0}
+.kcq{padding:var(--md) var(--lg);font-size:14px;font-weight:500;color:var(--t1);display:flex;align-items:flex-start;gap:var(--sm);cursor:pointer;transition:background var(--tf);user-select:none}
+.kcq:hover{background:var(--s2)}
+.kci{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--pc);background:var(--pg);border:1px solid var(--pc);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kcc{margin-left:auto;flex-shrink:0;color:var(--t3);transition:transform var(--tb);font-size:12px}
+.kc.open .kcc{transform:rotate(180deg)}
+.kca{display:none;padding:var(--md) var(--lg);background:var(--s2);border-top:1px solid var(--br);font-size:14px;color:var(--t2);line-height:1.7}
+.kc.open .kca{display:block}
+/* SIDEBAR */
+.toc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.tl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.ti{display:block;padding:5px var(--sm);font-size:12px;color:var(--t2);border-radius:var(--r4);transition:all var(--tf);cursor:pointer;border-left:2px solid transparent}
+.ti:hover,.ti.active{background:var(--s2);color:var(--t1);border-left-color:var(--pc)}
+.qr{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.qrl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.qi{display:flex;gap:var(--sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--br);font-size:12px}
+.qi:last-child{border-bottom:none}
+.qt{font-family:var(--fm);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.qd{color:var(--t2);line-height:1.5}
+/* TAKEAWAY */
+.tk{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);margin:var(--xl) 0}
+.tkh{display:flex;align-items:center;gap:var(--sm);margin-bottom:var(--md);padding-bottom:var(--md);border-bottom:1px solid var(--br)}
+.tki{width:32px;height:32px;border-radius:var(--r4);background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--pc);flex-shrink:0}
+.tkt{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--t1)}
+.tkl{list-style:none;display:flex;flex-direction:column;gap:var(--sm)}
+.tkl li{font-size:14px;color:var(--t2);display:flex;align-items:flex-start;gap:var(--sm);line-height:1.65}
+.tkl li::before{content:'◆';color:var(--pc);font-size:8px;flex-shrink:0;margin-top:6px}
+/* AR */
+.ar{background:var(--s1);border:1px solid var(--cu);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.arh{background:var(--cg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.arb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cu);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--rp)}
+.art{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.arl{list-style:none;padding:var(--md) var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.arl li{font-size:14px;color:var(--t2);display:flex;gap:var(--sm);align-items:flex-start;line-height:1.65;padding:var(--sm) 0;border-bottom:1px solid var(--br)}
+.arl li:last-child{border-bottom:none}
+.arn{font-family:var(--fm);font-size:11px;color:var(--cu);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR */
+.mn{display:flex;gap:var(--md);padding:var(--lg);background:var(--s2);border:1px solid var(--br);border-radius:var(--r12);margin:var(--lg) 0}
+.mnav{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mnb{flex:1}
+.mnl{font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:4px}
+.mnt{font-size:14px;color:var(--t2);line-height:1.75}
+.mnt strong{color:var(--t1);font-weight:600}
+/* LAB */
+.lab{background:var(--s1);border:1px solid var(--td);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.labh{background:var(--tg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.labb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);background:var(--tg);border:1px solid rgba(0,229,195,.4);padding:2px 8px;border-radius:var(--rp)}
+.labt{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.labbody{padding:var(--lg)}
+.labbody ol{padding-left:var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.labbody ol li{font-size:14px;color:var(--t2);line-height:1.65;padding-left:4px}
+.labbody ol li strong{color:var(--t1)}
+/* BRIDGE */
+.bridge{margin-top:var(--x3);padding-top:var(--x2);border-top:1px solid var(--br)}
+.bc{background:linear-gradient(135deg,var(--s1) 0%,var(--s2) 100%);border:1px solid var(--brb);border-radius:var(--r16);padding:var(--xl);position:relative;overflow:hidden}
+.bc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc),var(--cu),transparent)}
+.bc::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--cg);pointer-events:none}
+.bce{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.bct{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--t1);margin-bottom:var(--md)}
+.bct span{color:var(--cu)}
+.bcb{font-size:14px;color:var(--t2);line-height:1.75;max-width:580px;margin-bottom:var(--lg)}
+.bcc{display:flex;flex-wrap:wrap;gap:var(--sm);margin-bottom:var(--lg)}
+.bcbtn{display:inline-flex;align-items:center;gap:var(--sm);background:var(--cu);color:var(--bg);font-family:var(--fd);font-size:14px;font-weight:700;padding:12px var(--lg);border-radius:var(--rp);text-decoration:none;transition:all var(--tb)}
+.bcbtn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--cg);color:var(--bg)}
+/* FOOTER */
+.foot{margin-top:var(--x3);padding:var(--xl) 0;border-top:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;gap:var(--md);flex-wrap:wrap}
+.fl{font-family:var(--fm);font-size:11px;color:var(--t3)}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:var(--lg) 0}
+.tbl th{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:var(--sm) var(--md);border-bottom:1px solid var(--brb);text-align:left}
+.tbl th:first-child{color:var(--pc)}
+.tbl td{padding:10px var(--md);border-bottom:1px solid var(--br);color:var(--t2);vertical-align:top;line-height:1.6}
+.tbl td:first-child{font-weight:500;color:var(--t1);font-family:var(--fm);font-size:12px;white-space:nowrap}
+.tbl tr:hover td{background:var(--s2)}
+.tbl tr:last-child td{border-bottom:none}
+/* PATTERN CHAIN */
+.chain{display:flex;align-items:center;gap:var(--sm);flex-wrap:wrap;padding:var(--lg);background:var(--s2);border:1px solid var(--br);border-radius:var(--r12);margin:var(--lg) 0}
+.chain-node{font-family:var(--fm);font-size:11px;padding:6px 12px;border-radius:var(--r4);white-space:nowrap;font-weight:600}
+.cn-t{background:var(--pg);border:1px solid rgba(0,229,195,.4);color:var(--teal)}
+.cn-v{background:var(--vg);border:1px solid rgba(155,127,255,.35);color:var(--vi)}
+.cn-s{background:var(--sg);border:1px solid rgba(74,158,255,.35);color:var(--sa)}
+.cn-c{background:var(--cg);border:1px solid rgba(232,135,58,.35);color:var(--cu)}
+.chain-arrow{color:var(--t3);font-size:16px;flex-shrink:0}
+/* ANIM */
+@keyframes fiu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fiu .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="ni">
+    <a href="index.html" class="nl" style="text-decoration:none">Terraform<span> · Mastery</span></a>
+    <div class="nd"></div>
+    <div class="np">
+      <div class="pt"><div class="pf" style="width:72%"></div></div>
+      <span class="pl">M08 / 10</span>
+    </div>
+    <span class="nb2">M08 · Phase 2</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hi">
+    <div class="hp"><div class="hd"></div>Phase 2 · AWS Infrastructure — Layer by Layer</div>
+    <h1 class="ht">S3 &amp; Config Externalisation —<br>The <span class="ap">Pattern</span> That Makes<br><span class="aa">Immutable Infrastructure</span> Work</h1>
+    <p class="hs">You have been referencing S3 throughout every module — user_data pulls config from it, IAM grants access to it, the NLB health check indirectly depends on it being available at boot time. This module provisions the S3 bucket itself and explains the architectural pattern that makes instance replacement safe: decoupling application configuration from compute lifecycle.</p>
+    <div class="hm">
+      <span class="b bt">Phase 2 · Persistence</span>
+      <span class="b be">⬛⬛⬛☐☐ 3–4 hrs</span>
+      <span class="b bs">S3 · KMS · Config Pattern</span>
+      <span class="b bq">↳ Prereq: M01–M07</span>
+      <span class="b bn">Completes Phase 2</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="og">
+    <div><div class="oil">Current module</div><div class="oiv ac">M08 · S3 &amp; Config Externalisation</div></div>
+    <div><div class="oil">Phase</div><div class="oiv">Phase 2 — AWS Infrastructure (final)</div></div>
+    <div><div class="oil">What you bring in</div><div class="oiv">Full stack from M04–M07</div></div>
+    <div><div class="oil">Unlocks</div><div class="oiv">M09 · Modules &amp; Enterprise Patterns</div></div>
+  </div>
+  <div class="jrow">
+    <div class="jd jdd">M01</div><div class="jd jdd">M02</div><div class="jd jdd">M03</div>
+    <div class="jd jdd">M04</div><div class="jd jdd">M05</div><div class="jd jdd">M06</div>
+    <div class="jd jdd">M07</div><div class="jd jdc">M08</div>
+    <div class="jd jdf">M09</div><div class="jd jdf">M10</div>
+    <div class="jd jdf" style="background:linear-gradient(135deg,var(--cg),var(--tg));border:1px solid var(--cu);color:var(--cu)">★</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="main">
+
+<!-- SECTION 1: BRIDGE -->
+<section class="sec afu d3" id="bridge">
+  <div class="sl">Bridge from Module 07</div>
+  <h2 class="st">Phase 2 complete — closing the loop with persistence</h2>
+  <div class="sb">
+    <p>Across M04–M07 you built the complete AWS infrastructure stack: the VPC and network foundation (M04), the IAM identity layer (M05), the compute fleet with ASG and Launch Templates (M06), and the traffic routing layer with NLB and Route53 (M07). The PingFederate deployment is running, health-checked, and publicly reachable.</p>
+    <p>But there's a thread that ran through every module without being fully pulled: the S3 bucket. The IAM role in M05 grants read access to an S3 bucket. The user_data script in M06 downloads config from that bucket on first boot. The bucket has been referenced but never provisioned — until now.</p>
+    <p>Module 08 provisions the S3 configuration bucket and explains the <em>config externalisation pattern</em> — the architectural decision that makes it safe to replace PingFederate instances wholesale without losing configuration. It is the simplest module in Phase 2, but it answers the foundational question that the entire immutable infrastructure model depends on: <strong>where does application configuration live if not on the instance?</strong></p>
+  </div>
+  <div class="mn">
+    <div class="mnav">🧑‍🏫</div>
+    <div class="mnb">
+      <div class="mnl">Mentor Note — why this module is placed last in Phase 2</div>
+      <div class="mnt">S3 is sequenced last in Phase 2 intentionally. The bucket's purpose only makes complete sense after you understand user_data (M06) and the IAM role (M05). Now that both are in place, you can see exactly why each bucket attribute exists: versioning lets you roll back bad configs, encryption protects keystores, the bucket policy restricts access to exactly the IAM role created in M05, and the lifecycle rules manage cost. <strong>Every attribute has a concrete reason rooted in modules you have already built.</strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: THE PATTERN -->
+<section class="sec" id="pattern">
+  <div class="sl">The core pattern</div>
+  <h2 class="st">Config externalisation — why instances can be replaced safely</h2>
+  <div class="sb">
+    <p>The immutable infrastructure model has a fundamental tension: instances are ephemeral and replaced regularly, but application configuration is precious and must survive replacement. In the traditional model, configuration is stored on the instance — in files, in local databases, in application memory. When the instance is replaced, configuration is lost.</p>
+    <p>Config externalisation resolves this tension by storing all configuration <em>outside</em> the instance lifecycle in a durable, versioned store. When a new instance launches, it retrieves the current configuration from the external store and initialises itself. The instance becomes stateless — its only unique attribute is the currently assigned private IP address, which is ephemeral by design.</p>
+    <p>For PingFederate, the external store is S3. The configuration includes the PF runtime configuration zip (server settings, connection templates, adapter configs), the signing and encryption keystores, the OAuth client registry exports, and any environment-specific property files. Everything that makes this PF installation <em>this</em> PF installation lives in S3, not on the instance.</p>
+  </div>
+
+  <div class="dw">
+    <div class="dwl">Config Externalisation — The Four-Module Chain</div>
+    <div class="chain">
+      <div class="chain-node cn-t">S3 Bucket<br><small style="font-weight:400;color:var(--t3)">M08 provisions</small></div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node cn-v">IAM Role<br><small style="font-weight:400;color:var(--t3)">M05 grants access</small></div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node cn-s">Launch Template<br><small style="font-weight:400;color:var(--t3)">M06 attaches profile</small></div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node cn-c">user_data<br><small style="font-weight:400;color:var(--t3)">M06 pulls config</small></div>
+      <span class="chain-arrow">→</span>
+      <div class="chain-node cn-t">PF Initialised<br><small style="font-weight:400;color:var(--t3)">Instance self-heals</small></div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:var(--lg)">
+    <div class="card cr">
+      <div class="clbl">❌ Without config externalisation</div>
+      <div class="cttl">Configuration dies with the instance</div>
+      <div class="cbdy">Config stored on disk. PF keystore on the local filesystem. Connection definitions in local XML files. When the AMI refresh replaces the instance, all of this is gone. The new instance starts with only the base AMI — no PF configuration. Every deployment requires manual re-configuration of each node.</div>
+    </div>
+    <div class="card ct">
+      <div class="clbl">✓ With config externalisation (your project)</div>
+      <div class="cttl">Configuration survives instance replacement</div>
+      <div class="cbdy">Config stored in S3. PF keystore in S3 (encrypted with KMS). Connection definitions in versioned S3 objects. When the AMI refresh launches a new instance, user_data downloads the full configuration from S3, Ansible unpacks and applies it, PF starts with the exact same configuration as the previous instance. Zero manual intervention.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: S3 BUCKET TERRAFORM -->
+<section class="sec" id="s3-terraform">
+  <div class="sl">Complete S3 configuration</div>
+  <h2 class="st">Provisioning the PingFederate config bucket</h2>
+  <div class="sb">
+    <p>The S3 configuration bucket requires more than just the <code>aws_s3_bucket</code> resource. Modern AWS S3 best practice uses separate resource blocks for each bucket configuration aspect — versioning, encryption, public access blocking, logging, and lifecycle rules. This separation allows each aspect to be managed independently and makes the plan output granular and readable.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">HCL</span><span class="chf">s3.tf — PingFederate config bucket (complete)</span></div>
+    <div class="cbody"><pre><span class="c"># ── THE BUCKET ────────────────────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket"</span> <span class="s">"pf_config"</span> {
+  <span class="c"># Globally unique bucket name — include account ID to guarantee uniqueness</span>
+  <span class="k">bucket</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}config-${</span><span class="v">data.aws_caller_identity.current.account_id</span><span class="s">}"</span>
+  <span class="c"># e.g. "pf-prod-config-123456789012"</span>
+
+  <span class="c"># force_destroy: if true, terraform destroy deletes bucket even if non-empty</span>
+  <span class="c"># NEVER true in prod — set false to prevent accidental data loss</span>
+  <span class="k">force_destroy</span> = <span class="k">false</span>
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+    <span class="n">Name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-config"</span>
+    <span class="n">DataClass</span>   = <span class="s">"Confidential"</span>   <span class="c"># contains keystores and credentials</span>
+    <span class="n">BackupPolicy</span> = <span class="s">"versioned-s3"</span>
+  })
+}
+
+<span class="c"># ── VERSIONING ────────────────────────────────────────────────────────</span>
+<span class="c"># Critical: if a bad config is deployed, you can restore the previous version</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_versioning"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+  <span class="k">versioning_configuration</span> {
+    <span class="k">status</span> = <span class="s">"Enabled"</span>
+  }
+}
+
+<span class="c"># ── SERVER-SIDE ENCRYPTION ────────────────────────────────────────────</span>
+<span class="c"># SSE-KMS: stronger than SSE-S3, key usage is auditable in CloudTrail</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_server_side_encryption_configuration"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+
+  <span class="k">rule</span> {
+    <span class="k">apply_server_side_encryption_by_default</span> {
+      <span class="k">sse_algorithm</span>     = <span class="s">"aws:kms"</span>
+      <span class="k">kms_master_key_id</span> = <span class="n">aws_kms_key</span>.<span class="v">pf_config</span>.<span class="n">arn</span>
+    }
+    <span class="c"># bucket_key_enabled: reduces KMS API calls by using a bucket-level key</span>
+    <span class="c"># Significant cost saving when many objects are accessed frequently</span>
+    <span class="k">bucket_key_enabled</span> = <span class="k">true</span>
+  }
+}
+
+<span class="c"># ── BLOCK ALL PUBLIC ACCESS ───────────────────────────────────────────</span>
+<span class="c"># This bucket must NEVER be public. Enforce at the bucket level.</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_public_access_block"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span>                  = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+  <span class="k">block_public_acls</span>       = <span class="k">true</span>
+  <span class="k">block_public_policy</span>     = <span class="k">true</span>
+  <span class="k">ignore_public_acls</span>      = <span class="k">true</span>
+  <span class="k">restrict_public_buckets</span> = <span class="k">true</span>
+}
+
+<span class="c"># ── ACCESS LOGGING ────────────────────────────────────────────────────</span>
+<span class="c"># Log every GetObject to a separate audit log bucket</span>
+<span class="c"># Required for security audits: who read config, when, from which IP</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_logging"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+
+  <span class="k">target_bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">access_logs</span>.<span class="n">id</span>
+  <span class="k">target_prefix</span> = <span class="s">"pf-config-access/"</span>
+}
+
+<span class="c"># ── LIFECYCLE RULES ───────────────────────────────────────────────────</span>
+<span class="c"># Keep last 10 non-current versions; expire older ones after 90 days</span>
+<span class="c"># Prevents unbounded version accumulation and cost growth</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_lifecycle_configuration"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+
+  <span class="c"># Only apply after versioning is enabled</span>
+  <span class="k">depends_on</span> = [<span class="n">aws_s3_bucket_versioning</span>.<span class="v">pf_config</span>]
+
+  <span class="k">rule</span> {
+    <span class="k">id</span>     = <span class="s">"expire-old-versions"</span>
+    <span class="k">status</span> = <span class="s">"Enabled"</span>
+
+    <span class="k">filter</span> { <span class="k">prefix</span> = <span class="s">""</span> }   <span class="c"># apply to all objects</span>
+
+    <span class="c"># Keep 10 most recent non-current (older) versions</span>
+    <span class="k">noncurrent_version_expiration</span> {
+      <span class="k">noncurrent_days</span>           = <span class="num">90</span>    <span class="c"># expire after 90 days</span>
+      <span class="k">newer_noncurrent_versions</span> = <span class="num">10</span>    <span class="c"># but always keep last 10</span>
+    }
+
+    <span class="c"># Move non-current versions to cheaper storage after 30 days</span>
+    <span class="k">noncurrent_version_transition</span> {
+      <span class="k">noncurrent_days</span>           = <span class="num">30</span>
+      <span class="k">newer_noncurrent_versions</span> = <span class="num">10</span>
+      <span class="k">storage_class</span>             = <span class="s">"STANDARD_IA"</span>
+    }
+  }
+}
+
+<span class="c"># ── BUCKET POLICY ─────────────────────────────────────────────────────</span>
+<span class="c"># Restrict: only the PF instance role can read from this bucket</span>
+<span class="c"># Deny all other IAM principals (even account root — use SCPs for root)</span>
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_policy"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+
+  <span class="c"># Depends on public access block being applied first</span>
+  <span class="k">depends_on</span> = [<span class="n">aws_s3_bucket_public_access_block</span>.<span class="v">pf_config</span>]
+
+  <span class="k">policy</span> = <span class="n">jsonencode</span>({
+    <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+    <span class="n">Statement</span> = [
+
+      <span class="c"># ALLOW: PF instance role can read config</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"AllowPFInstanceRead"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Principal</span> = {
+          <span class="n">AWS</span> = <span class="n">aws_iam_role</span>.<span class="v">pf_instance</span>.<span class="n">arn</span>
+        }
+        <span class="n">Action</span> = [
+          <span class="s">"s3:GetObject"</span>,
+          <span class="s">"s3:GetObjectVersion"</span>,
+          <span class="s">"s3:ListBucket"</span>
+        ]
+        <span class="n">Resource</span> = [
+          <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span>,
+          <span class="s">"${</span><span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span><span class="s">}/*"</span>
+        ]
+      },
+
+      <span class="c"># ALLOW: CI/CD pipeline role can write/update config</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"AllowCICDWrite"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Principal</span> = {
+          <span class="n">AWS</span> = <span class="v">var.cicd_role_arn</span>
+        }
+        <span class="n">Action</span> = [
+          <span class="s">"s3:PutObject"</span>,
+          <span class="s">"s3:PutObjectAcl"</span>,
+          <span class="s">"s3:DeleteObject"</span>,
+          <span class="s">"s3:ListBucket"</span>
+        ]
+        <span class="n">Resource</span> = [
+          <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span>,
+          <span class="s">"${</span><span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span><span class="s">}/*"</span>
+        ]
+      },
+
+      <span class="c"># DENY: enforce HTTPS for all requests</span>
+      <span class="c"># Prevents accidental plain-HTTP access exposing config in transit</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"DenyNonHTTPS"</span>
+        <span class="n">Effect</span> = <span class="s">"Deny"</span>
+        <span class="n">Principal</span> = <span class="s">"*"</span>
+        <span class="n">Action</span>    = <span class="s">"s3:*"</span>
+        <span class="n">Resource</span>  = [
+          <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span>,
+          <span class="s">"${</span><span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span><span class="s">}/*"</span>
+        ]
+        <span class="n">Condition</span> = {
+          <span class="n">Bool</span> = { <span class="s">"aws:SecureTransport"</span> = <span class="s">"false"</span> }
+        }
+      }
+    ]
+  })
+}
+
+<span class="c"># ── KMS KEY for bucket encryption ─────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_kms_key"</span> <span class="s">"pf_config"</span> {
+  <span class="k">description</span>             = <span class="s">"KMS key for PingFederate S3 config bucket"</span>
+  <span class="k">deletion_window_in_days</span> = <span class="num">30</span>
+  <span class="k">enable_key_rotation</span>     = <span class="k">true</span>   <span class="c"># auto-rotate every year</span>
+
+  <span class="k">policy</span> = <span class="n">jsonencode</span>({
+    <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+    <span class="n">Statement</span> = [
+      <span class="c"># Account root can manage the key</span>
+      {
+        <span class="n">Sid</span>       = <span class="s">"RootAccess"</span>
+        <span class="n">Effect</span>    = <span class="s">"Allow"</span>
+        <span class="n">Principal</span> = { <span class="n">AWS</span> = <span class="s">"arn:aws:iam::${</span><span class="v">data.aws_caller_identity.current.account_id</span><span class="s">}:root"</span> }
+        <span class="n">Action</span>    = <span class="s">"kms:*"</span>
+        <span class="n">Resource</span>  = <span class="s">"*"</span>
+      },
+      <span class="c"># PF instance role can decrypt (needed to read encrypted config)</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"AllowPFDecrypt"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Principal</span> = { <span class="n">AWS</span> = <span class="n">aws_iam_role</span>.<span class="v">pf_instance</span>.<span class="n">arn</span> }
+        <span class="n">Action</span>    = [<span class="s">"kms:Decrypt"</span>, <span class="s">"kms:GenerateDataKey"</span>]
+        <span class="n">Resource</span>  = <span class="s">"*"</span>
+      },
+      <span class="c"># CI/CD role can encrypt when uploading new config</span>
+      {
+        <span class="n">Sid</span>    = <span class="s">"AllowCICDEncrypt"</span>
+        <span class="n">Effect</span> = <span class="s">"Allow"</span>
+        <span class="n">Principal</span> = { <span class="n">AWS</span> = <span class="v">var.cicd_role_arn</span> }
+        <span class="n">Action</span>    = [<span class="s">"kms:Encrypt"</span>, <span class="s">"kms:GenerateDataKey"</span>, <span class="s">"kms:DescribeKey"</span>]
+        <span class="n">Resource</span>  = <span class="s">"*"</span>
+      }
+    ]
+  })
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"pf-config-bucket-key"</span> })
+}
+
+<span class="k">resource</span> <span class="s">"aws_kms_alias"</span> <span class="s">"pf_config"</span> {
+  <span class="k">name</span>          = <span class="s">"alias/${</span><span class="v">local.name_prefix</span><span class="s">}pf-config"</span>
+  <span class="k">target_key_id</span> = <span class="n">aws_kms_key</span>.<span class="v">pf_config</span>.<span class="n">key_id</span>
+}
+
+<span class="c"># ── OUTPUTS ────────────────────────────────────────────────────────────</span>
+<span class="k">output</span> <span class="s">"config_bucket_name"</span> {
+  <span class="k">description</span> = <span class="s">"Config bucket name — referenced in Launch Template user_data"</span>
+  <span class="k">value</span>       = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">bucket</span>
+}
+
+<span class="k">output</span> <span class="s">"config_bucket_arn"</span> {
+  <span class="k">description</span> = <span class="s">"Config bucket ARN — referenced in IAM policy"</span>
+  <span class="k">value</span>       = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span>
+}
+
+<span class="k">output</span> <span class="s">"config_kms_key_arn"</span> {
+  <span class="k">description</span> = <span class="s">"KMS key ARN — referenced in IAM policy for kms:Decrypt"</span>
+  <span class="k">value</span>       = <span class="n">aws_kms_key</span>.<span class="v">pf_config</span>.<span class="n">arn</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: ENCRYPTION -->
+<section class="sec" id="encryption">
+  <div class="sl">Encryption strategy</div>
+  <h2 class="st">SSE-S3 vs SSE-KMS — choosing the right encryption for PF config</h2>
+  <div class="sb">
+    <p>S3 offers three server-side encryption options. The PF config bucket contains keystores, connection definitions, and potentially OAuth client secrets — it requires the strongest protection and the best audit capability. Here is the decision framework.</p>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">S3 Encryption Options Compared</div>
+    <table class="tbl">
+      <thead><tr><th>Option</th><th>Key management</th><th>Auditability</th><th>Cost</th><th>PF verdict</th></tr></thead>
+      <tbody>
+        <tr><td>SSE-S3<br><code>aws:s3</code></td><td>AWS manages keys completely — no visibility or control</td><td>No key usage in CloudTrail. You know data is encrypted but not who decrypted it.</td><td>Free</td><td>Insufficient for config containing keystores. No audit trail.</td></tr>
+        <tr><td>SSE-KMS<br><code>aws:kms</code></td><td>You create and manage the CMK. IAM controls who can use it. Key rotation configurable.</td><td><strong>Every Decrypt call logged in CloudTrail</strong> with caller identity, timestamp, IP. Full audit trail.</td><td>~$0.03/10k API calls + $1/month/key</td><td><strong>Required for PF config.</strong> Auditable key usage, access control, rotation.</td></tr>
+        <tr><td>SSE-KMS<br>bucket key</td><td>Same as SSE-KMS but a bucket-level data key reduces KMS API calls.</td><td>Same as SSE-KMS but fewer CloudTrail events per object read (one per unique bucket key period).</td><td>Significantly lower — fewer KMS API calls</td><td><strong>Enable for cost efficiency.</strong> <code>bucket_key_enabled = true</code></td></tr>
+        <tr><td>DSSE-KMS</td><td>Dual-layer encryption — two independent KMS keys</td><td>Two audit trails, two key policies to manage</td><td>2× KMS costs</td><td>Overkill for standard enterprise. Use only under specific compliance requirements (FedRAMP High).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cblock cb-v">
+    <div class="cbt">The two-door model for KMS access</div>
+    <div class="cbd">KMS access requires BOTH the IAM identity policy AND the KMS key policy to allow the action. If either denies the action, the decryption fails. This is different from S3 bucket policies where either resource-based OR identity-based policy can grant access. In your PF configuration: the IAM role policy (M05) grants <code>kms:Decrypt</code>, AND the KMS key policy grants <code>kms:Decrypt</code> to that role ARN. Both must be present. This is the most common cause of "access denied on S3 GetObject" errors when KMS encryption is in use — one of the two doors is missing.</div>
+  </div>
+</section>
+
+<!-- SECTION 5: WHAT GOES IN THE BUCKET -->
+<section class="sec" id="bucket-contents">
+  <div class="sl">Bucket structure</div>
+  <h2 class="st">What PingFederate configuration lives in S3</h2>
+  <div class="sb">
+    <p>The bucket structure must be agreed upon between the Terraform team (who provisions the bucket), the Ansible team (who populates it), and the application team (who determines what configuration exists). Terraform does not manage the <em>contents</em> of the bucket — only the bucket and its properties. The configuration files are uploaded by the CI/CD pipeline and managed by the PF application team.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">Shell</span><span class="chf">S3 bucket key structure — PingFederate config</span></div>
+    <div class="cbody"><pre><span class="c"># Bucket: pf-prod-config-123456789012</span>
+<span class="c"># ─────────────────────────────────────────────────────────────────────</span>
+
+<span class="c"># Runtime configuration archive (downloaded by user_data)</span>
+<span class="n">config/pingfederate-prod.zip</span>
+  <span class="c"># Contains:</span>
+  <span class="c"># - pingfederate/server/default/conf/*.properties</span>
+  <span class="c"># - pingfederate/server/default/data/*.xml</span>
+  <span class="c"># - pingfederate/server/default/conf/META-INF/</span>
+
+<span class="c"># Signing and encryption keystores (highly sensitive)</span>
+<span class="n">keystores/signing.jks</span>          <span class="c"># PF signing keystore</span>
+<span class="n">keystores/ssl.jks</span>              <span class="c"># PF SSL/TLS keystore</span>
+<span class="n">keystores/encryption.jks</span>       <span class="c"># PF encryption keystore</span>
+
+<span class="c"># Environment-specific property overrides</span>
+<span class="n">config/environment.properties</span>  <span class="c"># env-specific overrides applied at boot</span>
+
+<span class="c"># Ansible inventory and variables (used during bootstrap)</span>
+<span class="n">ansible/inventory.ini</span>
+<span class="n">ansible/group_vars/pf_prod.yml</span>
+
+<span class="c"># NOT in this bucket:</span>
+<span class="c"># - The AMI itself (managed by infrastructure team, separate process)</span>
+<span class="c"># - The PingFederate binaries (baked into AMI)</span>
+<span class="c"># - AWS credentials (never stored — instance role provides these)</span>
+<span class="c"># - Database passwords (stored in SSM Parameter Store SecureString)</span></pre>
+    </div>
+  </div>
+
+  <div class="cblock cb-c">
+    <div class="cbt">What NOT to store in the config bucket</div>
+    <div class="cbd">The S3 bucket stores application-level configuration that must survive instance replacement. It should not store: AWS credentials (use IAM roles), database passwords or API keys (use SSM SecureString or Secrets Manager), the PF binary distribution (bake into AMI), or large binary files that change infrequently (consider EFS). The bucket is for configuration that PF needs to <em>initialise itself</em> — everything that makes this PF installation unique without being secret enough to warrant Secrets Manager.</div>
+  </div>
+</section>
+
+<!-- SECTION 6: VERSIONING AND ROLLBACK -->
+<section class="sec" id="versioning">
+  <div class="sl">Versioning and rollback</div>
+  <h2 class="st">Using S3 versioning to roll back bad configurations</h2>
+  <div class="sb">
+    <p>S3 versioning is not just a backup feature — for the immutable infrastructure model it is the configuration rollback mechanism. When a bad configuration is deployed (wrong keystore, corrupted connection definition, misconfigured OAuth client), the recovery procedure does not require rebuilding or re-configuring anything manually. It requires only restoring the S3 object to its previous version and triggering a new AMI refresh.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="chl">Shell</span><span class="chf">Config rollback using S3 versioning</span></div>
+    <div class="cbody"><pre><span class="c"># SCENARIO: Bad config deployed. PF instances failing on boot.</span>
+<span class="c"># RECOVERY: Restore the previous config version and re-deploy</span>
+
+<span class="c"># Step 1: List all versions of the config archive</span>
+aws s3api list-object-versions \
+  --bucket pf-prod-config-123456789012 \
+  --prefix config/pingfederate-prod.zip \
+  --query 'Versions[*].[VersionId,LastModified,IsLatest]' \
+  --output table
+
+<span class="c"># Step 2: Identify the last-known-good version ID</span>
+<span class="c"># LAST_GOOD_VERSION_ID=abc123def456</span>
+
+<span class="c"># Step 3: Restore that version by copying it as a new current version</span>
+aws s3api copy-object \
+  --copy-source pf-prod-config-123456789012/config/pingfederate-prod.zip?versionId=abc123def456 \
+  --bucket pf-prod-config-123456789012 \
+  --key config/pingfederate-prod.zip \
+  --server-side-encryption aws:kms \
+  --ssekms-key-id alias/pf-prod-pf-config
+
+<span class="c"># Step 4: Trigger a new instance refresh to pick up the restored config</span>
+<span class="c"># Option A: Push a new Terraform apply (update a variable to force LT update)</span>
+<span class="c"># Option B: Trigger instance refresh directly via AWS CLI</span>
+aws autoscaling start-instance-refresh \
+  --auto-scaling-group-name pf-prod-pf-engines \
+  --preferences '{"MinHealthyPercentage":90,"InstanceWarmup":300}'
+
+<span class="c"># Note: Terraform is not aware of direct instance_refresh calls</span>
+<span class="c"># The next terraform plan will not show this as a change</span>
+<span class="c"># because the ASG's Terraform-managed attributes haven't changed</span></pre>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:var(--lg)">
+    <div class="card ct">
+      <div class="clbl">Versioning benefit 1</div>
+      <div class="cttl">Instant config rollback</div>
+      <div class="cbdy">Any configuration version can be restored in seconds. Copy the old version as the current version and trigger an instance refresh. New instances boot with the restored config. No rebuild, no re-configuration, no service desk tickets. MTTR drops from hours to minutes.</div>
+    </div>
+    <div class="card cb">
+      <div class="clbl">Versioning benefit 2</div>
+      <div class="cttl">Config change audit trail</div>
+      <div class="cbdy">Every configuration upload creates a new version with a timestamp and the identity of who uploaded it (in the S3 access log and CloudTrail). You can reconstruct the complete history of configuration changes — what was deployed, when, and by whom. Essential for post-incident review.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: EFS ALTERNATIVE -->
+<section class="sec" id="efs">
+  <div class="sl">When S3 isn't enough</div>
+  <h2 class="st">EFS — the alternative for shared filesystem access patterns</h2>
+  <div class="sb">
+    <p>S3 is the right choice for the PF configuration pattern because configuration is uploaded once and downloaded at instance launch. It is not a live, shared filesystem. However, some PingFederate configurations require shared filesystem access — for example, if PF is configured to write audit files to a path that multiple nodes must be able to read, or if the configuration is too large or too dynamic to manage as S3 objects.</p>
+    <p>In these cases, EFS (Elastic File System) is the alternative. EFS presents as a standard POSIX filesystem that can be mounted by multiple EC2 instances simultaneously. It survives instance replacement because it exists independently of the instance lifecycle — just like S3.</p>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">S3 vs EFS — Choosing for PingFederate</div>
+    <table class="tbl">
+      <thead><tr><th>Factor</th><th>S3</th><th>EFS</th></tr></thead>
+      <tbody>
+        <tr><td>Access pattern</td><td>Object-based, batch download at boot</td><td>POSIX filesystem, real-time read/write</td></tr>
+        <tr><td>PF config archive</td><td><strong>Ideal</strong> — zip downloaded once at boot</td><td>Overkill — adds mount complexity for static files</td></tr>
+        <tr><td>PF audit logs</td><td>Suitable for batch upload via CloudWatch agent</td><td><strong>Better</strong> if compliance requires real-time shared log access</td></tr>
+        <tr><td>PF dynamic config</td><td>Unsuitable for high-frequency writes</td><td><strong>Better</strong> for config updated frequently during runtime</td></tr>
+        <tr><td>Cost</td><td>Very low for config (MB-scale objects)</td><td>Higher — priced per GB stored + throughput</td></tr>
+        <tr><td>Encryption</td><td>SSE-KMS, always-on, zero overhead</td><td>KMS at rest + TLS in transit, slight latency overhead</td></tr>
+        <tr><td>Multi-AZ</td><td>Native — replicated across AZs automatically</td><td>Requires multi-AZ mount targets, one per subnet</td></tr>
+        <tr><td>AMI refresh impact</td><td>None — new instance downloads from S3 at boot</td><td>None — EFS persists, new instance mounts the same filesystem</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cblock cb-s">
+    <div class="cbt">Decision rule for PingFederate</div>
+    <div class="cbd">Use S3 for the configuration archive download pattern (startup-time config retrieval). Use EFS if and only if: (1) PF requires real-time write access to a shared filesystem path, (2) the configuration changes frequently enough that zip-and-upload is operationally impractical, or (3) compliance requires live, shared audit log files across all nodes. For the standard PF immutable deployment, S3 is sufficient and operationally simpler.</div>
+  </div>
+</section>
+
+<!-- SECTION 8: PHASE 2 COMPLETE -->
+<section class="sec" id="phase2-complete">
+  <div class="sl">Phase 2 — complete</div>
+  <h2 class="st">The full Phase 2 infrastructure stack — assembled</h2>
+  <div class="sb">
+    <p>With Module 08 complete, Phase 2 is done. Let's pause and see the full picture of what you have built across five modules. Every resource in the PingFederate deployment stack now has a home in a Terraform configuration you understand completely.</p>
+  </div>
+
+  <div class="dw">
+    <div class="dwl">Phase 2 Complete — Full Infrastructure Stack</div>
+    <svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:600px;display:block;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#4A9EFF"/></marker>
+      </defs>
+      <!-- M04: Network -->
+      <rect x="10" y="10" width="180" height="360" rx="10" fill="rgba(74,158,255,.04)" stroke="rgba(74,158,255,.3)" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="100" y="30" text-anchor="middle" fill="rgba(74,158,255,.5)" font-size="9" font-weight="700" letter-spacing="1.2" font-family="IBM Plex Mono,monospace">M04 · NETWORK</text>
+      <rect x="22" y="38" width="156" height="26" rx="4" fill="rgba(74,158,255,.08)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="100" y="55" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">VPC 10.0.0.0/16</text>
+      <rect x="22" y="70" width="156" height="26" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="100" y="87" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">Public Subnets ×2</text>
+      <rect x="22" y="102" width="156" height="26" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="100" y="119" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">Private Subnets ×2</text>
+      <rect x="22" y="134" width="156" height="26" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="100" y="151" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">NAT Gateway ×2</text>
+      <rect x="22" y="166" width="156" height="26" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="100" y="183" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">SG: NLB + PF Engine</text>
+      <rect x="22" y="198" width="156" height="26" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="100" y="215" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">Route Tables</text>
+
+      <!-- M05: IAM -->
+      <rect x="200" y="10" width="160" height="200" rx="10" fill="rgba(155,127,255,.04)" stroke="rgba(155,127,255,.3)" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="280" y="30" text-anchor="middle" fill="rgba(155,127,255,.5)" font-size="9" font-weight="700" letter-spacing="1.2" font-family="IBM Plex Mono,monospace">M05 · IAM</text>
+      <rect x="212" y="38" width="136" height="26" rx="4" fill="rgba(155,127,255,.08)" stroke="rgba(155,127,255,.2)" stroke-width="1"/>
+      <text x="280" y="55" text-anchor="middle" fill="#9B7FFF" font-size="9" font-family="IBM Plex Mono,monospace">pf-instance-role</text>
+      <rect x="212" y="70" width="136" height="26" rx="4" fill="rgba(155,127,255,.06)" stroke="rgba(155,127,255,.15)" stroke-width="1"/>
+      <text x="280" y="87" text-anchor="middle" fill="#9B7FFF" font-size="9" font-family="IBM Plex Mono,monospace">pf-instance-policy</text>
+      <rect x="212" y="102" width="136" height="26" rx="4" fill="rgba(155,127,255,.06)" stroke="rgba(155,127,255,.15)" stroke-width="1"/>
+      <text x="280" y="119" text-anchor="middle" fill="#9B7FFF" font-size="9" font-family="IBM Plex Mono,monospace">role_policy_attachment</text>
+      <rect x="212" y="134" width="136" height="26" rx="4" fill="rgba(155,127,255,.06)" stroke="rgba(155,127,255,.15)" stroke-width="1"/>
+      <text x="280" y="151" text-anchor="middle" fill="#9B7FFF" font-size="9" font-family="IBM Plex Mono,monospace">pf-instance-profile</text>
+      <rect x="212" y="166" width="136" height="26" rx="4" fill="rgba(155,127,255,.06)" stroke="rgba(155,127,255,.15)" stroke-width="1"/>
+      <text x="280" y="183" text-anchor="middle" fill="#9B7FFF" font-size="9" font-family="IBM Plex Mono,monospace">AmazonSSMCore policy</text>
+
+      <!-- M06: Compute -->
+      <rect x="370" y="10" width="160" height="200" rx="10" fill="rgba(0,229,195,.04)" stroke="rgba(0,229,195,.3)" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="450" y="30" text-anchor="middle" fill="rgba(0,229,195,.5)" font-size="9" font-weight="700" letter-spacing="1.2" font-family="IBM Plex Mono,monospace">M06 · COMPUTE</text>
+      <rect x="382" y="38" width="136" height="26" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="450" y="55" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_launch_template</text>
+      <rect x="382" y="70" width="136" height="26" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="450" y="87" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">user_data bootstrap</text>
+      <rect x="382" y="102" width="136" height="26" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="450" y="119" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_autoscaling_group</text>
+      <rect x="382" y="134" width="136" height="26" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="450" y="151" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">instance_refresh</text>
+      <rect x="382" y="166" width="136" height="26" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="450" y="183" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">lifecycle_hook</text>
+
+      <!-- M07: Traffic -->
+      <rect x="200" y="220" width="330" height="150" rx="10" fill="rgba(74,158,255,.03)" stroke="rgba(74,158,255,.25)" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <text x="365" y="240" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="9" font-weight="700" letter-spacing="1.2" font-family="IBM Plex Mono,monospace">M07 · TRAFFIC</text>
+      <rect x="212" y="248" width="140" height="26" rx="4" fill="rgba(74,158,255,.07)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="282" y="265" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">aws_lb (NLB)</text>
+      <rect x="360" y="248" width="140" height="26" rx="4" fill="rgba(74,158,255,.07)" stroke="rgba(74,158,255,.15)" stroke-width="1"/>
+      <text x="430" y="265" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">aws_lb_target_group</text>
+      <rect x="212" y="280" width="140" height="26" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.12)" stroke-width="1"/>
+      <text x="282" y="297" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">aws_lb_listener</text>
+      <rect x="360" y="280" width="140" height="26" rx="4" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.12)" stroke-width="1"/>
+      <text x="430" y="297" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">aws_route53_record</text>
+      <rect x="286" y="312" width="160" height="26" rx="4" fill="rgba(74,158,255,.05)" stroke="rgba(74,158,255,.10)" stroke-width="1"/>
+      <text x="366" y="329" text-anchor="middle" fill="#4A9EFF" font-size="9" font-family="IBM Plex Mono,monospace">aws_route53_health_check</text>
+
+      <!-- M08: Storage -->
+      <rect x="540" y="10" width="310" height="360" rx="10" fill="rgba(0,229,195,.04)" stroke="rgba(0,229,195,.3)" stroke-width="2"/>
+      <text x="695" y="30" text-anchor="middle" fill="rgba(0,229,195,.6)" font-size="9" font-weight="700" letter-spacing="1.2" font-family="IBM Plex Mono,monospace">M08 · STORAGE ← CURRENT</text>
+      <rect x="552" y="38" width="286" height="26" rx="4" fill="rgba(0,229,195,.1)" stroke="rgba(0,229,195,.3)" stroke-width="1"/>
+      <text x="695" y="55" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_s3_bucket (pf_config)</text>
+      <rect x="552" y="70" width="286" height="26" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="695" y="87" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_s3_bucket_versioning</text>
+      <rect x="552" y="102" width="286" height="26" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="695" y="119" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_s3_bucket_server_side_encryption</text>
+      <rect x="552" y="134" width="286" height="26" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="695" y="151" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_s3_bucket_public_access_block</text>
+      <rect x="552" y="166" width="286" height="26" rx="4" fill="rgba(0,229,195,.07)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="695" y="183" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_s3_bucket_policy</text>
+      <rect x="552" y="198" width="286" height="26" rx="4" fill="rgba(0,229,195,.07)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="695" y="215" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_s3_bucket_lifecycle_configuration</text>
+      <rect x="552" y="230" width="286" height="26" rx="4" fill="rgba(0,229,195,.07)" stroke="rgba(0,229,195,.15)" stroke-width="1"/>
+      <text x="695" y="247" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_kms_key + aws_kms_alias</text>
+      <rect x="552" y="262" width="286" height="26" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.12)" stroke-width="1"/>
+      <text x="695" y="279" text-anchor="middle" fill="#00E5C3" font-size="9" font-family="IBM Plex Mono,monospace">aws_s3_bucket_logging</text>
+    </svg>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="sec" id="knowledge-checks">
+  <div class="sl">Knowledge check</div>
+  <h2 class="st">Test your S3 and config externalisation understanding</h2>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>A PF instance starts but fails to download the config from S3. The error in user_data.log says "Access Denied" on a <code>GetObject</code> call. The S3 bucket exists and the object is there. What are the four things you would check, in order?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Four checks in order of likelihood:</strong><br><br>
+    <strong>1. Instance profile is not attached.</strong> Run <code>aws ec2 describe-instances --query "Reservations[].Instances[].IamInstanceProfile"</code>. If null, the Launch Template is missing the IAM instance profile block or an old LT version is in use. Fix: update the LT and trigger a refresh.<br><br>
+    <strong>2. Bucket policy denies the instance role.</strong> The bucket policy has an explicit Allow for the role ARN. If the role ARN in the bucket policy doesn't match the actual role ARN (e.g. different environment prefix), all requests are implicitly denied. Check with <code>aws iam simulate-principal-policy</code> against the role ARN.<br><br>
+    <strong>3. KMS key policy doesn't grant the instance role Decrypt.</strong> The "two-door" model — both the IAM policy AND the KMS key policy must allow the action. If the KMS key policy was created before the IAM role existed, or the role ARN changed, the key policy may not include the current role ARN. Check the KMS key policy in the console or CLI.<br><br>
+    <strong>4. The bucket is in a different region from the instance.</strong> S3 GetObject must use the correct regional endpoint. If user_data uses <code>aws s3 cp</code> without specifying <code>--region</code>, the SDK uses the instance's metadata region. If the bucket is in a different region, the request may fail or be silently redirected. Always specify <code>--region</code> in user_data S3 commands.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>The lifecycle policy keeps the last 10 non-current versions. You have been deploying config updates weekly for 6 months (26 deployments). How many versions exist in S3? How much does this cost compared to no lifecycle policy?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">With the lifecycle policy: 11 versions exist (1 current + 10 non-current). Without it: 26 versions.</strong><br><br>Cost comparison for a 50MB config archive: Without lifecycle: 26 × 50MB = 1.3GB stored continuously. S3 Standard costs ~$0.023/GB/month = ~$0.03/month (negligible at this scale, but grows over years). With lifecycle: 11 × 50MB = 550MB = ~$0.013/month. The cost difference is minimal for a config bucket of this size. The real value of the lifecycle policy is not cost savings — it is operational clarity. An unbounded version list makes rollback archaeology difficult. Knowing you have exactly 10 rollback points simplifies operational runbooks and prevents the "which version was the last stable one?" question from becoming a hunt through dozens of entries.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>A colleague suggests removing the bucket policy and relying entirely on the IAM identity policy to control access. Why is this a bad idea for the PF config bucket?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Removing the bucket policy removes the explicit scope restriction and the HTTPS enforcement deny.</strong> Without the bucket policy: any IAM principal in the account with <code>s3:GetObject</code> permission on <code>*</code> can read the PF config (including keystores). The DenyNonHTTPS statement is gone — plain HTTP access is allowed. There is no resource-based audit trail of which roles are expected to access this bucket. Without an explicit Allow, S3 falls back to the IAM identity policy — which might grant broader access if misconfigured.<br><br>The bucket policy provides defence-in-depth: even if an IAM policy is misconfigured to grant broad S3 access, the bucket policy's explicit Allow list limits who can actually read this specific bucket. For a bucket containing PF keystores, defence-in-depth is not optional.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>The team deploys a bad PF configuration on Monday morning. By 9:15 AM, all PF instances have been refreshed with the bad config and users are unable to authenticate. Walk through the complete recovery procedure using the tools you have built in Phase 2.<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Recovery procedure (MTTR target: &lt;15 minutes):</strong><br><br>
+    <strong>1. (0:00) Identify the incident:</strong> Route53 health check alarm fires. NLB target group shows all instances unhealthy. Check PF logs via CloudWatch log group <code>/pingfederate/prod</code>.<br><br>
+    <strong>2. (0:02) Find the last-known-good S3 version:</strong> <code>aws s3api list-object-versions --bucket pf-prod-config-123456789012 --prefix config/pingfederate-prod.zip</code>. Identify the version ID before Monday's deployment (timestamp visible in version list).<br><br>
+    <strong>3. (0:04) Restore the config:</strong> <code>aws s3api copy-object --copy-source bucket/config/pingfederate-prod.zip?versionId=GOOD_VERSION_ID --bucket pf-prod-config-123456789012 --key config/pingfederate-prod.zip --server-side-encryption aws:kms --ssekms-key-id alias/pf-prod-pf-config</code><br><br>
+    <strong>4. (0:05) Trigger immediate instance refresh:</strong> <code>aws autoscaling start-instance-refresh --auto-scaling-group-name pf-prod-pf-engines --preferences '{"MinHealthyPercentage":50,"InstanceWarmup":300}'</code>. Lower MinHealthyPercentage to 50% to allow faster replacement during incident.<br><br>
+    <strong>5. (0:10–0:25) Monitor:</strong> Watch <code>aws autoscaling describe-instance-refreshes</code> and NLB target group health. First new instances appear healthy after ~10 minutes.<br><br>
+    <strong>6. (0:25) Authentication restored.</strong> File incident report. Post-mortem scheduled.<br><br>Total MTTR: ~25 minutes, of which 20 are automated (instance refresh + boot sequence).</div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section class="sec" id="lab">
+  <div class="sl">Mini lab</div>
+  <h2 class="st">S3 configuration exercises</h2>
+
+  <div class="lab">
+    <div class="labh"><span class="labb">Lab 08-A</span><span class="labt">Add a cross-region replication rule</span></div>
+    <div class="labbody">
+      <p style="font-size:14px;color:var(--t2);margin-bottom:var(--md)">The disaster recovery team requires the PF config bucket to be replicated to a secondary region (us-west-2) for DR purposes. Add cross-region replication using the <code>aws_s3_bucket_replication_configuration</code> resource. Assume a destination bucket (<code>pf-dr-config-123456789012</code>) already exists in us-west-2.</p>
+      <ol>
+        <li>Create an IAM role (<code>pf-s3-replication-role</code>) with trust policy for <code>s3.amazonaws.com</code></li>
+        <li>Create an IAM policy that allows <code>s3:GetObject</code>, <code>s3:GetObjectVersion</code>, <code>s3:ReplicateObject</code>, <code>s3:ReplicateDelete</code> on both source and destination buckets</li>
+        <li>Add the <code>aws_s3_bucket_replication_configuration</code> resource on the source bucket</li>
+        <li>Set the rule to replicate all objects (no prefix filter), status Enabled</li>
+        <li>Use <code>StorageClass = "STANDARD_IA"</code> in the destination — DR copies don't need hot access</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sm)">
+    <div class="kcq"><span class="kci">✓</span>Reveal Lab 08-A solution<span class="kcc">▼</span></div>
+    <div class="kca">
+      <div class="code" style="margin:0">
+        <div class="ch"><span class="chl">HCL</span><span class="chf">S3 cross-region replication</span></div>
+        <div class="cbody"><pre><span class="c"># IAM role for S3 replication service</span>
+<span class="k">resource</span> <span class="s">"aws_iam_role"</span> <span class="s">"s3_replication"</span> {
+  <span class="k">name</span> = <span class="s">"pf-s3-replication-role"</span>
+  <span class="k">assume_role_policy</span> = <span class="n">jsonencode</span>({
+    <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+    <span class="n">Statement</span> = [{
+      <span class="n">Effect</span>    = <span class="s">"Allow"</span>
+      <span class="n">Principal</span> = { <span class="n">Service</span> = <span class="s">"s3.amazonaws.com"</span> }
+      <span class="n">Action</span>    = <span class="s">"sts:AssumeRole"</span>
+    }]
+  })
+}
+
+<span class="k">resource</span> <span class="s">"aws_iam_role_policy"</span> <span class="s">"s3_replication"</span> {
+  <span class="k">name</span> = <span class="s">"pf-s3-replication-policy"</span>
+  <span class="k">role</span> = <span class="n">aws_iam_role</span>.<span class="v">s3_replication</span>.<span class="n">id</span>
+  <span class="k">policy</span> = <span class="n">jsonencode</span>({
+    <span class="n">Version</span> = <span class="s">"2012-10-17"</span>
+    <span class="n">Statement</span> = [
+      {
+        <span class="n">Effect</span>   = <span class="s">"Allow"</span>
+        <span class="n">Action</span>   = [<span class="s">"s3:GetObject"</span>, <span class="s">"s3:GetObjectVersion"</span>, <span class="s">"s3:GetReplicationConfiguration"</span>]
+        <span class="n">Resource</span> = [<span class="s">"${</span><span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span><span class="s">}/*"</span>, <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">arn</span>]
+      },
+      {
+        <span class="n">Effect</span>   = <span class="s">"Allow"</span>
+        <span class="n">Action</span>   = [<span class="s">"s3:ReplicateObject"</span>, <span class="s">"s3:ReplicateDelete"</span>, <span class="s">"s3:ReplicateTags"</span>]
+        <span class="n">Resource</span> = [<span class="s">"arn:aws:s3:::pf-dr-config-123456789012/*"</span>]
+      }
+    ]
+  })
+}
+
+<span class="k">resource</span> <span class="s">"aws_s3_bucket_replication_configuration"</span> <span class="s">"pf_config"</span> {
+  <span class="k">bucket</span> = <span class="n">aws_s3_bucket</span>.<span class="v">pf_config</span>.<span class="n">id</span>
+  <span class="k">role</span>   = <span class="n">aws_iam_role</span>.<span class="v">s3_replication</span>.<span class="n">arn</span>
+  <span class="k">depends_on</span> = [<span class="n">aws_s3_bucket_versioning</span>.<span class="v">pf_config</span>]  <span class="c"># versioning required</span>
+
+  <span class="k">rule</span> {
+    <span class="k">id</span>     = <span class="s">"replicate-all-to-dr"</span>
+    <span class="k">status</span> = <span class="s">"Enabled"</span>
+    <span class="k">filter</span> { <span class="k">prefix</span> = <span class="s">""</span> }   <span class="c"># replicate all objects</span>
+    <span class="k">delete_marker_replication</span> { <span class="k">status</span> = <span class="s">"Enabled"</span> }
+    <span class="k">destination</span> {
+      <span class="k">bucket</span>        = <span class="s">"arn:aws:s3:::pf-dr-config-123456789012"</span>
+      <span class="k">storage_class</span> = <span class="s">"STANDARD_IA"</span>   <span class="c"># DR — cheaper storage class</span>
+    }
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECT REVIEW -->
+<div class="ar">
+  <div class="arh">
+    <span class="arb">Senior Review</span>
+    <span class="art">S3 and persistence questions a platform engineer might ask</span>
+  </div>
+  <ul class="arl">
+    <li><span class="arn">01</span>The security team wants to rotate the KMS key used for the config bucket. What is the Terraform procedure, what happens to existing encrypted objects, and is there any risk to running PF instances during key rotation?</li>
+    <li><span class="arn">02</span>The PF configuration has grown to 500MB and the download at instance boot is taking 8 minutes, pushing against the lifecycle hook timeout. What are your options without changing the overall config externalisation pattern?</li>
+    <li><span class="arn">03</span>A post-incident review reveals that a malicious insider uploaded a poisoned PF configuration to the config bucket, which caused all PF instances to expose credential data during the next AMI refresh. What Terraform-manageable controls would prevent this attack vector in the future?</li>
+    <li><span class="arn">04</span>The divestiture team needs to split the PF deployment into two separate AWS accounts. The config bucket stays in the original account but must be accessible from instances in the new account. How would you modify the bucket policy and IAM role to support cross-account S3 access?</li>
+    <li><span class="arn">05</span>Compliance requires that all access to the PF config bucket is logged and that access logs are retained for 7 years. What Terraform resources are needed and what pitfalls exist when logging an S3 bucket's access to another S3 bucket?</li>
+  </ul>
+</div>
+
+<!-- TAKEAWAY -->
+<div class="tk">
+  <div class="tkh">
+    <div class="tki">◆</div>
+    <div class="tkt">Module 08 — Key Takeaways</div>
+  </div>
+  <ul class="tkl">
+    <li>Config externalisation in S3 is the architectural decision that makes immutable compute possible. Instances are replaced; configuration is not. The bucket stores everything that makes a PF installation unique.</li>
+    <li>The S3 config bucket requires six separate resource blocks in Terraform: bucket, versioning, encryption, public access block, bucket policy, and lifecycle configuration. Each is independently manageable and independently plannable.</li>
+    <li>Use SSE-KMS, not SSE-S3, for the config bucket. KMS provides auditable key usage in CloudTrail — every Decrypt call shows who read the config, when, and from where. Enable <code>bucket_key_enabled = true</code> to reduce KMS API call costs.</li>
+    <li>The bucket policy restricts access to exactly two principals: the PF instance role (read) and the CI/CD role (write). The DenyNonHTTPS statement forces all access over HTTPS.</li>
+    <li>S3 versioning enables instant config rollback: restore the previous version object and trigger an instance refresh. No rebuild, no re-configuration, no manual intervention.</li>
+    <li>KMS access uses the "two-door" model: both the IAM identity policy AND the KMS key policy must allow the action. Access denied errors on S3 GetObject when using KMS almost always mean one of the two doors is missing.</li>
+    <li>Terraform provisions the bucket and its configuration — it does not manage the contents. The CI/CD pipeline uploads PF configuration files. These are separate concerns with separate owners.</li>
+    <li>Phase 2 is now complete. Five modules have built the complete AWS infrastructure stack: network (M04), identity (M05), compute (M06), traffic (M07), and persistence (M08). Phase 3 begins with module architecture and enterprise patterns.</li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="toc">
+    <div class="tl">In this module</div>
+    <a class="ti" href="#bridge">Bridge from M07</a>
+    <a class="ti" href="#pattern">Config externalisation pattern</a>
+    <a class="ti" href="#s3-terraform">Complete S3 code</a>
+    <a class="ti" href="#encryption">Encryption strategy</a>
+    <a class="ti" href="#bucket-contents">What goes in the bucket</a>
+    <a class="ti" href="#versioning">Versioning &amp; rollback</a>
+    <a class="ti" href="#efs">EFS alternative</a>
+    <a class="ti" href="#phase2-complete">Phase 2 complete</a>
+    <a class="ti" href="#knowledge-checks">Knowledge checks</a>
+    <a class="ti" href="#lab">Mini lab</a>
+  </div>
+  <div class="qr">
+    <div class="qrl">S3 Resources (6 blocks)</div>
+    <div class="qi"><span class="qt">aws_s3_bucket</span><span class="qd">The bucket itself</span></div>
+    <div class="qi"><span class="qt">s3_bucket_versioning</span><span class="qd">Enable version history</span></div>
+    <div class="qi"><span class="qt">s3_bucket_sse_config</span><span class="qd">SSE-KMS encryption</span></div>
+    <div class="qi"><span class="qt">s3_public_access_block</span><span class="qd">Block all public access</span></div>
+    <div class="qi"><span class="qt">s3_bucket_policy</span><span class="qd">Allow role / Deny HTTP</span></div>
+    <div class="qi"><span class="qt">s3_lifecycle_config</span><span class="qd">Expire old versions</span></div>
+    <div class="qi"><span class="qt">aws_kms_key</span><span class="qd">Encryption key</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">Bucket Policy Rules</div>
+    <div class="qi"><span class="qt">Allow:Read</span><span class="qd">PF instance role only</span></div>
+    <div class="qi"><span class="qt">Allow:Write</span><span class="qd">CI/CD role only</span></div>
+    <div class="qi"><span class="qt">Deny:HTTP</span><span class="qd">All principals, always</span></div>
+    <div class="qi"><span class="qt">Block:Public</span><span class="qd">All four settings true</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">Series Progress</div>
+    <div style="padding:var(--sm) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--sm);background:var(--s2);border-radius:var(--r8)">
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--tg);border:1px solid var(--td);color:var(--td)">M01–M07</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);font-weight:600;box-shadow:0 0 10px var(--pg)">M08</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--s3);border:1px solid var(--brb);color:var(--t3)">M09–10 ★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /layout -->
+
+<!-- BRIDGE -->
+<div class="bridge">
+  <div class="bc">
+    <div class="bce">Coming up next · Module 09</div>
+    <div class="bct"><span>Modules &amp; Enterprise Patterns</span> — Structuring Terraform at Scale</div>
+    <div class="bcb">
+      Phase 2 is complete. You have built every layer of the PingFederate AWS stack — network, identity, compute, traffic, and persistence. You understand what every resource does, why it was designed that way, and how the layers connect.<br><br>
+      Phase 3 shifts focus from building infrastructure to organising and operating it at enterprise scale. Module 09 covers the module system that lets teams write infrastructure once and deploy it safely across Dev, Test, and Prod. You will learn how to navigate an enterprise Terraform codebase on day one, how module versioning prevents prod from accidentally receiving dev changes, and how directory-per-environment compares to workspaces in real production teams.
+    </div>
+    <div class="bcc">
+      <span class="b bn">Reusable modules</span>
+      <span class="b bn">Module versioning</span>
+      <span class="b bn">Dev/Test/Prod structure</span>
+      <span class="b bn">Directory vs workspaces</span>
+      <span class="b bn">DRY patterns</span>
+      <span class="b bn">Reading enterprise code</span>
+    </div>
+    <a href="module-09.html" class="bcbtn">Continue to Module 09 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="fl">M08 · S3 &amp; Config Externalisation · Phase 2 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--sm);align-items:center">
+    <a href="module-07.html" class="b bq" style="text-decoration:none">← M07</a>
+    <a href="index.html" class="b bq" style="text-decoration:none">Index</a>
+    <a href="module-09.html" class="b bt" style="text-decoration:none">M09 →</a>
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+function toggleKC(el){el.classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.ti');
+  const secs=[];
+  items.forEach(i=>{const id=i.getAttribute('href').replace('#','');const el=document.getElementById(id);if(el)secs.push({el,item:i})});
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){items.forEach(i=>i.classList.remove('active'));const f=secs.find(s=>s.el===en.target);if(f)f.item.classList.add('active')}}),{rootMargin:'-20% 0px -70% 0px'});
+  secs.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target)}}),{threshold:.06});
+  document.querySelectorAll('.sec,.card,.dw,.lab,.ar,.tk,.bc,.kc,.chain').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .45s ease,transform .45s ease';io.observe(el)});
+})();
+</script>
+</body>
+</html>

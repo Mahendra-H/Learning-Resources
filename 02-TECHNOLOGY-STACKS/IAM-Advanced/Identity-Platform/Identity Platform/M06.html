@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M06 · Authorization Architecture — RBAC, ABAC, PBAC & ReBAC | IAM Architect Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+:root{
+  --bg-void:#0B0E14;--bg-s1:#111520;--bg-s2:#181D2A;--bg-s3:#1F2535;
+  --border:#1E2636;--border-b:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);
+  --copper:#E8873A;--copper-glow:rgba(232,135,58,0.15);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.14);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.13);
+  --jade:#3ECFA0;--jade-glow:rgba(62,207,160,0.13);
+  --violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.13);
+  --amber:#F5C542;--amber-glow:rgba(245,197,66,0.12);
+  --indigo:#3A7FD4;--indigo-glow:rgba(58,127,212,0.16);--indigo-dim:#2860B0;
+  --text-p:#E8EDF5;--text-s:#8A95A8;--text-t:#6B7A8F;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --r-sm:4px;--r-md:8px;--r-lg:12px;--r-xl:16px;--r-pill:999px;
+  --sh-card:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  /* M06: Deep Indigo-Sapphire primary, Copper secondary */
+  --phase:#3A7FD4;--phase-glow:rgba(58,127,212,0.17);--phase-dim:#2860B0;
+  --accent2:#E8873A;--accent2-glow:rgba(232,135,58,0.15);
+  --grad-head:linear-gradient(95deg,#3A7FD4 0%,#E8873A 100%);
+}
+body{background:var(--bg-void);color:var(--text-p);font-family:var(--fb);line-height:1.7;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-b);border-radius:var(--r-pill)}
+::selection{background:rgba(58,127,212,.2);color:var(--indigo)}
+a{color:var(--sapphire);text-decoration:none;transition:color .15s}a:hover{color:var(--phase)}
+code{font-family:var(--fm);font-size:.85em;background:var(--bg-s3);border:1px solid var(--border);color:var(--sapphire);padding:1px 6px;border-radius:var(--r-sm)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.95);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--border);padding:0 40px}
+.nav-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:20px}
+.nav-logo{font-family:var(--fd);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.nav-logo span{color:var(--text-t);font-weight:400}
+.nav-div{width:1px;height:18px;background:var(--border-b);flex-shrink:0}
+.nav-progress{flex:1;display:flex;align-items:center;gap:10px}
+.progress-track{flex:1;height:2px;background:var(--border);border-radius:var(--r-pill);overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--phase),var(--copper));border-radius:var(--r-pill);width:40%}
+.progress-label{font-family:var(--fm);font-size:12px;color:var(--text-s);white-space:nowrap}
+.nav-badge{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--r-pill);background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase);white-space:nowrap}
+.nav-home{font-family:var(--fm);font-size:12px;color:var(--text-s);padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border-b);transition:all .15s;text-decoration:none}
+.nav-home:hover{color:var(--text-p);border-color:var(--phase);background:var(--phase-glow)}
+
+/* SHELL */
+.shell{max-width:1100px;margin:0 auto;padding:0 40px}
+
+/* HERO */
+.hero{position:relative;padding:72px 0 56px;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 55% 50% at 8% 35%,rgba(58,127,212,0.13) 0%,transparent 55%),
+  radial-gradient(ellipse 45% 40% at 92% 65%,rgba(232,135,58,0.09) 0%,transparent 55%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse 85% 65% at 18% 50%,black 0%,transparent 75%);opacity:.28;pointer-events:none}
+.hero-bar{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--phase),var(--copper) 60%,transparent);pointer-events:none}
+.hero-content{position:relative;z-index:1}
+.hero-phase{display:inline-flex;align-items:center;gap:8px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--phase);margin-bottom:16px}
+.phase-dot{width:7px;height:7px;border-radius:50%;background:var(--phase);box-shadow:0 0 12px var(--phase);animation:pdot 2s ease-in-out infinite}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 12px var(--phase)}50%{opacity:.4;box-shadow:0 0 3px var(--phase)}}
+.hero-title{font-family:var(--fd);font-size:clamp(32px,4.5vw,54px);font-weight:800;line-height:1.07;letter-spacing:-.025em;color:var(--text-p);max-width:820px;margin-bottom:18px}
+.hero-title .ac{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:17px;font-weight:300;color:var(--text-s);max-width:640px;line-height:1.75;margin-bottom:28px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 11px;border-radius:var(--r-pill)}
+.badge-phase{background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase)}
+.badge-copper{background:var(--copper-glow);border:1px solid rgba(232,135,58,.4);color:var(--copper)}
+.badge-effort{background:var(--copper-glow);border:1px solid rgba(232,135,58,.35);color:var(--copper)}
+.badge-prereq{background:var(--bg-s2);border:1px solid var(--border-b);color:var(--text-s)}
+.badge-jade{background:var(--jade-glow);border:1px solid rgba(62,207,160,.35);color:var(--jade)}
+.badge-teal{background:var(--teal-glow);border:1px solid rgba(0,229,195,.35);color:var(--teal)}
+
+/* ORIENTATION */
+.orient{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px;margin-bottom:56px;position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--phase) 0%,var(--copper) 55%,transparent 100%)}
+.orient-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:20px;margin-bottom:20px}
+.orient-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:5px}
+.orient-val{font-size:14px;font-weight:500;color:var(--text-p)}
+.orient-val.ac{color:var(--phase)}
+.orient-val.done{color:var(--jade)}
+.journey-row{display:flex;gap:5px;flex-wrap:wrap;padding-top:18px;border-top:1px solid var(--border)}
+.jdot{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;font-weight:500;transition:all .2s}
+.jdot-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.jdot-cur{background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase);box-shadow:0 0 16px rgba(58,127,212,.2)}
+.jdot-future{background:var(--bg-s2);border:1px solid var(--border);color:var(--text-s)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:48px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.content-main{min-width:0;overflow:hidden}
+.sidebar{position:sticky;top:72px;min-width:0;overflow:hidden;width:260px}
+
+/* SECTIONS */
+.section{margin-bottom:60px}
+.sec-label{display:flex;align-items:center;gap:10px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--phase);margin-bottom:18px}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--phase) 0%,transparent 100%);opacity:.35}
+.sec-title{font-family:var(--fd);font-size:26px;font-weight:700;color:var(--text-p);margin-bottom:6px;line-height:1.2}
+.sec-title-wrap{margin-bottom:20px}
+.sec-title-wrap .underbar{height:3px;width:60px;background:linear-gradient(90deg,var(--phase),var(--copper));border-radius:var(--r-pill);margin-top:6px}
+.sec-body{font-size:15px;color:var(--text-s);line-height:1.8}
+.sec-body p{margin-bottom:14px}.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text-p);font-weight:500}
+.sec-body em{color:var(--phase);font-style:normal;font-weight:500}
+
+/* DIAGRAM WRAP */
+.diag-wrap{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;margin:24px 0;overflow-x:auto}
+.diag-label{font-family:var(--fm);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-s);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.diag-label::before{content:'◈';color:var(--phase);font-size:14px}
+
+/* CONCEPTS */
+.concept{border-left:3px solid var(--phase);padding:16px 20px;background:var(--phase-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-term{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--phase);margin-bottom:6px}
+.concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-def strong{color:var(--text-p);font-weight:500}
+.concept-copper{border-left:3px solid var(--copper);padding:16px 20px;background:var(--copper-glow);border-radius:0 var(--r-md) var(--r-md) 0;margin:20px 0}
+.concept-copper .concept-term{color:var(--copper)}
+.concept-copper .concept-def{font-size:14px;color:var(--text-s);line-height:1.7}
+.concept-copper .concept-def strong{color:var(--text-p);font-weight:500}
+
+/* GOTCHA */
+.gotcha{background:var(--bg-s1);border:1px solid rgba(255,95,126,.35);border-radius:var(--r-lg);padding:18px 20px;margin:20px 0;position:relative;overflow:hidden}
+.gotcha::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--rose)}
+.gotcha-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.gotcha-icon{font-size:16px}
+.gotcha-label{font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rose);background:var(--rose-glow);border:1px solid rgba(255,95,126,.3);padding:2px 8px;border-radius:var(--r-pill)}
+.gotcha-title{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text-p)}
+.gotcha-body{font-size:14px;color:var(--text-s);line-height:1.7}
+.gotcha-body strong{color:var(--rose)}
+
+/* MODEL CARDS */
+.model-card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin-bottom:14px;position:relative;overflow:hidden;transition:border-color .2s}
+.model-card:hover{border-color:var(--border-b)}
+.model-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px}
+.model-card.rbac::before{background:var(--sapphire)}
+.model-card.abac::before{background:var(--jade)}
+.model-card.pbac::before{background:var(--violet)}
+.model-card.rebac::before{background:var(--copper)}
+.model-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.model-tag{font-family:var(--fm);font-size:11px;font-weight:700;padding:4px 12px;border-radius:var(--r-pill)}
+.rbac .model-tag{background:var(--sapphire-glow);color:var(--sapphire);border:1px solid rgba(74,158,255,.3)}
+.abac .model-tag{background:var(--jade-glow);color:var(--jade);border:1px solid rgba(62,207,160,.3)}
+.pbac .model-tag{background:var(--violet-glow);color:var(--violet);border:1px solid rgba(155,127,255,.3)}
+.rebac .model-tag{background:var(--copper-glow);color:var(--copper);border:1px solid rgba(232,135,58,.3)}
+.model-name{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--text-p)}
+.model-body{font-size:14px;color:var(--text-s);line-height:1.75}
+.model-body strong{color:var(--text-p);font-weight:500}
+.model-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.model-grid-item{background:var(--bg-s2);border-radius:var(--r-md);padding:12px}
+.model-grid-label{font-family:var(--fm);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-t);margin-bottom:6px}
+.model-grid-val{font-size:13px;color:var(--text-s);line-height:1.55}
+@media(max-width:640px){.model-grid{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--border-b);box-shadow:var(--sh-card)}
+.card-phase{border-left:3px solid var(--phase);background:linear-gradient(135deg,var(--phase-glow) 0%,var(--bg-s1) 60%)}
+.card-copper{border-left:3px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-s1) 60%)}
+.card-jade{border-left:3px solid var(--jade);background:linear-gradient(135deg,var(--jade-glow) 0%,var(--bg-s1) 60%)}
+.card-violet{border-left:3px solid var(--violet);background:linear-gradient(135deg,var(--violet-glow) 0%,var(--bg-s1) 60%)}
+.card-teal{border-left:3px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-s1) 60%)}
+.card-rose{border-left:3px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-s1) 60%)}
+.card-amber{border-left:3px solid var(--amber);background:linear-gradient(135deg,var(--amber-glow) 0%,var(--bg-s1) 60%)}
+.card-label{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:8px}
+.card-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p);margin-bottom:8px}
+.card-body{font-size:14px;color:var(--text-s);line-height:1.7;overflow-wrap:break-word;word-break:break-word}
+.card-grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+
+/* COMPARE TABLE */
+.tbl-wrap{overflow-x:auto;margin:16px 0}
+table.compare{width:100%;border-collapse:collapse;font-size:14px}
+.compare th{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);padding:10px 14px;border-bottom:1px solid var(--border-b);text-align:left;background:var(--bg-s2);white-space:nowrap}
+.compare th:first-child{color:var(--phase)}
+.compare td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-s);vertical-align:top;line-height:1.6}
+.compare td:first-child{font-weight:600;color:var(--text-p);font-family:var(--fm);font-size:13px}
+.compare tr:hover td{background:var(--bg-s2)}
+.compare tr:last-child td{border-bottom:none}
+.tag-y{color:var(--jade);font-weight:600}
+.tag-n{color:var(--rose);font-weight:600}
+.tag-m{color:var(--amber);font-weight:600}
+
+/* DESIGN EXERCISE */
+.exercise{background:var(--bg-s1);border:1px solid rgba(232,135,58,.35);border-radius:var(--r-lg);overflow:hidden;margin:20px 0}
+.exercise-head{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.exercise-badge{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--r-pill)}
+.exercise-title{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--text-p)}
+.exercise-body{padding:16px 20px}
+.exercise-scenario{font-size:14px;color:var(--text-s);line-height:1.7;margin-bottom:14px}
+.exercise-scenario strong{color:var(--text-p);font-weight:500}
+.exercise-q{font-family:var(--fm);font-size:12px;color:var(--copper);cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border);user-select:none}
+.exercise-q:hover{color:var(--text-p)}
+.exercise-chev{margin-left:auto;transition:transform .2s;font-size:11px}
+.exercise.open .exercise-chev{transform:rotate(180deg)}
+.exercise-answer{display:none;padding:12px 0 4px;font-size:14px;color:var(--text-s);line-height:1.75;border-top:1px solid var(--border)}
+.exercise.open .exercise-answer{display:block}
+.exercise-answer strong{color:var(--text-p);font-weight:500}
+
+/* KNOWLEDGE CHECK */
+.kc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin:10px 0}
+.kc-q{padding:16px 20px;font-size:15px;font-weight:500;color:var(--text-p);display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:background .15s;user-select:none}
+.kc-q:hover{background:var(--bg-s2)}
+.kc-icon{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--phase);background:var(--phase-glow);border:1px solid var(--phase);border-radius:4px;padding:2px 7px;flex-shrink:0;margin-top:2px}
+.kc-chev{margin-left:auto;flex-shrink:0;color:var(--text-s);transition:transform .2s;font-size:13px}
+.kc.open .kc-chev{transform:rotate(180deg)}
+.kc-a{display:none;padding:16px 20px;background:var(--bg-s2);border-top:1px solid var(--border);font-size:14px;color:var(--text-s);line-height:1.75}
+.kc.open .kc-a{display:block}
+.kc-a strong{color:var(--text-p);font-weight:500}
+
+/* TAKEAWAY */
+.takeaway{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;margin:28px 0;position:relative;overflow:hidden}
+.takeaway::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--phase),var(--copper))}
+.takeaway-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.takeaway-icon{width:36px;height:36px;border-radius:var(--r-sm);background:var(--phase-glow);border:1px solid var(--phase);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.takeaway-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--text-p)}
+.takeaway-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.takeaway-list li{font-size:14px;color:var(--text-s);display:flex;align-items:flex-start;gap:10px;line-height:1.65}
+.takeaway-list li::before{content:'◆';color:var(--phase);font-size:9px;flex-shrink:0;margin-top:5px}
+
+/* ARCHITECT REVIEW */
+.arch-review{background:var(--bg-s1);border:1px solid rgba(232,135,58,.35);border-radius:var(--r-lg);overflow:hidden;margin:28px 0}
+.arch-review-head{background:linear-gradient(135deg,var(--copper-glow),transparent);padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.arch-badge{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:3px 10px;border-radius:var(--r-pill)}
+.arch-title{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--text-p)}
+.arch-list{list-style:none;padding:4px 20px 8px}
+.arch-list li{font-size:14px;color:var(--text-s);display:flex;gap:12px;align-items:flex-start;line-height:1.7;padding:14px 0;border-bottom:1px solid var(--border)}
+.arch-list li:last-child{border-bottom:none}
+.arch-num{font-family:var(--fm);font-size:13px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:24px;font-weight:700}
+
+/* DEP MAP */
+.dep-map{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:16px;background:var(--bg-s2);border-radius:var(--r-md);border:1px solid var(--border);margin:14px 0}
+.dep-node{font-family:var(--fm);font-size:12px;padding:5px 12px;border-radius:var(--r-pill)}
+.dep-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.dep-cur{background:var(--phase-glow);border:1px solid var(--phase);color:var(--phase);font-weight:600;box-shadow:0 0 10px rgba(58,127,212,.15)}
+.dep-future{background:var(--bg-s3);border:1px solid var(--border-b);color:var(--text-s)}
+.dep-arr{color:var(--text-s);font-size:16px;flex-shrink:0}
+
+/* BRIDGE */
+.bridge{margin-top:64px;padding-top:48px;border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-s1) 0%,var(--bg-s2) 100%);border:1px solid var(--border-b);border-radius:var(--r-xl);padding:36px;position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--phase),var(--copper),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(232,135,58,.07);pointer-events:none}
+.bridge-eyebrow{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px}
+.bridge-title{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--text-p);margin-bottom:16px}
+.bridge-title span{background:var(--grad-head);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.bridge-body{font-size:15px;color:var(--text-s);line-height:1.8;max-width:600px;margin-bottom:24px}
+.bridge-body strong{color:var(--text-p);font-weight:500}
+.bridge-concepts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.bridge-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(90deg,var(--phase),var(--copper));color:var(--bg-void);font-family:var(--fd);font-size:14px;font-weight:700;padding:13px 28px;border-radius:var(--r-pill);border:none;cursor:pointer;text-decoration:none;transition:all .2s}
+.bridge-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(58,127,212,.25);color:var(--bg-void)}
+
+/* SIDEBAR */
+.toc{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;overflow:hidden}
+.toc-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.toc-item{display:block;padding:6px 10px;font-size:12px;color:var(--text-s);border-radius:var(--r-sm);transition:all .15s;cursor:pointer;border-left:2px solid transparent;text-decoration:none;overflow-wrap:break-word;word-break:break-word;line-height:1.45}
+.toc-item:hover{background:var(--bg-s2);color:var(--text-p);border-left-color:var(--border-b)}
+.toc-item.active{background:var(--bg-s2);color:var(--phase);border-left-color:var(--phase)}
+.toc-sub{padding-left:20px;font-size:11px}
+.qref{background:var(--bg-s1);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;overflow:hidden}
+.qref-label{font-family:var(--fm);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-s);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.qref-item{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.qref-item:last-child{border-bottom:none}
+.qref-term{font-family:var(--fm);font-size:11px;color:var(--phase);white-space:nowrap;flex-shrink:0;font-weight:500;min-width:0}
+.qref-def{color:var(--text-s);line-height:1.5;font-size:12px;overflow-wrap:break-word;word-break:break-word;min-width:0}
+.footer{border-top:1px solid var(--border);padding:28px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-top:40px}
+.footer-left{font-family:var(--fm);font-size:12px;color:var(--text-s)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fadeUp .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}
+@media(max-width:768px){.shell{padding:0 20px}.nav{padding:0 20px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">IAM<span>·</span>PORTAL</div>
+    <div class="nav-div"></div>
+    <div class="nav-progress">
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <span class="progress-label">M06 / 20</span>
+    </div>
+    <a href="INDEX.html" class="nav-home">← Index</a>
+    <span class="nav-badge">M06 · Phase 2</span>
+  </div>
+</nav>
+
+<div class="shell">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero-bar"></div>
+  <div class="hero-content">
+    <div class="hero-phase"><div class="phase-dot"></div>Phase 2 · Governance &amp; PAM — Module 6 of 20 · Phase 2 Opens</div>
+    <h1 class="hero-title">Authorization<br><span class="ac">Architecture</span></h1>
+    <p class="hero-sub">Authentication answers "who are you?" — and Phase 1 covered every way to prove it. Authorization answers "what can you do?" — and this is where most enterprise access control failures actually occur. The model you choose determines your security posture, your operational burden, and your scalability ceiling.</p>
+    <div class="hero-meta">
+      <span class="badge badge-phase">Phase 2 · Governance &amp; PAM</span>
+      <span class="badge badge-copper">RBAC · ABAC · ReBAC · OPA</span>
+      <span class="badge badge-effort">⬛⬛⬛⬛⬛ 8–12 hrs</span>
+      <span class="badge badge-prereq">↳ M02 · M03a</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="orient-grid">
+    <div><div class="orient-label">Current module</div><div class="orient-val ac">M06 · Authorization Architecture</div></div>
+    <div><div class="orient-label">Learning track</div><div class="orient-val">Governance &amp; PAM</div></div>
+    <div><div class="orient-label">Current phase</div><div class="orient-val" style="color:var(--phase)">Phase 2 of 4 — Begins here</div></div>
+    <div><div class="orient-label">Overall progress</div><div class="orient-val">8 of 20 modules</div></div>
+    <div><div class="orient-label">What came before</div><div class="orient-val done">✓ Phase 1 complete — full protocol &amp; infra stack</div></div>
+    <div><div class="orient-label">What comes next</div><div class="orient-val">M07 · IGA — Saviynt &amp; SailPoint</div></div>
+  </div>
+  <div class="journey-row">
+    <div class="jdot jdot-done">M01</div><div class="jdot jdot-done">M02</div>
+    <div class="jdot jdot-done">M03a</div><div class="jdot jdot-done">M03b</div>
+    <div class="jdot jdot-done">M04a</div><div class="jdot jdot-done">M04b</div>
+    <div class="jdot jdot-done">M05</div>
+    <div class="jdot jdot-cur" title="M06 — You are here">M06</div>
+    <div class="jdot jdot-future">M07</div><div class="jdot jdot-future">M08</div>
+    <div class="jdot jdot-future">M09a</div><div class="jdot jdot-future">M09b</div>
+    <div class="jdot jdot-future">M10</div><div class="jdot jdot-future">M11</div>
+    <div class="jdot jdot-future">M12</div><div class="jdot jdot-future">M13</div>
+    <div class="jdot jdot-future">M14</div><div class="jdot jdot-future">M15</div>
+    <div class="jdot jdot-future">M16</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="content-main">
+
+<!-- S1: WHY -->
+<section class="section afu d3" id="why">
+  <div class="sec-label">Why this module matters</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">The most consequential IAM design decision</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Authentication is binary — you either proved your identity or you didn't. Authorization is a design space. The model you choose determines everything downstream: how granular your access controls can be, how fast the system scales, how easily policy changes propagate, and how reliably you can answer the audit question "why did this user have access to this resource on this date?"</p>
+    <p>Most enterprise IAM programs default to RBAC because it's familiar. Many hit its limitations — role explosion, coarse-grained access, inability to express context-dependent rules — and attempt to bolt on attribute-based logic to an RBAC foundation. The result is a hybrid that's more complex than either model alone and less correct than a purpose-built ABAC or ReBAC system would be.</p>
+    <p><strong>This module covers all four authorization models at architectural depth, with three enterprise design exercises that force you to choose and justify.</strong> By the end, you will be able to select the right model for any scenario and defend that choice at an architecture review board.</p>
+  </div>
+</section>
+
+<!-- S2: AUTHN vs AUTHZ (brief recap, deep split) -->
+<section class="section" id="split">
+  <div class="sec-label">The foundational boundary</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Where authentication ends and authorization begins</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>M02 defined this distinction conceptually. M06 makes it architectural. The most important design principle in authorization systems is keeping them separate from authentication systems — and understanding why violating this creates specific failure modes.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-phase">
+      <div class="card-label">Authentication output</div>
+      <div class="card-title">A verified identity + claims</div>
+      <div class="card-body">After successful authentication, the system has a verified principal identity (e.g., <code>alice@corp.com</code>) and a set of claims about that principal (email, department, groups, auth method, assurance level). <strong>Authentication does not make access decisions.</strong> It produces the evidence that authorization will evaluate.</div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">Authorization input</div>
+      <div class="card-title">Principal + action + resource + context</div>
+      <div class="card-body">Authorization evaluates: <strong>Subject</strong> (who — the verified principal), <strong>Action</strong> (what — read, write, delete, approve), <strong>Resource</strong> (on what — a specific file, API endpoint, database record), <strong>Context</strong> (under what conditions — time of day, device trust, risk score). All four must be considered for fine-grained authorization.</div>
+    </div>
+  </div>
+
+  <div class="gotcha">
+    <div class="gotcha-head"><span class="gotcha-icon">⚠️</span><span class="gotcha-label">Classic design failure</span><span class="gotcha-title">"If you can log in, you can see everything" — no authorization layer</span></div>
+    <div class="gotcha-body">The most common access control failure in legacy enterprise applications: authentication is the only gate. Once a user has a valid session, all resources are accessible. <strong>This is not authorization — it is the absence of authorization.</strong> An insider threat, a compromised account, or a privilege escalation attack immediately gains access to everything the application holds. Architects must ensure every system has an explicit authorization layer that evaluates each request independently of authentication state.</div>
+  </div>
+</section>
+
+<!-- S3: FOUR MODELS -->
+<section class="section" id="models">
+  <div class="sec-label">Authorization models</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Four models — architectural depth</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Each model is a different answer to the question "what determines whether access is granted?" Choose wrong and you'll be refactoring your authorization layer in 18 months. Understand them at depth and you'll make defensible, scalable choices the first time.</p>
+  </div>
+
+  <!-- RBAC -->
+  <div class="model-card rbac">
+    <div class="model-header">
+      <span class="model-tag">RBAC</span>
+      <span class="model-name">Role-Based Access Control</span>
+    </div>
+    <div class="model-body">
+      <strong>Core idea:</strong> Access is determined by roles assigned to users. Users don't have permissions directly — they have roles, and roles have permissions. <code>alice → Finance-Analyst role → read:financial-reports</code>.
+      <br><br>
+      <strong>Strengths:</strong> Simple to understand and audit. Maps naturally to organizational structure. Easy to explain to non-technical stakeholders ("all Finance Analysts can see financial reports"). Works well when job functions are well-defined and stable.
+      <br><br>
+      <strong>The role explosion problem:</strong> As organizations grow and access requirements diversify, the number of roles grows combinatorially. A company with 50 departments × 10 job levels × 5 access tiers = 2,500 potential roles. Many overlap. Roles are rarely retired. Users accumulate roles through Mover events (M02 privilege creep). The result: a role system that nobody fully understands, with access that nobody can audit confidently.
+      <br><br>
+      <strong>When RBAC breaks down:</strong> When you need to express "Finance Analysts can read financial reports for <em>their department</em> only" — this requires either 50 department-specific roles (explosion) or a hybrid model with attribute conditions.
+    </div>
+    <div class="model-grid">
+      <div class="model-grid-item"><div class="model-grid-label">Best for</div><div class="model-grid-val">Stable job functions, small-to-medium orgs, compliance-driven access control, applications where access tiers are few and well-defined</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Breaks down when</div><div class="model-grid-val">Access depends on data attributes (ownership, classification), context (time, location), or relationships — all require adding attributes, which is ABAC/ReBAC territory</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Enterprise examples</div><div class="model-grid-val">HR system access (HR-Manager, HR-Viewer, HR-Admin), network device access (Read-Only, Network-Operator, Network-Admin)</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Governance tool</div><div class="model-grid-val">Saviynt / SailPoint role management, IGA certification campaigns, role mining to discover natural clusters</div></div>
+    </div>
+  </div>
+
+  <!-- ABAC -->
+  <div class="model-card abac">
+    <div class="model-header">
+      <span class="model-tag">ABAC</span>
+      <span class="model-name">Attribute-Based Access Control</span>
+    </div>
+    <div class="model-body">
+      <strong>Core idea:</strong> Access is determined by evaluating a policy against attributes of the subject, resource, action, and environment. No predefined roles needed. Example policy: <code>PERMIT IF subject.department == resource.ownerDepartment AND subject.clearanceLevel >= resource.classificationLevel AND environment.time WITHIN businessHours</code>.
+      <br><br>
+      <strong>Strengths:</strong> Eliminates role explosion by expressing access rules as policies. Handles data-level access control naturally. Context-aware — access can vary by time, device, location, risk score. Fine-grained — different rules for different resources without creating separate roles for each.
+      <br><br>
+      <strong>The ABAC complexity challenge:</strong> Policies must be maintained and tested like code. A misconfigured ABAC policy can silently grant too much or too little access. Policy governance requires a PAP (Policy Administration Point) and testing infrastructure. Requires reliable attribute stores — if <code>subject.department</code> is wrong in the directory, access decisions are wrong.
+      <br><br>
+      <strong>XACML vs modern ABAC:</strong> Early ABAC used XACML (XML-based policy language) — verbose and complex. Modern ABAC uses JSON-based policy languages (OPA/Rego, Cedar) that are more readable and testable.
+    </div>
+    <div class="model-grid">
+      <div class="model-grid-item"><div class="model-grid-label">Best for</div><div class="model-grid-val">Healthcare (patient data access by treating clinician), financial services (data access by account ownership), multi-tenant SaaS, any scenario where resource attributes determine access</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Breaks down when</div><div class="model-grid-val">Access depends on graph relationships (who is a member of what project, who manages whom) — which is ReBAC territory. Also hard when attribute data is unreliable or stale.</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Enterprise examples</div><div class="model-grid-val">NHS clinical data access (only treating clinicians see patient records), GDPR-compliant data access (EU resident data only accessible from EU region)</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Policy engine</div><div class="model-grid-val">OPA (Open Policy Agent) with Rego language, AWS Cedar, AXIOMATICS, PlainID</div></div>
+    </div>
+  </div>
+
+  <!-- PBAC -->
+  <div class="model-card pbac">
+    <div class="model-header">
+      <span class="model-tag">PBAC</span>
+      <span class="model-name">Policy-Based Access Control</span>
+    </div>
+    <div class="model-body">
+      <strong>Core idea:</strong> Authorization logic is expressed as externalized, machine-executable policies separate from application code. PBAC is often treated as ABAC implemented via a dedicated policy engine — the distinction is architectural: where the policy lives, how it's managed, and how it's evaluated.
+      <br><br>
+      <strong>Policy-as-code:</strong> Policies are authored, version-controlled, tested, and deployed like software. OPA (Open Policy Agent) is the most widely deployed PBAC engine in cloud-native environments. AWS Cedar is purpose-built for authorization with formal verification properties. Both enable policies to be tested in CI/CD pipelines before deployment.
+      <br><br>
+      <strong>Externalized authorization:</strong> Application code doesn't contain authorization logic — it calls an external policy evaluation service. <code>POST /v1/data/authz/allow {"subject": "alice", "action": "delete", "resource": "invoice/123"} → {"result": false}</code>. This separates the access control surface from the application surface, enabling policy changes without application redeployment.
+    </div>
+    <div class="model-grid">
+      <div class="model-grid-item"><div class="model-grid-label">Best for</div><div class="model-grid-val">Microservices architectures, Kubernetes admission control, API gateway authorization, multi-system consistent policy enforcement</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Key advantage</div><div class="model-grid-val">Policy changes don't require application redeployment. A/B testing of authorization rules. Policy can be audited and reasoned about independently of application logic.</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Tools</div><div class="model-grid-val">OPA (CNCF graduated), AWS Cedar (Amazon Verified Permissions), Casbin, Oso</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Platform integration</div><div class="model-grid-val">API gateway sidecar (Envoy + OPA), Kubernetes admission webhook (OPA Gatekeeper), service mesh (Istio + OPA)</div></div>
+    </div>
+  </div>
+
+  <!-- ReBAC -->
+  <div class="model-card rebac">
+    <div class="model-header">
+      <span class="model-tag">ReBAC</span>
+      <span class="model-name">Relationship-Based Access Control</span>
+    </div>
+    <div class="model-body">
+      <strong>Core idea:</strong> Access is determined by the relationships between entities in a graph. <code>alice CAN delete document:123</code> because <code>alice IS owner OF document:123</code>. Relationships can be chained: <code>alice CAN view file</code> because <code>alice IS member OF team</code> and <code>team HAS view ON project</code> and <code>file IS IN project</code>.
+      <br><br>
+      <strong>Google Zanzibar — the seminal ReBAC system:</strong> Google's global authorization system powers Google Drive, YouTube, Google Maps, and Cloud IAM across billions of objects and users. Published in a 2019 paper, it introduced the tuple-based relationship model: <code>(object, relation, subject)</code>. For example: <code>(document:123, owner, user:alice)</code> and <code>(document:123, viewer, group:team-a)</code>. Access evaluation is a graph traversal — is there a path from the subject to the required permission on the object?
+      <br><br>
+      <strong>Why ReBAC matters for enterprise architects:</strong> Modern enterprise data (documents, projects, incidents, tickets, code repositories) has natural ownership and membership relationships. Google Drive's sharing model, GitHub's repository permissions, and Jira's project access are all ReBAC — users get access through organizational relationships, not role assignments.
+      <br><br>
+      <strong>Open-source implementations:</strong> OpenFGA (Auth0/Okta), SpiceDB (Authzed), Warrant. These implement Zanzibar-compatible tuple stores with consistent evaluation semantics.
+    </div>
+    <div class="model-grid">
+      <div class="model-grid-item"><div class="model-grid-label">Best for</div><div class="model-grid-val">Document/file sharing (Google Drive model), project-based access (GitHub, Jira), hierarchical resource access, any system where ownership and membership drive access</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">The key insight</div><div class="model-grid-val">RBAC asks "what role does this user have?" ReBAC asks "what is this user's relationship to this specific resource?" The answer is different for each resource — which is what makes it powerful.</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Enterprise examples</div><div class="model-grid-val">Confluence (spaces → pages → comments), GitHub (org → team → repo → branch), ServiceNow (team → incident → change record)</div></div>
+      <div class="model-grid-item"><div class="model-grid-label">Complexity cost</div><div class="model-grid-val">Relationship store must be kept in sync with application state. Graph traversal at scale requires careful caching (Zanzibar's "zookie" consistency tokens). Debugging access failures requires graph inspection tooling.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- S4: PDP/PEP/PAP/PIP ARCHITECTURE -->
+<section class="section" id="pdp">
+  <div class="sec-label">Policy architecture</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">PDP · PEP · PAP · PIP — the four components</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Regardless of which authorization model you choose, every authorization system has the same four functional components. Understanding them precisely is what allows you to design, troubleshoot, and scale authorization systems correctly.</p>
+  </div>
+
+  <!-- DIAGRAM 1: PDP/PEP/PAP/PIP -->
+  <div class="diag-wrap">
+    <div class="diag-label">Diagram 1 — PDP/PEP/PAP/PIP architecture with OPA as the policy engine</div>
+    <svg viewBox="0 0 920 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:920px;display:block" role="img" aria-label="Authorization architecture showing PEP intercepting requests, PDP making decisions using policies from PAP and attributes from PIP">
+      <title>PDP PEP PAP PIP Authorization Architecture</title>
+      <rect width="920" height="500" fill="#0B0E14" rx="8"/>
+      <defs>
+        <marker id="p1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#8A95A8"/></marker>
+        <marker id="p-ind" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3A7FD4"/></marker>
+        <marker id="p-cop" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#E8873A"/></marker>
+        <marker id="p-jade" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3ECFA0"/></marker>
+        <marker id="p-rose" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#FF5F7E"/></marker>
+        <marker id="p-vio" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#9B7FFF"/></marker>
+      </defs>
+
+      <!-- SUBJECT -->
+      <rect x="18" y="210" width="110" height="60" rx="6" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="73" y="234" text-anchor="middle" font-size="18">👤</text>
+      <text x="73" y="252" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8">Subject</text>
+      <text x="73" y="265" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">alice@corp.com</text>
+
+      <!-- Request arrow -->
+      <line x1="128" y1="240" x2="168" y2="240" stroke="#8A95A8" stroke-width="2" marker-end="url(#p1)"/>
+      <text x="148" y="231" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">request</text>
+
+      <!-- PEP -->
+      <rect x="168" y="170" width="170" height="140" rx="6" fill="#111520" stroke="#3A7FD4" stroke-width="2"/>
+      <rect x="168" y="170" width="170" height="28" rx="6" fill="rgba(58,127,212,0.1)"/>
+      <text x="253" y="189" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#3A7FD4" font-weight="700">PEP</text>
+      <text x="253" y="204" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Policy Enforcement Point</text>
+      <text x="253" y="226" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Intercepts every request</text>
+      <text x="253" y="243" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Sends auth query to PDP</text>
+      <text x="253" y="261" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Enforces allow/deny</text>
+      <text x="253" y="280" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">API GW · sidecar · app layer</text>
+      <text x="253" y="296" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#4A5568">Envoy · Kong · custom</text>
+
+      <!-- PEP → PDP query -->
+      <line x1="338" y1="225" x2="398" y2="225" stroke="#3A7FD4" stroke-width="2" marker-end="url(#p-ind)"/>
+      <text x="368" y="216" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3A7FD4">auth query</text>
+      <text x="368" y="231" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#6B7A8F">{sub, action, res}</text>
+
+      <!-- PDP decision back -->
+      <line x1="398" y1="255" x2="338" y2="255" stroke="#3ECFA0" stroke-width="2" marker-end="url(#p-jade)"/>
+      <text x="368" y="268" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">allow / deny</text>
+
+      <!-- PDP -->
+      <rect x="398" y="150" width="210" height="180" rx="6" fill="#111520" stroke="#E8873A" stroke-width="2"/>
+      <rect x="398" y="150" width="210" height="28" rx="6" fill="rgba(232,135,58,0.1)"/>
+      <text x="503" y="169" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#E8873A" font-weight="700">PDP</text>
+      <text x="503" y="184" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Policy Decision Point</text>
+      <text x="503" y="206" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Evaluates policy against</text>
+      <text x="503" y="222" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">subject + resource + context</text>
+      <text x="503" y="242" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Returns allow/deny/obligation</text>
+      <text x="503" y="262" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#E8873A" font-weight="600">OPA (Rego)</text>
+      <text x="503" y="280" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">AWS Cedar</text>
+      <text x="503" y="298" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">OpenFGA · custom engine</text>
+      <text x="503" y="316" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#4A5568">Port 8181 (OPA REST API)</text>
+
+      <!-- PDP → PAP (get policies) -->
+      <line x1="503" y1="150" x2="503" y2="98" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#p-vio)"/>
+      <text x="516" y="128" font-size="10" font-family="IBM Plex Mono" fill="#9B7FFF">load policies</text>
+
+      <!-- PAP -->
+      <rect x="398" y="24" width="210" height="74" rx="6" fill="#111520" stroke="#9B7FFF" stroke-width="1.5"/>
+      <text x="503" y="46" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#9B7FFF" font-weight="600">PAP — Policy Admin Point</text>
+      <text x="503" y="63" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Policy authoring, versioning, deployment</text>
+      <text x="503" y="79" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">Git repo → CI/CD → OPA bundle server</text>
+      <text x="503" y="93" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#4A5568">Policy-as-code: Rego · Cedar · XACML</text>
+
+      <!-- PDP → PIP (get attributes) -->
+      <line x1="608" y1="240" x2="658" y2="240" stroke="#8A95A8" stroke-width="1.5" marker-end="url(#p1)"/>
+      <text x="633" y="230" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#8A95A8">get attrs</text>
+
+      <!-- PIP -->
+      <rect x="658" y="150" width="244" height="180" rx="6" fill="#111520" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="780" y="174" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">PIP — Policy Info Point</text>
+      <text x="780" y="194" text-anchor="middle" font-size="11" font-family="IBM Plex Sans" fill="#8A95A8">Provides attributes for evaluation</text>
+      <rect x="672" y="206" width="216" height="30" rx="4" fill="#181D2A" stroke="#2E3A52"/>
+      <text x="780" y="222" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#F5C542">Active Directory / LDAP</text>
+      <text x="780" y="236" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">user dept · groups · clearance</text>
+      <rect x="672" y="244" width="216" height="30" rx="4" fill="#181D2A" stroke="#2E3A52"/>
+      <text x="780" y="260" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#3ECFA0">Resource metadata store</text>
+      <text x="780" y="274" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">classification · owner · project</text>
+      <rect x="672" y="282" width="216" height="30" rx="4" fill="#181D2A" stroke="#2E3A52"/>
+      <text x="780" y="298" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#FF5F7E">Risk &amp; context engine</text>
+      <text x="780" y="312" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">device trust · location · time</text>
+
+      <!-- Resource / Target -->
+      <rect x="168" y="380" width="170" height="60" rx="6" fill="#181D2A" stroke="#2E3A52" stroke-width="1.5"/>
+      <text x="253" y="404" text-anchor="middle" font-size="12" font-family="IBM Plex Mono" fill="#8A95A8" font-weight="600">Protected Resource</text>
+      <text x="253" y="421" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">API endpoint · DB record · file</text>
+      <text x="253" y="437" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#4A5568">Only accessible after PEP enforcement</text>
+
+      <!-- PEP → Resource (allow path) -->
+      <line x1="253" y1="310" x2="253" y2="380" stroke="#3ECFA0" stroke-width="2" marker-end="url(#p-jade)"/>
+      <text x="270" y="348" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">ALLOW →</text>
+      <text x="270" y="362" font-size="10" font-family="IBM Plex Mono" fill="#3ECFA0">pass through</text>
+
+      <!-- Subject → Denied (deny path) -->
+      <rect x="18" y="380" width="110" height="60" rx="6" fill="rgba(255,95,126,0.1)" stroke="#FF5F7E" stroke-width="1"/>
+      <text x="73" y="410" text-anchor="middle" font-size="11" font-family="IBM Plex Mono" fill="#FF5F7E" font-weight="600">403 DENY</text>
+      <text x="73" y="428" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#6B7A8F">returned to subject</text>
+      <line x1="168" y1="410" x2="128" y2="410" stroke="#FF5F7E" stroke-width="2" marker-end="url(#p-rose)"/>
+      <text x="148" y="402" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#FF5F7E">DENY</text>
+
+      <!-- Bottom legend -->
+      <rect x="18" y="462" width="880" height="28" rx="4" fill="#181D2A"/>
+      <text x="34" y="480" font-size="11" font-family="IBM Plex Mono" fill="#3A7FD4">PEP = where</text><text x="115" y="480" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">enforcement happens (API GW, sidecar, app middleware)</text>
+      <text x="400" y="480" font-size="11" font-family="IBM Plex Mono" fill="#E8873A">PDP = where</text><text x="481" y="480" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">the decision is made (OPA, Cedar, custom engine)</text>
+      <text x="700" y="480" font-size="11" font-family="IBM Plex Mono" fill="#9B7FFF">PAP =</text><text x="736" y="480" font-size="11" font-family="IBM Plex Sans" fill="#6B7A8F">where policy is authored and deployed</text>
+    </svg>
+  </div>
+
+  <div class="card-grid-2" style="margin:20px 0">
+    <div class="card card-phase">
+      <div class="card-label">PEP placement options</div>
+      <div class="card-title">Where to enforce — the architectural choice</div>
+      <div class="card-body">
+        <strong>API Gateway</strong> — Centralized enforcement before any application code runs. Validates JWT, checks scopes, calls OPA. Works for HTTP APIs. Kong, AWS API Gateway, Apigee all support OPA integration.<br><br>
+        <strong>Service mesh sidecar</strong> — Envoy proxy sidecar intercepts all service-to-service traffic. OPA plugin evaluates policy on every request. Consistent enforcement across all microservices without modifying application code.<br><br>
+        <strong>Application middleware</strong> — Library in each application calls the PDP. More flexibility (can include business-layer context) but requires every team to implement it correctly.<br><br>
+        <strong>Architectural choice:</strong> API gateway for coarse-grained (authentication + scope). Service mesh for service-to-service. Application layer for fine-grained (data-row level) where business context is needed.
+      </div>
+    </div>
+    <div class="card card-copper">
+      <div class="card-label">PDP performance</div>
+      <div class="card-title">Latency is the authorization architect's constraint</div>
+      <div class="card-body">
+        Every API call that requires an authorization decision adds latency. OPA evaluating a typical Rego policy: 1–5ms. At 10,000 RPS, that's acceptable. At 100,000 RPS with a 10ms policy evaluation latency, you've added 1 second of authorization overhead per second of traffic.
+        <br><br>
+        <strong>Optimization strategies:</strong><br>
+        (1) <strong>Bundle caching</strong> — OPA loads policies into memory; evaluation is in-process, not a network call.<br>
+        (2) <strong>Attribute caching in PIP</strong> — cache user attributes from LDAP for 60–300 seconds. Most attributes don't change per-request.<br>
+        (3) <strong>Partial evaluation</strong> — OPA's partial evaluation pre-computes what it can at policy load time, reducing per-request work.<br>
+        (4) <strong>Compile policies to Wasm</strong> — OPA can compile Rego to WebAssembly for sub-millisecond in-process evaluation.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S5: ZANZIBAR -->
+<section class="section" id="zanzibar">
+  <div class="sec-label">Google Zanzibar deep dive</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Google Zanzibar — the architecture behind modern ReBAC</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Google's 2019 paper "Zanzibar: Google's Consistent, Global Authorization System" described the authorization system that powers Google Drive, Google Calendar, YouTube, and dozens of other Google products. It handles trillions of authorization checks per second with single-digit millisecond latency. Understanding Zanzibar is essential for any architect designing fine-grained authorization for data-sharing products.</p>
+  </div>
+
+  <div class="concept">
+    <div class="concept-term">The tuple model — the fundamental data structure</div>
+    <div class="concept-def">
+      Zanzibar stores authorization data as relationship tuples in the form: <code>(object, relation, subject)</code>
+      <br><br>
+      Examples:<br>
+      <code>(document:123, owner, user:alice)</code> — Alice owns document 123<br>
+      <code>(document:123, viewer, group:team-a#member)</code> — Members of team-a can view document 123<br>
+      <code>(folder:projects, parent, document:123)</code> — Document 123 is in the projects folder<br>
+      <code>(folder:projects, viewer, user:bob)</code> — Bob can view the projects folder<br>
+      <br>
+      A check for "can bob view document:123?" traverses the graph: document:123 has no direct viewer for bob → check parent folder → folder:projects has viewer=bob → <strong>ALLOW</strong>.
+      <br><br>
+      This graph traversal is what makes ReBAC powerful — inherited access through relationships — and what makes it complex to implement correctly at scale.
+    </div>
+  </div>
+
+  <div class="concept-copper">
+    <div class="concept-term">The "new enemy" problem — why consistency is hard in ReBAC</div>
+    <div class="concept-def">
+      The hardest consistency challenge in distributed ReBAC: Alice is removed as a viewer of document:123 at timestamp T. Bob checks at timestamp T+1ms from a different region. If Bob's check hits a replica that hasn't received the revocation, he gets ALLOW. The access was revoked, but the system said it wasn't.
+      <br><br>
+      Zanzibar's solution: <strong>zookies</strong> (consistency tokens). When a tuple is written, a zookie (a globally consistent timestamp) is returned. Subsequent reads include this zookie as a "read at least as fresh as this timestamp" constraint, guaranteeing the read sees the write. OpenFGA and SpiceDB implement this as the <code>zed-token</code> / <code>snaptoken</code>.
+      <br><br>
+      <strong>Architect's implication:</strong> ReBAC systems in distributed environments require careful consistency design. "Eventually consistent ReBAC" creates temporal access control windows that may be acceptable for document sharing (low stakes) but unacceptable for financial transactions (high stakes).
+    </div>
+  </div>
+</section>
+
+<!-- S6: EVOLUTION TABLE -->
+<section class="section" id="evolution">
+  <div class="sec-label">Model comparison</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">RBAC → ABAC → PBAC → ReBAC: the evolution</h2><div class="underbar"></div></div>
+  <div class="tbl-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Dimension</th><th>RBAC</th><th>ABAC</th><th>PBAC</th><th>ReBAC</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Access decision basis</td><td>Role assignment</td><td>Attribute policies</td><td>Externalized code policies</td><td>Entity relationships</td></tr>
+        <tr><td>Granularity</td><td><span class="tag-m">Coarse</span> — role level</td><td><span class="tag-y">Fine</span> — attribute conditions</td><td><span class="tag-y">Fine</span> — arbitrary logic</td><td><span class="tag-y">Finest</span> — per object</td></tr>
+        <tr><td>Role explosion risk</td><td><span class="tag-n">High</span></td><td><span class="tag-y">None</span></td><td><span class="tag-y">None</span></td><td><span class="tag-y">None</span></td></tr>
+        <tr><td>Context awareness</td><td><span class="tag-n">Poor</span></td><td><span class="tag-y">Strong</span></td><td><span class="tag-y">Strong</span></td><td><span class="tag-m">Moderate</span></td></tr>
+        <tr><td>Resource-level access</td><td><span class="tag-n">No</span> — class level</td><td><span class="tag-m">Partial</span> — via attributes</td><td><span class="tag-m">Partial</span> — via policies</td><td><span class="tag-y">Yes</span> — per object</td></tr>
+        <tr><td>Audit clarity</td><td><span class="tag-y">High</span> — "which role"</td><td><span class="tag-m">Medium</span> — policy trace</td><td><span class="tag-y">High</span> — policy version</td><td><span class="tag-m">Medium</span> — graph trace</td></tr>
+        <tr><td>Implementation complexity</td><td><span class="tag-y">Low</span></td><td><span class="tag-m">Medium</span></td><td><span class="tag-m">Medium-High</span></td><td><span class="tag-n">High</span></td></tr>
+        <tr><td>IGA tooling support</td><td><span class="tag-y">Strong</span></td><td><span class="tag-m">Partial</span></td><td><span class="tag-m">Emerging</span></td><td><span class="tag-n">Weak</span></td></tr>
+        <tr><td>Performance at scale</td><td><span class="tag-y">High</span></td><td><span class="tag-m">Medium</span></td><td><span class="tag-y">High</span> with caching</td><td><span class="tag-m">Requires careful design</span></td></tr>
+        <tr><td>Best enterprise fit</td><td>HR systems, ERP, stable job functions</td><td>Healthcare, finance, data classification</td><td>Microservices, Kubernetes, APIs</td><td>Collaboration tools, documents, code repos</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- S7: THREE DESIGN EXERCISES -->
+<section class="section" id="exercises">
+  <div class="sec-label">Design exercises</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Three enterprise scenarios — choose and justify</h2><div class="underbar"></div></div>
+  <div class="sec-body">
+    <p>Authorization model selection is a design decision, not a configuration choice. These three scenarios represent the most common enterprise authorization challenges. For each: identify the right model, justify it, and describe the implementation approach. Click to reveal the recommended design.</p>
+  </div>
+
+  <div class="exercise" id="ex1">
+    <div class="exercise-head">
+      <span class="exercise-badge">Exercise 1 · Healthcare</span>
+      <span class="exercise-title">Electronic Health Record access control</span>
+    </div>
+    <div class="exercise-body">
+      <div class="exercise-scenario">
+        <strong>Scenario:</strong> A hospital system has 5,000 clinical staff accessing a shared EHR system. Access rules: nurses can read patient records for patients currently admitted to their ward. Attending physicians can read and write records for their assigned patients. Consultants can view records for patients they've been referred. No role-based assignment can practically capture all these rules — a patient's treating team changes daily. <strong>What authorization model do you recommend and why?</strong>
+      </div>
+      <div class="exercise-q" onclick="toggleEx('ex1')">
+        ▶ Reveal recommended design
+        <span class="exercise-chev">▼</span>
+      </div>
+      <div class="exercise-answer">
+        <strong>Recommended: ReBAC (with ABAC elements for context)</strong>
+        <br><br>
+        The core access pattern is relationship-based: a nurse's access to a patient record is determined by the relationship "nurse IS assigned to ward W AND patient P IS currently in ward W." This is a graph relationship, not a role or an attribute policy.
+        <br><br>
+        <strong>Implementation:</strong> Use an OpenFGA-compatible tuple store. Tuples: <code>(patient:123, admitted-to, ward:ICU-3)</code>, <code>(user:nurse-alice, assigned-to, ward:ICU-3)</code>. Access check: "can nurse-alice view patient:123?" traverses: patient is in ICU-3, nurse-alice is assigned to ICU-3 → ALLOW.
+        <br><br>
+        <strong>ABAC elements:</strong> Add a time context check: after discharge, the relationship tuple <code>(patient:123, admitted-to, ward:ICU-3)</code> is deleted. Past-stay access requires a separate "treating-team" relationship retained for audit purposes, with read-only permission.
+        <br><br>
+        <strong>Why not RBAC:</strong> Creating roles like "ICU-3-nurse" for every ward × shift combination creates thousands of roles and requires hourly updates as patients move between wards. ReBAC relationships are updated automatically by the patient administration system — much lower maintenance burden.
+      </div>
+    </div>
+  </div>
+
+  <div class="exercise" id="ex2">
+    <div class="exercise-head">
+      <span class="exercise-badge">Exercise 2 · Financial Services</span>
+      <span class="exercise-title">Trading platform API authorization</span>
+    </div>
+    <div class="exercise-body">
+      <div class="exercise-scenario">
+        <strong>Scenario:</strong> A bank's trading platform exposes REST APIs consumed by internal systems and external clients. Rules: traders can execute orders up to their authorized risk limit. Risk managers can view all orders but not execute. Compliance officers can view all orders plus export audit reports. All access is blocked outside market hours. Large orders (>$1M) require additional authorization from a supervisor. External API clients can only access their own account data. <strong>What authorization model do you recommend?</strong>
+      </div>
+      <div class="exercise-q" onclick="toggleEx('ex2')">
+        ▶ Reveal recommended design
+        <span class="exercise-chev">▼</span>
+      </div>
+      <div class="exercise-answer">
+        <strong>Recommended: PBAC (OPA/Cedar) with RBAC roles as input attributes</strong>
+        <br><br>
+        The access rules mix role-based elements (trader/risk-manager/compliance roles), attribute conditions (risk limit, order size, market hours), and resource ownership (external clients' own accounts). No single model handles all three cleanly — PBAC with OPA is the right architectural choice because it can evaluate all conditions in a single policy with access to all relevant context.
+        <br><br>
+        <strong>OPA policy sketch:</strong><br>
+        <code>allow if { input.user.role == "trader"; input.action == "execute_order"; input.order.size &lt;= data.limits[input.user.id]; market_hours_check }</code><br>
+        <code>allow if { input.user.role == "trader"; input.action == "execute_order"; input.order.size &gt; 1000000; supervisor_approved }</code><br>
+        <code>allow if { input.user.role in {"risk-manager","compliance"}; input.action == "view_order" }</code>
+        <br><br>
+        <strong>RBAC roles as attributes:</strong> Roles (trader, risk-manager, compliance) exist in the directory and are passed as claims in the JWT. OPA reads these claims — RBAC provides the coarse-grained categorization, OPA's policy engine adds the fine-grained conditions.
+        <br><br>
+        <strong>Why not pure RBAC:</strong> The risk limit check (<code>order.size &lt;= limits[user.id]</code>) is per-user numeric data, not a role property. Market hours check is environmental context. Supervisor approval for large orders is a workflow condition. All of these require PBAC's expressive policy language.
+      </div>
+    </div>
+  </div>
+
+  <div class="exercise" id="ex3">
+    <div class="exercise-head">
+      <span class="exercise-badge">Exercise 3 · DevOps Platform</span>
+      <span class="exercise-title">Internal developer platform access control</span>
+    </div>
+    <div class="exercise-body">
+      <div class="exercise-scenario">
+        <strong>Scenario:</strong> Your enterprise is building an internal developer platform (IDP) that manages Kubernetes namespaces, GitHub repositories, AWS accounts, and deployment pipelines. Engineers belong to product teams. Teams own namespaces and repos. Platform admins manage the infrastructure. Security engineers need read-only access to everything for audit. Onboarding a new team must provision access to all their resources atomically. <strong>What authorization model do you design?</strong>
+      </div>
+      <div class="exercise-q" onclick="toggleEx('ex3')">
+        ▶ Reveal recommended design
+        <span class="exercise-chev">▼</span>
+      </div>
+      <div class="exercise-answer">
+        <strong>Recommended: ReBAC for resource access + RBAC for platform-level roles</strong>
+        <br><br>
+        This is a hybrid design. The resource access pattern (engineer can deploy to namespace because engineer IS member of team that OWNS namespace) is naturally ReBAC. Platform-level roles (platform-admin, security-auditor) are few, stable, and naturally RBAC.
+        <br><br>
+        <strong>ReBAC tuples:</strong><br>
+        <code>(team:payments, member, user:alice)</code><br>
+        <code>(namespace:payments-prod, owner, team:payments)</code><br>
+        <code>(repo:payments-api, owner, team:payments)</code><br>
+        Access check: "can alice deploy to namespace:payments-prod?" → alice IS member of team:payments → team:payments OWNS namespace:payments-prod → ALLOW.
+        <br><br>
+        <strong>RBAC for platform roles:</strong> <code>platform-admin</code> role gets access to all namespaces via a wildcard tuple: <code>(namespace:*, admin, role:platform-admin)</code>. <code>security-auditor</code> role gets read access everywhere.
+        <br><br>
+        <strong>Team onboarding atomicity:</strong> When a new team is created, the IDP creates the team entity and all resource tuples in a single transaction (OpenFGA supports batch writes). All access is established atomically — no partial state where some resources are accessible and others aren't.
+        <br><br>
+        <strong>Why not pure RBAC:</strong> Creating roles for every team × environment combination (payments-prod-deployer, payments-staging-deployer, etc.) creates O(teams × environments) roles. ReBAC's team→namespace relationship model scales O(teams + resources) — linearly, not combinatorially.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="section" id="kc">
+  <div class="sec-label">Knowledge check</div>
+  <div class="sec-title-wrap"><h2 class="sec-title">Test your authorization architecture depth</h2><div class="underbar"></div></div>
+
+  <div class="kc" id="kc1">
+    <div class="kc-q" onclick="toggleKC('kc1')">
+      <span class="kc-icon">Q1</span>
+      Your enterprise's Saviynt IGA system manages RBAC roles for 300 enterprise applications. An audit finds 8,000 distinct roles across 300 apps, with the average user holding 47 roles. What is the architectural problem and what is the remediation strategy?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>This is classic role explosion — the primary RBAC failure mode at enterprise scale.</strong><br><br>
+      <strong>Root causes:</strong> (1) Roles were created reactively per-request rather than by design. (2) Mover events added new roles without removing old ones (privilege creep). (3) Application teams created app-specific roles independently with no governance. (4) No role re-use across applications — similar access in App A and App B created two separate roles rather than one business role mapped to both.<br><br>
+      <strong>Remediation strategy — Role Mining + Role Engineering:</strong><br>
+      (1) <strong>Role mining analysis:</strong> Use Saviynt's role mining capability to analyze actual access usage patterns across the 8,000 roles. Identify: which roles are never used (candidates for retirement), which roles frequently co-occur (candidates for merging), which roles differ by only one permission (candidates for consolidation).<br>
+      (2) <strong>Business role design:</strong> Design roles from the top down — start with business functions (Finance-Analyst, HR-Manager) and map them to application permissions, rather than starting with application permissions and grouping upward.<br>
+      (3) <strong>Role lifecycle governance:</strong> No role created without a business owner. Every role reviewed in an annual certification campaign. Roles without any assigned users for 90 days are automatically deprecated.<br>
+      (4) <strong>Target state:</strong> Reduce to fewer than 50 business roles covering 80% of access. Remaining access handled via access request workflows with time-limited grants, not permanent roles.
+    </div>
+  </div>
+
+  <div class="kc" id="kc2">
+    <div class="kc-q" onclick="toggleKC('kc2')">
+      <span class="kc-icon">Q2</span>
+      Describe the OPA evaluation model. A microservice receives a request and calls OPA with <code>{"subject":"alice","action":"delete","resource":"invoice/123","context":{"time":"14:00","department":"Finance"}}</code>. Walk through how OPA processes this query against a Rego policy.
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>OPA evaluation model — step by step:</strong><br><br>
+      <strong>1. Input document:</strong> The JSON object sent by the microservice becomes OPA's <code>input</code> document, accessible in Rego as <code>input.subject</code>, <code>input.action</code>, etc.<br><br>
+      <strong>2. Data documents:</strong> OPA has pre-loaded policy data (from the PAP bundle — e.g., role-permission mappings, resource metadata) available as <code>data.*</code>.<br><br>
+      <strong>3. Policy evaluation:</strong> OPA finds the relevant Rego rule — typically <code>allow</code> in the <code>authz</code> package. Example rule:<br>
+      <code>package authz</code><br>
+      <code>allow { input.subject == data.resources[input.resource].owner }</code><br>
+      <code>allow { input.action == "delete"; data.roles[input.subject][_] == "Finance-Admin"; business_hours }</code><br>
+      <code>business_hours { hour := time.clock(time.now_ns())[0]; hour >= 9; hour &lt; 17 }</code><br><br>
+      <strong>4. Unification:</strong> OPA evaluates each rule body by attempting to unify variables with values from input and data. If any rule body evaluates to true, <code>allow</code> is true.<br><br>
+      <strong>For alice/delete/invoice/123:</strong> Check rule 1: is alice the owner of invoice/123? → data lookup. If yes → ALLOW. Check rule 2: does alice have Finance-Admin role? → data lookup. Is current time in business hours? → time check. If both → ALLOW. If no rule matches → <code>allow</code> is undefined → OPA returns <code>{"result": false}</code> → microservice returns 403.
+    </div>
+  </div>
+
+  <div class="kc" id="kc3">
+    <div class="kc-q" onclick="toggleKC('kc3')">
+      <span class="kc-icon">Q3</span>
+      A developer proposes embedding authorization logic in the application code: "We check if the user has the 'admin' attribute in our middleware and allow/deny accordingly." As an IAM architect, what are the problems with this approach and what is the correct architecture?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>Five problems with embedded authorization logic:</strong><br><br>
+      (1) <strong>Policy drift:</strong> Each team embeds their own authorization logic. Two teams with the same business requirement implement it differently. Policy inconsistency accumulates invisibly across the codebase.<br>
+      (2) <strong>Policy change requires redeployment:</strong> To change who can perform an action, the code must be modified, tested, and deployed. For security-critical changes (e.g., removing a terminated admin's access), you cannot afford a deployment cycle.<br>
+      (3) <strong>No audit trail of policy state:</strong> At any point in time, "what was the authorization policy for this action?" requires examining the git history of every application — impossible for audit purposes.<br>
+      (4) <strong>No policy testing:</strong> Embedded authorization logic is rarely unit-tested for authorization correctness. A logic error might grant too much access silently.<br>
+      (5) <strong>Single attribute check is not authorization:</strong> Checking one attribute (<code>is_admin</code>) is not fine-grained authorization — it's binary access control. It doesn't consider the resource being accessed, the action being taken, or any context.<br><br>
+      <strong>Correct architecture:</strong> Externalize authorization to an OPA service. Application middleware calls <code>POST /v1/data/authz/allow</code> with the full context. Policy is managed in a PAP (Git repo → CI/CD → OPA bundle). Policy changes are deployed independently of application code. Policy is version-controlled, testable, and auditable. Authorization decisions are logged centrally.
+    </div>
+  </div>
+
+  <div class="kc" id="kc4">
+    <div class="kc-q" onclick="toggleKC('kc4')">
+      <span class="kc-icon">Q4</span>
+      What is the difference between authorization and entitlements? How does Saviynt (IGA) relate to OPA (authorization engine) in an enterprise authorization architecture?
+      <span class="kc-chev">▼</span>
+    </div>
+    <div class="kc-a">
+      <strong>Authorization vs entitlements — a critical architectural distinction:</strong><br><br>
+      <strong>Entitlement:</strong> The right to access a resource or perform an action, assigned to a principal through a governance process (IGA). An entitlement is a persistent assignment — "alice has the Finance-Analyst role in Salesforce." Entitlements are managed by IGA systems (Saviynt, SailPoint), provisioned via SCIM/connectors, governed through certifications and SoD policies.<br><br>
+      <strong>Authorization decision:</strong> The real-time evaluation of whether a principal's current entitlements (plus context) permit a specific action on a specific resource. Authorization is ephemeral — evaluated on each request by a policy engine (OPA, Cedar). It doesn't persist; it computes.<br><br>
+      <strong>How Saviynt and OPA relate:</strong><br>
+      Saviynt manages the <strong>lifecycle</strong> of entitlements — who should have what access, through what approval process, with what review cadence. It writes entitlement data (roles, group memberships) to target systems (AD groups, application roles).<br><br>
+      OPA evaluates <strong>access requests</strong> at runtime — should this request be allowed, given the principal's current entitlements (read from AD/JWT claims) and the policy's rules about those entitlements?<br><br>
+      <strong>The data flow:</strong> Saviynt provisions alice → Finance-Analyst role → written to AD group → synced to Entra ID → appears in alice's JWT claims → OPA policy reads <code>input.claims.roles</code> → evaluates against Rego policy → allow/deny.<br><br>
+      Saviynt governs <em>what</em> alice has. OPA decides <em>what alice can do with it</em> on each request.
+    </div>
+  </div>
+</section>
+
+<!-- TAKEAWAYS -->
+<div class="takeaway">
+  <div class="takeaway-head">
+    <div class="takeaway-icon">⚖️</div>
+    <div class="takeaway-title">Key takeaways — M06 · Authorization Architecture</div>
+  </div>
+  <ul class="takeaway-list">
+    <li><strong style="color:var(--text-p)">Authorization is the most consequential IAM design decision.</strong> The model you choose determines your security posture, operational burden, and scalability ceiling. Authentication proves identity; authorization decides what to do with it.</li>
+    <li><strong style="color:var(--text-p)">Four models, four different problems:</strong> RBAC for stable job functions (simple, auditable, role explosion risk). ABAC for attribute/context-dependent access (fine-grained, flexible, requires good attribute data). PBAC for externalized policy-as-code (testable, deployable, microservices-native). ReBAC for relationship-based access (Google Drive model, per-object permissions, graph traversal).</li>
+    <li><strong style="color:var(--text-p)">PDP/PEP/PAP/PIP are the four universal authorization components.</strong> PEP intercepts and enforces. PDP evaluates policy. PAP manages policies. PIP provides attributes. Every authorization system — regardless of model — has all four.</li>
+    <li><strong style="color:var(--text-p)">Externalized authorization (PBAC with OPA/Cedar) is the correct architecture for microservices.</strong> Policy-as-code, testable in CI/CD, deployed independently of application code, centrally auditable. Embedded authorization logic in applications is an anti-pattern.</li>
+    <li><strong style="color:var(--text-p)">Google Zanzibar's tuple model is the foundation of modern ReBAC.</strong> Relationship tuples <code>(object, relation, subject)</code> enable graph traversal for inherited access. Consistency tokens (zookies) solve the distributed authorization consistency problem.</li>
+    <li><strong style="color:var(--text-p)">Role explosion is RBAC's primary failure mode</strong> — not a sign that RBAC is wrong, but that the roles were never designed. Role mining identifies natural clusters. Business role design + IGA governance prevents accumulation.</li>
+    <li><strong style="color:var(--text-p)">Saviynt governs entitlement lifecycle; OPA evaluates access requests.</strong> These are complementary, not competing. IGA provisions the entitlements that the authorization engine evaluates at runtime.</li>
+  </ul>
+</div>
+
+<!-- ARCHITECT REVIEW -->
+<div class="arch-review">
+  <div class="arch-review-head">
+    <span class="arch-badge">Architect Review</span>
+    <span class="arch-title">Senior-level authorization design challenges</span>
+  </div>
+  <ul class="arch-list">
+    <li>
+      <span class="arch-num">01</span>
+      Your enterprise has RBAC embedded in 150 microservices — each service implements its own role checks in middleware. A security incident reveals that a contractor with a decommissioned role still had access to three services because the role check was implemented differently across teams. Design the migration to centralized OPA-based authorization: how do you extract authorization logic from 150 services without a big-bang cutover, how do you ensure behavioral equivalence between old and new authorization, and how do you operationalize the new policy pipeline?
+    </li>
+    <li>
+      <span class="arch-num">02</span>
+      Design the complete authorization architecture for a multi-tenant SaaS platform where: tenant admins can manage all resources within their tenant, tenant users have role-based access within their tenant, platform admins can access all tenants for support purposes but with full audit logging, and API clients have scoped access defined by OAuth token scopes. Map each access pattern to the appropriate model (RBAC/ABAC/PBAC/ReBAC) and explain the integration points.
+    </li>
+    <li>
+      <span class="arch-num">03</span>
+      An IGA certification campaign reveals that 40% of sampled access grants cannot be justified by any current business need — they were provisioned historically and never reviewed. Your CISO asks: how do we prevent this from accumulating again? Design a preventive authorization architecture that combines IGA governance (Saviynt), runtime policy enforcement (OPA), and continuous access evaluation — such that stale access is either automatically revoked or flagged for review within 90 days of becoming unjustifiable.
+    </li>
+  </ul>
+</div>
+
+<!-- DEP MAP -->
+<section class="section" id="dep">
+  <div class="sec-label">Knowledge dependency map</div>
+  <div class="dep-map">
+    <span class="dep-node dep-done">M02 Fundamentals</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-done">M03a OAuth</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-cur">M06 Authorization ← here</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M07 IGA (Saviynt)</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M08 PAM (CyberArk)</span><span class="dep-arr">→</span>
+    <span class="dep-node dep-future">M12 Platform Eng</span>
+  </div>
+</section>
+
+<!-- BRIDGE -->
+<div class="bridge" id="bridge">
+  <div class="sec-label">Bridge to next module</div>
+  <div class="bridge-card">
+    <div class="bridge-eyebrow">What you mastered · What comes next</div>
+    <h2 class="bridge-title">Authorization decides what.<br>Governance decides <span>who should have what.</span></h2>
+    <p class="bridge-body">
+      M06 covered the technical authorization layer — the models, the policy engines, the PDP/PEP architecture. You can now design fine-grained authorization systems for any enterprise scenario and defend your model selection at an architecture review.
+      <br><br>
+      Module M07 covers <strong>Identity Governance &amp; Administration (IGA)</strong> — the operational system that governs which principals should hold which entitlements, through what approval process, with what review cadence. Saviynt is your primary tool; you already operate it. M07 teaches you how to <em>architect</em> it — IGA platform design, HR-driven lifecycle workflows, certification campaign architecture, SoD policy design, and identity analytics.
+      <br><br>
+      The connection to M06 is direct: IGA (M07) provisions the entitlements that OPA (M06) evaluates. SoD policy design in Saviynt is an application of authorization model thinking — defining which combinations of entitlements are incompatible, and enforcing those constraints across the entire enterprise access landscape. Every concept in M06 about roles, attributes, and policy has a corresponding operational implementation in M07.
+    </p>
+    <div class="bridge-concepts">
+      <span class="badge badge-phase">JML lifecycle workflows</span>
+      <span class="badge badge-copper">HR-driven provisioning architecture</span>
+      <span class="badge badge-jade">SoD policy design</span>
+      <span class="badge badge-teal">Saviynt architecture &amp; API model</span>
+    </div>
+    <a href="M07.html" class="bridge-btn">Continue to M07 · IGA — Saviynt &amp; SailPoint →</a>
+  </div>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="toc">
+    <div class="toc-label">In this module</div>
+    <a class="toc-item" href="#why">Why this is the key decision</a>
+    <a class="toc-item" href="#split">AuthN → AuthZ boundary</a>
+    <a class="toc-item" href="#models">Four authorization models</a>
+    <a class="toc-item toc-sub" href="#models">RBAC &amp; role explosion</a>
+    <a class="toc-item toc-sub" href="#models">ABAC — attribute policies</a>
+    <a class="toc-item toc-sub" href="#models">PBAC — policy-as-code</a>
+    <a class="toc-item toc-sub" href="#models">ReBAC — graph model</a>
+    <a class="toc-item" href="#pdp">PDP/PEP/PAP/PIP</a>
+    <a class="toc-item toc-sub" href="#pdp">Architecture diagram</a>
+    <a class="toc-item toc-sub" href="#pdp">PEP placement</a>
+    <a class="toc-item toc-sub" href="#pdp">PDP performance</a>
+    <a class="toc-item" href="#zanzibar">Google Zanzibar</a>
+    <a class="toc-item" href="#evolution">Model comparison table</a>
+    <a class="toc-item" href="#exercises">3 design exercises</a>
+    <a class="toc-item" href="#kc">Knowledge check (×4)</a>
+    <a class="toc-item" href="#bridge">Bridge to M07</a>
+  </div>
+
+  <div class="qref">
+    <div class="qref-label">Quick reference</div>
+    <div class="qref-item"><span class="qref-term">RBAC</span><span class="qref-def">Role-Based — roles assigned to users, roles hold permissions</span></div>
+    <div class="qref-item"><span class="qref-term">ABAC</span><span class="qref-def">Attribute-Based — policies evaluate subject/resource/context attributes</span></div>
+    <div class="qref-item"><span class="qref-term">PBAC</span><span class="qref-def">Policy-Based — externalized policy-as-code (OPA, Cedar)</span></div>
+    <div class="qref-item"><span class="qref-term">ReBAC</span><span class="qref-def">Relationship-Based — access via entity graph (Zanzibar model)</span></div>
+    <div class="qref-item"><span class="qref-term">PDP</span><span class="qref-def">Policy Decision Point — evaluates policy, returns allow/deny</span></div>
+    <div class="qref-item"><span class="qref-term">PEP</span><span class="qref-def">Policy Enforcement Point — intercepts requests, enforces decision</span></div>
+    <div class="qref-item"><span class="qref-term">PAP</span><span class="qref-def">Policy Administration Point — authors and deploys policies</span></div>
+    <div class="qref-item"><span class="qref-term">PIP</span><span class="qref-def">Policy Information Point — provides attributes to PDP</span></div>
+    <div class="qref-item"><span class="qref-term">OPA</span><span class="qref-def">Open Policy Agent — CNCF policy engine, Rego language</span></div>
+    <div class="qref-item"><span class="qref-term">Cedar</span><span class="qref-def">AWS policy language — formally verifiable, used in AVP</span></div>
+    <div class="qref-item"><span class="qref-term">Zanzibar</span><span class="qref-def">Google's ReBAC system — tuple model, zookie consistency</span></div>
+    <div class="qref-item"><span class="qref-term">OpenFGA</span><span class="qref-def">Open-source Zanzibar implementation (Auth0/Okta)</span></div>
+  </div>
+
+  <div class="card card-rose" style="margin-bottom:12px">
+    <div class="card-label">⚠️ Anti-pattern</div>
+    <div class="card-title">Embedded authorization code</div>
+    <div class="card-body">Authorization logic in application middleware is untestable, ungovernable, and non-auditable. Externalize to OPA. Every service calls the PDP — no service decides access for itself.</div>
+  </div>
+
+  <div class="card card-phase" style="margin-bottom:12px">
+    <div class="card-label">M06 colour personality</div>
+    <div class="card-title">Deep Indigo-Sapphire + Copper</div>
+    <div class="card-body">Indigo-sapphire for the structural, architectural weight of authorization design. Copper for the operational complexity — the implementation cost and governance burden. Phase 2 begins here.</div>
+  </div>
+
+  <div class="card card-jade">
+    <div class="card-label">Saviynt connection</div>
+    <div class="card-title">IGA + AuthZ = complete governance</div>
+    <div class="card-body">Saviynt governs who has what entitlements (IGA layer). OPA/Cedar evaluates whether those entitlements permit a specific request (AuthZ layer). M07 covers Saviynt's architecture in depth — direct continuation of this module.</div>
+  </div>
+</aside>
+</div><!-- /layout -->
+
+<footer class="footer">
+  <div class="footer-left">IAM Architect Portal · M06 of 20 · Phase 2: Governance &amp; PAM</div>
+  <div style="display:flex;gap:8px">
+    <a href="M05.html" class="badge badge-prereq" style="text-decoration:none">← M05</a>
+    <a href="M07.html" class="badge badge-phase" style="text-decoration:none">M07 →</a>
+  </div>
+</footer>
+</div><!-- /shell -->
+
+<script>
+function toggleKC(id){document.getElementById(id).classList.toggle('open')}
+function toggleEx(id){document.getElementById(id).classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.toc-item');
+  const targets=[];
+  items.forEach(a=>{const href=a.getAttribute('href');if(href&&href.startsWith('#')){const el=document.querySelector(href);if(el)targets.push({el,a});}});
+  window.addEventListener('scroll',()=>{
+    let cur=null;
+    targets.forEach(({el})=>{if(window.scrollY>=el.offsetTop-90)cur=el});
+    targets.forEach(({el,a})=>a.classList.toggle('active',el===cur));
+  },{passive:true});
+})();
+(function(){
+  const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:.06});
+  document.querySelectorAll('.section,.card,.model-card,.exercise,.kc,.takeaway,.arch-review,.concept,.concept-copper,.gotcha').forEach(el=>{
+    el.style.opacity='0';el.style.transform='translateY(12px)';
+    el.style.transition='opacity .45s ease,transform .45s ease';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>

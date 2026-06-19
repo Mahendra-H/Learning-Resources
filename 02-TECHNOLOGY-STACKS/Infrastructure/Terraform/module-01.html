@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-0">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M01 · The Terraform Mental Model — Terraform Mastery Series</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS + PHASE-0 OVERRIDE
+══════════════════════════════════════════════════════════ */
+:root {
+  --bg-void:        #0B0E14;
+  --bg-surface-1:   #111520;
+  --bg-surface-2:   #181D2A;
+  --bg-surface-3:   #1F2535;
+  --bg-surface-4:   #252D40;
+  --border:         #1E2636;
+  --border-bright:  #2E3A52;
+  --teal:           #00E5C3;
+  --teal-dim:       #00B89A;
+  --teal-glow:      rgba(0,229,195,0.12);
+  --teal-glow-md:   rgba(0,229,195,0.20);
+  --copper:         #E8873A;
+  --copper-dim:     #B86929;
+  --copper-glow:    rgba(232,135,58,0.15);
+  --sapphire:       #4A9EFF;
+  --sapphire-glow:  rgba(74,158,255,0.12);
+  --rose:           #FF5F7E;
+  --rose-glow:      rgba(255,95,126,0.12);
+  --jade:           #3ECFA0;
+  --violet:         #9B7FFF;
+  --violet-glow:    rgba(155,127,255,0.15);
+  --text-primary:   #E8EDF5;
+  --text-secondary: #8A95A8;
+  --text-tertiary:  #4A5568;
+  --text-accent:    #00E5C3;
+  --font-display:   'Syne', sans-serif;
+  --font-body:      'IBM Plex Sans', sans-serif;
+  --font-mono:      'IBM Plex Mono', monospace;
+  --space-xs:  4px;  --space-sm:  8px;  --space-md:  16px;
+  --space-lg:  24px; --space-xl:  40px; --space-2xl: 64px; --space-3xl: 96px;
+  --radius-sm: 4px;  --radius-md: 8px;  --radius-lg: 12px;
+  --radius-xl: 16px; --radius-pill: 999px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3);
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+
+  /* Phase 0 — Violet */
+  --module-phase-color: #9B7FFF;
+  --module-phase-glow:  rgba(155,127,255,0.15);
+  --module-phase-dim:   #7A5FE0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body {
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-void); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 999px; }
+::selection { background: var(--module-phase-glow); color: var(--module-phase-color); }
+a { color: var(--sapphire); text-decoration: none; transition: color var(--transition-fast); }
+a:hover { color: var(--teal); }
+code {
+  font-family: var(--font-mono); font-size: 0.85em;
+  background: var(--bg-surface-3); border: 1px solid var(--border);
+  color: var(--teal); padding: 1px 5px; border-radius: var(--radius-sm);
+}
+mark {
+  background: var(--module-phase-glow); color: var(--module-phase-color);
+  padding: 1px 4px; border-radius: 2px;
+}
+hr.divider { border: none; border-top: 1px solid var(--border); margin: var(--space-2xl) 0; }
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.portal-shell { max-width: 1100px; margin: 0 auto; padding: 0 var(--space-xl); }
+@media (max-width: 768px) { .portal-shell { padding: 0 var(--space-md); } }
+
+/* ── NAV ────────────────────────────────────────────────── */
+.portal-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(11,14,20,0.92);
+  backdrop-filter: blur(16px) saturate(1.5);
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--space-xl);
+}
+.portal-nav__inner {
+  max-width: 1100px; margin: 0 auto;
+  height: 56px; display: flex; align-items: center; gap: var(--space-lg);
+}
+.portal-nav__logo {
+  font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); white-space: nowrap;
+}
+.portal-nav__logo span { color: var(--text-tertiary); font-weight: 400; }
+.nav-divider { width: 1px; height: 20px; background: var(--border-bright); flex-shrink: 0; }
+.portal-nav__progress { flex: 1; display: flex; align-items: center; gap: var(--space-sm); }
+.progress-track {
+  flex: 1; height: 2px; background: var(--border);
+  border-radius: var(--radius-pill); overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--module-phase-color), var(--teal));
+  border-radius: var(--radius-pill);
+}
+.progress-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+.nav-module-badge {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  background: var(--module-phase-glow); border: 1px solid var(--module-phase-color);
+  color: var(--module-phase-color); white-space: nowrap;
+}
+@media (max-width: 768px) { .portal-nav { padding: 0 var(--space-md); } }
+
+/* ── HERO ───────────────────────────────────────────────── */
+.module-hero {
+  position: relative;
+  padding: var(--space-3xl) 0 var(--space-2xl);
+  overflow: hidden;
+}
+.module-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    linear-gradient(135deg, var(--module-phase-glow) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(74,158,255,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.module-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 60% at 20% 50%, black 0%, transparent 70%);
+  opacity: 0.4; pointer-events: none;
+}
+.module-hero__content { position: relative; z-index: 1; }
+.module-hero__phase {
+  display: inline-flex; align-items: center; gap: var(--space-sm);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--module-phase-color); margin-bottom: var(--space-md);
+}
+.phase-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--module-phase-color);
+  box-shadow: 0 0 8px var(--module-phase-color);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity:1; box-shadow: 0 0 8px var(--module-phase-color); }
+  50%      { opacity:.5; box-shadow: 0 0 3px var(--module-phase-color); }
+}
+.module-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: 800; line-height: 1.08;
+  letter-spacing: -0.02em; color: var(--text-primary);
+  margin-bottom: var(--space-md); max-width: 780px;
+}
+.module-hero__title .accent { color: var(--module-phase-color); }
+.module-hero__subtitle {
+  font-size: 17px; font-weight: 300; color: var(--text-secondary);
+  max-width: 640px; line-height: 1.65; margin-bottom: var(--space-xl);
+}
+.module-hero__meta { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+
+/* ── BADGES ─────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: var(--radius-pill); white-space: nowrap; letter-spacing: 0.04em;
+}
+.badge--phase   { background: var(--module-phase-glow); border: 1px solid var(--module-phase-color); color: var(--module-phase-color); }
+.badge--effort  { background: rgba(232,135,58,0.10); border: 1px solid rgba(232,135,58,0.30); color: var(--copper); }
+.badge--track   { background: rgba(74,158,255,0.10); border: 1px solid rgba(74,158,255,0.30); color: var(--sapphire); }
+.badge--prereq  { background: var(--bg-surface-2); border: 1px solid var(--border-bright); color: var(--text-secondary); }
+.badge--new     { background: rgba(0,229,195,0.10); border: 1px solid rgba(0,229,195,0.30); color: var(--teal); }
+
+/* ── ORIENTATION PANEL ──────────────────────────────────── */
+.orientation-panel {
+  background: var(--bg-surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: var(--space-xl);
+  margin-bottom: var(--space-2xl); position: relative; overflow: hidden;
+}
+.orientation-panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--module-phase-color) 0%, transparent 100%);
+}
+.orientation-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-lg);
+}
+.orientation-item__label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 6px;
+}
+.orientation-item__value { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.orientation-item__value.accent { color: var(--module-phase-color); }
+.journey-dots {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  margin-top: var(--space-lg); padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+.journey-dot {
+  width: 30px; height: 30px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 9px; font-weight: 500;
+  transition: all var(--transition-base);
+}
+.journey-dot--current {
+  background: var(--module-phase-glow); border: 1px solid var(--module-phase-color);
+  color: var(--module-phase-color); box-shadow: 0 0 12px var(--module-phase-glow);
+}
+.journey-dot--future {
+  background: var(--bg-surface-2); border: 1px solid var(--border); color: var(--text-tertiary);
+}
+
+/* ── MAIN CONTENT GRID ──────────────────────────────────── */
+.module-content {
+  display: grid; grid-template-columns: 1fr 260px;
+  gap: var(--space-2xl); align-items: start;
+}
+@media (max-width: 900px) { .module-content { grid-template-columns: 1fr; } }
+.content-main { min-width: 0; }
+.content-sidebar { position: sticky; top: 72px; }
+
+/* ── SECTIONS ───────────────────────────────────────────── */
+.section { margin-bottom: var(--space-2xl); }
+.section-label {
+  display: flex; align-items: center; gap: var(--space-sm);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--module-phase-color); margin-bottom: var(--space-md);
+}
+.section-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border-bright) 0%, transparent 100%);
+}
+.section-title {
+  font-family: var(--font-display); font-size: 24px; font-weight: 700;
+  color: var(--text-primary); margin-bottom: var(--space-md); line-height: 1.2;
+}
+.section-body { font-size: 15px; color: var(--text-secondary); line-height: 1.8; }
+.section-body p { margin-bottom: var(--space-md); }
+.section-body p:last-child { margin-bottom: 0; }
+.section-body strong { color: var(--text-primary); font-weight: 600; }
+.section-body em { color: var(--module-phase-color); font-style: normal; font-weight: 500; }
+
+/* ── CARDS ──────────────────────────────────────────────── */
+.card {
+  background: var(--bg-surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-lg);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+.card:hover { border-color: var(--border-bright); box-shadow: var(--shadow-card); }
+.card--phase {
+  border-left: 2px solid var(--module-phase-color);
+  background: linear-gradient(135deg, var(--module-phase-glow) 0%, var(--bg-surface-1) 60%);
+}
+.card--teal {
+  border-left: 2px solid var(--teal);
+  background: linear-gradient(135deg, var(--teal-glow) 0%, var(--bg-surface-1) 60%);
+}
+.card--copper {
+  border-left: 2px solid var(--copper);
+  background: linear-gradient(135deg, var(--copper-glow) 0%, var(--bg-surface-1) 60%);
+}
+.card--sapphire {
+  border-left: 2px solid var(--sapphire);
+  background: linear-gradient(135deg, var(--sapphire-glow) 0%, var(--bg-surface-1) 60%);
+}
+.card--rose {
+  border-left: 2px solid var(--rose);
+  background: linear-gradient(135deg, var(--rose-glow) 0%, var(--bg-surface-1) 60%);
+}
+.card__label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: var(--space-sm);
+}
+.card__title {
+  font-family: var(--font-display); font-size: 16px; font-weight: 600;
+  color: var(--text-primary); margin-bottom: var(--space-sm);
+}
+.card__body { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+.card-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: var(--space-md); }
+.card-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: var(--space-md); }
+
+/* ── DIAGRAM WRAP ───────────────────────────────────────── */
+.diagram-wrap {
+  background: var(--bg-surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-xl);
+  margin: var(--space-xl) 0; overflow-x: auto;
+}
+.diagram-wrap__label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary);
+  margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm);
+}
+.diagram-wrap__label::before { content: '◈'; color: var(--module-phase-color); font-size: 12px; }
+
+/* ── CONCEPT BLOCKS ─────────────────────────────────────── */
+.concept-block {
+  border-left: 2px solid var(--module-phase-color);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--module-phase-glow);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin: var(--space-lg) 0;
+}
+.concept-block__term {
+  font-family: var(--font-display); font-size: 14px; font-weight: 700;
+  color: var(--module-phase-color); margin-bottom: 4px;
+}
+.concept-block__def { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+
+/* ── COMPARISON TABLE ───────────────────────────────────── */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: var(--space-lg) 0; }
+.compare-table th {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-bright); text-align: left; white-space: nowrap;
+}
+.compare-table th:first-child { color: var(--module-phase-color); }
+.compare-table td {
+  padding: 10px var(--space-md); border-bottom: 1px solid var(--border);
+  color: var(--text-secondary); vertical-align: top; line-height: 1.6;
+}
+.compare-table td:first-child {
+  font-weight: 500; color: var(--text-primary);
+  font-family: var(--font-mono); font-size: 12px; white-space: nowrap;
+}
+.compare-table tr:hover td { background: var(--bg-surface-2); }
+.compare-table tr:last-child td { border-bottom: none; }
+
+/* ── FLOW SEQUENCE ──────────────────────────────────────── */
+.flow-sequence { display: flex; flex-direction: column; gap: 0; margin: var(--space-lg) 0; }
+.flow-step { display: flex; gap: var(--space-md); align-items: flex-start; }
+.flow-step__connector { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 32px; }
+.flow-step__num {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg-surface-2); border: 1px solid var(--module-phase-color);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 500;
+  color: var(--module-phase-color); flex-shrink: 0; position: relative; z-index: 1;
+}
+.flow-step__line {
+  width: 1px; flex: 1; min-height: 24px;
+  background: linear-gradient(var(--border-bright), var(--border));
+}
+.flow-step:last-child .flow-step__line { display: none; }
+.flow-step__body { padding-bottom: var(--space-lg); padding-top: 5px; flex: 1; }
+.flow-step__title { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.flow-step__desc { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+
+/* ── CODE BLOCKS ────────────────────────────────────────── */
+.code-block {
+  background: var(--bg-surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+  margin: var(--space-md) 0; font-family: var(--font-mono); font-size: 12px;
+}
+.code-block__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-surface-3); border-bottom: 1px solid var(--border);
+}
+.code-block__lang {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary);
+}
+.code-block__file { font-size: 11px; color: var(--text-secondary); }
+.code-block__body {
+  padding: var(--space-md); overflow-x: auto; line-height: 1.7;
+  color: var(--text-secondary); tab-size: 2;
+}
+.code-block__body .k { color: #c792ea; }   /* keywords */
+.code-block__body .s { color: var(--jade); }  /* strings */
+.code-block__body .c { color: var(--text-tertiary); font-style: italic; } /* comments */
+.code-block__body .v { color: var(--copper); }   /* variables/values */
+.code-block__body .n { color: var(--teal); }     /* names/identifiers */
+.code-block__body .p { color: var(--sapphire); } /* punctuation/operators */
+.code-block__body .num { color: #f78c6c; }      /* numbers */
+
+/* ── KNOWLEDGE CHECK ────────────────────────────────────── */
+.knowledge-check {
+  background: var(--bg-surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden; margin: var(--space-md) 0;
+}
+.knowledge-check__question {
+  padding: var(--space-md) var(--space-lg); font-size: 14px; font-weight: 500;
+  color: var(--text-primary); display: flex; align-items: flex-start;
+  gap: var(--space-sm); cursor: pointer;
+  transition: background var(--transition-fast); user-select: none;
+}
+.knowledge-check__question:hover { background: var(--bg-surface-2); }
+.kc-icon {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  color: var(--module-phase-color); background: var(--module-phase-glow);
+  border: 1px solid var(--module-phase-color); border-radius: 3px;
+  padding: 1px 5px; flex-shrink: 0; margin-top: 2px;
+}
+.kc-chevron {
+  margin-left: auto; flex-shrink: 0; color: var(--text-tertiary);
+  transition: transform var(--transition-base); font-size: 12px;
+}
+.knowledge-check.open .kc-chevron { transform: rotate(180deg); }
+.knowledge-check__answer {
+  display: none; padding: var(--space-md) var(--space-lg);
+  background: var(--bg-surface-2); border-top: 1px solid var(--border);
+  font-size: 14px; color: var(--text-secondary); line-height: 1.7;
+}
+.knowledge-check.open .knowledge-check__answer { display: block; }
+
+/* ── SIDEBAR ────────────────────────────────────────────── */
+.toc {
+  background: var(--bg-surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);
+}
+.toc__label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  margin-bottom: var(--space-sm); padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+}
+.toc__item {
+  display: block; padding: 5px var(--space-sm); font-size: 12px; color: var(--text-secondary);
+  border-radius: var(--radius-sm); transition: all var(--transition-fast); cursor: pointer;
+  border-left: 2px solid transparent;
+}
+.toc__item:hover, .toc__item.active {
+  background: var(--bg-surface-2); color: var(--text-primary);
+  border-left-color: var(--module-phase-color);
+}
+.toc__item--sub { padding-left: var(--space-lg); font-size: 11px; }
+
+.quick-ref {
+  background: var(--bg-surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);
+}
+.quick-ref__label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-tertiary);
+  margin-bottom: var(--space-sm); padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+}
+.quick-ref__item {
+  display: flex; gap: var(--space-sm); align-items: baseline;
+  padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+}
+.quick-ref__item:last-child { border-bottom: none; }
+.quick-ref__term { font-family: var(--font-mono); font-size: 11px; color: var(--teal); white-space: nowrap; flex-shrink: 0; }
+.quick-ref__def { color: var(--text-secondary); line-height: 1.5; }
+
+/* ── TAKEAWAY BOX ───────────────────────────────────────── */
+.takeaway-box {
+  background: var(--bg-surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--space-lg); margin: var(--space-xl) 0;
+}
+.takeaway-box__header {
+  display: flex; align-items: center; gap: var(--space-sm);
+  margin-bottom: var(--space-md); padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border);
+}
+.takeaway-box__icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: var(--module-phase-glow); border: 1px solid var(--module-phase-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--module-phase-color); flex-shrink: 0;
+}
+.takeaway-box__title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.takeaway-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-sm); }
+.takeaway-list li {
+  font-size: 14px; color: var(--text-secondary);
+  display: flex; align-items: flex-start; gap: var(--space-sm); line-height: 1.65;
+}
+.takeaway-list li::before { content: '◆'; color: var(--module-phase-color); font-size: 8px; flex-shrink: 0; margin-top: 6px; }
+
+/* ── ARCHITECT REVIEW ───────────────────────────────────── */
+.architect-review {
+  background: var(--bg-surface-1); border: 1px solid var(--copper-dim);
+  border-radius: var(--radius-lg); overflow: hidden; margin: var(--space-xl) 0;
+}
+.architect-review__header {
+  background: linear-gradient(135deg, var(--copper-glow), transparent);
+  padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: var(--space-sm);
+}
+.architect-review__badge {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--copper);
+  background: rgba(232,135,58,0.15); border: 1px solid rgba(232,135,58,0.4);
+  padding: 2px 8px; border-radius: var(--radius-pill);
+}
+.architect-review__title { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.architect-review__list { list-style: none; padding: var(--space-md) var(--space-lg); display: flex; flex-direction: column; gap: var(--space-sm); }
+.architect-review__list li {
+  font-size: 14px; color: var(--text-secondary); display: flex; gap: var(--space-sm);
+  align-items: flex-start; line-height: 1.65;
+  padding: var(--space-sm) 0; border-bottom: 1px solid var(--border);
+}
+.architect-review__list li:last-child { border-bottom: none; }
+.ar-num { font-family: var(--font-mono); font-size: 11px; color: var(--copper); flex-shrink: 0; margin-top: 2px; min-width: 20px; }
+
+/* ── DEP MAP ────────────────────────────────────────────── */
+.dep-map {
+  display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;
+  padding: var(--space-md); background: var(--bg-surface-2);
+  border-radius: var(--radius-md); border: 1px solid var(--border); margin: var(--space-md) 0;
+}
+.dep-node {
+  font-family: var(--font-mono); font-size: 11px;
+  padding: 4px 10px; border-radius: var(--radius-pill); white-space: nowrap;
+}
+.dep-node--current {
+  background: var(--module-phase-glow); border: 1px solid var(--module-phase-color);
+  color: var(--module-phase-color); font-weight: 600;
+  box-shadow: 0 0 12px var(--module-phase-glow);
+}
+.dep-node--future { background: var(--bg-surface-3); border: 1px solid var(--border-bright); color: var(--text-tertiary); }
+.dep-arrow { color: var(--text-tertiary); font-size: 14px; flex-shrink: 0; }
+
+/* ── MENTOR CALLOUT ─────────────────────────────────────── */
+.mentor-note {
+  display: flex; gap: var(--space-md); padding: var(--space-lg);
+  background: var(--bg-surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); margin: var(--space-lg) 0;
+}
+.mentor-note__avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: var(--module-phase-glow); border: 1px solid var(--module-phase-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.mentor-note__body { flex: 1; }
+.mentor-note__label {
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--module-phase-color); margin-bottom: 4px;
+}
+.mentor-note__text { font-size: 14px; color: var(--text-secondary); line-height: 1.75; }
+.mentor-note__text strong { color: var(--text-primary); font-weight: 600; }
+
+/* ── MINI LAB ───────────────────────────────────────────── */
+.lab-block {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--teal-dim);
+  border-radius: var(--radius-lg); overflow: hidden; margin: var(--space-xl) 0;
+}
+.lab-block__header {
+  background: linear-gradient(135deg, var(--teal-glow), transparent);
+  padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: var(--space-sm);
+}
+.lab-block__badge {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal);
+  background: var(--teal-glow); border: 1px solid rgba(0,229,195,0.4);
+  padding: 2px 8px; border-radius: var(--radius-pill);
+}
+.lab-block__title { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.lab-block__body { padding: var(--space-lg); }
+.lab-block__body ol { padding-left: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-sm); }
+.lab-block__body ol li { font-size: 14px; color: var(--text-secondary); line-height: 1.65; padding-left: 4px; }
+.lab-block__body ol li strong { color: var(--text-primary); }
+
+/* ── BRIDGE SECTION ─────────────────────────────────────── */
+.bridge-section { margin-top: var(--space-3xl); padding-top: var(--space-2xl); border-top: 1px solid var(--border); }
+.bridge-card {
+  background: linear-gradient(135deg, var(--bg-surface-1) 0%, var(--bg-surface-2) 100%);
+  border: 1px solid var(--border-bright); border-radius: var(--radius-xl);
+  padding: var(--space-xl); position: relative; overflow: hidden;
+}
+.bridge-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--module-phase-color), var(--teal), transparent);
+}
+.bridge-card::after {
+  content: ''; position: absolute; bottom: -40px; right: -40px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: var(--module-phase-glow); pointer-events: none;
+}
+.bridge-card__eyebrow {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-sm);
+}
+.bridge-card__title {
+  font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  color: var(--text-primary); margin-bottom: var(--space-md); position: relative;
+}
+.bridge-card__title span { color: var(--teal); }
+.bridge-card__body {
+  font-size: 14px; color: var(--text-secondary); line-height: 1.75;
+  max-width: 580px; margin-bottom: var(--space-lg);
+}
+.bridge-card__concepts { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-bottom: var(--space-lg); }
+.bridge-card__btn {
+  display: inline-flex; align-items: center; gap: var(--space-sm);
+  background: var(--teal); color: var(--bg-void);
+  font-family: var(--font-display); font-size: 14px; font-weight: 700;
+  padding: 12px var(--space-lg); border-radius: var(--radius-pill);
+  text-decoration: none; transition: all var(--transition-base);
+}
+.bridge-card__btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--teal-glow); color: var(--bg-void); }
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+.portal-footer {
+  margin-top: var(--space-3xl); padding: var(--space-xl) 0;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-md); flex-wrap: wrap;
+}
+.portal-footer__left { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+
+/* ── ANIMATIONS ─────────────────────────────────────────── */
+@keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+.animate-fade-up { animation: fadeInUp 0.5s ease both; }
+.animate-fade    { animation: fadeIn   0.4s ease both; }
+.delay-1{animation-delay:.10s} .delay-2{animation-delay:.20s} .delay-3{animation-delay:.30s}
+.delay-4{animation-delay:.40s} .delay-5{animation-delay:.50s} .delay-6{animation-delay:.60s}
+</style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════ NAV ════════════════════════════════════ -->
+<nav class="portal-nav">
+  <div class="portal-nav__inner">
+    <a href="index.html" class="portal-nav__logo" style="text-decoration:none;">Terraform<span> · Mastery</span></a>
+    <div class="nav-divider"></div>
+    <div class="portal-nav__progress">
+      <div class="progress-track"><div class="progress-fill" style="width:9%"></div></div>
+      <span class="progress-label">M01 / 10</span>
+    </div>
+    <span class="nav-module-badge">M01 · Phase 0</span>
+  </div>
+</nav>
+
+<div class="portal-shell">
+
+<!-- ═══════════════════════════════════ HERO ═══════════════════════════════════ -->
+<section class="module-hero animate-fade-up">
+  <div class="module-hero__content">
+    <div class="module-hero__phase">
+      <div class="phase-dot"></div>
+      Phase 0 · Foundation &amp; Mental Model
+    </div>
+    <h1 class="module-hero__title">
+      Infrastructure as Code<br>&amp; The Terraform <span class="accent">Mental Model</span>
+    </h1>
+    <p class="module-hero__subtitle">
+      Before writing a single line of HCL, you need to own the mental map of where Terraform sits, what it is responsible for, and how it connects to the tools already running in your PingFederate migration project. This module builds that map.
+    </p>
+    <div class="module-hero__meta">
+      <span class="badge badge--phase">Phase 0 · Foundation</span>
+      <span class="badge badge--effort">⬛⬛⬛☐☐ 3–4 hrs</span>
+      <span class="badge badge--track">Mental Model</span>
+      <span class="badge badge--new">↳ First module — no prereqs</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════ ORIENTATION ════════════════════════════ -->
+<div class="orientation-panel animate-fade-up delay-2">
+  <div class="orientation-grid">
+    <div>
+      <div class="orientation-item__label">Current module</div>
+      <div class="orientation-item__value accent">M01 · IaC &amp; The Terraform Mental Model</div>
+    </div>
+    <div>
+      <div class="orientation-item__label">Phase</div>
+      <div class="orientation-item__value">Phase 0 — Foundation</div>
+    </div>
+    <div>
+      <div class="orientation-item__label">Phase colour</div>
+      <div class="orientation-item__value" style="color:var(--violet)">Violet — orientation &amp; context</div>
+    </div>
+    <div>
+      <div class="orientation-item__label">Unlocks</div>
+      <div class="orientation-item__value">M02 · HCL Fundamentals</div>
+    </div>
+  </div>
+  <div class="journey-dots">
+    <div class="journey-dot journey-dot--current" title="M01 — Current">M01</div>
+    <div class="journey-dot journey-dot--future">M02</div>
+    <div class="journey-dot journey-dot--future">M03</div>
+    <div class="journey-dot journey-dot--future">M04</div>
+    <div class="journey-dot journey-dot--future">M05</div>
+    <div class="journey-dot journey-dot--future">M06</div>
+    <div class="journey-dot journey-dot--future">M07</div>
+    <div class="journey-dot journey-dot--future">M08</div>
+    <div class="journey-dot journey-dot--future">M09</div>
+    <div class="journey-dot journey-dot--future">M10</div>
+    <div class="journey-dot journey-dot--future" style="background:linear-gradient(135deg,var(--copper-glow),var(--teal-glow));border:1px solid var(--copper);color:var(--copper)">★</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ MAIN CONTENT ═══════════════════════════ -->
+<div class="module-content">
+<div class="content-main">
+
+<!-- ─────────────────────────────── SECTION 1 ──────────────────────────────── -->
+<section class="section animate-fade-up delay-3" id="why-iac">
+  <div class="section-label">Why this module exists</div>
+  <h2 class="section-title">Start with the map, not the syntax</h2>
+  <div class="section-body">
+    <p>Most Terraform courses start with <code>terraform init</code>. This one doesn't. Before you type a single command, you need a clear mental model of what problem Terraform solves, where it sits in the toolchain you are already working with, and what it is specifically responsible for in your PingFederate migration project.</p>
+    <p>Here is the key insight: <strong>Terraform is not a deployment tool, a configuration management tool, or an orchestration engine.</strong> It is an infrastructure provisioning tool. Its job is to describe what AWS resources should exist and to make that description real. Everything beyond provisioning — software installation, application configuration, deployment coordination — belongs to different tools.</p>
+    <p>By the end of this module, every concept in every module that follows will have a home in a mental model you already own.</p>
+  </div>
+
+  <div class="mentor-note">
+    <div class="mentor-note__avatar">🧑‍🏫</div>
+    <div class="mentor-note__body">
+      <div class="mentor-note__label">Mentor Note</div>
+      <div class="mentor-note__text">Your 18+ years in IAM and SSO is a bigger advantage than you might think here. The concepts of <strong>declarative policy</strong>, <strong>state reconciliation</strong>, and <strong>least-privilege resource access</strong> that you already reason about daily map almost directly onto how Terraform thinks. You are not learning a new discipline — you are extending your existing one into infrastructure.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── SECTION 2 ──────────────────────────────── -->
+<section class="section" id="what-is-iac">
+  <div class="section-label">Infrastructure as Code</div>
+  <h2 class="section-title">From ClickOps to declared state</h2>
+  <div class="section-body">
+    <p>Before IaC, infrastructure was managed manually — engineers logging into the AWS console, clicking through wizards, configuring resources by hand. This approach has a name: <strong>ClickOps</strong>. It works for one engineer building one environment once. It fails at scale, under team collaboration, across environments, and when you need to reproduce what you built six months ago.</p>
+    <p>Infrastructure as Code solves this by expressing infrastructure as text files checked into version control. The infrastructure becomes <em>reviewable</em>, <em>repeatable</em>, <em>auditable</em>, and <em>automatable</em> — the same properties you already demand from application code.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin-top: var(--space-lg);">
+    <div class="card card--rose">
+      <div class="card__label">Before IaC — ClickOps</div>
+      <div class="card__title">Manual &amp; Undocumented</div>
+      <div class="card__body">
+        Resources created by hand in the AWS console. No record of why a security group rule exists. No way to reproduce the environment identically. Drift accumulates silently. One engineer holds all context in their head.
+      </div>
+    </div>
+    <div class="card card--teal">
+      <div class="card__label">After IaC — Terraform</div>
+      <div class="card__title">Declared &amp; Version-Controlled</div>
+      <div class="card__body">
+        Every resource is a code file in Git. Changes go through pull requests. The diff shows exactly what will change before it changes. Any engineer can reproduce the environment from scratch. Drift is detected automatically.
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-block" style="margin-top: var(--space-xl);">
+    <div class="concept-block__term">Declarative vs Imperative Infrastructure</div>
+    <div class="concept-block__def">Terraform is <strong>declarative</strong>: you describe the <em>desired end state</em> — "I want a VPC with these subnets, these security groups, this ASG" — and Terraform figures out how to get there. You do not write step-by-step instructions. This is the same mental model as an IAM policy: you declare what should be true, not how to make it true.</div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── SECTION 3 ──────────────────────────────── -->
+<section class="section" id="terraform-vs-others">
+  <div class="section-label">Terraform in context</div>
+  <h2 class="section-title">How Terraform compares to the alternatives</h2>
+  <div class="section-body">
+    <p>You will encounter several IaC tools in enterprise environments. Here is where Terraform sits in that landscape — at the level of awareness that matters for your project, not as a detailed evaluation exercise.</p>
+  </div>
+
+  <div class="diagram-wrap" style="padding: var(--space-lg);">
+    <div class="diagram-wrap__label">IaC Tool Landscape — Awareness Level</div>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Made by</th>
+          <th>Approach</th>
+          <th>Relevance to you</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Terraform</td>
+          <td>HashiCorp / IBM</td>
+          <td>Declarative HCL. Multi-cloud. Provider ecosystem. State file.</td>
+          <td style="color:var(--teal);">Your project uses this. Learn it deeply.</td>
+        </tr>
+        <tr>
+          <td>CloudFormation</td>
+          <td>AWS</td>
+          <td>Declarative YAML/JSON. AWS-only. No state file (AWS manages it).</td>
+          <td>Common in AWS-native teams. Conceptually similar but AWS-locked.</td>
+        </tr>
+        <tr>
+          <td>CDK</td>
+          <td>AWS</td>
+          <td>Imperative. Write TypeScript/Python that generates CloudFormation.</td>
+          <td>Appealing to developers. Still compiles to CloudFormation under the hood.</td>
+        </tr>
+        <tr>
+          <td>Pulumi</td>
+          <td>Pulumi Corp</td>
+          <td>Imperative. Write TypeScript/Python directly. Multi-cloud.</td>
+          <td>Growing adoption. Similar goals to Terraform but code-first.</td>
+        </tr>
+        <tr>
+          <td>Ansible</td>
+          <td>Red Hat</td>
+          <td>Imperative, task-based. YAML playbooks. Agentless.</td>
+          <td style="color:var(--copper);">Your project uses this — but for software config, not infra provisioning.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mentor-note">
+    <div class="mentor-note__avatar">🧑‍🏫</div>
+    <div class="mentor-note__body">
+      <div class="mentor-note__label">Why your project chose Terraform</div>
+      <div class="mentor-note__text">Terraform's multi-cloud provider ecosystem, strong state management, and mature module ecosystem make it the dominant choice for enterprise AWS infrastructure. The fact that it is cloud-agnostic also matters in M&amp;A scenarios — if Company A ever absorbs or divests infrastructure across cloud boundaries, Terraform handles it without a tool change.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── SECTION 4 ──────────────────────────────── -->
+<section class="section" id="pipeline">
+  <div class="section-label">The four-component pipeline</div>
+  <h2 class="section-title">GitHub Actions → Terraform → Ansible → PingFederate</h2>
+  <div class="section-body">
+    <p>Your project uses four technologies that work together. Each one owns a specific slice of the deployment. Understanding where each one's responsibility starts and ends is the foundation for everything else in this series.</p>
+    <p>The confusion most engineers experience comes from not having a clean mental boundary between these tools. Let's fix that now.</p>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-wrap__label">Responsibility Boundaries — PingFederate AMI Refresh</div>
+    <svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:600px;display:block;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="#2E3A52"/></marker>
+        <marker id="a2" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="#9B7FFF"/></marker>
+        <marker id="a3" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="#00E5C3"/></marker>
+        <marker id="a4" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="#4A9EFF"/></marker>
+      </defs>
+
+      <!-- GitHub Actions -->
+      <rect x="10" y="10" width="180" height="310" rx="10" fill="#0F1020" stroke="rgba(155,127,255,.4)" stroke-width="1.5"/>
+      <text x="100" y="35" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">GITHUB ACTIONS</text>
+      <text x="100" y="52" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="9" font-family="IBM Plex Mono,monospace">Orchestrator</text>
+      <rect x="25" y="65" width="150" height="28" rx="4" fill="rgba(155,127,255,.08)" stroke="rgba(155,127,255,.2)" stroke-width="1"/>
+      <text x="100" y="83" text-anchor="middle" fill="#9B7FFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Triggers on PR / merge</text>
+      <rect x="25" y="102" width="150" height="28" rx="4" fill="rgba(155,127,255,.08)" stroke="rgba(155,127,255,.2)" stroke-width="1"/>
+      <text x="100" y="120" text-anchor="middle" fill="#9B7FFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Calls terraform plan</text>
+      <rect x="25" y="139" width="150" height="28" rx="4" fill="rgba(155,127,255,.08)" stroke="rgba(155,127,255,.2)" stroke-width="1"/>
+      <text x="100" y="157" text-anchor="middle" fill="#9B7FFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Calls terraform apply</text>
+      <rect x="25" y="176" width="150" height="28" rx="4" fill="rgba(155,127,255,.08)" stroke="rgba(155,127,255,.2)" stroke-width="1"/>
+      <text x="100" y="194" text-anchor="middle" fill="#9B7FFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Calls Ansible playbook</text>
+      <rect x="25" y="213" width="150" height="28" rx="4" fill="rgba(155,127,255,.08)" stroke="rgba(155,127,255,.2)" stroke-width="1"/>
+      <text x="100" y="231" text-anchor="middle" fill="#9B7FFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Manages secrets / creds</text>
+      <rect x="25" y="250" width="150" height="28" rx="4" fill="rgba(155,127,255,.08)" stroke="rgba(155,127,255,.2)" stroke-width="1"/>
+      <text x="100" y="268" text-anchor="middle" fill="#9B7FFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Reports status / alerts</text>
+
+      <!-- Arrow GHA → TF -->
+      <line x1="191" y1="165" x2="218" y2="165" stroke="#9B7FFF" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- Terraform -->
+      <rect x="220" y="10" width="200" height="310" rx="10" fill="#060e18" stroke="#9B7FFF" stroke-width="2"/>
+      <text x="320" y="35" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">TERRAFORM</text>
+      <text x="320" y="52" text-anchor="middle" fill="rgba(0,229,195,.6)" font-size="9" font-family="IBM Plex Mono,monospace">← YOU ARE HERE</text>
+      <rect x="235" y="65" width="170" height="28" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="320" y="83" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Provisions VPC / Subnets</text>
+      <rect x="235" y="102" width="170" height="28" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="320" y="120" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Creates IAM roles</text>
+      <rect x="235" y="139" width="170" height="28" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="320" y="157" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Manages Launch Templates</text>
+      <rect x="235" y="176" width="170" height="28" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="320" y="194" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Triggers ASG refresh</text>
+      <rect x="235" y="213" width="170" height="28" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="320" y="231" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Configures NLB / ALB</text>
+      <rect x="235" y="250" width="170" height="28" rx="4" fill="rgba(0,229,195,.08)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="320" y="268" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Provisions S3 config bucket</text>
+
+      <!-- Arrow TF → Ansible -->
+      <line x1="421" y1="165" x2="448" y2="165" stroke="#00E5C3" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- Ansible -->
+      <rect x="450" y="10" width="180" height="310" rx="10" fill="#0A0E1A" stroke="rgba(74,158,255,.4)" stroke-width="1.5"/>
+      <text x="540" y="35" text-anchor="middle" fill="#4A9EFF" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">ANSIBLE</text>
+      <text x="540" y="52" text-anchor="middle" fill="rgba(74,158,255,.4)" font-size="9" font-family="IBM Plex Mono,monospace">Config Mgmt</text>
+      <rect x="465" y="65" width="150" height="28" rx="4" fill="rgba(74,158,255,.08)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="540" y="83" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Installs PingFederate</text>
+      <rect x="465" y="102" width="150" height="28" rx="4" fill="rgba(74,158,255,.08)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="540" y="120" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Configures Java / JVM</text>
+      <rect x="465" y="139" width="150" height="28" rx="4" fill="rgba(74,158,255,.08)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="540" y="157" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Restores config from S3</text>
+      <rect x="465" y="176" width="150" height="28" rx="4" fill="rgba(74,158,255,.08)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="540" y="194" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Starts PF service</text>
+      <rect x="465" y="213" width="150" height="28" rx="4" fill="rgba(74,158,255,.08)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="540" y="231" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Validates node health</text>
+      <rect x="465" y="250" width="150" height="28" rx="4" fill="rgba(74,158,255,.08)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="540" y="268" text-anchor="middle" fill="#4A9EFF" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Registers with LB</text>
+
+      <!-- Arrow Ansible → PF -->
+      <line x1="631" y1="165" x2="658" y2="165" stroke="#4A9EFF" stroke-width="1.5" marker-end="url(#a4)"/>
+
+      <!-- PingFederate -->
+      <rect x="660" y="10" width="190" height="310" rx="10" fill="#0A0E14" stroke="rgba(232,135,58,.4)" stroke-width="1.5"/>
+      <text x="755" y="35" text-anchor="middle" fill="#E8873A" font-size="10" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">PINGFEDERATE</text>
+      <text x="755" y="52" text-anchor="middle" fill="rgba(232,135,58,.4)" font-size="9" font-family="IBM Plex Mono,monospace">Application</text>
+      <rect x="675" y="65" width="160" height="28" rx="4" fill="rgba(232,135,58,.08)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="755" y="83" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Serves federation traffic</text>
+      <rect x="675" y="102" width="160" height="28" rx="4" fill="rgba(232,135,58,.08)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="755" y="120" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Handles SAML / OIDC</text>
+      <rect x="675" y="139" width="160" height="28" rx="4" fill="rgba(232,135,58,.08)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="755" y="157" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Reads config from S3</text>
+      <rect x="675" y="176" width="160" height="28" rx="4" fill="rgba(232,135,58,.08)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="755" y="194" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Joins engine cluster</text>
+      <rect x="675" y="213" width="160" height="28" rx="4" fill="rgba(232,135,58,.08)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="755" y="231" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Connects to LDAP/AD</text>
+      <rect x="675" y="250" width="160" height="28" rx="4" fill="rgba(232,135,58,.08)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="755" y="268" text-anchor="middle" fill="#E8873A" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Issues tokens / assertions</text>
+    </svg>
+  </div>
+
+  <div class="takeaway-box" style="margin-top: var(--space-xl);">
+    <div class="takeaway-box__header">
+      <div class="takeaway-box__icon">🎯</div>
+      <div class="takeaway-box__title">The boundary rule — memorise this</div>
+    </div>
+    <ul class="takeaway-list">
+      <li><strong>GitHub Actions</strong> — orchestrates and sequences. It calls the other tools. It does not know about subnets or PingFederate configuration.</li>
+      <li><strong>Terraform</strong> — provisions and manages <em>AWS infrastructure resources</em>. It knows about VPCs, ASGs, and NLBs. It does not know about software running on the instances.</li>
+      <li><strong>Ansible</strong> — installs and configures <em>software on the instances</em> that Terraform created. It knows about PingFederate, Java, and systemd. It does not provision AWS resources.</li>
+      <li><strong>S3</strong> — the persistence bridge. Terraform creates the bucket. Ansible reads from it. This separation is what makes instance replacement safe.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── SECTION 5 ──────────────────────────────── -->
+<section class="section" id="terraform-architecture">
+  <div class="section-label">Terraform architecture</div>
+  <h2 class="section-title">How Terraform works — the core model</h2>
+  <div class="section-body">
+    <p>Terraform operates through a small number of core concepts. Before looking at any code, you need these five firmly in place.</p>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">Provider</div>
+    <div class="concept-block__def">A plugin that translates your HCL declarations into API calls against a cloud platform. The AWS provider translates <code>aws_instance</code>, <code>aws_vpc</code>, and every other AWS resource into calls to the AWS API. Without a configured provider, Terraform cannot talk to anything.</div>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">Resource</div>
+    <div class="concept-block__def">A single piece of infrastructure managed by Terraform — an EC2 instance, a security group, a Route53 record. Every resource has a type (what kind of thing it is) and a name (how you reference it in other resources). Resources are the primary building block of every Terraform configuration.</div>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">State File</div>
+    <div class="concept-block__def">A JSON file that records what Terraform believes currently exists in your infrastructure. When you run <code>terraform plan</code>, Terraform compares your configuration against the state file and the real world to calculate what needs to change. Without state, Terraform cannot determine what already exists. This is the most important concept in the entire series — Module 03 is dedicated to it.</div>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">Plan</div>
+    <div class="concept-block__def">A dry-run that shows exactly what Terraform will create, modify, or destroy — before it does anything. Every change in your project goes through a plan step. Reading plans correctly is a senior engineering skill covered in Module 10.</div>
+  </div>
+
+  <div class="concept-block">
+    <div class="concept-block__term">Apply</div>
+    <div class="concept-block__def">The execution of an approved plan. Terraform calls the provider APIs to make the declared changes real. In your project, GitHub Actions runs apply automatically after a plan is approved in the pipeline.</div>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram-wrap__label">Terraform Core Workflow</div>
+    <svg viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:500px;display:block;">
+      <defs>
+        <marker id="wf-arr" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto">
+          <polygon points="0 0, 7 3, 0 6" fill="#9B7FFF"/>
+        </marker>
+      </defs>
+      <!-- Write -->
+      <rect x="10"  y="30" width="130" height="80" rx="8" fill="#0F1020" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="75"  y="62" text-anchor="middle" fill="#9B7FFF" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">01 · WRITE</text>
+      <text x="75"  y="80" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Author .tf files</text>
+      <text x="75"  y="95" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">in HCL</text>
+      <!-- Arrow -->
+      <line x1="141" y1="70" x2="168" y2="70" stroke="rgba(155,127,255,.5)" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+      <!-- Init -->
+      <rect x="170" y="30" width="130" height="80" rx="8" fill="#0F1020" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="235" y="62" text-anchor="middle" fill="#9B7FFF" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">02 · INIT</text>
+      <text x="235" y="80" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Download providers</text>
+      <text x="235" y="95" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">&amp; modules</text>
+      <!-- Arrow -->
+      <line x1="301" y1="70" x2="328" y2="70" stroke="rgba(155,127,255,.5)" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+      <!-- Plan -->
+      <rect x="330" y="30" width="130" height="80" rx="8" fill="#0F1020" stroke="#9B7FFF" stroke-width="2"/>
+      <text x="395" y="62" text-anchor="middle" fill="#9B7FFF" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">03 · PLAN</text>
+      <text x="395" y="80" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Preview changes,</text>
+      <text x="395" y="95" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-family="IBM Plex Sans,sans-serif">review diff</text>
+      <!-- Arrow -->
+      <line x1="461" y1="70" x2="488" y2="70" stroke="rgba(155,127,255,.5)" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+      <!-- Apply -->
+      <rect x="490" y="30" width="130" height="80" rx="8" fill="#0F1020" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="555" y="62" text-anchor="middle" fill="#9B7FFF" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">04 · APPLY</text>
+      <text x="555" y="80" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Execute changes</text>
+      <text x="555" y="95" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">via provider APIs</text>
+      <!-- Arrow -->
+      <line x1="621" y1="70" x2="648" y2="70" stroke="rgba(155,127,255,.5)" stroke-width="1.5" marker-end="url(#wf-arr)"/>
+      <!-- Destroy (optional) -->
+      <rect x="650" y="30" width="140" height="80" rx="8" fill="#0F1020" stroke="rgba(232,135,58,.35)" stroke-width="1.5"/>
+      <text x="720" y="62" text-anchor="middle" fill="#E8873A" font-size="11" font-weight="700" font-family="IBM Plex Mono,monospace">05 · DESTROY</text>
+      <text x="720" y="80" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">Remove all managed</text>
+      <text x="720" y="95" text-anchor="middle" fill="#9aaac8" font-size="9.5" font-family="IBM Plex Sans,sans-serif">resources (optional)</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── SECTION 6 ──────────────────────────────── -->
+<section class="section" id="hcl-first-look">
+  <div class="section-label">HCL — first contact</div>
+  <h2 class="section-title">Reading your first Terraform file</h2>
+  <div class="section-body">
+    <p>You do not need to write HCL yet — that is Module 02. Right now, you just need to be able to read it and understand what the different blocks mean. Here is a minimal but realistic Terraform configuration that provisions a security group for PingFederate engine nodes.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header">
+      <span class="code-block__lang">HCL · Terraform</span>
+      <span class="code-block__file">security_group.tf</span>
+    </div>
+    <div class="code-block__body"><pre><span class="c"># ── PROVIDER — tells Terraform which cloud to talk to ──────────────────</span>
+<span class="k">terraform</span> {
+  <span class="k">required_providers</span> {
+    <span class="n">aws</span> = {
+      <span class="k">source</span>  = <span class="s">"hashicorp/aws"</span>
+      <span class="k">version</span> = <span class="s">"~> 5.0"</span>          <span class="c"># use any 5.x release</span>
+    }
+  }
+}
+
+<span class="k">provider</span> <span class="s">"aws"</span> {
+  <span class="k">region</span> = <span class="v">var.aws_region</span>        <span class="c"># region comes from a variable</span>
+}
+
+<span class="c"># ── VARIABLE — an input to this configuration ──────────────────────────</span>
+<span class="k">variable</span> <span class="s">"aws_region"</span> {
+  <span class="k">description</span> = <span class="s">"AWS region to deploy into"</span>
+  <span class="k">type</span>        = <span class="n">string</span>
+  <span class="k">default</span>     = <span class="s">"us-east-1"</span>
+}
+
+<span class="c"># ── RESOURCE — the actual AWS resource being created ───────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"pf_engine"</span> {
+  <span class="k">name</span>        = <span class="s">"pf-engine-sg"</span>
+  <span class="k">description</span> = <span class="s">"PingFederate engine node security group"</span>
+  <span class="k">vpc_id</span>      = <span class="v">module.vpc.vpc_id</span>   <span class="c"># reference another resource's output</span>
+
+  <span class="c"># Allow federation traffic from NLB only</span>
+  <span class="k">ingress</span> {
+    <span class="k">from_port</span>       = <span class="num">9031</span>
+    <span class="k">to_port</span>         = <span class="num">9031</span>
+    <span class="k">protocol</span>        = <span class="s">"tcp"</span>
+    <span class="k">security_groups</span> = [<span class="v">aws_security_group.nlb.id</span>]
+  }
+
+  <span class="c"># Allow admin console from bastion only</span>
+  <span class="k">ingress</span> {
+    <span class="k">from_port</span>       = <span class="num">9999</span>
+    <span class="k">to_port</span>         = <span class="num">9999</span>
+    <span class="k">protocol</span>        = <span class="s">"tcp"</span>
+    <span class="k">security_groups</span> = [<span class="v">aws_security_group.bastion.id</span>]
+  }
+
+  <span class="c"># Allow all outbound (to reach S3, LDAP, CAs)</span>
+  <span class="k">egress</span> {
+    <span class="k">from_port</span>   = <span class="num">0</span>
+    <span class="k">to_port</span>     = <span class="num">0</span>
+    <span class="k">protocol</span>    = <span class="s">"-1"</span>
+    <span class="k">cidr_blocks</span> = [<span class="s">"0.0.0.0/0"</span>]
+  }
+
+  <span class="k">tags</span> = {
+    <span class="n">Name</span>        = <span class="s">"pf-engine-sg"</span>
+    <span class="n">Environment</span> = <span class="v">var.environment</span>
+    <span class="n">ManagedBy</span>   = <span class="s">"terraform"</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="section-body" style="margin-top: var(--space-lg);">
+    <p>Notice what you can already read without knowing HCL in depth. The <code>terraform</code> block declares the AWS provider. The <code>variable</code> block defines an input — similar to a function parameter. The <code>resource</code> block is the AWS security group itself. The references like <code>module.vpc.vpc_id</code> show how resources connect to each other without hardcoded IDs.</p>
+    <p>This declarative style is the same mental model as writing a SAML SP metadata definition: you declare what should exist and let the framework handle the mechanics.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── SECTION 7 ──────────────────────────────── -->
+<section class="section" id="immutable-model">
+  <div class="section-label">Your project model</div>
+  <h2 class="section-title">Immutable infrastructure — validating your understanding</h2>
+  <div class="section-body">
+    <p>You came into this series with a working hypothesis about how the project operates. Let's formally validate it, sharpen the parts that are right, and correct the one common misconception.</p>
+  </div>
+
+  <div class="card-grid-2" style="margin-top: var(--space-lg);">
+    <div class="card card--teal">
+      <div class="card__label">✓ Correct</div>
+      <div class="card__title">Immutable compute model</div>
+      <div class="card__body">EC2 instances are treated as disposable compute resources. When a new AMI is released, instances are not patched in place — they are replaced. Terraform manages the template and policy; the ASG manages the replacement.</div>
+    </div>
+    <div class="card card--teal">
+      <div class="card__label">✓ Correct</div>
+      <div class="card__title">Configuration in S3</div>
+      <div class="card__body">PingFederate configuration lives in S3, not on the instance. New instances retrieve it at launch. This is what makes replacement safe — the instance is cattle, but the config is precious and persisted externally.</div>
+    </div>
+    <div class="card card--teal">
+      <div class="card__label">✓ Correct</div>
+      <div class="card__title">Terraform owns the AWS layer</div>
+      <div class="card__body">VPC, subnets, security groups, IAM roles, Launch Templates, ASGs, NLB, ALB, Route53, S3 — all provisioned and managed by Terraform. Correct and complete.</div>
+    </div>
+    <div class="card card--copper">
+      <div class="card__label">⚠ Clarification needed</div>
+      <div class="card__title">Terraform doesn't manage EC2 instances directly</div>
+      <div class="card__body">In an ASG model, Terraform manages the <strong>Launch Template</strong> and the <strong>Auto Scaling Group</strong> — not the individual EC2 instances. The ASG launches and terminates instances autonomously. Terraform's state tracks the ASG, not each node. This distinction matters deeply in Module 03.</div>
+    </div>
+  </div>
+
+  <div class="diagram-wrap" style="margin-top: var(--space-xl);">
+    <div class="diagram-wrap__label">AMI Refresh Flow — Terraform's exact role</div>
+    <div class="flow-sequence" style="padding: 0 var(--space-sm);">
+      <div class="flow-step">
+        <div class="flow-step__connector"><div class="flow-step__num">1</div><div class="flow-step__line"></div></div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">Infrastructure team releases new AMI</div>
+          <div class="flow-step__desc">A new company-approved AMI is baked with the latest OS patches and base software. The AMI ID is published to a shared parameter store or communicated to the application team. <strong>Terraform is not involved here yet.</strong></div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector"><div class="flow-step__num">2</div><div class="flow-step__line"></div></div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">Application team updates the Terraform data source</div>
+          <div class="flow-step__desc">The Terraform configuration contains a <code>data "aws_ami"</code> block that looks up the latest approved AMI by filter at plan time. The team updates the filter or the AMI ID variable to point to the new release. A PR is raised.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector"><div class="flow-step__num">3</div><div class="flow-step__line"></div></div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">GitHub Actions runs terraform plan</div>
+          <div class="flow-step__desc">The pipeline runs <code>terraform plan</code>. The output shows that the Launch Template will be updated with the new AMI ID, and that an <code>instance_refresh</code> will be triggered on the ASG. The plan is reviewed and approved.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector"><div class="flow-step__num">4</div><div class="flow-step__line"></div></div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">Terraform apply updates the Launch Template &amp; triggers refresh</div>
+          <div class="flow-step__desc"><strong>This is exactly what Terraform does.</strong> It updates the Launch Template with the new AMI ID and kicks off the ASG instance refresh. Terraform's job is now done. The ASG takes over.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector"><div class="flow-step__num">5</div><div class="flow-step__line"></div></div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">ASG launches new instances, NLB shifts traffic</div>
+          <div class="flow-step__desc">The ASG launches new instances using the updated Launch Template. Each new instance runs user_data on boot, pulls PingFederate config from S3 using the attached IAM role, and waits for Ansible to complete configuration. The NLB health check gates traffic until the node is healthy.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step__connector"><div class="flow-step__num">6</div><div class="flow-step__line"></div></div>
+        <div class="flow-step__body">
+          <div class="flow-step__title">Old instances are terminated</div>
+          <div class="flow-step__desc">Once new instances are healthy and serving traffic, the ASG terminates the old instances. The refresh is complete. Zero downtime (if health checks are configured correctly). Terraform's state file now reflects the updated Launch Template. Individual instance IDs are not in state.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── SECTION 8 ──────────────────────────────── -->
+<section class="section" id="first-commands">
+  <div class="section-label">First commands</div>
+  <h2 class="section-title">Your first <code>init</code>, <code>plan</code>, and <code>apply</code></h2>
+  <div class="section-body">
+    <p>These three commands are the Terraform workflow. You will run them hundreds of times. Understanding what each one does internally is more important than memorising the syntax.</p>
+  </div>
+
+  <div class="code-block">
+    <div class="code-block__header">
+      <span class="code-block__lang">Shell</span>
+      <span class="code-block__file">Terminal</span>
+    </div>
+    <div class="code-block__body"><pre><span class="c"># Step 1 — initialise the working directory</span>
+<span class="c"># Downloads the AWS provider plugin, sets up the backend</span>
+<span class="n">terraform</span> init
+
+<span class="c"># Step 2 — preview exactly what will change</span>
+<span class="c"># Compares your .tf files against state file + real AWS</span>
+<span class="c"># Nothing is created or destroyed yet</span>
+<span class="n">terraform</span> plan
+
+<span class="c"># Step 3 — execute the plan</span>
+<span class="c"># Actually calls AWS APIs to make changes</span>
+<span class="c"># Always review the plan output before confirming</span>
+<span class="n">terraform</span> apply
+
+<span class="c"># Optional — preview what destroy would do before committing</span>
+<span class="n">terraform</span> plan <span class="k">-destroy</span>
+
+<span class="c"># In CI/CD (GitHub Actions), apply is non-interactive:</span>
+<span class="n">terraform</span> apply <span class="k">-auto-approve</span></pre>
+    </div>
+  </div>
+
+  <div class="card card--phase" style="margin-top: var(--space-lg);">
+    <div class="card__label">What happens during terraform init</div>
+    <div class="card__body">Terraform reads your <code>terraform { required_providers {} }</code> block, downloads the specified provider plugins from the Terraform Registry (or a private mirror in enterprise environments), and configures the backend. In your project this backend is an S3 bucket — the remote state location. <code>init</code> is safe to run repeatedly and should always be run before <code>plan</code> in CI.</div>
+  </div>
+
+  <div class="card card--phase" style="margin-top: var(--space-md);">
+    <div class="card__label">What happens during terraform plan</div>
+    <div class="card__body">Terraform reads your <code>.tf</code> files, loads the state file from the backend, refreshes its view of the real world by querying AWS, then computes the difference. The output shows every resource that will be created (<code>+</code>), updated in place (<code>~</code>), or destroyed and recreated (<code>-/+</code>). In your project, a plan that shows <code>-/+</code> on a Launch Template means an instance refresh is coming.</div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── KNOWLEDGE CHECKS ───────────────────────── -->
+<section class="section" id="knowledge-checks">
+  <div class="section-label">Knowledge check</div>
+  <h2 class="section-title">Test your mental model</h2>
+  <div class="section-body"><p>Click each question to reveal the answer. Aim to answer it in your head first.</p></div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      PingFederate is running on an EC2 instance. The infra team releases a new AMI. Who is responsible for replacing the EC2 instance — Terraform, the ASG, or GitHub Actions?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">The ASG — with Terraform initiating the process.</strong> Terraform updates the Launch Template with the new AMI ID and sets the instance refresh policy. After that, the Auto Scaling Group autonomously replaces instances one at a time (or in batches). GitHub Actions orchestrates the sequence by calling terraform apply, but it doesn't manage instances either. The ASG is the entity that actually terminates old nodes and launches new ones.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      A new engineer asks: "Doesn't Ansible also provision infrastructure? I've seen Ansible create EC2 instances." How would you explain the boundary?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">Ansible can provision infrastructure, but that's not its primary role — and it's not how your project uses it.</strong> Ansible is optimised for idempotent configuration management — installing software, managing files, starting services. While Ansible has modules that can call AWS APIs, it lacks Terraform's state management, dependency graph, and plan/apply workflow. In your project, the architectural decision is clear: Terraform owns the AWS layer, Ansible owns the software layer. Mixing them creates fragile, hard-to-reason-about pipelines.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      What is the difference between Terraform's state file and the real AWS infrastructure? Why do they sometimes diverge?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">The state file is Terraform's belief about what exists. The real infrastructure is what actually exists.</strong> They diverge — called drift — when someone makes a manual change outside of Terraform (ClickOps), when AWS modifies a resource automatically (e.g. rotating a certificate, updating a default), or when a resource is deleted directly without going through Terraform. <code>terraform plan</code> detects drift by comparing state against the real world. Module 03 covers this in depth.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      Why does Terraform need a "provider"? Why can't it just talk to AWS directly?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">Terraform is cloud-agnostic at its core. The provider is the adapter layer.</strong> The Terraform engine understands HCL and state management. It doesn't know anything about AWS, Azure, or GCP APIs. The provider is a plugin that translates between the generic Terraform model and the specific API of a cloud or service. This is why the same Terraform patterns can be used across clouds — only the provider and resource types change, not the workflow.
+    </div>
+  </div>
+
+  <div class="knowledge-check" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">Q</span>
+      Your colleague says: "We should use Ansible for everything — provisioning and configuration. Why split it across two tools?" What's your response?
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <strong style="color:var(--module-phase-color)">The separation exists because the two tools solve fundamentally different problems.</strong> Terraform's value is its state model — it tracks what exists, calculates diffs, and safely applies changes through a plan/apply workflow with locking. Ansible's value is idempotent task execution on running systems. Using Ansible to provision AWS infrastructure means giving up Terraform's dependency graph, drift detection, state locking, and module system. Using Terraform to configure software means giving up Ansible's rich module library for file management, service control, and package management. Each tool is best in class for its domain.
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── MINI LAB ───────────────────────────────── -->
+<section class="section" id="lab">
+  <div class="section-label">Mini lab</div>
+  <h2 class="section-title">Map the pipeline — hands-on orientation exercise</h2>
+
+  <div class="lab-block">
+    <div class="lab-block__header">
+      <span class="lab-block__badge">Lab 01-A</span>
+      <span class="lab-block__title">Responsibility mapping exercise</span>
+    </div>
+    <div class="lab-block__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">For each of the following tasks, identify which tool owns it: <strong>Terraform</strong>, <strong>Ansible</strong>, <strong>GitHub Actions</strong>, or <strong>None of the three</strong> (the application or AWS itself). Write your answer before revealing it in the knowledge check below.</p>
+      <ol>
+        <li>Creating a VPC with public and private subnets in us-east-1</li>
+        <li>Installing the PingFederate runtime on a new EC2 instance</li>
+        <li>Deciding when to trigger a deployment based on a Git merge event</li>
+        <li>Creating an S3 bucket to store PingFederate configuration files</li>
+        <li>Reading the PingFederate configuration from S3 on instance startup</li>
+        <li>Attaching an IAM role to an EC2 instance so it can read from S3</li>
+        <li>Registering a new EC2 instance with the NLB target group</li>
+        <li>Terminating an old EC2 instance after its replacement is healthy</li>
+        <li>Starting the PingFederate systemd service after installation</li>
+        <li>Storing the Terraform state file with locking</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="knowledge-check" style="margin-top: var(--space-md);" onclick="toggleKC(this)">
+    <div class="knowledge-check__question">
+      <span class="kc-icon">✓</span>
+      Reveal Lab 01-A answers
+      <span class="kc-chevron">▼</span>
+    </div>
+    <div class="knowledge-check__answer">
+      <ol style="padding-left: var(--space-lg); display: flex; flex-direction: column; gap: 6px; color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+        <li><strong style="color:var(--teal)">Terraform</strong> — VPC and subnets are AWS infrastructure resources.</li>
+        <li><strong style="color:var(--sapphire)">Ansible</strong> — Installing software on a running instance.</li>
+        <li><strong style="color:var(--violet)">GitHub Actions</strong> — Event-driven pipeline orchestration.</li>
+        <li><strong style="color:var(--teal)">Terraform</strong> — S3 bucket is an AWS infrastructure resource.</li>
+        <li><strong style="color:var(--copper)">None of the three (user_data / Ansible)</strong> — The bootstrap script or Ansible playbook reads from S3. This is application initialisation, not infrastructure provisioning.</li>
+        <li><strong style="color:var(--teal)">Terraform</strong> — The IAM instance profile is defined in the Launch Template, which Terraform manages.</li>
+        <li><strong style="color:var(--copper)">ASG (AWS)</strong> — The Auto Scaling Group handles registration/deregistration with the target group automatically. Terraform configures the ASG policy that enables this, but the act of registering is handled by the ASG and NLB internally.</li>
+        <li><strong style="color:var(--copper)">ASG (AWS)</strong> — Instance termination during a refresh is handled by the Auto Scaling Group, not Terraform directly.</li>
+        <li><strong style="color:var(--sapphire)">Ansible</strong> — Starting a systemd service is configuration management.</li>
+        <li><strong style="color:var(--teal)">Terraform (S3 + DynamoDB)</strong> — Remote state backend with DynamoDB locking. Module 03 covers this in depth.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="lab-block" style="margin-top: var(--space-xl);">
+    <div class="lab-block__header">
+      <span class="lab-block__badge">Lab 01-B</span>
+      <span class="lab-block__title">Read your first real .tf file</span>
+    </div>
+    <div class="lab-block__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">If you have access to the project repository, navigate to the Terraform directory and find the following without running any commands. The goal is pure reading comprehension:</p>
+      <ol>
+        <li><strong>Find the provider block</strong> — what version of the AWS provider does the project use?</li>
+        <li><strong>Find the backend configuration</strong> — what S3 bucket stores the remote state? What DynamoDB table is used for locking?</li>
+        <li><strong>Find a resource block</strong> — pick any <code>aws_security_group</code> resource. What ingress rules does it define?</li>
+        <li><strong>Find a data source</strong> — is there an <code>aws_ami</code> data source? What filter does it use to look up the approved AMI?</li>
+        <li><strong>Find a module call</strong> — does the configuration call any reusable modules? What inputs does it pass?</li>
+      </ol>
+      <p style="font-size:13px;color:var(--text-tertiary);margin-top:var(--space-md);">You will not understand all of it yet — that's the point. The goal is to see that the file is readable, structured, and follows patterns. Every pattern you notice here will be explained in the modules that follow.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────── ARCHITECT REVIEW ───────────────────────── -->
+<div class="architect-review">
+  <div class="architect-review__header">
+    <span class="architect-review__badge">Senior Review</span>
+    <span class="architect-review__title">Questions a platform engineer might ask you</span>
+  </div>
+  <ul class="architect-review__list">
+    <li><span class="ar-num">01</span>We just got asked by the security team to add a new ingress rule to the PingFederate engine security group. Walk me through the process — from the code change to the change being live in production.</li>
+    <li><span class="ar-num">02</span>Our Terraform state file got corrupted. What are the consequences and what would the recovery process look like at a high level?</li>
+    <li><span class="ar-num">03</span>A junior engineer manually added an inbound rule to the PingFederate security group via the AWS console. What will happen the next time someone runs <code>terraform plan</code>?</li>
+    <li><span class="ar-num">04</span>Why do we use Terraform instead of just CloudFormation for this project? What would we lose if we switched?</li>
+    <li><span class="ar-num">05</span>The AMI refresh is scheduled for tomorrow. Describe, in plain language, what Terraform will do vs what the ASG will do vs what Ansible will do.</li>
+  </ul>
+</div>
+
+<!-- ─────────────────────────────── TAKEAWAYS ──────────────────────────────── -->
+<div class="takeaway-box">
+  <div class="takeaway-box__header">
+    <div class="takeaway-box__icon">◆</div>
+    <div class="takeaway-box__title">Module 01 — Key Takeaways</div>
+  </div>
+  <ul class="takeaway-list">
+    <li>Terraform is a declarative infrastructure provisioning tool. It owns the AWS layer. It does not install software or orchestrate deployments.</li>
+    <li>The four-component pipeline is: GitHub Actions orchestrates → Terraform provisions → Ansible configures → PingFederate runs. Each has a clean boundary.</li>
+    <li>In an ASG model, Terraform manages the Launch Template and ASG policy — not individual EC2 instances. The ASG manages instances.</li>
+    <li>S3 persistence of PingFederate configuration is what makes immutable compute possible. The instance is disposable; the configuration is not.</li>
+    <li>The core Terraform workflow is: Write → Init → Plan → Apply. Plan is always reviewed before Apply in enterprise environments.</li>
+    <li>Drift occurs when real infrastructure diverges from the state file. <code>terraform plan</code> detects it. Terraform does not prevent humans from making changes outside of it — governance and process do.</li>
+    <li>Your IAM depth is a structural advantage. The concepts of declarative policy, trust evaluation, and least-privilege resource access map directly onto Terraform's model.</li>
+  </ul>
+</div>
+
+</div><!-- /content-main -->
+
+<!-- ═══════════════════════════════ SIDEBAR ════════════════════════════════ -->
+<div class="content-sidebar">
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc__label">In this module</div>
+    <a class="toc__item" href="#why-iac">Why this module exists</a>
+    <a class="toc__item" href="#what-is-iac">From ClickOps to declared state</a>
+    <a class="toc__item" href="#terraform-vs-others">Terraform vs alternatives</a>
+    <a class="toc__item" href="#pipeline">The four-component pipeline</a>
+    <a class="toc__item" href="#terraform-architecture">Terraform architecture</a>
+    <a class="toc__item" href="#hcl-first-look">HCL — first contact</a>
+    <a class="toc__item" href="#immutable-model">Immutable infra model</a>
+    <a class="toc__item" href="#first-commands">First commands</a>
+    <a class="toc__item" href="#knowledge-checks">Knowledge checks</a>
+    <a class="toc__item" href="#lab">Mini lab</a>
+  </div>
+
+  <!-- Module progress in this phase -->
+  <div class="quick-ref">
+    <div class="quick-ref__label">Phase 0 · Module</div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term">M01</span>
+      <span class="quick-ref__def" style="color:var(--module-phase-color)">Mental Model ← current</span>
+    </div>
+  </div>
+
+  <!-- Quick reference -->
+  <div class="quick-ref">
+    <div class="quick-ref__label">Key Commands</div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term">init</span>
+      <span class="quick-ref__def">Download providers &amp; configure backend</span>
+    </div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term">plan</span>
+      <span class="quick-ref__def">Preview changes — safe to run anytime</span>
+    </div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term">apply</span>
+      <span class="quick-ref__def">Execute the plan — modifies real infra</span>
+    </div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term">destroy</span>
+      <span class="quick-ref__def">Remove all managed resources</span>
+    </div>
+  </div>
+
+  <!-- Boundary cheatsheet -->
+  <div class="quick-ref">
+    <div class="quick-ref__label">Ownership Boundaries</div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term" style="color:var(--violet)">GHA</span>
+      <span class="quick-ref__def">Orchestrates, sequences tools</span>
+    </div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term" style="color:var(--teal)">TF</span>
+      <span class="quick-ref__def">AWS infrastructure resources</span>
+    </div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term" style="color:var(--sapphire)">Ansible</span>
+      <span class="quick-ref__def">Software on instances</span>
+    </div>
+    <div class="quick-ref__item">
+      <span class="quick-ref__term" style="color:var(--copper)">S3</span>
+      <span class="quick-ref__def">Config persistence bridge</span>
+    </div>
+  </div>
+
+  <!-- Journey position -->
+  <div class="quick-ref">
+    <div class="quick-ref__label">Series Progress</div>
+    <div style="padding: var(--space-sm) 0;">
+      <div class="dep-map" style="flex-wrap: wrap; gap: 4px; padding: var(--space-sm);">
+        <span class="dep-node dep-node--current">M01</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">M02</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">M03</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">M04–10</span>
+        <span class="dep-arrow">›</span>
+        <span class="dep-node dep-node--future">★</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content-sidebar -->
+</div><!-- /module-content -->
+
+<!-- ═══════════════════════════════ BRIDGE ════════════════════════════════ -->
+<div class="bridge-section">
+  <div class="bridge-card">
+    <div class="bridge-card__eyebrow">Coming up next · Module 02</div>
+    <div class="bridge-card__title">
+      <span>HCL Fundamentals</span> — Reading &amp; Writing Terraform Confidently
+    </div>
+    <div class="bridge-card__body">
+      You now have a solid mental model of what Terraform is, where it sits in the pipeline, and what it is responsible for in your project. The next question is: how does it express infrastructure in code?<br><br>
+      Module 02 dives into HCL — the language Terraform uses to describe infrastructure. You will learn how providers, resources, data sources, variables, and outputs work together. You will learn to read any <code>.tf</code> file systematically rather than randomly. And you will encounter the single most important pattern in your project: the dynamic AMI data source lookup that finds the latest approved company AMI at plan time.
+    </div>
+    <div class="bridge-card__concepts">
+      <span class="badge badge--new">Providers</span>
+      <span class="badge badge--new">Resources</span>
+      <span class="badge badge--new">Data sources</span>
+      <span class="badge badge--new">Variables</span>
+      <span class="badge badge--new">Outputs</span>
+      <span class="badge badge--new">AMI lookup pattern</span>
+    </div>
+    <a href="module-02.html" class="bridge-card__btn">Continue to Module 02 →</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ FOOTER ════════════════════════════════ -->
+<footer class="portal-footer">
+  <div class="portal-footer__left">M01 · IaC &amp; The Terraform Mental Model · Phase 0 · Terraform Mastery Series</div>
+  <div style="display:flex; gap: var(--space-sm); align-items:center;">
+    <a href="index.html" class="badge badge--prereq" style="text-decoration:none;">← Index</a>
+    <a href="module-02.html" class="badge badge--phase" style="text-decoration:none;">M02 →</a>
+  </div>
+</footer>
+
+</div><!-- /portal-shell -->
+
+<script>
+/* Knowledge check toggle */
+function toggleKC(el) {
+  el.classList.toggle('open');
+}
+
+/* TOC active highlight on scroll */
+(function(){
+  const items = document.querySelectorAll('.toc__item');
+  const sections = [];
+  items.forEach(i => {
+    const id = i.getAttribute('href').replace('#','');
+    const el = document.getElementById(id);
+    if (el) sections.push({ el, item: i });
+  });
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        items.forEach(i => i.classList.remove('active'));
+        const found = sections.find(s => s.el === e.target);
+        if (found) found.item.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => io.observe(s.el));
+})();
+
+/* Scroll reveal */
+(function(){
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.06 });
+  document.querySelectorAll('.section, .card, .diagram-wrap, .lab-block, .architect-review, .takeaway-box, .bridge-card').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(12px)';
+    el.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
