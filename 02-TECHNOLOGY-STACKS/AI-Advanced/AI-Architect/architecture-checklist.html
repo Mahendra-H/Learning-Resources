@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en" data-playbook="0">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Architecture Review Checklist · AI Stack Atlas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --bg: #F5F3EE;
+      --surface: #FFFFFF;
+      --text: #1A1D24;
+      --text-muted: #6B6F7A;
+      --border: #DEDAD1;
+      --accent-blue:   #5B8FF0;
+      --accent-amber:  #E8A33D;
+      --accent-green:  #4FB286;
+      --accent-violet: #7B6FE0;
+      --accent-red:    #D9534F;
+      --accent-primary: #5B8FF0;
+      --radius: 12px;
+      --card-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+    }
+    html.dark {
+      --bg: #0B0E14;
+      --surface: #151A24;
+      --text: #E8E6E1;
+      --text-muted: #8A8F9C;
+      --border: #262B38;
+      --card-shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
+    }
+
+    /* ── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "IBM Plex Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      transition: background .2s, color .2s;
+    }
+
+    /* ── TOP BAR ────────────────────────────────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 52px;
+      gap: 16px;
+    }
+    .topbar-title {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .topbar-title span {
+      color: var(--accent-primary);
+      font-weight: 500;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-ghost {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: var(--accent-primary);
+      background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+    }
+    .toggle-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: none;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      color: var(--text);
+    }
+    .toggle-btn:hover {
+      border-color: var(--accent-primary);
+      background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .page-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px 80px;
+    }
+
+    /* ── HERO ───────────────────────────────────────────── */
+    .hero {
+      padding: 64px 0 48px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 56px;
+    }
+    .hero-eyebrow {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 2px;
+      background: var(--accent-primary);
+      border-radius: 1px;
+    }
+    .hero h1 {
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 900;
+      font-size: clamp(32px, 5vw, 54px);
+      line-height: 1.08;
+      letter-spacing: -.02em;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 3px solid var(--accent-primary);
+      display: inline-block;
+    }
+    .hero-subtitle {
+      font-family: "Inter Tight", sans-serif;
+      font-size: clamp(16px, 2.5vw, 22px);
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 16px;
+      margin-bottom: 12px;
+    }
+    .hero-note {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      opacity: .7;
+    }
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hero-stat-num {
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      color: var(--accent-primary);
+      line-height: 1;
+    }
+    .hero-stat-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .hero-divider {
+      width: 1px;
+      height: 40px;
+      background: var(--border);
+    }
+
+    /* ── SECTION HEADERS ────────────────────────────────── */
+    .section-header {
+      margin-bottom: 40px;
+    }
+    .section-header h2 {
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 800;
+      font-size: clamp(22px, 3vw, 30px);
+      letter-spacing: -.02em;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* ── CHECKLIST GROUP ────────────────────────────────── */
+    .checklist-section {
+      margin-bottom: 64px;
+    }
+    .group-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .group-header.blue   { background: color-mix(in srgb, #5B8FF0 10%, transparent); border: 1px solid color-mix(in srgb, #5B8FF0 30%, transparent); color: #5B8FF0; }
+    .group-header.amber  { background: color-mix(in srgb, #E8A33D 10%, transparent); border: 1px solid color-mix(in srgb, #E8A33D 30%, transparent); color: #E8A33D; }
+    .group-header.green  { background: color-mix(in srgb, #4FB286 10%, transparent); border: 1px solid color-mix(in srgb, #4FB286 30%, transparent); color: #4FB286; }
+    .group-header.violet { background: color-mix(in srgb, #7B6FE0 10%, transparent); border: 1px solid color-mix(in srgb, #7B6FE0 30%, transparent); color: #7B6FE0; }
+    .group-count {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      opacity: .7;
+      font-weight: 400;
+    }
+
+    /* ── CARD GRID ──────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 768px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .page-wrapper { padding: 0 16px 60px; }
+      .topbar { padding: 0 16px; }
+    }
+
+    /* ── CHECKLIST CARD ─────────────────────────────────── */
+    .q-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      cursor: pointer;
+      transition: border-color .2s, transform .15s, box-shadow .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .q-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 100%;
+      border-radius: 0 2px 2px 0;
+      transition: background .2s;
+    }
+    .q-card.blue::before   { background: #5B8FF0; }
+    .q-card.amber::before  { background: #E8A33D; }
+    .q-card.green::before  { background: #4FB286; }
+    .q-card.violet::before { background: #7B6FE0; }
+    .q-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    }
+    .q-card.blue:hover   { border-color: #5B8FF0; }
+    .q-card.amber:hover  { border-color: #E8A33D; }
+    .q-card.green:hover  { border-color: #4FB286; }
+    .q-card.violet:hover { border-color: #7B6FE0; }
+
+    /* Checked state */
+    .q-card.checked {
+      opacity: .55;
+    }
+    .q-card.checked .q-question {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .q-card.checked::after {
+      content: '✓';
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+
+    /* Card internals */
+    .q-num {
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 900;
+      font-size: 42px;
+      line-height: 1;
+      opacity: .1;
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      color: var(--text);
+      letter-spacing: -.03em;
+      pointer-events: none;
+    }
+    .q-card.checked .q-num { opacity: .06; }
+    .q-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .q-question {
+      font-family: "Inter Tight", sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.35;
+      color: var(--text);
+      margin-bottom: 10px;
+      padding-right: 36px;
+      transition: color .2s;
+    }
+    .q-why {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .q-answers {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .q-answer {
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .q-answer-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9.5px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 3px;
+    }
+    .q-answer.good {
+      background: color-mix(in srgb, #4FB286 8%, transparent);
+      border: 1px solid color-mix(in srgb, #4FB286 25%, transparent);
+    }
+    .q-answer.good .q-answer-label { color: #4FB286; }
+    .q-answer.red {
+      background: color-mix(in srgb, #D9534F 8%, transparent);
+      border: 1px solid color-mix(in srgb, #D9534F 25%, transparent);
+    }
+    .q-answer.red .q-answer-label { color: #D9534F; }
+    .q-ref {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      opacity: .6;
+    }
+    .q-ref a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .q-ref a:hover { opacity: 1; color: var(--accent-primary); }
+
+    /* ── DECISION TREE SECTION ──────────────────────────── */
+    .tree-section {
+      margin-bottom: 64px;
+    }
+    .tree-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      box-shadow: var(--card-shadow);
+      overflow-x: auto;
+    }
+    .tree-container svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    /* ── FOOTER NAV ─────────────────────────────────────── */
+    .footer-nav {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-nav a {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .15s;
+    }
+    .footer-nav a:hover { color: var(--accent-primary); }
+    .footer-brand {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: .5;
+      text-align: center;
+    }
+
+    /* ── PRINT ──────────────────────────────────────────── */
+    @media print {
+      .topbar { display: none; }
+      .toggle-btn, .btn-ghost { display: none; }
+      .footer-nav { display: none; }
+      body { background: white; color: black; font-size: 11px; }
+      .page-wrapper { padding: 0 16px; max-width: 100%; }
+      .hero { padding: 24px 0 20px; margin-bottom: 28px; }
+      .hero h1 { font-size: 26px; }
+      .hero-subtitle { font-size: 14px; }
+      .hero-meta { display: none; }
+      .card-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .q-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 12px;
+      }
+      .q-card::before { display: none; }
+      .q-card.blue { border-left: 3px solid #5B8FF0; }
+      .q-card.amber { border-left: 3px solid #E8A33D; }
+      .q-card.green { border-left: 3px solid #4FB286; }
+      .q-card.violet { border-left: 3px solid #7B6FE0; }
+      .q-answer.good { background: none; border: 1px solid #4FB286; }
+      .q-answer.red { background: none; border: 1px solid #D9534F; }
+      .group-header { background: none !important; }
+      .group-header.blue { border: 1px solid #5B8FF0; color: #5B8FF0; }
+      .group-header.amber { border: 1px solid #E8A33D; color: #E8A33D; }
+      .group-header.green { border: 1px solid #4FB286; color: #4FB286; }
+      .group-header.violet { border: 1px solid #7B6FE0; color: #7B6FE0; }
+      .checklist-section { margin-bottom: 32px; }
+      .tree-container { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+      .tree-container svg { width: 100%; }
+      .section-header { margin-bottom: 20px; }
+      .print-title {
+        display: block !important;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 10px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+    }
+    .print-title { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-title">
+    <span>✅</span> AI Architecture Review Checklist · AI Stack Atlas
+  </div>
+  <div class="topbar-actions">
+    <button class="toggle-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark/light mode">🌙</button>
+    <a href="index.html" class="btn-ghost">← Back to Index</a>
+    <button class="btn-ghost" id="printBtn" onclick="window.print()">🖨️ Print</button>
+  </div>
+</header>
+
+<!-- PAGE -->
+<div class="page-wrapper">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">AI Stack Atlas · Reference Document</div>
+    <h1>The AI Architecture<br>Review Checklist</h1>
+    <p class="hero-subtitle">14 questions. Every AI system review. No exceptions.</p>
+    <p class="hero-note">Built for the reader who finished the AI Stack Atlas series</p>
+    <div class="hero-meta">
+      <div class="hero-stat">
+        <span class="hero-stat-num">14</span>
+        <span class="hero-stat-label">Questions</span>
+      </div>
+      <div class="hero-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">4</span>
+        <span class="hero-stat-label">Review Groups</span>
+      </div>
+      <div class="hero-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">1</span>
+        <span class="hero-stat-label">Decision Tree</span>
+      </div>
+      <div class="hero-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">0</span>
+        <span class="hero-stat-label">Excuses to Skip It</span>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- ARTIFACT 1: THE 14-QUESTION CHECKLIST              -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="section-header">
+    <h2>The 14-Question Checklist</h2>
+    <p>Click any card to mark it reviewed. Work through all four groups before signing off on any AI system.</p>
+  </div>
+
+  <!-- GROUP 1: CONCEPT -->
+  <div class="checklist-section">
+    <div class="group-header blue">🔵 Group 1 — Concept <span class="group-count">&nbsp;· Q1–Q3</span></div>
+    <div class="card-grid">
+
+      <div class="q-card blue" onclick="toggleCheck(this)">
+        <div class="q-num">01</div>
+        <div class="q-label">Q1 · Concept</div>
+        <div class="q-question">What problem is being solved — and is AI the right tool?</div>
+        <div class="q-why">AI adds latency, cost, and non-determinism. A regex, a database query, or a rules engine often solves the same problem in 1/10th the time at 1/100th the cost. Never assume AI is the answer before you've named the question.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            The team can articulate why rule-based, search-based, or deterministic approaches are insufficient. The AI component handles genuine ambiguity, natural language, or synthesis that structured logic cannot.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            "We're using AI because it's the modern approach." No explicit comparison to simpler alternatives. The actual requirement is a lookup, filter, or template fill.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook1.html">Atlas Dawn P1</a> · Foundation</div>
+      </div>
+
+      <div class="q-card blue" onclick="toggleCheck(this)">
+        <div class="q-num">02</div>
+        <div class="q-label">Q2 · Concept</div>
+        <div class="q-question">Which model is being used, and why this model over alternatives?</div>
+        <div class="q-why">Model choice is an architecture decision, not a default. GPT-4o, Claude Sonnet, Gemini Flash, and Llama 3 each have meaningfully different cost, latency, context windows, and capability profiles. Picking the wrong tier is like over-provisioning an EC2 instance — except the bill never stops.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Specific model named with version pinned. Benchmarked against at least one alternative on the actual task. Upgrade/downgrade path documented. Reasoning covers cost, latency, and capability tradeoffs.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            "We're using the latest GPT." No version pinned. No comparison. No awareness of whether a smaller, faster, cheaper model (Flash, Haiku, Llama) would meet requirements.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook2.html">Atlas Ember P2</a> · Model Economics</div>
+      </div>
+
+      <div class="q-card blue" onclick="toggleCheck(this)">
+        <div class="q-num">03</div>
+        <div class="q-label">Q3 · Concept</div>
+        <div class="q-question">Which layer(s) of the AI Stack does this system touch?</div>
+        <div class="q-why">The AI Stack has eight layers from Infrastructure to Applications. A system that touches three layers has three failure surfaces, three cost centers, and three teams to coordinate. Understanding the stack footprint is prerequisite to everything else in this checklist.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Each layer is named explicitly: which LLM, which embedding model, which vector DB, which orchestration layer, which application surface. Ownership per layer is assigned. Interfaces between layers are documented.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            "It's just an API call to OpenAI." No awareness that embeddings, retrieval, orchestration, and tooling are each separate architectural concerns with separate operational responsibilities.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="landscape-map.html">AI Landscape Map</a> · Stack Overview</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GROUP 2: ECONOMICS -->
+  <div class="checklist-section">
+    <div class="group-header amber">🟠 Group 2 — Economics <span class="group-count">&nbsp;· Q4–Q6</span></div>
+    <div class="card-grid">
+
+      <div class="q-card amber" onclick="toggleCheck(this)">
+        <div class="q-num">04</div>
+        <div class="q-label">Q4 · Economics</div>
+        <div class="q-question">What is the realistic token budget per request — p50 AND p95?</div>
+        <div class="q-why">Token cost is not average-case, it's worst-case. A p95 request with a bloated system prompt, a long RAG context window, and a verbose output can cost 10–20x the median. Budgeting on p50 alone is like capacity planning on average CPU — the spike is what breaks you.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            System prompt tokens counted and fixed. RAG chunk size and max chunk count defined. Output max_tokens capped. p50 and p95 estimated separately. Token budget reviewed and approved as a line item.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            Token budget estimated from a single happy-path test. No max_tokens cap set. System prompt grows organically without review. No distinction between input and output token costs.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook2.html">Atlas Ember P2</a> · Token Economics</div>
+      </div>
+
+      <div class="q-card amber" onclick="toggleCheck(this)">
+        <div class="q-num">05</div>
+        <div class="q-label">Q5 · Economics</div>
+        <div class="q-question">What does this cost at 100 / 1,000 / 10,000 daily active users?</div>
+        <div class="q-why">AI costs scale with usage in ways that traditional software does not. A feature that costs $50/day at 100 users can cost $5,000/day at 10,000 users. You need to know this number before launch, not after your first invoice shock.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Cost model built: (tokens per request × requests per user per day × users × $/1M tokens). Modeled at 3 scale points. Caching strategy identified to reduce repeated token spend. Cost per user per month calculated and compared against revenue or budget allocation.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            "We'll figure out cost at scale later." No cost model exists. No caching considered. No awareness of the difference between input and output token pricing. No executive visibility into the cost trajectory.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook2.html">Atlas Ember P2</a> · Cost Modeling</div>
+      </div>
+
+      <div class="q-card amber" onclick="toggleCheck(this)">
+        <div class="q-num">06</div>
+        <div class="q-label">Q6 · Economics</div>
+        <div class="q-question">What are the cost failure modes — what makes the bill 10x?</div>
+        <div class="q-why">Every AI system has a cost cliff: the scenario where something goes wrong and the token spend explodes. Runaway agent loops, unbounded RAG retrieval, context window overflow retries, and prompt injection attacks that inflate outputs are all real production failure modes that have produced five-figure surprise bills.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Hard limits set: max tokens per request, max requests per user per day, max agent loop iterations. Spend alerts configured in cloud billing. Circuit breakers exist to halt runaway processes. Anomaly detection on daily token spend.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            No rate limiting on AI endpoints. No spend alerts. Agent loops have no iteration cap. No circuit breaker. The first sign of a runaway cost event will be a monthly invoice, not a real-time alert.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook2.html">Atlas Ember P2</a> · Cost Controls</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GROUP 3: ARCHITECTURE -->
+  <div class="checklist-section">
+    <div class="group-header green">🟢 Group 3 — Architecture <span class="group-count">&nbsp;· Q7–Q11</span></div>
+    <div class="card-grid">
+
+      <div class="q-card green" onclick="toggleCheck(this)">
+        <div class="q-num">07</div>
+        <div class="q-label">Q7 · Architecture</div>
+        <div class="q-question">Is RAG required? What is the chunking and retrieval strategy?</div>
+        <div class="q-why">RAG is not free. Every retrieval adds latency, cost, and a new failure surface. But without it, models hallucinate facts they don't have. The decision to use RAG — and exactly how — is one of the most consequential architecture choices in any knowledge-intensive AI system.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Chunking strategy explicit: size (e.g. 512 tokens), overlap (e.g. 50 tokens), and boundary logic (sentence vs. paragraph). Embedding model pinned. Retrieval method chosen (cosine similarity, MMR, hybrid BM25+vector). Top-K defined. Relevance threshold set to discard low-confidence chunks.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            "We just embed the whole document." No chunking strategy. Default top-K with no relevance threshold. Embedding model not pinned. No evaluation of retrieval quality against a test query set.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook3.html">Atlas Circuit P3</a> · RAG Architecture</div>
+      </div>
+
+      <div class="q-card green" onclick="toggleCheck(this)">
+        <div class="q-num">08</div>
+        <div class="q-label">Q8 · Architecture</div>
+        <div class="q-question">Are agents or tools required? What is the blast radius of failure?</div>
+        <div class="q-why">Agents that can take actions in external systems are fundamentally different from agents that only read. A tool call that writes to Jira, triggers a ServiceNow workflow, or modifies IAM policies can cause real-world harm if the model hallucinates, misinterprets context, or is manipulated by a prompt injection attack.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Every tool is classified as read-only or write/mutating. Blast radius documented per tool (what is the worst action this tool can take?). Mutating tools require human confirmation or approval workflow. Tools scoped to minimum necessary permissions — just like service accounts in IAM.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            Agents have broad write access with no approval step. No blast radius analysis done. Tools granted admin-level permissions "for simplicity." No distinction made between read and write tool calls.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook3.html">Atlas Circuit P3</a> · Agent Design</div>
+      </div>
+
+      <div class="q-card green" onclick="toggleCheck(this)">
+        <div class="q-num">09</div>
+        <div class="q-label">Q9 · Architecture</div>
+        <div class="q-question">What is the memory and state strategy for long or repeated sessions?</div>
+        <div class="q-why">LLMs are stateless by design. Every session starts from zero unless you engineer memory explicitly. Without a memory strategy, users repeat themselves, context is lost between sessions, and long conversations hit context window limits and silently degrade. This is the closest thing in AI to session management in web apps — and it's just as easy to get wrong.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Memory strategy explicitly chosen: none (stateless), session-scoped (in-context), summarization (compressed long-term), or external store (user profile DB). Context window budget allocated between system prompt, memory, retrieved context, and response. Overflow behavior defined.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            Full conversation history appended without limit. No awareness of context window ceiling. No summarization or compression strategy. Memory not considered at all because "it's just a prototype."
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook3.html">Atlas Circuit P3</a> · Memory Patterns</div>
+      </div>
+
+      <div class="q-card green" onclick="toggleCheck(this)">
+        <div class="q-num">10</div>
+        <div class="q-label">Q10 · Architecture</div>
+        <div class="q-question">What is the fallback behavior when the model fails or returns garbage?</div>
+        <div class="q-why">Models fail. They time out, return malformed JSON, hallucinate structured outputs, hit rate limits, and occasionally produce responses that bear no relation to the prompt. Unlike a database query that throws a typed exception, model failure is often silent and structurally valid but semantically wrong. You need a circuit breaker, not just a try/catch.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Structured output validation in place (JSON schema, Pydantic, or equivalent). Retry logic with exponential backoff and jitter. Fallback model configured (e.g. downgrade to smaller model on timeout). Graceful degradation path exists: the product remains usable if AI is unavailable. User-facing error messages are clear, not raw model errors.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            Raw model output passed directly to downstream systems without validation. No retry logic. No fallback model. AI failure = feature unavailable with no graceful degradation. User sees stack traces or raw API errors.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook1.html">Atlas Dawn P1</a> · Resilience Patterns</div>
+      </div>
+
+      <div class="q-card green" onclick="toggleCheck(this)">
+        <div class="q-num">11</div>
+        <div class="q-label">Q11 · Architecture</div>
+        <div class="q-question">What latency requirements exist — and are they measured at p95?</div>
+        <div class="q-why">LLM latency is non-deterministic and right-skewed. A request that takes 800ms at p50 can take 4–6 seconds at p95 — especially with tool calls, RAG retrieval, and long outputs stacked in sequence. Building to average latency is building to fail under load. P95 is the user experience that matters.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Latency SLA defined per user-facing interaction (e.g. ≤2s p95 TTFB for streaming, ≤5s p95 for full completion). Latency budget allocated across each stage: retrieval, model inference, tool calls, postprocessing. Streaming enabled where possible to improve perceived latency. p95 measured in load test, not just smoke test.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            "It feels fast enough in dev." No latency SLA. No p95 measurement. Latency tested with a single user, not under concurrent load. Streaming not considered. Tool calls not measured separately from model latency.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook1.html">Atlas Dawn P1</a> · Performance</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GROUP 4: SECURITY -->
+  <div class="checklist-section">
+    <div class="group-header violet">🟣 Group 4 — Security <span class="group-count">&nbsp;· Q12–Q14</span></div>
+    <div class="card-grid">
+
+      <div class="q-card violet" onclick="toggleCheck(this)">
+        <div class="q-num">12</div>
+        <div class="q-label">Q12 · Security</div>
+        <div class="q-question">What controls exist against prompt injection and context poisoning?</div>
+        <div class="q-why">Prompt injection is SQL injection for the LLM era. An attacker who can influence content that enters the context window — through a document, a web page, a database field, or a user message — can attempt to hijack agent behavior, exfiltrate data, or override safety instructions. Every RAG pipeline and every agent with tool access is a potential injection surface.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            User-controlled content is clearly delimited from system instructions in the prompt structure. Retrieved documents are sandboxed and labeled as untrusted content. Input validation strips or escapes known injection patterns. Output is validated before acting on any model-generated instructions. Penetration testing includes prompt injection scenarios.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            User input concatenated directly into system prompts with no delimiting. Retrieved document content treated as trusted. No awareness that a malicious document in the vector DB could hijack agent behavior. Prompt injection not included in threat model.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook4.html">Atlas Vault P4</a> · Security Architecture</div>
+      </div>
+
+      <div class="q-card violet" onclick="toggleCheck(this)">
+        <div class="q-num">13</div>
+        <div class="q-label">Q13 · Security</div>
+        <div class="q-question">What approval workflows and audit logging govern AI-driven actions?</div>
+        <div class="q-why">When an AI agent takes an action in a business system — provisioning access in Okta, creating a ticket in ServiceNow, modifying a CyberArk vault entry — that action must be attributable, reviewable, and revocable. The audit trail for AI-driven actions must be at least as rigorous as for human-driven actions. "The model did it" is not a valid incident response answer.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Every consequential action logged with: timestamp, actor (user + model), inputs provided, action taken, system affected, outcome. High-risk actions route through human approval before execution. Approval audit trail is immutable. Logs feed into SIEM. AI actions are distinguishable from human actions in audit logs. Retention policy matches compliance requirements.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            AI actions logged only at the application layer with no system-of-record audit trail. No human approval gate for consequential actions. Logs do not identify which model was used or what prompt produced the action. No review process for AI-generated access grants or policy changes.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook4.html">Atlas Vault P4</a> · Governance</div>
+      </div>
+
+      <div class="q-card violet" onclick="toggleCheck(this)">
+        <div class="q-num">14</div>
+        <div class="q-label">Q14 · Security</div>
+        <div class="q-question">What monitoring exists for quality drift, cost anomalies, and security incidents?</div>
+        <div class="q-why">AI systems degrade in ways that traditional software does not. Model behavior can shift when the provider updates a model without notice. Embedding drift makes retrieval silently worse over months. Cost anomalies signal abuse, runaway loops, or injection attacks. None of these show up in standard APM dashboards — you need AI-specific observability.</div>
+        <div class="q-answers">
+          <div class="q-answer good">
+            <span class="q-answer-label">✅ Good</span>
+            Quality: automated eval suite runs on a golden test set after every model/prompt change. Cost: daily spend alerts with anomaly detection, per-user and per-endpoint cost attribution. Security: alerts on unusual token volumes, unexpected tool call patterns, and retrieval of flagged content. Model version changes trigger review. Dashboards owned by a named team.
+          </div>
+          <div class="q-answer red">
+            <span class="q-answer-label">🚩 Red Flag</span>
+            No automated quality evaluation — quality assessed by "does it seem fine?" in manual testing. No cost anomaly detection. No security monitoring specific to AI behavior. Model provider silently updates model version; team notices degradation weeks later via user complaints.
+          </div>
+        </div>
+        <div class="q-ref">→ <a href="playbook5.html">Atlas Core P5</a> · Observability</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- ARTIFACT 2: ARCHITECTURE DECISION TREE             -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="tree-section">
+    <div class="section-header">
+      <h2>The One-Page Decision Tree</h2>
+      <p>From "should we use AI?" to "here's exactly what to build" — follow the arrows.</p>
+    </div>
+    <div class="tree-container">
+      <svg viewBox="0 0 860 1580" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:860px;font-family:'IBM Plex Sans',sans-serif;">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#6B6F7A"/>
+          </marker>
+          <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#5B8FF0"/>
+          </marker>
+          <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#4FB286"/>
+          </marker>
+          <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#E8A33D"/>
+          </marker>
+          <marker id="arr-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#D9534F"/>
+          </marker>
+          <marker id="arr-violet" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#7B6FE0"/>
+          </marker>
+
+          <!-- Node styles -->
+          <filter id="shadow" x="-5%" y="-5%" width="110%" height="120%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000018"/>
+          </filter>
+        </defs>
+
+        <!-- ── NODE HELPER: each node is a rounded rect + text ── -->
+
+        <!-- START NODE -->
+        <rect x="255" y="20" width="350" height="54" rx="27" fill="#1A1D24" filter="url(#shadow)"/>
+        <text x="430" y="44" text-anchor="middle" fill="#E8E6E1" font-size="11" font-weight="600" font-family="'IBM Plex Mono',monospace" letter-spacing="0.08em" text-transform="uppercase">NEW AI REQUEST RECEIVED</text>
+        <text x="430" y="60" text-anchor="middle" fill="#8A8F9C" font-size="10" font-family="'IBM Plex Mono',monospace">Start here. Every time.</text>
+
+        <!-- Arrow down from START -->
+        <line x1="430" y1="74" x2="430" y2="106" stroke="#6B6F7A" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ── Q1: Is this actually an AI problem? ── -->
+        <rect x="170" y="110" width="520" height="58" rx="10" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="430" y="133" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="600" font-family="'Inter Tight',sans-serif">Is this actually an AI problem?</text>
+        <text x="430" y="151" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Or can a rule engine, search query, or database solve this?</text>
+
+        <!-- NO branch → left terminal -->
+        <line x1="170" y1="139" x2="80" y2="139" stroke="#D9534F" stroke-width="1.5" marker-end="url(#arr-red)"/>
+        <text x="126" y="133" text-anchor="middle" fill="#D9534F" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">NO</text>
+
+        <!-- NO terminal box -->
+        <rect x="10" y="112" width="70" height="54" rx="8" fill="#FDF1F1" stroke="#D9534F" stroke-width="1.5"/>
+        <text x="45" y="131" text-anchor="middle" fill="#D9534F" font-size="9" font-weight="700" font-family="'Inter Tight',sans-serif">STOP.</text>
+        <text x="45" y="145" text-anchor="middle" fill="#D9534F" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">Build the</text>
+        <text x="45" y="157" text-anchor="middle" fill="#D9534F" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">simpler thing.</text>
+
+        <!-- YES arrow down -->
+        <line x1="430" y1="168" x2="430" y2="198" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="444" y="188" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">YES</text>
+
+        <!-- ── Q2: Company-specific knowledge? ── -->
+        <rect x="170" y="202" width="520" height="58" rx="10" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="430" y="225" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="600" font-family="'Inter Tight',sans-serif">Does this need company-specific or private knowledge?</text>
+        <text x="430" y="243" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Information the base model was never trained on.</text>
+
+        <!-- NO → right terminal -->
+        <line x1="690" y1="231" x2="780" y2="231" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="734" y="225" text-anchor="middle" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">NO</text>
+        <rect x="780" y="205" width="72" height="52" rx="8" fill="#EDF8F3" stroke="#4FB286" stroke-width="1.5"/>
+        <text x="816" y="223" text-anchor="middle" fill="#4FB286" font-size="8.5" font-weight="700" font-family="'Inter Tight',sans-serif">Plain LLM</text>
+        <text x="816" y="235" text-anchor="middle" fill="#4FB286" font-size="8" font-family="'IBM Plex Sans',sans-serif">prompt. Start</text>
+        <text x="816" y="247" text-anchor="middle" fill="#4FB286" font-size="8" font-family="'IBM Plex Sans',sans-serif">simple.</text>
+
+        <!-- YES arrow down -->
+        <line x1="430" y1="260" x2="430" y2="290" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="444" y="280" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">YES</text>
+
+        <!-- ── Q3: Static enough for system prompt? ── -->
+        <rect x="155" y="294" width="550" height="58" rx="10" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="430" y="317" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="600" font-family="'Inter Tight',sans-serif">Is the knowledge static enough for a system prompt?</text>
+        <text x="430" y="335" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Under ~2K tokens and changes infrequently?</text>
+
+        <!-- YES → right terminal -->
+        <line x1="705" y1="323" x2="780" y2="323" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="741" y="317" text-anchor="middle" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">YES</text>
+        <rect x="780" y="298" width="72" height="50" rx="8" fill="#EDF8F3" stroke="#4FB286" stroke-width="1.5"/>
+        <text x="816" y="316" text-anchor="middle" fill="#4FB286" font-size="8.5" font-weight="700" font-family="'Inter Tight',sans-serif">System</text>
+        <text x="816" y="328" text-anchor="middle" fill="#4FB286" font-size="8.5" font-weight="700" font-family="'Inter Tight',sans-serif">prompt</text>
+        <text x="816" y="340" text-anchor="middle" fill="#4FB286" font-size="8" font-family="'IBM Plex Sans',sans-serif">injection.</text>
+
+        <!-- NO arrow down -->
+        <line x1="430" y1="352" x2="430" y2="382" stroke="#6B6F7A" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="444" y="372" fill="#D9534F" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">NO</text>
+
+        <!-- ── RAG REQUIRED NODE ── -->
+        <rect x="130" y="386" width="600" height="64" rx="10" fill="#FEF6EC" stroke="#E8A33D" stroke-width="2" filter="url(#shadow)"/>
+        <text x="430" y="409" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="700" font-family="'Inter Tight',sans-serif">RAG Required</text>
+        <text x="430" y="428" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Vector DB + Embedding Model + Retrieval Strategy</text>
+        <text x="430" y="443" text-anchor="middle" fill="#E8A33D" font-size="10" font-family="'IBM Plex Mono',monospace">Define: chunk size · overlap · top-K · relevance threshold</text>
+
+        <!-- Arrow down -->
+        <line x1="430" y1="450" x2="430" y2="482" stroke="#6B6F7A" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ── Q4: Needs to take actions? ── -->
+        <rect x="155" y="486" width="550" height="58" rx="10" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="430" y="510" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="600" font-family="'Inter Tight',sans-serif">Does this need to take actions in external systems?</text>
+        <text x="430" y="528" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Jira, ServiceNow, Okta, databases, APIs — any write operation.</text>
+
+        <!-- NO → right terminal -->
+        <line x1="705" y1="515" x2="780" y2="515" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="741" y="509" text-anchor="middle" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">NO</text>
+        <rect x="780" y="490" width="72" height="50" rx="8" fill="#EDF8F3" stroke="#4FB286" stroke-width="1.5"/>
+        <text x="816" y="508" text-anchor="middle" fill="#4FB286" font-size="8.5" font-weight="700" font-family="'Inter Tight',sans-serif">RAG-only</text>
+        <text x="816" y="520" text-anchor="middle" fill="#4FB286" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">system. Most</text>
+        <text x="816" y="532" text-anchor="middle" fill="#4FB286" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">tasks end here.</text>
+
+        <!-- YES down -->
+        <line x1="430" y1="544" x2="430" y2="574" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="444" y="564" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">YES</text>
+
+        <!-- ── TOOL CALLING REQUIRED ── -->
+        <rect x="130" y="578" width="600" height="64" rx="10" fill="#FEF6EC" stroke="#E8A33D" stroke-width="2" filter="url(#shadow)"/>
+        <text x="430" y="601" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="700" font-family="'Inter Tight',sans-serif">Tool Calling Required</text>
+        <text x="430" y="620" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Define tools with MCP specs. Classify: read-only vs. mutating.</text>
+        <text x="430" y="635" text-anchor="middle" fill="#E8A33D" font-size="10" font-family="'IBM Plex Mono',monospace">Document blast radius for every write-capable tool.</text>
+
+        <!-- Arrow down -->
+        <line x1="430" y1="642" x2="430" y2="672" stroke="#6B6F7A" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ── Q5: Multi-step autonomous decision making? ── -->
+        <rect x="130" y="676" width="600" height="58" rx="10" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="430" y="700" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="600" font-family="'Inter Tight',sans-serif">Does the task require autonomous multi-step decision making?</text>
+        <text x="430" y="718" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Plan → act → observe → repeat, without human input per step.</text>
+
+        <!-- NO → right terminal -->
+        <line x1="730" y1="705" x2="780" y2="705" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="754" y="699" text-anchor="middle" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">NO</text>
+        <rect x="780" y="680" width="72" height="50" rx="8" fill="#EDF8F3" stroke="#4FB286" stroke-width="1.5"/>
+        <text x="816" y="698" text-anchor="middle" fill="#4FB286" font-size="8.5" font-weight="700" font-family="'Inter Tight',sans-serif">Single-turn</text>
+        <text x="816" y="710" text-anchor="middle" fill="#4FB286" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">or fixed tool</text>
+        <text x="816" y="722" text-anchor="middle" fill="#4FB286" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">call. No agent.</text>
+
+        <!-- YES down -->
+        <line x1="430" y1="734" x2="430" y2="764" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="444" y="754" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">YES</text>
+
+        <!-- ── AGENT REQUIRED ── -->
+        <rect x="130" y="768" width="600" height="64" rx="10" fill="#FEF6EC" stroke="#E8A33D" stroke-width="2" filter="url(#shadow)"/>
+        <text x="430" y="791" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="700" font-family="'Inter Tight',sans-serif">Agent Required</text>
+        <text x="430" y="810" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Define: loop logic · max iterations · halt conditions</text>
+        <text x="430" y="825" text-anchor="middle" fill="#E8A33D" font-size="10" font-family="'IBM Plex Mono',monospace">Set blast radius · approval gates · human escalation path</text>
+
+        <!-- Arrow down -->
+        <line x1="430" y1="832" x2="430" y2="862" stroke="#6B6F7A" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ── Q6: Risk level? ── -->
+        <rect x="155" y="866" width="550" height="58" rx="10" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="430" y="890" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="600" font-family="'Inter Tight',sans-serif">What is the risk level of a wrong or unauthorized action?</text>
+        <text x="430" y="908" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Consider: reversibility, blast radius, compliance impact.</text>
+
+        <!-- LOW → bottom-left terminal -->
+        <line x1="155" y1="895" x2="80" y2="895" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="119" y="889" text-anchor="middle" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">LOW</text>
+        <rect x="10" y="869" width="70" height="52" rx="8" fill="#EDF8F3" stroke="#4FB286" stroke-width="1.5"/>
+        <text x="45" y="887" text-anchor="middle" fill="#4FB286" font-size="8.5" font-weight="700" font-family="'Inter Tight',sans-serif">Automated</text>
+        <text x="45" y="899" text-anchor="middle" fill="#4FB286" font-size="8" font-family="'IBM Plex Sans',sans-serif">agent +</text>
+        <text x="45" y="911" text-anchor="middle" fill="#4FB286" font-size="8" font-family="'IBM Plex Sans',sans-serif">logging OK.</text>
+
+        <!-- MEDIUM → below-left terminal -->
+        <line x1="430" y1="924" x2="430" y2="950" stroke="#E8A33D" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+        <text x="444" y="942" fill="#E8A33D" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">MED</text>
+
+        <rect x="240" y="954" width="380" height="44" rx="8" fill="#FEF6EC" stroke="#E8A33D" stroke-width="1.5"/>
+        <text x="430" y="971" text-anchor="middle" fill="#1A1D24" font-size="11" font-weight="600" font-family="'Inter Tight',sans-serif">Human-in-the-loop approval required</text>
+        <text x="430" y="987" text-anchor="middle" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">For all consequential steps before execution.</text>
+
+        <!-- HIGH → bottom-right terminal -->
+        <line x1="705" y1="895" x2="780" y2="895" stroke="#D9534F" stroke-width="1.5" marker-end="url(#arr-red)"/>
+        <text x="741" y="889" text-anchor="middle" fill="#D9534F" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">HIGH</text>
+        <rect x="780" y="869" width="72" height="52" rx="8" fill="#FDF1F1" stroke="#D9534F" stroke-width="1.5"/>
+        <text x="816" y="887" text-anchor="middle" fill="#D9534F" font-size="8.5" font-weight="700" font-family="'Inter Tight',sans-serif">Agent</text>
+        <text x="816" y="899" text-anchor="middle" fill="#D9534F" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">suggests.</text>
+        <text x="816" y="911" text-anchor="middle" fill="#D9534F" font-size="8.5" font-family="'IBM Plex Sans',sans-serif">Human acts.</text>
+
+        <!-- Arrow down from MEDIUM box -->
+        <line x1="430" y1="998" x2="430" y2="1030" stroke="#6B6F7A" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ── Q7: Data residency? ── -->
+        <rect x="155" y="1034" width="550" height="58" rx="10" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="430" y="1057" text-anchor="middle" fill="#1A1D24" font-size="12" font-weight="600" font-family="'Inter Tight',sans-serif">Does data need to stay within your network?</text>
+        <text x="430" y="1075" text-anchor="middle" fill="#6B6F7A" font-size="10.5" font-family="'IBM Plex Sans',sans-serif">Sovereignty, compliance, or classification requirements?</text>
+
+        <!-- NO down-left -->
+        <line x1="270" y1="1092" x2="220" y2="1130" stroke="#4FB286" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="230" y="1110" fill="#4FB286" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">NO</text>
+
+        <!-- YES down-right -->
+        <line x1="590" y1="1092" x2="640" y2="1130" stroke="#D9534F" stroke-width="1.5" marker-end="url(#arr-red)"/>
+        <text x="624" y="1110" fill="#D9534F" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace">YES</text>
+
+        <!-- Hosted API box -->
+        <rect x="80" y="1134" width="280" height="68" rx="10" fill="#EDF8F3" stroke="#4FB286" stroke-width="2" filter="url(#shadow)"/>
+        <text x="220" y="1155" text-anchor="middle" fill="#1A1D24" font-size="11.5" font-weight="700" font-family="'Inter Tight',sans-serif">Hosted API</text>
+        <text x="220" y="1172" text-anchor="middle" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">Claude / GPT / Gemini</text>
+        <text x="220" y="1188" text-anchor="middle" fill="#4FB286" font-size="9.5" font-family="'IBM Plex Mono',monospace">Pick tier based on task complexity</text>
+
+        <!-- Self-hosted box -->
+        <rect x="500" y="1134" width="280" height="68" rx="10" fill="#FDF1F1" stroke="#D9534F" stroke-width="2" filter="url(#shadow)"/>
+        <text x="640" y="1155" text-anchor="middle" fill="#1A1D24" font-size="11.5" font-weight="700" font-family="'Inter Tight',sans-serif">Self-Hosted Open Model</text>
+        <text x="640" y="1172" text-anchor="middle" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">Llama / Qwen / Gemma</text>
+        <text x="640" y="1188" text-anchor="middle" fill="#D9534F" font-size="9.5" font-family="'IBM Plex Mono',monospace">Plan for GPU ops, updates &amp; support</text>
+
+        <!-- Converging arrows down to DONE -->
+        <line x1="220" y1="1202" x2="220" y2="1260" stroke="#6B6F7A" stroke-width="1.5"/>
+        <line x1="220" y1="1260" x2="430" y2="1260" stroke="#6B6F7A" stroke-width="1.5"/>
+        <line x1="640" y1="1202" x2="640" y2="1260" stroke="#6B6F7A" stroke-width="1.5"/>
+        <line x1="640" y1="1260" x2="430" y2="1260" stroke="#6B6F7A" stroke-width="1.5"/>
+        <line x1="430" y1="1260" x2="430" y2="1290" stroke="#6B6F7A" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- ── DONE NODE ── -->
+        <rect x="130" y="1294" width="600" height="72" rx="12" fill="#1A1D24" filter="url(#shadow)"/>
+        <text x="430" y="1320" text-anchor="middle" fill="#E8E6E1" font-size="13" font-weight="700" font-family="'Inter Tight',sans-serif">DONE: You have your architecture.</text>
+        <text x="430" y="1340" text-anchor="middle" fill="#8A8F9C" font-size="11" font-family="'IBM Plex Sans',sans-serif">Now run the 14-question checklist above.</text>
+        <text x="430" y="1356" text-anchor="middle" fill="#5B8FF0" font-size="10" font-family="'IBM Plex Mono',monospace">No exceptions. No shortcuts. Every review.</text>
+
+        <!-- Legend -->
+        <rect x="10" y="1430" width="840" height="120" rx="8" fill="none" stroke="#DEDAD1" stroke-width="1"/>
+        <text x="30" y="1452" fill="#6B6F7A" font-size="10" font-weight="600" font-family="'IBM Plex Mono',monospace" letter-spacing="0.08em">LEGEND</text>
+        <!-- Concept -->
+        <rect x="30" y="1462" width="12" height="12" rx="2" fill="#EEF3FD" stroke="#5B8FF0" stroke-width="1.5"/>
+        <text x="50" y="1473" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">Decision question</text>
+        <!-- Action -->
+        <rect x="200" y="1462" width="12" height="12" rx="2" fill="#FEF6EC" stroke="#E8A33D" stroke-width="2"/>
+        <text x="220" y="1473" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">Architecture component</text>
+        <!-- Terminal green -->
+        <rect x="400" y="1462" width="12" height="12" rx="2" fill="#EDF8F3" stroke="#4FB286" stroke-width="1.5"/>
+        <text x="420" y="1473" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">Exit: valid outcome</text>
+        <!-- Terminal red -->
+        <rect x="580" y="1462" width="12" height="12" rx="2" fill="#FDF1F1" stroke="#D9534F" stroke-width="1.5"/>
+        <text x="600" y="1473" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">Exit: stop / high-risk path</text>
+
+        <!-- Second row of legend -->
+        <text x="30" y="1505" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">💡 Every YES/NO branch is a real architecture decision. The right path depends on your specific requirements.</text>
+        <text x="30" y="1525" fill="#6B6F7A" font-size="10" font-family="'IBM Plex Sans',sans-serif">🔒 For security-sensitive systems, the HIGH risk path (Agent suggests, Human acts) is the safe default regardless of convenience.</text>
+        <text x="30" y="1545" fill="#5B8FF0" font-size="10" font-family="'IBM Plex Mono',monospace">→ See Q8, Q12, Q13 in the checklist above for implementation detail on agent risk and security controls.</text>
+      </svg>
+    </div>
+  </div>
+
+
+  <!-- FOOTER NAV -->
+  <div class="footer-nav">
+    <a href="index.html">← Back to Index</a>
+    <div class="footer-brand">AI Stack Atlas · architecture-checklist.html</div>
+    <a href="playbook1.html">Start with Atlas Dawn P1 →</a>
+  </div>
+
+</div><!-- end page-wrapper -->
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT                                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<script>
+  // Dark / Light Toggle
+  const themeBtn = document.getElementById('themeToggle');
+  const html = document.documentElement;
+
+  // Respect system preference on load
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    html.classList.add('dark');
+    themeBtn.textContent = '☀️';
+  }
+
+  themeBtn.addEventListener('click', () => {
+    html.classList.toggle('dark');
+    themeBtn.textContent = html.classList.contains('dark') ? '☀️' : '🌙';
+  });
+
+  // Check-off Mode — in-memory only, no localStorage
+  function toggleCheck(card) {
+    card.classList.toggle('checked');
+    updateProgress();
+  }
+
+  // Progress tracking (optional: could show a counter)
+  function updateProgress() {
+    const total = document.querySelectorAll('.q-card').length;
+    const checked = document.querySelectorAll('.q-card.checked').length;
+    // Update page title with progress
+    if (checked === 0) {
+      document.title = 'AI Architecture Review Checklist · AI Stack Atlas';
+    } else if (checked === total) {
+      document.title = `✅ Review Complete (${total}/${total}) · AI Stack Atlas`;
+    } else {
+      document.title = `(${checked}/${total}) AI Architecture Review Checklist · AI Stack Atlas`;
+    }
+  }
+
+  // Keyboard shortcut: press 'r' to reset all checks
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) {
+      document.querySelectorAll('.q-card.checked').forEach(c => c.classList.remove('checked'));
+      updateProgress();
+    }
+  });
+</script>
+
+</body>
+</html>

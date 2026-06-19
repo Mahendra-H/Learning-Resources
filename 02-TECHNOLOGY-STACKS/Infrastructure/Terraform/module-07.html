@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-2">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M07 · Load Balancers &amp; Route53 — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E14;--s1:#111520;--s2:#181D2A;--s3:#1F2535;
+  --br:#1E2636;--brb:#2E3A52;
+  --teal:#00E5C3;--td:#00B89A;--tg:rgba(0,229,195,.12);
+  --cu:#E8873A;--cg:rgba(232,135,58,.15);
+  --sa:#4A9EFF;--sg:rgba(74,158,255,.12);
+  --ro:#FF5F7E;--rg:rgba(255,95,126,.12);
+  --jd:#3ECFA0;--vi:#9B7FFF;--vg:rgba(155,127,255,.13);
+  --t1:#E8EDF5;--t2:#8A95A8;--t3:#4A5568;
+  --fd:'Syne',sans-serif;--fb:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;
+  --xs:4px;--sm:8px;--md:16px;--lg:24px;--xl:40px;--x2:64px;--x3:96px;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--rp:999px;
+  --sh:0 1px 3px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3);
+  --tf:150ms ease;--tb:250ms ease;
+  /* Phase 2 — Sapphire for M07 (traffic/network theme) */
+  --pc:#4A9EFF;--pg:rgba(74,158,255,.15);--pd:#1A68CC;
+  --ac:#00E5C3;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--brb);border-radius:999px}
+::selection{background:var(--pg);color:var(--pc)}
+a{color:var(--sa);text-decoration:none;transition:color var(--tf)}a:hover{color:var(--teal)}
+code{font-family:var(--fm);font-size:.85em;background:var(--s3);border:1px solid var(--br);color:var(--teal);padding:1px 5px;border-radius:var(--r4)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 var(--xl)}
+@media(max-width:768px){.wrap{padding:0 var(--md)}}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--br);padding:0 var(--xl)}
+.ni{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--lg)}
+.nl{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.nl span{color:var(--t3);font-weight:400}
+.nd{width:1px;height:20px;background:var(--brb);flex-shrink:0}
+.np{flex:1;display:flex;align-items:center;gap:var(--sm)}
+.pt{flex:1;height:2px;background:var(--br);border-radius:var(--rp);overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,var(--pc),var(--ac));border-radius:var(--rp)}
+.pl{font-family:var(--fm);font-size:11px;color:var(--t3);white-space:nowrap}
+.nb{font-family:var(--fm);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);white-space:nowrap}
+/* HERO */
+.hero{position:relative;padding:var(--x3) 0 var(--x2);overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--pg) 0%,transparent 55%),radial-gradient(ellipse 55% 45% at 82% 25%,rgba(0,229,195,.05) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--br) 1px,transparent 1px),linear-gradient(90deg,var(--br) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 70% 60% at 15% 50%,black 0%,transparent 70%);opacity:.4;pointer-events:none}
+.hi{position:relative;z-index:1}
+.hp{display:inline-flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.hd{width:6px;height:6px;border-radius:50%;background:var(--pc);box-shadow:0 0 8px var(--pc);animation:hda 2s ease-in-out infinite}
+@keyframes hda{0%,100%{opacity:1;box-shadow:0 0 8px var(--pc)}50%{opacity:.5;box-shadow:0 0 3px var(--pc)}}
+.ht{font-family:var(--fd);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-.02em;color:var(--t1);margin-bottom:var(--md);max-width:780px}
+.ht .ap{color:var(--pc)}.ht .at{color:var(--ac)}
+.hs{font-size:17px;font-weight:300;color:var(--t2);max-width:640px;line-height:1.65;margin-bottom:var(--xl)}
+.hm{display:flex;flex-wrap:wrap;gap:var(--sm)}
+/* BADGES */
+.b{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--rp);white-space:nowrap;letter-spacing:.04em}
+.bp{background:var(--pg);border:1px solid var(--pc);color:var(--pc)}
+.be{background:rgba(232,135,58,.1);border:1px solid rgba(232,135,58,.3);color:var(--cu)}
+.bs{background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:var(--sa)}
+.bq{background:var(--s2);border:1px solid var(--brb);color:var(--t2)}
+.bn{background:rgba(0,229,195,.1);border:1px solid rgba(0,229,195,.3);color:var(--teal)}
+.bv{background:var(--vg);border:1px solid rgba(155,127,255,.35);color:var(--vi)}
+/* ORIENT */
+.orient{background:var(--s1);border:1px solid var(--br);border-radius:var(--r16);padding:var(--xl);margin-bottom:var(--x2);position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc) 0%,transparent 100%)}
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--lg)}
+.oil{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.oiv{font-size:14px;font-weight:500;color:var(--t1)}.oiv.ac{color:var(--pc)}
+.jrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--lg);padding-top:var(--lg);border-top:1px solid var(--br)}
+.jd{width:30px;height:30px;border-radius:var(--r4);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:500}
+.jdd{background:var(--tg);border:1px solid var(--td);color:var(--td)}
+.jdc{background:var(--pg);border:1px solid var(--pc);color:var(--pc);box-shadow:0 0 10px var(--pg)}
+.jdf{background:var(--s2);border:1px solid var(--br);color:var(--t3)}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 260px;gap:var(--x2);align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.main{min-width:0}.sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.sec{margin-bottom:var(--x2)}
+.sl{display:flex;align-items:center;gap:var(--sm);font-family:var(--fm);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--pc);margin-bottom:var(--md)}
+.sl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--brb) 0%,transparent 100%)}
+.st{font-family:var(--fd);font-size:24px;font-weight:700;color:var(--t1);margin-bottom:var(--md);line-height:1.2}
+.sb{font-size:15px;color:var(--t2);line-height:1.8}
+.sb p{margin-bottom:var(--md)}.sb p:last-child{margin-bottom:0}
+.sb strong{color:var(--t1);font-weight:600}.sb em{color:var(--pc);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);transition:border-color var(--tb),box-shadow var(--tb)}
+.card:hover{border-color:var(--brb);box-shadow:var(--sh)}
+.cp{border-left:2px solid var(--pc);background:linear-gradient(135deg,var(--pg) 0%,var(--s1) 60%)}
+.ct{border-left:2px solid var(--teal);background:linear-gradient(135deg,var(--tg) 0%,var(--s1) 60%)}
+.cc{border-left:2px solid var(--cu);background:linear-gradient(135deg,var(--cg) 0%,var(--s1) 60%)}
+.cr{border-left:2px solid var(--ro);background:linear-gradient(135deg,var(--rg) 0%,var(--s1) 60%)}
+.cv{border-left:2px solid var(--vi);background:linear-gradient(135deg,var(--vg) 0%,var(--s1) 60%)}
+.clbl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.cttl{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--t1);margin-bottom:var(--sm)}
+.cbdy{font-size:14px;color:var(--t2);line-height:1.7}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--md)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--md)}
+/* CONCEPT */
+.cb{border-left:2px solid var(--pc);padding:var(--md) var(--lg);background:var(--pg);border-radius:0 var(--r8) var(--r8) 0;margin:var(--lg) 0}
+.cbt{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--pc);margin-bottom:4px}
+.cbd{font-size:14px;color:var(--t2);line-height:1.65}
+.cb-t{border-left-color:var(--teal);background:var(--tg)}.cb-t .cbt{color:var(--teal)}
+.cb-c{border-left-color:var(--cu);background:var(--cg)}.cb-c .cbt{color:var(--cu)}
+.cb-r{border-left-color:var(--ro);background:var(--rg)}.cb-r .cbt{color:var(--ro)}
+/* DIAGRAM */
+.dw{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--xl);margin:var(--xl) 0;overflow-x:auto}
+.dwl{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--md);display:flex;align-items:center;gap:var(--sm)}
+.dwl::before{content:'◈';color:var(--pc);font-size:12px}
+/* CODE */
+.code{background:var(--s2);border:1px solid var(--br);border-radius:var(--r8);overflow:hidden;margin:var(--md) 0;font-family:var(--fm);font-size:12px}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:var(--sm) var(--md);background:var(--s3);border-bottom:1px solid var(--br)}
+.ch-l{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.ch-f{font-size:11px;color:var(--t2)}
+.cb2{padding:var(--md);overflow-x:auto;line-height:1.7;color:var(--t2);tab-size:2}
+.cb2 .k{color:#c792ea}.cb2 .s{color:var(--jd)}.cb2 .c{color:var(--t3);font-style:italic}
+.cb2 .v{color:var(--cu)}.cb2 .n{color:var(--teal)}.cb2 .p{color:var(--sa)}.cb2 .num{color:#f78c6c}
+/* KC */
+.kc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);overflow:hidden;margin:var(--md) 0}
+.kcq{padding:var(--md) var(--lg);font-size:14px;font-weight:500;color:var(--t1);display:flex;align-items:flex-start;gap:var(--sm);cursor:pointer;transition:background var(--tf);user-select:none}
+.kcq:hover{background:var(--s2)}
+.kci{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--pc);background:var(--pg);border:1px solid var(--pc);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kcc{margin-left:auto;flex-shrink:0;color:var(--t3);transition:transform var(--tb);font-size:12px}
+.kc.open .kcc{transform:rotate(180deg)}
+.kca{display:none;padding:var(--md) var(--lg);background:var(--s2);border-top:1px solid var(--br);font-size:14px;color:var(--t2);line-height:1.7}
+.kc.open .kca{display:block}
+/* SIDEBAR */
+.toc{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.tl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.ti{display:block;padding:5px var(--sm);font-size:12px;color:var(--t2);border-radius:var(--r4);transition:all var(--tf);cursor:pointer;border-left:2px solid transparent}
+.ti:hover,.ti.active{background:var(--s2);color:var(--t1);border-left-color:var(--pc)}
+.qr{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--md);margin-bottom:var(--md)}
+.qrl{font-family:var(--fm);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm);padding-bottom:var(--sm);border-bottom:1px solid var(--br)}
+.qi{display:flex;gap:var(--sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--br);font-size:12px}
+.qi:last-child{border-bottom:none}
+.qt{font-family:var(--fm);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.qd{color:var(--t2);line-height:1.5}
+/* TAKEAWAY */
+.tk{background:var(--s1);border:1px solid var(--br);border-radius:var(--r12);padding:var(--lg);margin:var(--xl) 0}
+.tkh{display:flex;align-items:center;gap:var(--sm);margin-bottom:var(--md);padding-bottom:var(--md);border-bottom:1px solid var(--br)}
+.tki{width:32px;height:32px;border-radius:var(--r4);background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--pc);flex-shrink:0}
+.tkt{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--t1)}
+.tkl{list-style:none;display:flex;flex-direction:column;gap:var(--sm)}
+.tkl li{font-size:14px;color:var(--t2);display:flex;align-items:flex-start;gap:var(--sm);line-height:1.65}
+.tkl li::before{content:'◆';color:var(--pc);font-size:8px;flex-shrink:0;margin-top:6px}
+/* AR */
+.ar{background:var(--s1);border:1px solid var(--cu);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.arh{background:var(--cg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.arb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cu);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--rp)}
+.art{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.arl{list-style:none;padding:var(--md) var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.arl li{font-size:14px;color:var(--t2);display:flex;gap:var(--sm);align-items:flex-start;line-height:1.65;padding:var(--sm) 0;border-bottom:1px solid var(--br)}
+.arl li:last-child{border-bottom:none}
+.arn{font-family:var(--fm);font-size:11px;color:var(--cu);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR */
+.mn{display:flex;gap:var(--md);padding:var(--lg);background:var(--s2);border:1px solid var(--br);border-radius:var(--r12);margin:var(--lg) 0}
+.mnav{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--pg);border:1px solid var(--pc);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mnb{flex:1}
+.mnl{font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--pc);margin-bottom:4px}
+.mnt{font-size:14px;color:var(--t2);line-height:1.75}
+.mnt strong{color:var(--t1);font-weight:600}
+/* LAB */
+.lab{background:var(--s1);border:1px solid var(--td);border-radius:var(--r12);overflow:hidden;margin:var(--xl) 0}
+.labh{background:var(--tg);padding:var(--md) var(--lg);border-bottom:1px solid var(--br);display:flex;align-items:center;gap:var(--sm)}
+.labb{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);background:var(--tg);border:1px solid rgba(0,229,195,.4);padding:2px 8px;border-radius:var(--rp)}
+.labt{font-family:var(--fd);font-size:15px;font-weight:600;color:var(--t1)}
+.labbody{padding:var(--lg)}
+.labbody ol{padding-left:var(--lg);display:flex;flex-direction:column;gap:var(--sm)}
+.labbody ol li{font-size:14px;color:var(--t2);line-height:1.65;padding-left:4px}
+.labbody ol li strong{color:var(--t1)}
+/* BRIDGE */
+.bridge{margin-top:var(--x3);padding-top:var(--x2);border-top:1px solid var(--br)}
+.bc{background:linear-gradient(135deg,var(--s1) 0%,var(--s2) 100%);border:1px solid var(--brb);border-radius:var(--r16);padding:var(--xl);position:relative;overflow:hidden}
+.bc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pc),var(--teal),transparent)}
+.bc::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--tg);pointer-events:none}
+.bce{font-family:var(--fm);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:var(--sm)}
+.bct{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--t1);margin-bottom:var(--md)}
+.bct span{color:var(--teal)}
+.bcb{font-size:14px;color:var(--t2);line-height:1.75;max-width:580px;margin-bottom:var(--lg)}
+.bcc{display:flex;flex-wrap:wrap;gap:var(--sm);margin-bottom:var(--lg)}
+.bcbtn{display:inline-flex;align-items:center;gap:var(--sm);background:var(--teal);color:var(--bg);font-family:var(--fd);font-size:14px;font-weight:700;padding:12px var(--lg);border-radius:var(--rp);text-decoration:none;transition:all var(--tb)}
+.bcbtn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--tg);color:var(--bg)}
+/* FOOTER */
+.foot{margin-top:var(--x3);padding:var(--xl) 0;border-top:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;gap:var(--md);flex-wrap:wrap}
+.fl{font-family:var(--fm);font-size:11px;color:var(--t3)}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:var(--lg) 0}
+.tbl th{font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);padding:var(--sm) var(--md);border-bottom:1px solid var(--brb);text-align:left}
+.tbl th:first-child{color:var(--pc)}
+.tbl td{padding:10px var(--md);border-bottom:1px solid var(--br);color:var(--t2);vertical-align:top;line-height:1.6}
+.tbl td:first-child{font-weight:500;color:var(--t1);font-family:var(--fm);font-size:12px;white-space:nowrap}
+.tbl tr:hover td{background:var(--s2)}
+.tbl tr:last-child td{border-bottom:none}
+/* ANIM */
+@keyframes fiu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fiu .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="ni">
+    <a href="index.html" class="nl" style="text-decoration:none">Terraform<span> · Mastery</span></a>
+    <div class="nd"></div>
+    <div class="np">
+      <div class="pt"><div class="pf" style="width:63%"></div></div>
+      <span class="pl">M07 / 10</span>
+    </div>
+    <span class="nb">M07 · Phase 2</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hi">
+    <div class="hp"><div class="hd"></div>Phase 2 · AWS Infrastructure — Layer by Layer</div>
+    <h1 class="ht">Load Balancers &amp; Route53 —<br><span class="ap">Routing Traffic</span> to Your<br><span class="at">PingFederate Fleet</span></h1>
+    <p class="hs">The compute layer is running. Now give it a public face. This module builds the complete traffic path — from DNS resolution to PingFederate response — using an NLB for federation traffic, health checks that gate traffic during AMI refresh, and Route53 alias records that tie the DNS name to the load balancer.</p>
+    <div class="hm">
+      <span class="b bp">Phase 2 · Traffic</span>
+      <span class="b be">⬛⬛⬛⬛☐ 4–5 hrs</span>
+      <span class="b bs">NLB · ALB · Route53</span>
+      <span class="b bq">↳ Prereq: M01–M06</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="og">
+    <div><div class="oil">Current module</div><div class="oiv ac">M07 · Load Balancers &amp; Route53</div></div>
+    <div><div class="oil">Phase</div><div class="oiv">Phase 2 — AWS Infrastructure</div></div>
+    <div><div class="oil">What you bring in</div><div class="oiv">VPC, subnets, SGs, ASG from M04–M06</div></div>
+    <div><div class="oil">Unlocks</div><div class="oiv">M08 · S3 &amp; Config Externalisation</div></div>
+  </div>
+  <div class="jrow">
+    <div class="jd jdd">M01</div><div class="jd jdd">M02</div><div class="jd jdd">M03</div>
+    <div class="jd jdd">M04</div><div class="jd jdd">M05</div><div class="jd jdd">M06</div>
+    <div class="jd jdc">M07</div>
+    <div class="jd jdf">M08</div><div class="jd jdf">M09</div><div class="jd jdf">M10</div>
+    <div class="jd jdf" style="background:linear-gradient(135deg,var(--cg),var(--tg));border:1px solid var(--cu);color:var(--cu)">★</div>
+  </div>
+</div>
+
+<div class="layout">
+<div class="main">
+
+<!-- SECTION 1: BRIDGE -->
+<section class="sec afu d3" id="bridge">
+  <div class="sl">Bridge from Module 06</div>
+  <h2 class="st">The fleet is running. Now let it serve traffic.</h2>
+  <div class="sb">
+    <p>In Module 06 you built the compute layer — Launch Templates that define each PF instance, Auto Scaling Groups that manage the fleet, lifecycle hooks that gate instances until Ansible completes configuration, and instance_refresh that rolls out new AMIs safely. The ASG places engine nodes in private subnets across multiple availability zones.</p>
+    <p>But right now, those nodes are unreachable. They live in private subnets with no public IPs. Nothing knows they exist. Module 07 builds the traffic layer that connects the internet to the PF fleet: an NLB in the public subnets, a target group that the ASG registers instances into, health checks that verify PF is responding, and Route53 records that expose a stable DNS name to federation partners and internal consumers.</p>
+    <p>This module also explains one of the most important architectural decisions in the PF deployment: <em>why NLB, not ALB?</em> The answer lives in how SAML, OIDC, and OAuth work at the TLS layer — and it is the kind of decision that separates infrastructure engineers who understand the application from those who don't.</p>
+  </div>
+  <div class="mn">
+    <div class="mnav">🧑‍🏫</div>
+    <div class="mnb">
+      <div class="mnl">Mentor Note — the back-reference to M06</div>
+      <div class="mnt">Notice that the ASG in M06 references <code>target_group_arns</code>. That variable is produced by this module. In real project codebases, this creates a circular dependency challenge — the ASG needs the target group ARN before it's created, and the target group needs the ASG's instances to be healthy. Terraform resolves this because the ASG registers instances automatically once it's running; <strong>the ASG resource only needs the target group ARN to exist at apply time, not to be populated with healthy instances.</strong> This is a common source of confusion in initial deployments.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: NLB VS ALB -->
+<section class="sec" id="nlb-vs-alb">
+  <div class="sl">The architectural decision</div>
+  <h2 class="st">NLB vs ALB — why PingFederate uses NLB for federation traffic</h2>
+  <div class="sb">
+    <p>AWS offers two types of application-facing load balancers: the Application Load Balancer (ALB) and the Network Load Balancer (NLB). Both are commonly used in enterprise environments, and you will encounter both in your project. Understanding the technical reasons for choosing one over the other is the kind of knowledge that makes you valuable in architecture discussions.</p>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">NLB vs ALB — Decision Framework for PingFederate</div>
+    <table class="tbl">
+      <thead><tr><th>Attribute</th><th>NLB</th><th>ALB</th><th>PF verdict</th></tr></thead>
+      <tbody>
+        <tr><td>OSI Layer</td><td>Layer 4 — TCP/UDP/TLS</td><td>Layer 7 — HTTP/HTTPS</td><td>NLB for federation; ALB optional for admin</td></tr>
+        <tr><td>TLS termination</td><td>Optional passthrough — TLS can be terminated by the backend</td><td>Required at the ALB — always terminates TLS</td><td><strong>NLB required for SAML/OIDC.</strong> PF must own TLS for cert-based auth</td></tr>
+        <tr><td>Client IP preservation</td><td>Native — real client IP visible to PF</td><td>X-Forwarded-For header (can be spoofed)</td><td>NLB preferred — PF audit logs show real client IPs</td></tr>
+        <tr><td>Performance</td><td>Ultra-low latency, millions of req/s</td><td>Higher latency — HTTP parsing overhead</td><td>NLB scales better for high-volume federation</td></tr>
+        <tr><td>Protocol support</td><td>TCP, UDP, TLS</td><td>HTTP/1.1, HTTP/2, gRPC, WebSocket</td><td>Federation runs on TCP/TLS — NLB is correct layer</td></tr>
+        <tr><td>Path-based routing</td><td>Not supported</td><td>Full URL/header routing</td><td>Not needed for PF federation endpoint</td></tr>
+        <tr><td>WAF integration</td><td>Not supported</td><td>Native AWS WAF support</td><td>ALB used for admin console with WAF protection</td></tr>
+        <tr><td>Static IP</td><td>Yes — Elastic IPs assignable</td><td>No — DNS name only, IP may change</td><td>NLB Elastic IPs useful for firewall whitelisting by partners</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cb cb-c">
+    <div class="cbt">Why TLS passthrough is critical for PingFederate</div>
+    <div class="cbd">Many SAML Service Providers validate the signing certificate in the SAML assertion against the TLS certificate used for the federation endpoint. If an ALB terminates TLS and re-encrypts with a different certificate, this validation fails. With NLB TLS passthrough, the TLS session is established directly with the PingFederate instance, which presents its own federation certificate. The SP sees the correct certificate, validation succeeds, and the assertion is accepted. This is why nearly every enterprise PingFederate deployment uses NLB or hardware load balancers with TLS passthrough for the primary federation endpoint.</div>
+  </div>
+
+  <div class="g2">
+    <div class="card cp">
+      <div class="clbl">Primary federation traffic</div>
+      <div class="cttl">NLB → Port 9031</div>
+      <div class="cbdy">TLS passthrough to PF engines. PF terminates TLS and presents its own federation certificate. Real client IPs preserved in audit logs. No HTTP parsing overhead. Handles SAML, OIDC, OAuth 2.0, WS-Fed over the same port.</div>
+    </div>
+    <div class="card ct">
+      <div class="clbl">Admin console (optional)</div>
+      <div class="cttl">ALB → Port 9999</div>
+      <div class="cbdy">ALB with WAF rules for admin console access. TLS terminated at ALB with a corporate certificate. Path-based routing allows restricting which source IPs or user agents can reach the admin endpoint. WAF blocks common admin-targeting attacks.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: COMPLETE NLB TERRAFORM -->
+<section class="sec" id="nlb-terraform">
+  <div class="sl">NLB in Terraform</div>
+  <h2 class="st">Building the Network Load Balancer stack</h2>
+  <div class="sb">
+    <p>An NLB in Terraform requires three resource types in a specific dependency order: the load balancer itself, the target group (which defines health checks and the backend port), and the listener (which defines the frontend port and forwards to the target group). The ASG then registers instances into the target group automatically.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="ch-l">HCL</span><span class="ch-f">loadbalancer.tf — complete NLB stack</span></div>
+    <div class="cb2"><pre><span class="c"># ── NETWORK LOAD BALANCER ─────────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_lb"</span> <span class="s">"pf_nlb"</span> {
+  <span class="k">name</span>               = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-nlb"</span>
+  <span class="k">internal</span>           = <span class="k">false</span>      <span class="c"># internet-facing: federation partners are external</span>
+  <span class="k">load_balancer_type</span> = <span class="s">"network"</span>  <span class="c"># NLB, not ALB</span>
+
+  <span class="c"># Place NLB nodes in public subnets (one per AZ for HA)</span>
+  <span class="k">subnets</span>            = <span class="v">local.public_subnet_ids</span>
+
+  <span class="c"># Enable cross-zone load balancing</span>
+  <span class="c"># Allows NLB nodes to route to healthy targets in OTHER AZs</span>
+  <span class="c"># Critical if one AZ has fewer PF instances during AMI refresh</span>
+  <span class="k">enable_cross_zone_load_balancing</span> = <span class="k">true</span>
+
+  <span class="c"># Preserve source IP — PF audit logs show real client IPs, not NLB IPs</span>
+  <span class="k">enable_deletion_protection</span> = <span class="v">local.is_prod</span>  <span class="c"># prevent accidental destroy in prod</span>
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+    <span class="n">Name</span>    = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-nlb"</span>
+    <span class="n">Purpose</span> = <span class="s">"PingFederate federation endpoint"</span>
+  })
+}
+
+<span class="c"># ── TARGET GROUP — federation traffic ─────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_lb_target_group"</span> <span class="s">"pf_federation"</span> {
+  <span class="k">name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-fed-tg"</span>
+  <span class="k">port</span>        = <span class="num">9031</span>
+  <span class="k">protocol</span>    = <span class="s">"TCP"</span>      <span class="c"># NLB uses TCP/TLS, not HTTP</span>
+  <span class="k">vpc_id</span>      = <span class="v">local.vpc_id</span>
+  <span class="k">target_type</span> = <span class="s">"instance"</span>  <span class="c"># instances (not IPs or Lambda)</span>
+
+  <span class="c"># ── HEALTH CHECK ─────────────────────────────────────────────────────</span>
+  <span class="c"># NLB health checks for TCP target groups can be TCP or HTTP/HTTPS</span>
+  <span class="c"># Use HTTP on PF's health endpoint for meaningful application-layer check</span>
+  <span class="k">health_check</span> {
+    <span class="k">enabled</span>             = <span class="k">true</span>
+    <span class="k">protocol</span>            = <span class="s">"HTTP"</span>        <span class="c"># check PF's HTTP health endpoint</span>
+    <span class="k">port</span>                = <span class="s">"8080"</span>        <span class="c"># PF runtime health check port</span>
+    <span class="k">path</span>                = <span class="s">"/pingfederate/rest/v1/version"</span>  <span class="c"># PF health path</span>
+    <span class="k">healthy_threshold</span>   = <span class="num">3</span>             <span class="c"># 3 consecutive successes → healthy</span>
+    <span class="k">unhealthy_threshold</span> = <span class="num">3</span>             <span class="c"># 3 consecutive failures  → unhealthy</span>
+    <span class="k">interval</span>            = <span class="num">10</span>            <span class="c"># check every 10 seconds</span>
+  }
+
+  <span class="c"># Stickiness — not applicable for stateless federation (OIDC/SAML)</span>
+  <span class="c"># PF cluster replication ensures any node can handle any request</span>
+
+  <span class="c"># Deregistration delay — how long NLB drains connections before removing</span>
+  <span class="k">deregistration_delay</span> = <span class="num">60</span>   <span class="c"># 60s: allow in-flight SAML flows to complete</span>
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+    <span class="n">Name</span>     = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-federation-tg"</span>
+    <span class="n">Protocol</span> = <span class="s">"federation"</span>
+  })
+
+  <span class="c"># IMPORTANT: Use create_before_destroy so ASG can stay registered</span>
+  <span class="c"># during target group replacement (e.g. when port changes)</span>
+  <span class="k">lifecycle</span> {
+    <span class="k">create_before_destroy</span> = <span class="k">true</span>
+  }
+}
+
+<span class="c"># ── LISTENER — port 9031 TCP passthrough ──────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_lb_listener"</span> <span class="s">"pf_federation"</span> {
+  <span class="k">load_balancer_arn</span> = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">arn</span>
+  <span class="k">port</span>              = <span class="num">9031</span>
+  <span class="k">protocol</span>          = <span class="s">"TCP"</span>   <span class="c"># pure passthrough — TLS handled by PF itself</span>
+
+  <span class="k">default_action</span> {
+    <span class="k">type</span>             = <span class="s">"forward"</span>
+    <span class="k">target_group_arn</span> = <span class="n">aws_lb_target_group</span>.<span class="v">pf_federation</span>.<span class="n">arn</span>
+  }
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"pf-federation-listener"</span> })
+}
+
+<span class="c"># ── OPTIONAL: TLS LISTENER (NLB terminates TLS, re-encrypts to PF) ────</span>
+<span class="c"># Use this ONLY if you cannot use TCP passthrough and need NLB to handle TLS</span>
+<span class="c"># resource "aws_lb_listener" "pf_tls" {</span>
+<span class="c">#   load_balancer_arn = aws_lb.pf_nlb.arn</span>
+<span class="c">#   port              = 443</span>
+<span class="c">#   protocol          = "TLS"</span>
+<span class="c">#   certificate_arn   = var.nlb_certificate_arn   # ACM cert ARN</span>
+<span class="c">#   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"</span>
+<span class="c">#   default_action { type = "forward"; target_group_arn = aws_lb_target_group.pf_federation.arn }</span>
+<span class="c"># }</span>
+
+<span class="c"># ── TARGET GROUP FOR ADMIN CONSOLE (using ALB) ────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_lb_target_group"</span> <span class="s">"pf_admin"</span> {
+  <span class="k">name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-admin-tg"</span>
+  <span class="k">port</span>        = <span class="num">9999</span>
+  <span class="k">protocol</span>    = <span class="s">"HTTPS"</span>   <span class="c"># ALB target groups use HTTP/HTTPS</span>
+  <span class="k">vpc_id</span>      = <span class="v">local.vpc_id</span>
+  <span class="k">target_type</span> = <span class="s">"instance"</span>
+
+  <span class="k">health_check</span> {
+    <span class="k">enabled</span>             = <span class="k">true</span>
+    <span class="k">protocol</span>            = <span class="s">"HTTPS"</span>
+    <span class="k">port</span>                = <span class="s">"9999"</span>
+    <span class="k">path</span>                = <span class="s">"/pingfederate/app"</span>   <span class="c"># admin UI path</span>
+    <span class="k">healthy_threshold</span>   = <span class="num">2</span>
+    <span class="k">unhealthy_threshold</span> = <span class="num">3</span>
+    <span class="k">interval</span>            = <span class="num">30</span>   <span class="c"># less frequent — admin is non-critical path</span>
+    <span class="k">matcher</span>             = <span class="s">"200,302"</span>   <span class="c"># PF admin may redirect to login</span>
+  }
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-admin-tg"</span> })
+  <span class="k">lifecycle</span> { <span class="k">create_before_destroy</span> = <span class="k">true</span> }
+}
+
+<span class="c"># ── OUTPUTS ────────────────────────────────────────────────────────────</span>
+<span class="k">output</span> <span class="s">"nlb_dns_name"</span> {
+  <span class="k">description</span> = <span class="s">"NLB DNS name — used in Route53 alias record"</span>
+  <span class="k">value</span>       = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">dns_name</span>
+}
+
+<span class="k">output</span> <span class="s">"nlb_zone_id"</span> {
+  <span class="k">description</span> = <span class="s">"NLB hosted zone ID — used in Route53 alias record"</span>
+  <span class="k">value</span>       = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">zone_id</span>
+}
+
+<span class="k">output</span> <span class="s">"federation_target_group_arn"</span> {
+  <span class="k">description</span> = <span class="s">"Federation TG ARN — referenced by ASG target_group_arns"</span>
+  <span class="k">value</span>       = <span class="n">aws_lb_target_group</span>.<span class="v">pf_federation</span>.<span class="n">arn</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: TRAFFIC PATH DIAGRAM -->
+<section class="sec" id="traffic-path">
+  <div class="sl">The complete traffic path</div>
+  <h2 class="st">DNS → NLB → PingFederate — visualised</h2>
+  <div class="sb">
+    <p>Before Route53, understand the end-to-end traffic path from a federation partner making a SAML request to the PF engine returning an assertion. Every component you have built across M04–M07 appears in this diagram.</p>
+  </div>
+
+  <div class="dw">
+    <div class="dwl">End-to-End Federation Traffic Path</div>
+    <svg viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:600px;display:block;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#4A9EFF"/></marker>
+        <marker id="a2" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#00E5C3"/></marker>
+        <marker id="a3" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#9B7FFF"/></marker>
+      </defs>
+
+      <!-- Step labels top -->
+      <text x="60"  y="18" text-anchor="middle" fill="rgba(74,158,255,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">① DNS</text>
+      <text x="210" y="18" text-anchor="middle" fill="rgba(74,158,255,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">② RESOLVE</text>
+      <text x="390" y="18" text-anchor="middle" fill="rgba(74,158,255,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">③ NLB</text>
+      <text x="590" y="18" text-anchor="middle" fill="rgba(0,229,195,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">④ PF ENGINE</text>
+      <text x="770" y="18" text-anchor="middle" fill="rgba(155,127,255,.5)" font-size="8.5" font-family="IBM Plex Mono,monospace">⑤ BACKEND</text>
+
+      <!-- Client/SP -->
+      <rect x="10" y="30" width="100" height="60" rx="8" fill="#0a0814" stroke="rgba(74,158,255,.4)" stroke-width="1.5"/>
+      <text x="60" y="57" text-anchor="middle" fill="#4A9EFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">SP / Client</text>
+      <text x="60" y="73" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">SAML request</text>
+      <text x="60" y="85" text-anchor="middle" fill="rgba(74,158,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">→ pf.example.com</text>
+
+      <!-- DNS arrow -->
+      <line x1="111" y1="60" x2="148" y2="60" stroke="rgba(74,158,255,.5)" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- Route53 -->
+      <rect x="150" y="30" width="120" height="60" rx="8" fill="#080610" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="210" y="52" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">Route53</text>
+      <text x="210" y="68" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Alias record →</text>
+      <text x="210" y="80" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">NLB DNS name</text>
+
+      <!-- DNS resolve arrow -->
+      <line x1="271" y1="60" x2="308" y2="60" stroke="rgba(155,127,255,.4)" stroke-width="1.5" marker-end="url(#a3)"/>
+      <text x="290" y="52" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">IP:54.x.x.x</text>
+
+      <!-- NLB (public subnet) -->
+      <rect x="300" y="10" width="180" height="340" rx="10" fill="rgba(74,158,255,.03)" stroke="rgba(74,158,255,.3)" stroke-width="1" stroke-dasharray="6 3"/>
+      <text x="390" y="30" text-anchor="middle" fill="rgba(74,158,255,.4)" font-size="8.5" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">PUBLIC SUBNETS</text>
+      <rect x="315" y="40" width="150" height="60" rx="6" fill="#060e18" stroke="#4A9EFF" stroke-width="1.5"/>
+      <text x="390" y="63" text-anchor="middle" fill="#4A9EFF" font-size="10" font-weight="700" font-family="IBM Plex Mono,monospace">NLB Node AZ-A</text>
+      <text x="390" y="79" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Port 9031 TCP</text>
+      <rect x="315" y="115" width="150" height="60" rx="6" fill="#060e18" stroke="#4A9EFF" stroke-width="1.5"/>
+      <text x="390" y="138" text-anchor="middle" fill="#4A9EFF" font-size="10" font-weight="700" font-family="IBM Plex Mono,monospace">NLB Node AZ-B</text>
+      <text x="390" y="154" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Port 9031 TCP</text>
+      <!-- Health check note -->
+      <rect x="315" y="195" width="150" height="50" rx="5" fill="rgba(0,229,195,.04)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="390" y="213" text-anchor="middle" fill="#00E5C3" font-size="8.5" font-family="IBM Plex Mono,monospace">Health Check:</text>
+      <text x="390" y="227" text-anchor="middle" fill="#9aaac8" font-size="8" font-family="IBM Plex Sans,sans-serif">HTTP :8080/pingfederate/</text>
+      <text x="390" y="239" text-anchor="middle" fill="#9aaac8" font-size="8" font-family="IBM Plex Sans,sans-serif">rest/v1/version</text>
+      <!-- Deregistration note -->
+      <rect x="315" y="260" width="150" height="40" rx="5" fill="rgba(232,135,58,.04)" stroke="rgba(232,135,58,.2)" stroke-width="1"/>
+      <text x="390" y="277" text-anchor="middle" fill="#E8873A" font-size="8" font-family="IBM Plex Mono,monospace">Deregistration delay:</text>
+      <text x="390" y="291" text-anchor="middle" fill="#9aaac8" font-size="8" font-family="IBM Plex Sans,sans-serif">60s drain on AMI refresh</text>
+
+      <!-- NLB to PF arrow -->
+      <line x1="481" y1="70" x2="518" y2="85" stroke="rgba(74,158,255,.5)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="500" y="68" text-anchor="middle" fill="rgba(74,158,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">TCP forward</text>
+
+      <!-- Private subnets area -->
+      <rect x="510" y="10" width="200" height="340" rx="10" fill="rgba(155,127,255,.03)" stroke="rgba(155,127,255,.25)" stroke-width="1" stroke-dasharray="6 3"/>
+      <text x="610" y="30" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8.5" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">PRIVATE SUBNETS</text>
+
+      <!-- PF Engine AZ-A -->
+      <rect x="525" y="40" width="170" height="80" rx="6" fill="#0c0814" stroke="rgba(155,127,255,.55)" stroke-width="1.5"/>
+      <text x="610" y="64" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">PF Engine AZ-A</text>
+      <text x="610" y="80" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">TLS terminated by PF</text>
+      <text x="610" y="95" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">PF cert presented to SP</text>
+      <text x="610" y="110" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">10.0.11.x</text>
+
+      <!-- PF Engine AZ-B -->
+      <rect x="525" y="135" width="170" height="80" rx="6" fill="#0c0814" stroke="rgba(155,127,255,.55)" stroke-width="1.5"/>
+      <text x="610" y="159" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">PF Engine AZ-B</text>
+      <text x="610" y="175" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Session replicated via</text>
+      <text x="610" y="191" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">JGroups cluster (M04)</text>
+      <text x="610" y="206" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">10.0.12.x</text>
+
+      <!-- NLB AZ-B to PF AZ-B -->
+      <line x1="481" y1="145" x2="523" y2="175" stroke="rgba(74,158,255,.4)" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- PF to backend -->
+      <line x1="696" y1="80" x2="733" y2="80" stroke="rgba(0,229,195,.4)" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- Backend services -->
+      <rect x="735" y="10" width="115" height="340" rx="10" fill="rgba(0,229,195,.03)" stroke="rgba(0,229,195,.2)" stroke-width="1" stroke-dasharray="5 4"/>
+      <text x="792" y="30" text-anchor="middle" fill="rgba(0,229,195,.4)" font-size="8" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">BACKENDS</text>
+      <rect x="748" y="40" width="90" height="32" rx="4" fill="rgba(0,229,195,.06)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="793" y="61" text-anchor="middle" fill="#00E5C3" font-size="8.5" font-family="IBM Plex Mono,monospace">LDAP / AD</text>
+      <rect x="748" y="80" width="90" height="32" rx="4" fill="rgba(0,229,195,.05)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="793" y="101" text-anchor="middle" fill="#00E5C3" font-size="8.5" font-family="IBM Plex Mono,monospace">S3 Config</text>
+      <rect x="748" y="120" width="90" height="32" rx="4" fill="rgba(0,229,195,.05)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="793" y="141" text-anchor="middle" fill="#00E5C3" font-size="8.5" font-family="IBM Plex Mono,monospace">CloudWatch</text>
+      <text x="792" y="175" text-anchor="middle" fill="rgba(0,229,195,.4)" font-size="8" font-family="IBM Plex Mono,monospace">(via NAT GW)</text>
+    </svg>
+  </div>
+</section>
+
+<!-- SECTION 5: ROUTE53 -->
+<section class="sec" id="route53">
+  <div class="sl">Route53</div>
+  <h2 class="st">DNS configuration — hosted zones, records, and alias records</h2>
+  <div class="sb">
+    <p>Route53 provides the DNS name that federation partners use to reach PingFederate. The critical pattern is the <em>alias record</em> — a Route53-specific record type that maps a DNS name to an AWS resource (like an NLB) rather than an IP address. Alias records are preferred over CNAME records for AWS resources because they are free of charge, resolve at the DNS level (no extra lookup), and update automatically when the NLB's IP changes.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="ch-l">HCL</span><span class="ch-f">dns.tf — Route53 hosted zone and records</span></div>
+    <div class="cb2"><pre><span class="c"># ── DATA SOURCE: existing hosted zone ─────────────────────────────────</span>
+<span class="c"># In most enterprise setups, the hosted zone already exists</span>
+<span class="c"># and is managed by the networking team. We look it up as a data source.</span>
+<span class="k">data</span> <span class="s">"aws_route53_zone"</span> <span class="s">"main"</span> {
+  <span class="k">name</span>         = <span class="v">var.hosted_zone_name</span>    <span class="c"># e.g. "example.com"</span>
+  <span class="k">private_zone</span> = <span class="k">false</span>                  <span class="c"># public hosted zone</span>
+}
+
+<span class="c"># If you need to CREATE the hosted zone (greenfield):</span>
+<span class="c"># resource "aws_route53_zone" "main" {</span>
+<span class="c">#   name    = var.hosted_zone_name</span>
+<span class="c">#   comment = "PingFederate federation domain"</span>
+<span class="c">#   tags    = local.common_tags</span>
+<span class="c"># }</span>
+
+<span class="c"># ── ALIAS RECORD: pf.example.com → NLB ───────────────────────────────</span>
+<span class="c"># Alias records are free and resolve directly to NLB without CNAME lookup</span>
+<span class="k">resource</span> <span class="s">"aws_route53_record"</span> <span class="s">"pf_federation"</span> {
+  <span class="k">zone_id</span> = <span class="n">data</span>.<span class="n">aws_route53_zone</span>.<span class="v">main</span>.<span class="n">zone_id</span>
+  <span class="k">name</span>    = <span class="s">"pf.${</span><span class="v">var.hosted_zone_name</span><span class="s">}"</span>   <span class="c"># pf.example.com</span>
+  <span class="k">type</span>    = <span class="s">"A"</span>   <span class="c"># A record with alias = no TTL, resolves to NLB IPs</span>
+
+  <span class="k">alias</span> {
+    <span class="k">name</span>                   = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">dns_name</span>
+    <span class="k">zone_id</span>                = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">zone_id</span>
+    <span class="k">evaluate_target_health</span> = <span class="k">true</span>
+    <span class="c"># evaluate_target_health = true means:</span>
+    <span class="c"># Route53 considers the NLB's health before returning the record.</span>
+    <span class="c"># If ALL NLB nodes are unhealthy, Route53 does NOT return the DNS record.</span>
+    <span class="c"># This prevents DNS from pointing to a known-unhealthy endpoint.</span>
+  }
+}
+
+<span class="c"># ── ADMIN CONSOLE RECORD ───────────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_route53_record"</span> <span class="s">"pf_admin"</span> {
+  <span class="k">zone_id</span> = <span class="n">data</span>.<span class="n">aws_route53_zone</span>.<span class="v">main</span>.<span class="n">zone_id</span>
+  <span class="k">name</span>    = <span class="s">"pf-admin.${</span><span class="v">var.hosted_zone_name</span><span class="s">}"</span>
+  <span class="k">type</span>    = <span class="s">"A"</span>
+
+  <span class="k">alias</span> {
+    <span class="k">name</span>                   = <span class="n">aws_lb</span>.<span class="v">pf_alb_admin</span>.<span class="n">dns_name</span>
+    <span class="k">zone_id</span>                = <span class="n">aws_lb</span>.<span class="v">pf_alb_admin</span>.<span class="n">zone_id</span>
+    <span class="k">evaluate_target_health</span> = <span class="k">true</span>
+  }
+}
+
+<span class="c"># ── PRIVATE HOSTED ZONE: internal service discovery ───────────────────</span>
+<span class="c"># Allows internal services (Ansible, monitoring) to reach PF</span>
+<span class="c"># by a stable name without going through the internet</span>
+<span class="k">resource</span> <span class="s">"aws_route53_zone"</span> <span class="s">"internal"</span> {
+  <span class="k">name</span>    = <span class="s">"internal.${</span><span class="v">var.hosted_zone_name</span><span class="s">}"</span>
+  <span class="k">comment</span> = <span class="s">"Private zone for internal PF service discovery"</span>
+
+  <span class="k">vpc</span> {
+    <span class="k">vpc_id</span> = <span class="v">local.vpc_id</span>   <span class="c"># associate with the PF VPC</span>
+  }
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"pf-internal-zone"</span> })
+}
+
+<span class="k">resource</span> <span class="s">"aws_route53_record"</span> <span class="s">"pf_internal"</span> {
+  <span class="k">zone_id</span> = <span class="n">aws_route53_zone</span>.<span class="v">internal</span>.<span class="n">zone_id</span>
+  <span class="k">name</span>    = <span class="s">"pf.internal.${</span><span class="v">var.hosted_zone_name</span><span class="s">}"</span>
+  <span class="k">type</span>    = <span class="s">"A"</span>
+
+  <span class="k">alias</span> {
+    <span class="k">name</span>                   = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">dns_name</span>
+    <span class="k">zone_id</span>                = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">zone_id</span>
+    <span class="k">evaluate_target_health</span> = <span class="k">true</span>
+  }
+}
+
+<span class="c"># ── OUTPUT ─────────────────────────────────────────────────────────────</span>
+<span class="k">output</span> <span class="s">"federation_fqdn"</span> {
+  <span class="k">description</span> = <span class="s">"Fully-qualified DNS name for the PF federation endpoint"</span>
+  <span class="k">value</span>       = <span class="n">aws_route53_record</span>.<span class="v">pf_federation</span>.<span class="n">fqdn</span>
+  <span class="c"># e.g. pf.example.com</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="cb cb-t">
+    <div class="cbt">Alias record vs CNAME — always prefer alias for AWS resources</div>
+    <div class="cbd">A CNAME record is a hostname-to-hostname mapping. It adds a DNS lookup hop and cannot be used at the zone apex (you cannot CNAME example.com → something). An alias record is a Route53 extension that maps a hostname directly to an AWS resource's IP addresses, with no extra lookup. It is free (CNAMEs within Route53 cost per query), works at the zone apex, and supports <code>evaluate_target_health</code> which prevents Route53 from returning records for unhealthy endpoints. Always use alias records for NLBs, ALBs, CloudFront, and S3 website endpoints.</div>
+  </div>
+</section>
+
+<!-- SECTION 6: HEALTH CHECKS AND AMI REFRESH -->
+<section class="sec" id="health-and-refresh">
+  <div class="sl">Health checks during AMI refresh</div>
+  <h2 class="st">How the NLB maintains zero-downtime during instance replacement</h2>
+  <div class="sb">
+    <p>The interaction between the NLB health check and the ASG instance_refresh is what enables zero-downtime AMI replacement. Each component plays a distinct role, and understanding the sequence prevents the most common operational mistakes.</p>
+  </div>
+
+  <div class="g2">
+    <div class="card cp">
+      <div class="clbl">NLB health check role</div>
+      <div class="cttl">Gates traffic at the load balancer</div>
+      <div class="cbdy">The NLB health check probes port 8080 every 10 seconds. It only marks an instance as healthy after 3 consecutive successes. It never routes federation traffic to a new instance until that instance passes health checks. During instance_refresh, new instances are held in Pending until they pass health checks before old instances are terminated.</div>
+    </div>
+    <div class="card ct">
+      <div class="clbl">Deregistration delay role</div>
+      <div class="cttl">Drains in-flight connections safely</div>
+      <div class="cbdy">When an instance is deregistered from the target group (during refresh), the NLB keeps existing TCP connections open for up to 60 seconds (the deregistration_delay). This allows in-flight SAML flows and OIDC token exchanges to complete. New connections to the deregistering instance are blocked immediately. After 60 seconds, all connections are forcibly closed.</div>
+    </div>
+  </div>
+
+  <div class="dw" style="padding:var(--lg)">
+    <div class="dwl">Zero-Downtime Sequence During AMI Refresh — Per Instance</div>
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>Event</th><th>Who</th><th>Traffic state</th></tr></thead>
+      <tbody>
+        <tr><td>T+0</td><td>New instance launched by ASG using new AMI</td><td>ASG</td><td>Old instance: serving. New instance: not registered</td></tr>
+        <tr><td>T+1m</td><td>user_data completes; Ansible begins PF configuration</td><td>user_data / Ansible</td><td>Old instance: serving. New instance: Pending:Wait (lifecycle hook)</td></tr>
+        <tr><td>T+4m</td><td>PF started; Ansible calls CompleteLifecycleAction CONTINUE</td><td>Ansible</td><td>Old instance: serving. New instance: moves to InService, registered to TG</td></tr>
+        <tr><td>T+5m</td><td>NLB health check passes 3× on port 8080</td><td>NLB</td><td>Old instance: serving. New instance: healthy, receiving traffic</td></tr>
+        <tr><td>T+6m</td><td>ASG deregisters old instance from TG</td><td>ASG</td><td>Old: draining (60s). New instance: primary traffic handler</td></tr>
+        <tr><td>T+7m</td><td>Deregistration delay expires; old instance terminated</td><td>ASG / NLB</td><td>New instance: sole handler. Old: terminated.</td></tr>
+        <tr><td>T+8m</td><td>Checkpoint reached; next instance begins replacement</td><td>ASG (instance_refresh)</td><td>Fleet at min_healthy_percentage throughout entire process</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cb">
+    <div class="cbt">Why <code>evaluate_target_health = true</code> matters during refresh</div>
+    <div class="cbd">When <code>evaluate_target_health = true</code> is set on the Route53 alias record, Route53 will not return DNS results for the NLB if all of its targets are unhealthy. This is an additional safety net: if the AMI refresh goes wrong and all instances fail health checks, Route53 stops resolving <code>pf.example.com</code> — clients immediately see DNS failures rather than connection timeouts to unhealthy servers. In practice this should trigger alerts and the auto_rollback policy should have already kicked in, but it's a valuable last-resort protection.</div>
+  </div>
+</section>
+
+<!-- SECTION 7: ALB FOR ADMIN -->
+<section class="sec" id="alb-admin">
+  <div class="sl">ALB for admin console</div>
+  <h2 class="st">Optional: ALB with WAF for the PingFederate admin console</h2>
+  <div class="sb">
+    <p>The PF admin console (port 9999) has very different security requirements from the federation endpoint. It should never be exposed to the public internet directly. The ALB with WAF provides HTTP-layer protection, IP allowlisting, and audit logging for administrative access.</p>
+  </div>
+
+  <div class="code">
+    <div class="ch"><span class="ch-l">HCL</span><span class="ch-f">alb-admin.tf — ALB for PF admin console</span></div>
+    <div class="cb2"><pre><span class="c"># ── APPLICATION LOAD BALANCER (admin only) ─────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_lb"</span> <span class="s">"pf_alb_admin"</span> {
+  <span class="k">name</span>               = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-admin-alb"</span>
+  <span class="k">internal</span>           = <span class="k">true</span>     <span class="c"># internal-only: only reachable from within VPC/VPN</span>
+  <span class="k">load_balancer_type</span> = <span class="s">"application"</span>
+  <span class="k">security_groups</span>    = [<span class="n">aws_security_group</span>.<span class="v">admin_alb</span>.<span class="n">id</span>]
+  <span class="k">subnets</span>            = <span class="v">local.private_subnet_ids</span>   <span class="c"># internal ALB in private subnets</span>
+
+  <span class="c"># Enable access logs to S3 for compliance audit trail</span>
+  <span class="k">access_logs</span> {
+    <span class="k">bucket</span>  = <span class="n">aws_s3_bucket</span>.<span class="v">alb_logs</span>.<span class="n">bucket</span>
+    <span class="k">prefix</span>  = <span class="s">"pf-admin-alb"</span>
+    <span class="k">enabled</span> = <span class="k">true</span>
+  }
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-admin-alb"</span> })
+}
+
+<span class="c"># ── LISTENER — HTTPS with corporate certificate ────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_lb_listener"</span> <span class="s">"pf_admin"</span> {
+  <span class="k">load_balancer_arn</span> = <span class="n">aws_lb</span>.<span class="v">pf_alb_admin</span>.<span class="n">arn</span>
+  <span class="k">port</span>              = <span class="num">443</span>
+  <span class="k">protocol</span>          = <span class="s">"HTTPS"</span>
+  <span class="k">certificate_arn</span>   = <span class="v">var.admin_certificate_arn</span>   <span class="c"># ACM cert for admin subdomain</span>
+  <span class="k">ssl_policy</span>        = <span class="s">"ELBSecurityPolicy-TLS13-1-2-2021-06"</span>
+
+  <span class="k">default_action</span> {
+    <span class="k">type</span>             = <span class="s">"forward"</span>
+    <span class="k">target_group_arn</span> = <span class="n">aws_lb_target_group</span>.<span class="v">pf_admin</span>.<span class="n">arn</span>
+  }
+}
+
+<span class="c"># ── HTTP redirect to HTTPS ─────────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_lb_listener"</span> <span class="s">"pf_admin_redirect"</span> {
+  <span class="k">load_balancer_arn</span> = <span class="n">aws_lb</span>.<span class="v">pf_alb_admin</span>.<span class="n">arn</span>
+  <span class="k">port</span>              = <span class="num">80</span>
+  <span class="k">protocol</span>          = <span class="s">"HTTP"</span>
+
+  <span class="k">default_action</span> {
+    <span class="k">type</span> = <span class="s">"redirect"</span>
+    <span class="k">redirect</span> {
+      <span class="k">port</span>        = <span class="s">"443"</span>
+      <span class="k">protocol</span>    = <span class="s">"HTTPS"</span>
+      <span class="k">status_code</span> = <span class="s">"HTTP_301"</span>
+    }
+  }
+}
+
+<span class="c"># ── WAF ASSOCIATION ────────────────────────────────────────────────────</span>
+<span class="c"># Associate the company WAF ACL with the admin ALB</span>
+<span class="k">resource</span> <span class="s">"aws_wafv2_web_acl_association"</span> <span class="s">"pf_admin"</span> {
+  <span class="k">resource_arn</span> = <span class="n">aws_lb</span>.<span class="v">pf_alb_admin</span>.<span class="n">arn</span>
+  <span class="k">web_acl_arn</span>  = <span class="v">var.waf_acl_arn</span>   <span class="c"># managed by security team</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- KNOWLEDGE CHECKS -->
+<section class="sec" id="knowledge-checks">
+  <div class="sl">Knowledge check</div>
+  <h2 class="st">Test your load balancer and DNS understanding</h2>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>A federation partner reports intermittent SAML signature validation failures after an AMI refresh. The failures occur on approximately 30% of SSO attempts and resolve after about 5 minutes. What is the most likely cause?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">The most likely cause is a JGroups cluster synchronisation lag.</strong> When new PF engine instances join the cluster after an AMI refresh, they need time to receive the cluster state — including any in-memory session data and configuration that was distributed across the existing nodes. If the deregistration delay is too short or the instance warmup period is too aggressive, new instances that haven't fully synchronised with the cluster are receiving traffic before their cluster state is complete. The 30% failure rate matches a partially synchronised cluster (some nodes have the state, some don't). The resolution after 5 minutes matches the JGroups synchronisation window.<br><br><strong>Fix:</strong> Increase the lifecycle hook heartbeat timeout to ensure Ansible's PF configuration step explicitly waits for cluster membership (PF has a REST API endpoint to check cluster status). The CompleteLifecycleAction should not be called until the instance reports as a full cluster member.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>What is the difference between a Route53 CNAME record and a Route53 alias record? When would you be forced to use a CNAME instead of an alias?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">A CNAME maps a hostname to another hostname (extra DNS lookup, chargeable per query, cannot be at zone apex). An alias record maps a hostname directly to an AWS resource's IP addresses (free, no extra lookup, works at zone apex, supports health evaluation).</strong> You would be forced to use a CNAME instead of an alias when: the target resource is not an AWS-native resource (e.g. an on-premises server, a third-party CDN, or an external DNS name that isn't an AWS resource type that Route53 supports for aliases). For any AWS load balancer, CloudFront distribution, API Gateway, or S3 website endpoint, always use alias records. The NLB alias record also benefits from <code>evaluate_target_health = true</code> — which is only available on alias records, not CNAMEs.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>The <code>deregistration_delay</code> on the target group is set to 60 seconds. A long-running SAML artifact resolution takes up to 90 seconds. What happens to that request when the instance is deregistered?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">The request will be forcibly terminated after 60 seconds, resulting in a failed SAML artifact resolution.</strong> The deregistration delay sets the maximum time the NLB keeps existing connections alive on a deregistering instance. After 60 seconds, the NLB closes all TCP connections to that instance, regardless of whether in-flight requests have completed. For the 90-second artifact resolution, the TCP connection would be closed mid-flow, the client would receive a connection reset, and the SAML flow would fail.<br><br><strong>Fix:</strong> Increase <code>deregistration_delay</code> to at least 120 seconds (2× the longest expected request duration). Also review whether the SAML artifact resolution can be optimised — 90-second flows are unusually long and may indicate a configuration issue in the back-channel resolution pathway.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>You need to give a new federation partner the PF endpoint URL. They ask for the IP address rather than the DNS name so they can configure their firewall whitelist. What do you tell them, and what NLB feature helps with this requirement?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Direct the partner to the DNS name (<code>pf.example.com</code>) and explain that NLB Elastic IP addresses can provide stable IPs if static IP-based whitelisting is required.</strong><br><br>NLBs support Elastic IP assignment (one per subnet/AZ). When you create the NLB with Elastic IPs in the subnet mapping, the NLB's IP addresses are stable and predictable — the partner can whitelist those specific IPs. Unlike ALBs (which use DNS with dynamic IPs), NLBs with Elastic IPs provide deterministic addressing:<br><br>In Terraform, modify the NLB configuration to use <code>subnet_mapping</code> blocks instead of <code>subnets</code>:<br><code>subnet_mapping { subnet_id = "..." allocation_id = aws_eip.nlb_az_a.id }</code><br><br>Important caveat: once Elastic IPs are associated with an NLB, they cannot be changed without recreating the NLB. Plan this before initial deployment, not after.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kcq"><span class="kci">Q</span>The NLB health check is currently on TCP (just checking the port is open). The team wants to change it to an HTTP check on port 8080. What Terraform resources will change and will there be any downtime?<span class="kcc">▼</span></div>
+    <div class="kca"><strong style="color:var(--pc)">Only the <code>aws_lb_target_group</code> resource will change — specifically the <code>health_check</code> block. The NLB and listener are unaffected. There will be a brief period of uncertainty during the health check transition, but no downtime if managed correctly.</strong><br><br>The target group health check configuration is updated in-place — the target group is not recreated. However, changing from TCP to HTTP health checks means existing healthy instances (healthy under TCP) will be re-evaluated under the new HTTP check. If PF's health endpoint is not responding correctly on port 8080, instances will transition to unhealthy and be removed from the target group, causing downtime.<br><br><strong>Safe procedure:</strong> Before applying the Terraform change, manually verify that port 8080 is responding on all current PF instances (via SSM Session Manager: <code>curl http://localhost:8080/pingfederate/rest/v1/version</code>). Confirm the response is 200 OK. Then apply the Terraform change. Monitor the NLB target group health in the AWS console for 5 minutes after apply to confirm all instances transition to healthy under the new check.</div>
+  </div>
+</section>
+
+<!-- LAB -->
+<section class="sec" id="lab">
+  <div class="sl">Mini lab</div>
+  <h2 class="st">Load balancer and DNS exercises</h2>
+
+  <div class="lab">
+    <div class="labh"><span class="labb">Lab 07-A</span><span class="labt">Add a second listener for HTTPS port 443</span></div>
+    <div class="labbody">
+      <p style="font-size:14px;color:var(--t2);margin-bottom:var(--md)">Some federation partners connect to PF on port 443 (HTTPS) instead of port 9031. Add a second NLB listener that forwards port 443 TCP traffic to the same <code>pf_federation</code> target group on port 9031. The target group already handles the port translation — the listener just needs to accept connections on 443.</p>
+      <ol>
+        <li>Resource type: <code>aws_lb_listener</code>, local name: <code>pf_https</code></li>
+        <li>Reference the existing <code>aws_lb.pf_nlb</code></li>
+        <li>Port: 443, Protocol: TCP (passthrough — PF handles TLS)</li>
+        <li>Forward to <code>aws_lb_target_group.pf_federation</code></li>
+        <li>Add appropriate tags</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sm)">
+    <div class="kcq"><span class="kci">✓</span>Reveal Lab 07-A solution<span class="kcc">▼</span></div>
+    <div class="kca">
+      <div class="code" style="margin:0">
+        <div class="ch"><span class="ch-l">HCL</span><span class="ch-f">Additional HTTPS listener on NLB</span></div>
+        <div class="cb2"><pre><span class="k">resource</span> <span class="s">"aws_lb_listener"</span> <span class="s">"pf_https"</span> {
+  <span class="k">load_balancer_arn</span> = <span class="n">aws_lb</span>.<span class="v">pf_nlb</span>.<span class="n">arn</span>
+  <span class="k">port</span>              = <span class="num">443</span>
+  <span class="k">protocol</span>          = <span class="s">"TCP"</span>   <span class="c"># passthrough — PF terminates TLS</span>
+
+  <span class="k">default_action</span> {
+    <span class="k">type</span>             = <span class="s">"forward"</span>
+    <span class="k">target_group_arn</span> = <span class="n">aws_lb_target_group</span>.<span class="v">pf_federation</span>.<span class="n">arn</span>
+    <span class="c"># The target group is configured for port 9031</span>
+    <span class="c"># NLB translates: external :443 → backend :9031</span>
+  }
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, {
+    <span class="n">Name</span>    = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-https-listener"</span>
+    <span class="n">Purpose</span> = <span class="s">"HTTPS passthrough for partners using port 443"</span>
+  })
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab" style="margin-top:var(--xl)">
+    <div class="labh"><span class="labb">Lab 07-B</span><span class="labt">Add a Route53 health check with failover routing</span></div>
+    <div class="labbody">
+      <p style="font-size:14px;color:var(--t2);margin-bottom:var(--md)">The team wants a Route53 health check that monitors the PF federation endpoint and sends an SNS alert if the endpoint is unhealthy. Create the Route53 health check resource and an SNS topic notification.</p>
+      <ol>
+        <li>Resource type: <code>aws_route53_health_check</code>, local name: <code>pf_federation_hc</code></li>
+        <li>Type: HTTPS_STR_MATCH</li>
+        <li>FQDN: use the output from <code>aws_route53_record.pf_federation.fqdn</code></li>
+        <li>Port 9031, resource path: <code>/pingfederate/rest/v1/version</code></li>
+        <li>Match string: <code>"version"</code> (present in the JSON response)</li>
+        <li>Request interval: 30 seconds. Failure threshold: 3</li>
+        <li>Reference variable <code>var.alert_sns_topic_arn</code> for the CloudWatch alarm action</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--sm)">
+    <div class="kcq"><span class="kci">✓</span>Reveal Lab 07-B solution<span class="kcc">▼</span></div>
+    <div class="kca">
+      <div class="code" style="margin:0">
+        <div class="ch"><span class="ch-l">HCL</span><span class="ch-f">Route53 health check with CloudWatch alarm</span></div>
+        <div class="cb2"><pre><span class="k">resource</span> <span class="s">"aws_route53_health_check"</span> <span class="s">"pf_federation_hc"</span> {
+  <span class="k">fqdn</span>              = <span class="n">aws_route53_record</span>.<span class="v">pf_federation</span>.<span class="n">fqdn</span>
+  <span class="k">port</span>              = <span class="num">9031</span>
+  <span class="k">type</span>              = <span class="s">"HTTPS_STR_MATCH"</span>
+  <span class="k">resource_path</span>     = <span class="s">"/pingfederate/rest/v1/version"</span>
+  <span class="k">search_string</span>     = <span class="s">"version"</span>
+  <span class="k">request_interval</span>  = <span class="num">30</span>
+  <span class="k">failure_threshold</span> = <span class="num">3</span>
+  <span class="k">measure_latency</span>   = <span class="k">true</span>   <span class="c"># track p50/p95 latency in CloudWatch</span>
+  <span class="k">regions</span>           = [<span class="s">"us-east-1"</span>, <span class="s">"us-west-2"</span>, <span class="s">"eu-west-1"</span>]
+  <span class="c"># Route53 checks from multiple AWS regions for accuracy</span>
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"pf-federation-health"</span> })
+}
+
+<span class="c"># CloudWatch alarm triggers when health check fails</span>
+<span class="k">resource</span> <span class="s">"aws_cloudwatch_metric_alarm"</span> <span class="s">"pf_federation_unhealthy"</span> {
+  <span class="k">alarm_name</span>          = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-federation-unhealthy"</span>
+  <span class="k">comparison_operator</span> = <span class="s">"LessThanThreshold"</span>
+  <span class="k">evaluation_periods</span>  = <span class="num">2</span>
+  <span class="k">metric_name</span>         = <span class="s">"HealthCheckStatus"</span>
+  <span class="k">namespace</span>           = <span class="s">"AWS/Route53"</span>
+  <span class="k">period</span>              = <span class="num">60</span>
+  <span class="k">statistic</span>           = <span class="s">"Minimum"</span>
+  <span class="k">threshold</span>           = <span class="num">1</span>   <span class="c"># 1 = healthy, 0 = unhealthy</span>
+  <span class="k">alarm_description</span>   = <span class="s">"PingFederate federation endpoint is unhealthy"</span>
+  <span class="k">alarm_actions</span>       = [<span class="v">var.alert_sns_topic_arn</span>]
+  <span class="k">ok_actions</span>          = [<span class="v">var.alert_sns_topic_arn</span>]
+
+  <span class="k">dimensions</span> = {
+    <span class="n">HealthCheckId</span> = <span class="n">aws_route53_health_check</span>.<span class="v">pf_federation_hc</span>.<span class="n">id</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECT REVIEW -->
+<div class="ar">
+  <div class="arh">
+    <span class="arb">Senior Review</span>
+    <span class="art">Traffic and DNS questions a platform engineer might ask you</span>
+  </div>
+  <ul class="arl">
+    <li><span class="arn">01</span>The NLB is currently internet-facing. The security team wants to evaluate changing it to an internal NLB, using a separately managed WAF proxy in front. What changes are needed in Terraform, what risks exist during the transition, and what would break immediately if you just changed <code>internal = true</code>?</li>
+    <li><span class="arn">02</span>A PF engine node passes the NLB health check on port 8080 but is returning SAML assertion errors. How can a node be healthy at the NLB level but broken for federation? What would you add to the health check to catch this?</li>
+    <li><span class="arn">03</span>During an AMI refresh, one instance never passes the NLB health check, stays in Pending:Wait for 30 minutes, then gets ABANDON terminated. The refresh auto-rollback triggers and restores all instances to the old AMI. How would you diagnose which step failed — user_data, Ansible, or the PF application itself?</li>
+    <li><span class="arn">04</span>Federation partners are reporting slow initial connection times (~3–4 seconds) to <code>pf.example.com</code>. Once connected, performance is normal. What NLB and DNS settings would you investigate first?</li>
+    <li><span class="arn">05</span>The Route53 health check reports the PF endpoint as unhealthy, but you can successfully make SAML requests to the NLB directly using its DNS name. How do you diagnose the discrepancy and what is the most likely cause?</li>
+  </ul>
+</div>
+
+<!-- TAKEAWAY -->
+<div class="tk">
+  <div class="tkh">
+    <div class="tki">◆</div>
+    <div class="tkt">Module 07 — Key Takeaways</div>
+  </div>
+  <ul class="tkl">
+    <li>NLB is the correct load balancer for PingFederate federation traffic because it supports TCP/TLS passthrough — allowing PF to terminate TLS with its own federation certificate, which is required for SAML SP certificate validation.</li>
+    <li>ALB is used optionally for the admin console (port 9999) where WAF integration, HTTP-layer inspection, and IP allowlisting are required. ALB terminates TLS and is not suitable for the primary federation endpoint.</li>
+    <li>The three NLB Terraform resources in order: <code>aws_lb</code> (the load balancer itself), <code>aws_lb_target_group</code> (health checks + backend port), <code>aws_lb_listener</code> (frontend port → target group).</li>
+    <li>The health check on the target group (<code>HTTP :8080 /pingfederate/rest/v1/version</code>) verifies PF is running and responding — not just that the TCP port is open. This is what gates traffic during AMI refresh.</li>
+    <li><code>deregistration_delay = 60</code> gives in-flight SAML/OIDC flows 60 seconds to complete before the NLB forcibly closes connections to a deregistering instance. Set this higher if your SP back-channel flows are long.</li>
+    <li>Route53 alias records are preferred over CNAMEs for AWS resources — free, no extra DNS lookup hop, work at zone apex, and support <code>evaluate_target_health</code>.</li>
+    <li><code>evaluate_target_health = true</code> on the alias record tells Route53 to consider NLB target health before returning DNS responses — a last-resort safety net if all instances fail health checks simultaneously.</li>
+    <li>Cross-zone load balancing on the NLB ensures that during AMI refresh, when one AZ may temporarily have fewer healthy instances, traffic is routed to healthy instances in other AZs.</li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="toc">
+    <div class="tl">In this module</div>
+    <a class="ti" href="#bridge">Bridge from M06</a>
+    <a class="ti" href="#nlb-vs-alb">NLB vs ALB decision</a>
+    <a class="ti" href="#nlb-terraform">NLB in Terraform</a>
+    <a class="ti" href="#traffic-path">Traffic path diagram</a>
+    <a class="ti" href="#route53">Route53</a>
+    <a class="ti" href="#health-and-refresh">Health during refresh</a>
+    <a class="ti" href="#alb-admin">ALB for admin</a>
+    <a class="ti" href="#knowledge-checks">Knowledge checks</a>
+    <a class="ti" href="#lab">Mini lab</a>
+  </div>
+  <div class="qr">
+    <div class="qrl">Key Resources</div>
+    <div class="qi"><span class="qt">aws_lb</span><span class="qd">NLB or ALB resource</span></div>
+    <div class="qi"><span class="qt">aws_lb_target_group</span><span class="qd">Backend + health check</span></div>
+    <div class="qi"><span class="qt">aws_lb_listener</span><span class="qd">Port → target group</span></div>
+    <div class="qi"><span class="qt">aws_route53_record</span><span class="qd">DNS alias record</span></div>
+    <div class="qi"><span class="qt">aws_route53_zone</span><span class="qd">Hosted zone</span></div>
+    <div class="qi"><span class="qt">aws_route53_health_check</span><span class="qd">Endpoint monitoring</span></div>
+    <div class="qi"><span class="qt">aws_wafv2_web_acl_association</span><span class="qd">WAF on ALB</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">NLB Quick Ref</div>
+    <div class="qi"><span class="qt">internal=false</span><span class="qd">Internet-facing (federation)</span></div>
+    <div class="qi"><span class="qt">type=network</span><span class="qd">NLB (not ALB)</span></div>
+    <div class="qi"><span class="qt">protocol=TCP</span><span class="qd">TLS passthrough</span></div>
+    <div class="qi"><span class="qt">port=9031</span><span class="qd">PF federation port</span></div>
+    <div class="qi"><span class="qt">deregister=60s</span><span class="qd">Drain in-flight flows</span></div>
+    <div class="qi"><span class="qt">cross-zone=true</span><span class="qd">AZ-resilient routing</span></div>
+  </div>
+  <div class="qr">
+    <div class="qrl">Series Progress</div>
+    <div style="padding:var(--sm) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--sm);background:var(--s2);border-radius:var(--r8)">
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--tg);border:1px solid var(--td);color:var(--td)">M01–M06</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--pg);border:1px solid var(--pc);color:var(--pc);font-weight:600;box-shadow:0 0 10px var(--pg)">M07</span>
+        <span style="color:var(--t3);font-size:13px">›</span>
+        <span style="font-family:var(--fm);font-size:11px;padding:3px 8px;border-radius:var(--rp);background:var(--s3);border:1px solid var(--brb);color:var(--t3)">M08–10 ★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /layout -->
+
+<!-- BRIDGE -->
+<div class="bridge">
+  <div class="bc">
+    <div class="bce">Coming up next · Module 08</div>
+    <div class="bct"><span>S3 &amp; Config Externalisation</span> — The Pattern That Makes Everything Work</div>
+    <div class="bcb">
+      The traffic path is complete. DNS resolves to the NLB. The NLB routes to healthy PF engine nodes. Health checks gate traffic during AMI refresh. The system is reachable and resilient.<br><br>
+      But there's a question that has been sitting underneath every module since M01: <em>how does a new PF instance know what configuration to use?</em> When user_data pulls a zip file from S3 on first boot, where did that zip file come from? Who manages that bucket? What makes it safe for configuration to live there? How does versioning protect you when a bad config is deployed?<br><br>
+      Module 08 answers all of this — the S3 bucket configuration that makes immutable infrastructure possible, the bucket policies that restrict access to the PF instance role, and the config externalisation pattern that decouples application configuration from compute lifecycle.
+    </div>
+    <div class="bcc">
+      <span class="b bn">S3 bucket config</span>
+      <span class="b bn">Bucket versioning</span>
+      <span class="b bn">SSE-KMS encryption</span>
+      <span class="b bn">Bucket policies</span>
+      <span class="b bn">Config externalisation</span>
+      <span class="b bn">EFS alternative</span>
+    </div>
+    <a href="module-08.html" class="bcbtn">Continue to Module 08 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="fl">M07 · Load Balancers &amp; Route53 · Phase 2 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--sm);align-items:center">
+    <a href="module-06.html" class="b bq" style="text-decoration:none">← M06</a>
+    <a href="index.html" class="b bq" style="text-decoration:none">Index</a>
+    <a href="module-08.html" class="b bp" style="text-decoration:none">M08 →</a>
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+function toggleKC(el){el.classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.ti');
+  const secs=[];
+  items.forEach(i=>{const id=i.getAttribute('href').replace('#','');const el=document.getElementById(id);if(el)secs.push({el,item:i})});
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){items.forEach(i=>i.classList.remove('active'));const f=secs.find(s=>s.el===en.target);if(f)f.item.classList.add('active')}}),{rootMargin:'-20% 0px -70% 0px'});
+  secs.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target)}}),{threshold:.06});
+  document.querySelectorAll('.sec,.card,.dw,.lab,.ar,.tk,.bc,.kc').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .45s ease,transform .45s ease';io.observe(el)});
+})();
+</script>
+</body>
+</html>

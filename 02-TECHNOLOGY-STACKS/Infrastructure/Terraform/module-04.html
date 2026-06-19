@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en" class="phase-2">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M04 · VPC, Subnets &amp; Security Groups — Terraform Mastery Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-void:#0B0E14;--bg-surface-1:#111520;--bg-surface-2:#181D2A;--bg-surface-3:#1F2535;
+  --border:#1E2636;--border-bright:#2E3A52;
+  --teal:#00E5C3;--teal-dim:#00B89A;--teal-glow:rgba(0,229,195,0.12);
+  --copper:#E8873A;--copper-glow:rgba(232,135,58,0.15);
+  --sapphire:#4A9EFF;--sapphire-glow:rgba(74,158,255,0.12);
+  --rose:#FF5F7E;--rose-glow:rgba(255,95,126,0.12);
+  --jade:#3ECFA0;--violet:#9B7FFF;--violet-glow:rgba(155,127,255,0.13);
+  --text-primary:#E8EDF5;--text-secondary:#8A95A8;--text-tertiary:#4A5568;
+  --font-display:'Syne',sans-serif;--font-body:'IBM Plex Sans',sans-serif;--font-mono:'IBM Plex Mono',monospace;
+  --space-xs:4px;--space-sm:8px;--space-md:16px;--space-lg:24px;--space-xl:40px;--space-2xl:64px;--space-3xl:96px;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;--radius-pill:999px;
+  --shadow-card:0 1px 3px rgba(0,0,0,0.5),0 4px 16px rgba(0,0,0,0.3);
+  --transition-fast:150ms ease;--transition-base:250ms ease;
+  /* Phase 2 — Sapphire */
+  --phase-color:#4A9EFF;--phase-glow:rgba(74,158,255,0.15);--phase-dim:#1A68CC;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background-color:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:999px}
+::selection{background:var(--phase-glow);color:var(--phase-color)}
+a{color:var(--sapphire);text-decoration:none;transition:color var(--transition-fast)}a:hover{color:var(--teal)}
+code{font-family:var(--font-mono);font-size:.85em;background:var(--bg-surface-3);border:1px solid var(--border);color:var(--teal);padding:1px 5px;border-radius:var(--radius-sm)}
+.portal-shell{max-width:1100px;margin:0 auto;padding:0 var(--space-xl)}
+@media(max-width:768px){.portal-shell{padding:0 var(--space-md)}}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.92);backdrop-filter:blur(16px) saturate(1.5);border-bottom:1px solid var(--border);padding:0 var(--space-xl)}
+.nav__inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:var(--space-lg)}
+.nav__logo{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+.nav__logo span{color:var(--text-tertiary);font-weight:400}
+.nav-sep{width:1px;height:20px;background:var(--border-bright);flex-shrink:0}
+.nav__prog{flex:1;display:flex;align-items:center;gap:var(--space-sm)}
+.prog-track{flex:1;height:2px;background:var(--border);border-radius:var(--radius-pill);overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--phase-color),var(--teal));border-radius:var(--radius-pill)}
+.prog-lbl{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);white-space:nowrap}
+.nav__badge{font-family:var(--font-mono);font-size:11px;font-weight:500;padding:3px 10px;border-radius:var(--radius-pill);background:var(--phase-glow);border:1px solid var(--phase-color);color:var(--phase-color);white-space:nowrap}
+/* HERO */
+.hero{position:relative;padding:var(--space-3xl) 0 var(--space-2xl);overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--phase-glow) 0%,transparent 55%),radial-gradient(ellipse 50% 40% at 85% 25%,rgba(0,229,195,.05) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 70% 60% at 15% 50%,black 0%,transparent 70%);opacity:.4;pointer-events:none}
+.hero__inner{position:relative;z-index:1}
+.hero__phase{display:inline-flex;align-items:center;gap:var(--space-sm);font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--phase-color);margin-bottom:var(--space-md)}
+.phase-dot{width:6px;height:6px;border-radius:50%;background:var(--phase-color);box-shadow:0 0 8px var(--phase-color);animation:pdot 2s ease-in-out infinite}
+@keyframes pdot{0%,100%{opacity:1;box-shadow:0 0 8px var(--phase-color)}50%{opacity:.5;box-shadow:0 0 3px var(--phase-color)}}
+.hero__title{font-family:var(--font-display);font-size:clamp(28px,4vw,52px);font-weight:800;line-height:1.08;letter-spacing:-.02em;color:var(--text-primary);margin-bottom:var(--space-md);max-width:780px}
+.hero__title .ac{color:var(--phase-color)}
+.hero__sub{font-size:17px;font-weight:300;color:var(--text-secondary);max-width:640px;line-height:1.65;margin-bottom:var(--space-xl)}
+.hero__meta{display:flex;flex-wrap:wrap;gap:var(--space-sm)}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--radius-pill);white-space:nowrap;letter-spacing:.04em}
+.b-phase{background:var(--phase-glow);border:1px solid var(--phase-color);color:var(--phase-color)}
+.b-effort{background:rgba(232,135,58,.10);border:1px solid rgba(232,135,58,.30);color:var(--copper)}
+.b-track{background:rgba(74,158,255,.10);border:1px solid rgba(74,158,255,.30);color:var(--sapphire)}
+.b-prereq{background:var(--bg-surface-2);border:1px solid var(--border-bright);color:var(--text-secondary)}
+.b-new{background:rgba(0,229,195,.10);border:1px solid rgba(0,229,195,.30);color:var(--teal)}
+.b-rose{background:var(--rose-glow);border:1px solid rgba(255,95,126,.35);color:var(--rose)}
+/* ORIENTATION */
+.orient{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-xl);margin-bottom:var(--space-2xl);position:relative;overflow:hidden}
+.orient::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--phase-color) 0%,transparent 100%)}
+.orient-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-lg)}
+.oi-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px}
+.oi-val{font-size:14px;font-weight:500;color:var(--text-primary)}
+.oi-val.ac{color:var(--phase-color)}
+.journey-dots{display:flex;gap:4px;flex-wrap:wrap;margin-top:var(--space-lg);padding-top:var(--space-lg);border-top:1px solid var(--border)}
+.jd{width:30px;height:30px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;font-weight:500}
+.jd-done{background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)}
+.jd-cur{background:var(--phase-glow);border:1px solid var(--phase-color);color:var(--phase-color);box-shadow:0 0 12px var(--phase-glow)}
+.jd-fut{background:var(--bg-surface-2);border:1px solid var(--border);color:var(--text-tertiary)}
+/* LAYOUT */
+.content{display:grid;grid-template-columns:1fr 260px;gap:var(--space-2xl);align-items:start}
+@media(max-width:900px){.content{grid-template-columns:1fr}}
+.main{min-width:0}.sidebar{position:sticky;top:72px}
+/* SECTIONS */
+.sec{margin-bottom:var(--space-2xl)}
+.sec-lbl{display:flex;align-items:center;gap:var(--space-sm);font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--phase-color);margin-bottom:var(--space-md)}
+.sec-lbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border-bright) 0%,transparent 100%)}
+.sec-title{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md);line-height:1.2}
+.sec-body{font-size:15px;color:var(--text-secondary);line-height:1.8}
+.sec-body p{margin-bottom:var(--space-md)}.sec-body p:last-child{margin-bottom:0}
+.sec-body strong{color:var(--text-primary);font-weight:600}
+.sec-body em{color:var(--phase-color);font-style:normal;font-weight:500}
+/* CARDS */
+.card{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);transition:border-color var(--transition-base),box-shadow var(--transition-base)}
+.card:hover{border-color:var(--border-bright);box-shadow:var(--shadow-card)}
+.c-phase{border-left:2px solid var(--phase-color);background:linear-gradient(135deg,var(--phase-glow) 0%,var(--bg-surface-1) 60%)}
+.c-teal{border-left:2px solid var(--teal);background:linear-gradient(135deg,var(--teal-glow) 0%,var(--bg-surface-1) 60%)}
+.c-copper{border-left:2px solid var(--copper);background:linear-gradient(135deg,var(--copper-glow) 0%,var(--bg-surface-1) 60%)}
+.c-rose{border-left:2px solid var(--rose);background:linear-gradient(135deg,var(--rose-glow) 0%,var(--bg-surface-1) 60%)}
+.c-violet{border-left:2px solid var(--violet);background:linear-gradient(135deg,var(--violet-glow) 0%,var(--bg-surface-1) 60%)}
+.card__lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm)}
+.card__title{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:var(--space-sm)}
+.card__body{font-size:14px;color:var(--text-secondary);line-height:1.7}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--space-md)}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md)}
+/* CONCEPT */
+.cb{border-left:2px solid var(--phase-color);padding:var(--space-md) var(--space-lg);background:var(--phase-glow);border-radius:0 var(--radius-md) var(--radius-md) 0;margin:var(--space-lg) 0}
+.cb__term{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--phase-color);margin-bottom:4px}
+.cb__def{font-size:14px;color:var(--text-secondary);line-height:1.65}
+.cb-rose{border-left-color:var(--rose);background:var(--rose-glow)}.cb-rose .cb__term{color:var(--rose)}
+.cb-copper{border-left-color:var(--copper);background:var(--copper-glow)}.cb-copper .cb__term{color:var(--copper)}
+/* DIAGRAM */
+.dw{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);margin:var(--space-xl) 0;overflow-x:auto}
+.dw__lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-md);display:flex;align-items:center;gap:var(--space-sm)}
+.dw__lbl::before{content:'◈';color:var(--phase-color);font-size:12px}
+/* CODE */
+.cb-code{background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;margin:var(--space-md) 0;font-family:var(--font-mono);font-size:12px}
+.cb-code__hdr{display:flex;align-items:center;justify-content:space-between;padding:var(--space-sm) var(--space-md);background:var(--bg-surface-3);border-bottom:1px solid var(--border)}
+.cb-code__lang{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary)}
+.cb-code__file{font-size:11px;color:var(--text-secondary)}
+.cb-code__body{padding:var(--space-md);overflow-x:auto;line-height:1.7;color:var(--text-secondary);tab-size:2}
+.cb-code__body .k{color:#c792ea}.cb-code__body .s{color:var(--jade)}.cb-code__body .c{color:var(--text-tertiary);font-style:italic}
+.cb-code__body .v{color:var(--copper)}.cb-code__body .n{color:var(--teal)}.cb-code__body .p{color:var(--sapphire)}.cb-code__body .num{color:#f78c6c}
+/* KC */
+.kc{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-md) 0}
+.kc__q{padding:var(--space-md) var(--space-lg);font-size:14px;font-weight:500;color:var(--text-primary);display:flex;align-items:flex-start;gap:var(--space-sm);cursor:pointer;transition:background var(--transition-fast);user-select:none}
+.kc__q:hover{background:var(--bg-surface-2)}
+.kc-icon{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--phase-color);background:var(--phase-glow);border:1px solid var(--phase-color);border-radius:3px;padding:1px 5px;flex-shrink:0;margin-top:2px}
+.kc-chev{margin-left:auto;flex-shrink:0;color:var(--text-tertiary);transition:transform var(--transition-base);font-size:12px}
+.kc.open .kc-chev{transform:rotate(180deg)}
+.kc__a{display:none;padding:var(--space-md) var(--space-lg);background:var(--bg-surface-2);border-top:1px solid var(--border);font-size:14px;color:var(--text-secondary);line-height:1.7}
+.kc.open .kc__a{display:block}
+/* SIDEBAR */
+.toc{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)}
+.toc__lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm);padding-bottom:var(--space-sm);border-bottom:1px solid var(--border)}
+.toc__item{display:block;padding:5px var(--space-sm);font-size:12px;color:var(--text-secondary);border-radius:var(--radius-sm);transition:all var(--transition-fast);cursor:pointer;border-left:2px solid transparent}
+.toc__item:hover,.toc__item.active{background:var(--bg-surface-2);color:var(--text-primary);border-left-color:var(--phase-color)}
+.qr{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)}
+.qr__lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm);padding-bottom:var(--space-sm);border-bottom:1px solid var(--border)}
+.qr__item{display:flex;gap:var(--space-sm);align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.qr__item:last-child{border-bottom:none}
+.qr__term{font-family:var(--font-mono);font-size:11px;color:var(--teal);white-space:nowrap;flex-shrink:0}
+.qr__def{color:var(--text-secondary);line-height:1.5}
+/* TAKEAWAY */
+.tk{background:var(--bg-surface-1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin:var(--space-xl) 0}
+.tk__hdr{display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);padding-bottom:var(--space-md);border-bottom:1px solid var(--border)}
+.tk__icon{width:32px;height:32px;border-radius:var(--radius-sm);background:var(--phase-glow);border:1px solid var(--phase-color);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--phase-color);flex-shrink:0}
+.tk__title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text-primary)}
+.tk-list{list-style:none;display:flex;flex-direction:column;gap:var(--space-sm)}
+.tk-list li{font-size:14px;color:var(--text-secondary);display:flex;align-items:flex-start;gap:var(--space-sm);line-height:1.65}
+.tk-list li::before{content:'◆';color:var(--phase-color);font-size:8px;flex-shrink:0;margin-top:6px}
+/* ARCHITECT REVIEW */
+.ar{background:var(--bg-surface-1);border:1px solid var(--copper);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-xl) 0}
+.ar__hdr{background:var(--copper-glow);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--space-sm)}
+.ar__badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--copper);background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.4);padding:2px 8px;border-radius:var(--radius-pill)}
+.ar__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary)}
+.ar__list{list-style:none;padding:var(--space-md) var(--space-lg);display:flex;flex-direction:column;gap:var(--space-sm)}
+.ar__list li{font-size:14px;color:var(--text-secondary);display:flex;gap:var(--space-sm);align-items:flex-start;line-height:1.65;padding:var(--space-sm) 0;border-bottom:1px solid var(--border)}
+.ar__list li:last-child{border-bottom:none}
+.ar-n{font-family:var(--font-mono);font-size:11px;color:var(--copper);flex-shrink:0;margin-top:2px;min-width:20px}
+/* MENTOR */
+.mn{display:flex;gap:var(--space-md);padding:var(--space-lg);background:var(--bg-surface-2);border:1px solid var(--border);border-radius:var(--radius-lg);margin:var(--space-lg) 0}
+.mn__av{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--phase-glow);border:1px solid var(--phase-color);display:flex;align-items:center;justify-content:center;font-size:18px}
+.mn__body{flex:1}
+.mn__lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--phase-color);margin-bottom:4px}
+.mn__text{font-size:14px;color:var(--text-secondary);line-height:1.75}
+.mn__text strong{color:var(--text-primary);font-weight:600}
+/* LAB */
+.lab{background:var(--bg-surface-1);border:1px solid var(--teal-dim);border-radius:var(--radius-lg);overflow:hidden;margin:var(--space-xl) 0}
+.lab__hdr{background:var(--teal-glow);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:var(--space-sm)}
+.lab__badge{font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);background:var(--teal-glow);border:1px solid rgba(0,229,195,.4);padding:2px 8px;border-radius:var(--radius-pill)}
+.lab__title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary)}
+.lab__body{padding:var(--space-lg)}
+.lab__body ol{padding-left:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-sm)}
+.lab__body ol li{font-size:14px;color:var(--text-secondary);line-height:1.65;padding-left:4px}
+.lab__body ol li strong{color:var(--text-primary)}
+/* BRIDGE */
+.bridge{margin-top:var(--space-3xl);padding-top:var(--space-2xl);border-top:1px solid var(--border)}
+.bridge-card{background:linear-gradient(135deg,var(--bg-surface-1) 0%,var(--bg-surface-2) 100%);border:1px solid var(--border-bright);border-radius:var(--radius-xl);padding:var(--space-xl);position:relative;overflow:hidden}
+.bridge-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--phase-color),var(--violet),transparent)}
+.bridge-card::after{content:'';position:absolute;bottom:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:var(--violet-glow);pointer-events:none}
+.bridge-card__eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:var(--space-sm)}
+.bridge-card__title{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:var(--space-md)}
+.bridge-card__title span{color:var(--violet)}
+.bridge-card__body{font-size:14px;color:var(--text-secondary);line-height:1.75;max-width:580px;margin-bottom:var(--space-lg)}
+.bridge-card__concepts{display:flex;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-lg)}
+.bridge-card__btn{display:inline-flex;align-items:center;gap:var(--space-sm);background:var(--violet);color:var(--bg-void);font-family:var(--font-display);font-size:14px;font-weight:700;padding:12px var(--space-lg);border-radius:var(--radius-pill);text-decoration:none;transition:all var(--transition-base)}
+.bridge-card__btn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--violet-glow);color:var(--bg-void)}
+/* FOOTER */
+.footer{margin-top:var(--space-3xl);padding:var(--space-xl) 0;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap}
+.footer__l{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:var(--space-lg) 0}
+.tbl th{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);padding:var(--space-sm) var(--space-md);border-bottom:1px solid var(--border-bright);text-align:left}
+.tbl th:first-child{color:var(--phase-color)}
+.tbl td{padding:10px var(--space-md);border-bottom:1px solid var(--border);color:var(--text-secondary);vertical-align:top;line-height:1.6}
+.tbl td:first-child{font-weight:500;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;white-space:nowrap}
+.tbl tr:hover td{background:var(--bg-surface-2)}
+.tbl tr:last-child td{border-bottom:none}
+/* FLOW */
+.flow{display:flex;flex-direction:column;gap:0;margin:var(--space-lg) 0}
+.flow-step{display:flex;gap:var(--space-md);align-items:flex-start}
+.flow-conn{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:32px}
+.flow-num{width:32px;height:32px;border-radius:50%;background:var(--bg-surface-2);border:1px solid var(--phase-color);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--phase-color);flex-shrink:0;z-index:1}
+.flow-line{width:1px;flex:1;min-height:24px;background:linear-gradient(var(--border-bright),var(--border))}
+.flow-step:last-child .flow-line{display:none}
+.flow-body{padding-bottom:var(--space-lg);padding-top:5px;flex:1}
+.flow-title{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.flow-desc{font-size:13px;color:var(--text-secondary);line-height:1.65}
+/* ANIMATIONS */
+@keyframes fiu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fiu .5s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav__inner">
+    <a href="index.html" class="nav__logo" style="text-decoration:none;">Terraform<span> · Mastery</span></a>
+    <div class="nav-sep"></div>
+    <div class="nav__prog">
+      <div class="prog-track"><div class="prog-fill" style="width:36%"></div></div>
+      <span class="prog-lbl">M04 / 10</span>
+    </div>
+    <span class="nav__badge">M04 · Phase 2</span>
+  </div>
+</nav>
+
+<div class="portal-shell">
+
+<!-- HERO -->
+<section class="hero afu">
+  <div class="hero__inner">
+    <div class="hero__phase"><div class="phase-dot"></div>Phase 2 · AWS Infrastructure — Layer by Layer</div>
+    <h1 class="hero__title">VPC, Subnets &amp;<br><span class="ac">Security Groups</span> —<br>The Network Foundation</h1>
+    <p class="hero__sub">Every resource in the PingFederate stack lives inside a VPC. The network is always provisioned first because everything depends on it — compute, load balancers, IAM, storage access. This module builds the full networking layer in Terraform and anchors each decision to the PingFederate topology your project uses.</p>
+    <div class="hero__meta">
+      <span class="badge b-phase">Phase 2 · Networking</span>
+      <span class="badge b-effort">⬛⬛⬛⬛☐ 4–5 hrs</span>
+      <span class="badge b-track">VPC · Subnets · SGs</span>
+      <span class="badge b-prereq">↳ Prereq: M01–M03</span>
+    </div>
+  </div>
+</section>
+
+<!-- ORIENTATION -->
+<div class="orient afu d2">
+  <div class="orient-grid">
+    <div><div class="oi-lbl">Current module</div><div class="oi-val ac">M04 · VPC, Subnets &amp; Security Groups</div></div>
+    <div><div class="oi-lbl">Phase</div><div class="oi-val">Phase 2 — AWS Infrastructure</div></div>
+    <div><div class="oi-lbl">What you bring in</div><div class="oi-val">HCL fluency + full state model</div></div>
+    <div><div class="oi-lbl">Unlocks</div><div class="oi-val">M05 · IAM &amp; Instance Profiles</div></div>
+  </div>
+  <div class="journey-dots">
+    <div class="jd jd-done">M01</div><div class="jd jd-done">M02</div><div class="jd jd-done">M03</div>
+    <div class="jd jd-cur">M04</div>
+    <div class="jd jd-fut">M05</div><div class="jd jd-fut">M06</div><div class="jd jd-fut">M07</div>
+    <div class="jd jd-fut">M08</div><div class="jd jd-fut">M09</div><div class="jd jd-fut">M10</div>
+    <div class="jd jd-fut" style="background:linear-gradient(135deg,var(--copper-glow),var(--teal-glow));border:1px solid var(--copper);color:var(--copper)">★</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content">
+<div class="main">
+
+<!-- ── SECTION 1: BRIDGE ── -->
+<section class="sec afu d3" id="bridge">
+  <div class="sec-lbl">Bridge from Module 03</div>
+  <h2 class="sec-title">Phase 2 begins — building real AWS infrastructure</h2>
+  <div class="sec-body">
+    <p>Modules 01 through 03 gave you the complete foundation: the mental model of the pipeline, fluency in HCL, and a thorough understanding of how state works — including the exact behavior during an ASG instance refresh. You can read enterprise Terraform code, understand provider and resource blocks, trace variable flows, and reason about drift, locking, and state surgery.</p>
+    <p>Phase 2 is where that foundation pays off. You are now going to build the actual AWS infrastructure layer by layer — starting with the network, because <em>everything else depends on the network existing first</em>. No subnet ID means no EC2 instance. No VPC means no security group. The network is the bedrock.</p>
+    <p>This module covers VPC, subnets, route tables, internet and NAT gateways, and security groups — all through the lens of the specific PingFederate topology your project runs. By the end, you will understand not just the Terraform syntax but <strong>why every network design decision exists</strong> in an enterprise IAM platform deployment.</p>
+  </div>
+  <div class="mn">
+    <div class="mn__av">🧑‍🏫</div>
+    <div class="mn__body">
+      <div class="mn__lbl">Mentor Note — your security background is an advantage here too</div>
+      <div class="mn__text">You already reason about network security through the lens of IAM and federation protocol flows. You know that PingFederate needs to receive SAML assertions, talk to LDAP, and serve tokens over TLS. <strong>That knowledge maps directly onto security group rules and subnet placement decisions.</strong> This module will feel more like applying existing expertise than learning something new.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 2: VPC FUNDAMENTALS ── -->
+<section class="sec" id="vpc-fundamentals">
+  <div class="sec-lbl">VPC fundamentals</div>
+  <h2 class="sec-title">What a VPC is and why PingFederate needs one</h2>
+  <div class="sec-body">
+    <p>A Virtual Private Cloud (VPC) is a logically isolated network within AWS. It is the container for every other network resource — subnets, route tables, security groups, gateways. Everything in the PingFederate migration runs inside a VPC. Terraform creates and manages the VPC and all of its components as a dependency graph of resources.</p>
+    <p>In enterprise deployments, the VPC is typically provisioned by a dedicated networking team and shared across multiple workloads — or it is provisioned per-application in an isolated account. Either way, Terraform manages it. If your project already has a VPC, the PingFederate Terraform configuration reads it as a data source rather than creating a new one.</p>
+  </div>
+
+  <div class="cb">
+    <div class="cb__term">CIDR block — the address space of your VPC</div>
+    <div class="cb__def">A VPC is assigned a CIDR block — the range of private IP addresses available to all resources within it. A common enterprise choice is <code>10.0.0.0/16</code>, which provides 65,536 addresses. The CIDR must be large enough to accommodate all subnets across all availability zones, plus room for future growth. In AWS, VPC CIDR ranges cannot be changed after creation — choose carefully.</div>
+  </div>
+
+  <div class="cb-code">
+    <div class="cb-code__hdr"><span class="cb-code__lang">HCL</span><span class="cb-code__file">vpc.tf — complete VPC with all components</span></div>
+    <div class="cb-code__body"><pre><span class="c"># ── VPC ───────────────────────────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_vpc"</span> <span class="s">"main"</span> {
+  <span class="k">cidr_block</span>           = <span class="v">var.vpc_cidr</span>        <span class="c"># e.g. "10.0.0.0/16"</span>
+  <span class="k">enable_dns_support</span>   = <span class="k">true</span>               <span class="c"># required for Route53 private zones</span>
+  <span class="k">enable_dns_hostnames</span> = <span class="k">true</span>               <span class="c"># required for EFS, SSM, and others</span>
+
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}vpc"</span> })
+}
+
+<span class="c"># ── INTERNET GATEWAY — allows public subnets to reach the internet ────</span>
+<span class="k">resource</span> <span class="s">"aws_internet_gateway"</span> <span class="s">"main"</span> {
+  <span class="k">vpc_id</span> = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>   <span class="c"># implicit dependency on VPC</span>
+  <span class="k">tags</span>   = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}igw"</span> })
+}
+
+<span class="c"># ── PUBLIC SUBNETS — one per AZ ────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_subnet"</span> <span class="s">"public"</span> {
+  <span class="k">for_each</span> = <span class="v">var.public_subnets</span>   <span class="c"># map of {name: {cidr, az}}</span>
+
+  <span class="k">vpc_id</span>                  = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+  <span class="k">cidr_block</span>              = <span class="n">each</span>.<span class="v">value</span>.<span class="n">cidr</span>
+  <span class="k">availability_zone</span>       = <span class="n">each</span>.<span class="v">value</span>.<span class="n">az</span>
+  <span class="k">map_public_ip_on_launch</span> = <span class="k">true</span>    <span class="c"># NLB/ALB nodes get public IPs</span>
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}public-${</span><span class="n">each</span>.<span class="v">key</span><span class="s">}"</span>, <span class="n">Tier</span> = <span class="s">"public"</span> })
+}
+
+<span class="c"># ── PRIVATE SUBNETS — where PF engine nodes live ──────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_subnet"</span> <span class="s">"private"</span> {
+  <span class="k">for_each</span> = <span class="v">var.private_subnets</span>
+
+  <span class="k">vpc_id</span>                  = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+  <span class="k">cidr_block</span>              = <span class="n">each</span>.<span class="v">value</span>.<span class="n">cidr</span>
+  <span class="k">availability_zone</span>       = <span class="n">each</span>.<span class="v">value</span>.<span class="n">az</span>
+  <span class="k">map_public_ip_on_launch</span> = <span class="k">false</span>   <span class="c"># PF nodes NEVER get public IPs</span>
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}private-${</span><span class="n">each</span>.<span class="v">key</span><span class="s">}"</span>, <span class="n">Tier</span> = <span class="s">"private"</span> })
+}
+
+<span class="c"># ── ELASTIC IPs for NAT GATEWAYS ──────────────────────────────────────</span>
+<span class="c"># One NAT GW per AZ for high availability (or one shared for cost saving)</span>
+<span class="k">resource</span> <span class="s">"aws_eip"</span> <span class="s">"nat"</span> {
+  <span class="k">for_each</span> = <span class="v">var.public_subnets</span>
+  <span class="k">domain</span>   = <span class="s">"vpc"</span>
+  <span class="k">tags</span>     = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}nat-eip-${</span><span class="n">each</span>.<span class="v">key</span><span class="s">}"</span> })
+}
+
+<span class="c"># ── NAT GATEWAY — allows private subnet instances to reach internet ────</span>
+<span class="c"># Lives in PUBLIC subnets; forwards traffic from PRIVATE subnets</span>
+<span class="k">resource</span> <span class="s">"aws_nat_gateway"</span> <span class="s">"main"</span> {
+  <span class="k">for_each</span>      = <span class="v">var.public_subnets</span>
+  <span class="k">allocation_id</span> = <span class="n">aws_eip</span>.<span class="v">nat</span>[<span class="n">each</span>.<span class="v">key</span>].<span class="n">id</span>
+  <span class="k">subnet_id</span>     = <span class="n">aws_subnet</span>.<span class="v">public</span>[<span class="n">each</span>.<span class="v">key</span>].<span class="n">id</span>
+  <span class="k">tags</span>          = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}nat-${</span><span class="n">each</span>.<span class="v">key</span><span class="s">}"</span> })
+  <span class="k">depends_on</span>    = [<span class="n">aws_internet_gateway</span>.<span class="v">main</span>]   <span class="c"># IGW must exist first</span>
+}
+
+<span class="c"># ── ROUTE TABLES ──────────────────────────────────────────────────────</span>
+<span class="c"># Public route table: default route via Internet Gateway</span>
+<span class="k">resource</span> <span class="s">"aws_route_table"</span> <span class="s">"public"</span> {
+  <span class="k">vpc_id</span> = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+  <span class="k">route</span> {
+    <span class="k">cidr_block</span> = <span class="s">"0.0.0.0/0"</span>
+    <span class="k">gateway_id</span> = <span class="n">aws_internet_gateway</span>.<span class="v">main</span>.<span class="n">id</span>
+  }
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}public-rt"</span> })
+}
+
+<span class="c"># Private route tables: one per AZ, default route via respective NAT GW</span>
+<span class="k">resource</span> <span class="s">"aws_route_table"</span> <span class="s">"private"</span> {
+  <span class="k">for_each</span> = <span class="v">var.public_subnets</span>
+  <span class="k">vpc_id</span>   = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+  <span class="k">route</span> {
+    <span class="k">cidr_block</span>     = <span class="s">"0.0.0.0/0"</span>
+    <span class="k">nat_gateway_id</span> = <span class="n">aws_nat_gateway</span>.<span class="v">main</span>[<span class="n">each</span>.<span class="v">key</span>].<span class="n">id</span>
+  }
+  <span class="k">tags</span> = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}private-rt-${</span><span class="n">each</span>.<span class="v">key</span><span class="s">}"</span> })
+}
+
+<span class="c"># ── ROUTE TABLE ASSOCIATIONS ──────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_route_table_association"</span> <span class="s">"public"</span> {
+  <span class="k">for_each</span>       = <span class="v">var.public_subnets</span>
+  <span class="k">subnet_id</span>      = <span class="n">aws_subnet</span>.<span class="v">public</span>[<span class="n">each</span>.<span class="v">key</span>].<span class="n">id</span>
+  <span class="k">route_table_id</span> = <span class="n">aws_route_table</span>.<span class="v">public</span>.<span class="n">id</span>
+}
+
+<span class="k">resource</span> <span class="s">"aws_route_table_association"</span> <span class="s">"private"</span> {
+  <span class="k">for_each</span>       = <span class="v">var.private_subnets</span>
+  <span class="k">subnet_id</span>      = <span class="n">aws_subnet</span>.<span class="v">private</span>[<span class="n">each</span>.<span class="v">key</span>].<span class="n">id</span>
+  <span class="k">route_table_id</span> = <span class="n">aws_route_table</span>.<span class="v">private</span>[<span class="n">each</span>.<span class="v">key</span>].<span class="n">id</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 3: NETWORK TOPOLOGY DIAGRAM ── -->
+<section class="sec" id="topology">
+  <div class="sec-lbl">PingFederate network topology</div>
+  <h2 class="sec-title">Why PingFederate lives in private subnets</h2>
+  <div class="sec-body">
+    <p>PingFederate engine nodes never have public IP addresses. They live in private subnets, isolated from direct internet access. All inbound federation traffic arrives via the Network Load Balancer, which sits in the public subnets. All outbound traffic from the engine nodes — to reach S3, LDAP, AWS APIs, package repositories — routes through the NAT Gateway in the public subnet.</p>
+    <p>This design is not just a security best practice — it is a compliance requirement in most enterprise environments. The NLB is the single controlled ingress point. The PingFederate nodes themselves are never directly reachable from outside the VPC.</p>
+  </div>
+
+  <div class="dw">
+    <div class="dw__lbl">PingFederate VPC Topology — Two Availability Zones</div>
+    <svg viewBox="0 0 860 440" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:600px;display:block;">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#4A9EFF"/></marker>
+        <marker id="a2" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#00E5C3"/></marker>
+        <marker id="a3" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0,7 3,0 6" fill="#E8873A"/></marker>
+      </defs>
+
+      <!-- VPC outer border -->
+      <rect x="10" y="10" width="840" height="420" rx="12" fill="none" stroke="rgba(74,158,255,.3)" stroke-width="2" stroke-dasharray="8 4"/>
+      <text x="30" y="32" fill="rgba(74,158,255,.5)" font-size="10" font-weight="700" letter-spacing="1.5" font-family="IBM Plex Mono,monospace">VPC — 10.0.0.0/16</text>
+
+      <!-- Internet (outside) -->
+      <rect x="330" y="14" width="200" height="36" rx="6" fill="rgba(74,158,255,.06)" stroke="rgba(74,158,255,.2)" stroke-width="1"/>
+      <text x="430" y="36" text-anchor="middle" fill="#4A9EFF" font-size="10" font-family="IBM Plex Mono,monospace">INTERNET / CLIENTS</text>
+
+      <!-- IGW -->
+      <rect x="365" y="55" width="130" height="32" rx="5" fill="#0a100a" stroke="rgba(0,229,195,.4)" stroke-width="1"/>
+      <text x="430" y="75" text-anchor="middle" fill="#00E5C3" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">Internet Gateway</text>
+
+      <!-- PUBLIC SUBNET AZ-A -->
+      <rect x="25" y="100" width="380" height="130" rx="8" fill="rgba(74,158,255,.04)" stroke="rgba(74,158,255,.25)" stroke-width="1"/>
+      <text x="35" y="118" fill="rgba(74,158,255,.5)" font-size="8.5" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">PUBLIC SUBNET — us-east-1a — 10.0.1.0/24</text>
+
+      <!-- NLB node AZ-A -->
+      <rect x="40" y="125" width="130" height="50" rx="5" fill="#060e18" stroke="#4A9EFF" stroke-width="1.5"/>
+      <text x="105" y="147" text-anchor="middle" fill="#4A9EFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">NLB Node</text>
+      <text x="105" y="163" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Port 9031 (fed)</text>
+
+      <!-- NAT GW AZ-A -->
+      <rect x="210" y="125" width="130" height="50" rx="5" fill="#0a100a" stroke="rgba(0,229,195,.4)" stroke-width="1"/>
+      <text x="275" y="147" text-anchor="middle" fill="#00E5C3" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">NAT Gateway</text>
+      <text x="275" y="163" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Elastic IP: 54.x.x.x</text>
+
+      <!-- Route table note AZ-A public -->
+      <text x="215" y="220" fill="rgba(74,158,255,.35)" font-size="8" font-family="IBM Plex Mono,monospace">RT: 0.0.0.0/0 → IGW</text>
+
+      <!-- PUBLIC SUBNET AZ-B -->
+      <rect x="455" y="100" width="380" height="130" rx="8" fill="rgba(74,158,255,.04)" stroke="rgba(74,158,255,.25)" stroke-width="1"/>
+      <text x="465" y="118" fill="rgba(74,158,255,.5)" font-size="8.5" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">PUBLIC SUBNET — us-east-1b — 10.0.2.0/24</text>
+
+      <!-- NLB node AZ-B -->
+      <rect x="470" y="125" width="130" height="50" rx="5" fill="#060e18" stroke="#4A9EFF" stroke-width="1.5"/>
+      <text x="535" y="147" text-anchor="middle" fill="#4A9EFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">NLB Node</text>
+      <text x="535" y="163" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Port 9031 (fed)</text>
+
+      <!-- NAT GW AZ-B -->
+      <rect x="640" y="125" width="130" height="50" rx="5" fill="#0a100a" stroke="rgba(0,229,195,.4)" stroke-width="1"/>
+      <text x="705" y="147" text-anchor="middle" fill="#00E5C3" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">NAT Gateway</text>
+      <text x="705" y="163" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">Elastic IP: 54.x.x.x</text>
+
+      <text x="645" y="220" fill="rgba(74,158,255,.35)" font-size="8" font-family="IBM Plex Mono,monospace">RT: 0.0.0.0/0 → IGW</text>
+
+      <!-- PRIVATE SUBNET AZ-A -->
+      <rect x="25" y="250" width="380" height="160" rx="8" fill="rgba(155,127,255,.03)" stroke="rgba(155,127,255,.25)" stroke-width="1"/>
+      <text x="35" y="268" fill="rgba(155,127,255,.5)" font-size="8.5" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">PRIVATE SUBNET — us-east-1a — 10.0.11.0/24</text>
+
+      <!-- PF Engine AZ-A -->
+      <rect x="40" y="276" width="160" height="70" rx="5" fill="#0c0814" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="120" y="302" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">PF Engine Node</text>
+      <text x="120" y="318" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">EC2 — No public IP</text>
+      <text x="120" y="334" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">10.0.11.x</text>
+
+      <!-- RT private AZ-A -->
+      <text x="215" y="390" fill="rgba(155,127,255,.35)" font-size="8" font-family="IBM Plex Mono,monospace">RT: 0.0.0.0/0 → NAT-1a</text>
+
+      <!-- PRIVATE SUBNET AZ-B -->
+      <rect x="455" y="250" width="380" height="160" rx="8" fill="rgba(155,127,255,.03)" stroke="rgba(155,127,255,.25)" stroke-width="1"/>
+      <text x="465" y="268" fill="rgba(155,127,255,.5)" font-size="8.5" font-weight="700" letter-spacing="1" font-family="IBM Plex Mono,monospace">PRIVATE SUBNET — us-east-1b — 10.0.12.0/24</text>
+
+      <!-- PF Engine AZ-B -->
+      <rect x="470" y="276" width="160" height="70" rx="5" fill="#0c0814" stroke="rgba(155,127,255,.5)" stroke-width="1.5"/>
+      <text x="550" y="302" text-anchor="middle" fill="#9B7FFF" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">PF Engine Node</text>
+      <text x="550" y="318" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">EC2 — No public IP</text>
+      <text x="550" y="334" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="8" font-family="IBM Plex Mono,monospace">10.0.12.x</text>
+
+      <text x="645" y="390" fill="rgba(155,127,255,.35)" font-size="8" font-family="IBM Plex Mono,monospace">RT: 0.0.0.0/0 → NAT-1b</text>
+
+      <!-- S3 / AWS Services (right edge) -->
+      <rect x="722" y="280" width="120" height="50" rx="5" fill="rgba(0,229,195,.05)" stroke="rgba(0,229,195,.2)" stroke-width="1"/>
+      <text x="782" y="302" text-anchor="middle" fill="#00E5C3" font-size="9.5" font-weight="600" font-family="IBM Plex Mono,monospace">S3 / SSM</text>
+      <text x="782" y="318" text-anchor="middle" fill="#9aaac8" font-size="8.5" font-family="IBM Plex Sans,sans-serif">via NAT GW</text>
+
+      <!-- Arrows -->
+      <!-- Internet to IGW -->
+      <line x1="430" y1="50" x2="430" y2="54" stroke="rgba(74,158,255,.5)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <!-- IGW to NLB AZ-A -->
+      <line x1="365" y1="70" x2="130" y2="124" stroke="rgba(74,158,255,.4)" stroke-width="1.2" marker-end="url(#a1)"/>
+      <!-- IGW to NLB AZ-B -->
+      <line x1="495" y1="70" x2="560" y2="124" stroke="rgba(74,158,255,.4)" stroke-width="1.2" marker-end="url(#a1)"/>
+      <!-- NLB to PF AZ-A -->
+      <line x1="105" y1="176" x2="105" y2="275" stroke="rgba(74,158,255,.5)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <!-- NLB to PF AZ-B -->
+      <line x1="535" y1="176" x2="535" y2="275" stroke="rgba(74,158,255,.5)" stroke-width="1.5" marker-end="url(#a1)"/>
+      <!-- PF to NAT AZ-A (outbound) -->
+      <line x1="200" y1="311" x2="240" y2="174" stroke="rgba(0,229,195,.35)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+      <!-- PF to NAT AZ-B (outbound) -->
+      <line x1="630" y1="311" x2="668" y2="174" stroke="rgba(0,229,195,.35)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+      <!-- NAT to S3 -->
+      <line x1="720" y1="150" x2="722" y2="305" stroke="rgba(0,229,195,.3)" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#a2)"/>
+
+      <!-- Legend -->
+      <line x1="330" y1="415" x2="360" y2="415" stroke="rgba(74,158,255,.6)" stroke-width="2"/>
+      <text x="365" y="419" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">Inbound federation</text>
+      <line x1="470" y1="415" x2="500" y2="415" stroke="rgba(0,229,195,.5)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="505" y="419" fill="#9aaac8" font-size="9" font-family="IBM Plex Sans,sans-serif">Outbound (PF → S3/LDAP)</text>
+    </svg>
+  </div>
+
+  <div class="g2" style="margin-top:var(--space-lg)">
+    <div class="card c-phase">
+      <div class="card__lbl">Why private subnets for PF engines</div>
+      <div class="card__title">Defence in depth</div>
+      <div class="card__body">PingFederate nodes process authentication requests with access to private keys, LDAP credentials, and configuration secrets. Placing them in private subnets means there is no route from the internet directly to these nodes — only through the NLB, which enforces health checks and port-level access control. A compromised internet-facing component cannot directly reach the PF nodes.</div>
+    </div>
+    <div class="card c-teal">
+      <div class="card__label">Why NAT Gateway for outbound</div>
+      <div class="card__title">Private access to AWS services</div>
+      <div class="card__body">PF engine nodes need to reach AWS services (S3 for config, SSM for parameter lookups, package repositories during AMI baking). Without a NAT Gateway, private subnet instances have no path to the internet or AWS service endpoints. The NAT GW provides a controlled, one-way outbound path — inbound connections are still blocked.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 4: SECURITY GROUPS ── -->
+<section class="sec" id="security-groups">
+  <div class="sec-lbl">Security groups</div>
+  <h2 class="sec-title">Security groups — the instance-level firewall</h2>
+  <div class="sec-body">
+    <p>Security groups are stateful, instance-level firewalls. Unlike NACLs (which are stateless and apply at the subnet level), security groups track connection state — an allowed inbound connection automatically allows the return traffic. This is why security groups are the primary network control mechanism in AWS, not NACLs.</p>
+    <p>In Terraform, security groups support two patterns for managing rules: inline rules (defined inside the <code>aws_security_group</code> block) and separate <code>aws_security_group_rule</code> resources. Enterprise deployments almost always use separate rule resources to avoid state conflicts when rules are added dynamically and to make the rules individually reviewable in plan output.</p>
+  </div>
+
+  <div class="cb">
+    <div class="cb__term">SG-to-SG references — the enterprise pattern</div>
+    <div class="cb__def">Instead of specifying CIDR blocks in security group rules, enterprise Terraform uses SG-to-SG references: "allow inbound traffic from instances that have security group X attached." This is more robust than CIDRs — it doesn't break when IP addresses change, it explicitly models trust relationships between components, and it provides clean audit evidence of which component can talk to which.</div>
+  </div>
+
+  <div class="cb-code">
+    <div class="cb-code__hdr"><span class="cb-code__lang">HCL</span><span class="cb-code__file">security_groups.tf — complete PingFederate SG set</span></div>
+    <div class="cb-code__body"><pre><span class="c"># ── NLB SECURITY GROUP ────────────────────────────────────────────────</span>
+<span class="c"># NLBs don't actually use security groups for TCP passthrough,</span>
+<span class="c"># but ALBs do. Included here for ALB/admin traffic pattern.</span>
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"nlb"</span> {
+  <span class="k">name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}nlb-sg"</span>
+  <span class="k">description</span> = <span class="s">"PingFederate Network Load Balancer"</span>
+  <span class="k">vpc_id</span>      = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+  <span class="k">tags</span>        = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}nlb-sg"</span> })
+}
+
+<span class="c"># Allow federation traffic from the internet</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"nlb_ingress_federation"</span> {
+  <span class="k">type</span>              = <span class="s">"ingress"</span>
+  <span class="k">security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">nlb</span>.<span class="n">id</span>
+  <span class="k">from_port</span>         = <span class="num">9031</span>
+  <span class="k">to_port</span>           = <span class="num">9031</span>
+  <span class="k">protocol</span>          = <span class="s">"tcp"</span>
+  <span class="k">cidr_blocks</span>       = [<span class="s">"0.0.0.0/0"</span>]  <span class="c"># public federation endpoint</span>
+  <span class="k">description</span>       = <span class="s">"PingFederate federation endpoint"</span>
+}
+
+<span class="c"># Allow HTTPS for OIDC/OAuth — if using ALB for this path</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"nlb_ingress_https"</span> {
+  <span class="k">type</span>              = <span class="s">"ingress"</span>
+  <span class="k">security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">nlb</span>.<span class="n">id</span>
+  <span class="k">from_port</span>         = <span class="num">443</span>
+  <span class="k">to_port</span>           = <span class="num">443</span>
+  <span class="k">protocol</span>          = <span class="s">"tcp"</span>
+  <span class="k">cidr_blocks</span>       = [<span class="s">"0.0.0.0/0"</span>]
+  <span class="k">description</span>       = <span class="s">"HTTPS for OIDC endpoints"</span>
+}
+
+<span class="c"># Outbound: all (NLB needs to reach PF engines)</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"nlb_egress_all"</span> {
+  <span class="k">type</span>              = <span class="s">"egress"</span>
+  <span class="k">security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">nlb</span>.<span class="n">id</span>
+  <span class="k">from_port</span>         = <span class="num">0</span>
+  <span class="k">to_port</span>           = <span class="num">0</span>
+  <span class="k">protocol</span>          = <span class="s">"-1"</span>
+  <span class="k">cidr_blocks</span>       = [<span class="s">"0.0.0.0/0"</span>]
+  <span class="k">description</span>       = <span class="s">"All outbound"</span>
+}
+
+<span class="c"># ── PF ENGINE SECURITY GROUP ──────────────────────────────────────────</span>
+<span class="k">resource</span> <span class="s">"aws_security_group"</span> <span class="s">"pf_engine"</span> {
+  <span class="k">name</span>        = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-engine-sg"</span>
+  <span class="k">description</span> = <span class="s">"PingFederate engine nodes — private subnet"</span>
+  <span class="k">vpc_id</span>      = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+  <span class="k">tags</span>        = <span class="n">merge</span>(<span class="v">local.common_tags</span>, { <span class="n">Name</span> = <span class="s">"${</span><span class="v">local.name_prefix</span><span class="s">}pf-engine-sg"</span> })
+}
+
+<span class="c"># Federation traffic — ONLY from NLB security group, not from the internet</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"pf_ingress_federation_from_nlb"</span> {
+  <span class="k">type</span>                     = <span class="s">"ingress"</span>
+  <span class="k">security_group_id</span>        = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+  <span class="k">from_port</span>                = <span class="num">9031</span>
+  <span class="k">to_port</span>                  = <span class="num">9031</span>
+  <span class="k">protocol</span>                 = <span class="s">"tcp"</span>
+  <span class="k">source_security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">nlb</span>.<span class="n">id</span>  <span class="c"># SG-to-SG reference!</span>
+  <span class="k">description</span>              = <span class="s">"Federation traffic from NLB only"</span>
+}
+
+<span class="c"># Admin console — ONLY from bastion/VPN security group</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"pf_ingress_admin_from_bastion"</span> {
+  <span class="k">type</span>                     = <span class="s">"ingress"</span>
+  <span class="k">security_group_id</span>        = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+  <span class="k">from_port</span>                = <span class="num">9999</span>
+  <span class="k">to_port</span>                  = <span class="num">9999</span>
+  <span class="k">protocol</span>                 = <span class="s">"tcp"</span>
+  <span class="k">source_security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">bastion</span>.<span class="n">id</span>
+  <span class="k">description</span>              = <span class="s">"PF admin console from bastion only"</span>
+}
+
+<span class="c"># PF clustering port — engines communicate with each other</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"pf_ingress_cluster"</span> {
+  <span class="k">type</span>                     = <span class="s">"ingress"</span>
+  <span class="k">security_group_id</span>        = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+  <span class="k">from_port</span>                = <span class="num">7600</span>
+  <span class="k">to_port</span>                  = <span class="num">7600</span>
+  <span class="k">protocol</span>                 = <span class="s">"tcp"</span>
+  <span class="k">source_security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>  <span class="c"># self-reference!</span>
+  <span class="k">description</span>              = <span class="s">"JGroups cluster communication between PF nodes"</span>
+}
+
+<span class="c"># Outbound: all — PF needs to reach S3, LDAP, CAs, OCSP</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"pf_egress_all"</span> {
+  <span class="k">type</span>              = <span class="s">"egress"</span>
+  <span class="k">security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+  <span class="k">from_port</span>         = <span class="num">0</span>
+  <span class="k">to_port</span>           = <span class="num">0</span>
+  <span class="k">protocol</span>          = <span class="s">"-1"</span>
+  <span class="k">cidr_blocks</span>       = [<span class="s">"0.0.0.0/0"</span>]
+  <span class="k">description</span>       = <span class="s">"All outbound — routes via NAT GW to S3/LDAP/CAs"</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECTION 5: PORT REFERENCE ── -->
+<section class="sec" id="ports">
+  <div class="sec-lbl">PingFederate port reference</div>
+  <h2 class="sec-title">Every port your security groups need to know</h2>
+  <div class="sec-body">
+    <p>Your IAM background makes this straightforward — you already know what PingFederate does. Here is the complete port map so your security group rules are precise and defensible in any audit or architecture review.</p>
+  </div>
+  <div class="dw" style="padding:var(--space-lg)">
+    <div class="dw__lbl">PingFederate Port Reference — Inbound &amp; Outbound</div>
+    <table class="tbl">
+      <thead><tr><th>Port</th><th>Protocol</th><th>Direction</th><th>Source/Destination</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>9031</td><td>TCP/TLS</td><td>Inbound</td><td>NLB → PF Engine</td><td>Federation runtime: SAML, OIDC, OAuth 2.0, WS-Fed. Primary application port.</td></tr>
+        <tr><td>443</td><td>HTTPS</td><td>Inbound</td><td>ALB → PF Engine</td><td>OIDC/OAuth endpoints if terminated by ALB. Alt path to 9031 in some configs.</td></tr>
+        <tr><td>9999</td><td>HTTPS</td><td>Inbound</td><td>Bastion → PF Engine</td><td>PingFederate administrative console. Never exposed externally.</td></tr>
+        <tr><td>7600</td><td>TCP</td><td>Inbound/Outbound</td><td>PF Engine ↔ PF Engine</td><td>JGroups cluster communication — engine cluster state synchronisation.</td></tr>
+        <tr><td>7500</td><td>TCP</td><td>Inbound/Outbound</td><td>PF Engine ↔ PF Engine</td><td>JGroups FD (failure detection) — used alongside 7600 in some PF versions.</td></tr>
+        <tr><td>389 / 636</td><td>TCP/TLS</td><td>Outbound</td><td>PF Engine → LDAP/AD</td><td>LDAP (389) or LDAPS (636) to your Active Directory / LDAP data store.</td></tr>
+        <tr><td>443</td><td>HTTPS</td><td>Outbound</td><td>PF Engine → AWS APIs</td><td>S3, SSM, STS, CloudWatch — all via NAT GW to AWS service endpoints.</td></tr>
+        <tr><td>80 / 443</td><td>HTTP/S</td><td>Outbound</td><td>PF Engine → CAs / OCSP</td><td>Certificate revocation checks, CRL distribution points, OCSP responders.</td></tr>
+        <tr><td>8080</td><td>HTTP</td><td>Inbound</td><td>NLB health check → PF Engine</td><td>PF runtime health check endpoint (configurable). Used by NLB to gate traffic.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── SECTION 6: NACL vs SG ── -->
+<section class="sec" id="nacl-vs-sg">
+  <div class="sec-lbl">NACLs vs security groups</div>
+  <h2 class="sec-title">When to use each — and why most teams stick to security groups</h2>
+  <div class="sec-body">
+    <p>Network ACLs (NACLs) and security groups both control traffic at the network level, but they operate very differently. Understanding the distinction is important for reading existing Terraform configurations and for participating in network architecture discussions.</p>
+  </div>
+  <div class="dw" style="padding:var(--space-lg)">
+    <div class="dw__lbl">NACL vs Security Group — Key Differences</div>
+    <table class="tbl">
+      <thead><tr><th>Attribute</th><th>Network ACL (NACL)</th><th>Security Group</th></tr></thead>
+      <tbody>
+        <tr><td>Applies at</td><td>Subnet level — all traffic in/out of subnet</td><td>Instance level — attached to ENI</td></tr>
+        <tr><td>State</td><td><strong>Stateless</strong> — must allow both inbound AND return traffic</td><td><strong>Stateful</strong> — return traffic automatically allowed</td></tr>
+        <tr><td>Rule evaluation</td><td>Numbered rules, lowest number wins, ends at DENY</td><td>All rules evaluated, most permissive wins</td></tr>
+        <tr><td>Default</td><td>Allow all inbound and outbound (default NACL)</td><td>Deny all inbound, allow all outbound (default SG)</td></tr>
+        <tr><td>Allow/Deny</td><td>Can explicitly DENY traffic</td><td>Allow-only — no explicit deny rules</td></tr>
+        <tr><td>Enterprise usage</td><td>Used for broad subnet-level blocks (compliance)</td><td>Used for all instance-level access control</td></tr>
+        <tr><td>Terraform resource</td><td><code>aws_network_acl</code></td><td><code>aws_security_group</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="cb-copper cb">
+    <div class="cb__term">Why NACLs are a blunt instrument</div>
+    <div class="cb__def">Because NACLs are stateless, you must allow both the request and the response explicitly. For a TCP connection on an ephemeral port (which is how every HTTP/HTTPS/TLS response works), this means allowing a broad range of return ports (1024–65535). Security groups handle this automatically. As a result, most enterprise teams only use NACLs for broad compliance requirements — e.g. "deny all traffic from known-bad CIDR ranges at the subnet level" — and rely on security groups for all meaningful access control.</div>
+  </div>
+</section>
+
+<!-- ── SECTION 7: VPC OUTPUTS ── -->
+<section class="sec" id="vpc-outputs">
+  <div class="sec-lbl">Networking outputs</div>
+  <h2 class="sec-title">Exposing network IDs for downstream modules</h2>
+  <div class="sec-body">
+    <p>The VPC and subnet IDs produced by this networking configuration are consumed by every other module — IAM instance profiles need the VPC ID for certain policies, the ASG needs the private subnet IDs, the NLB needs the public subnet IDs, and the security group IDs are referenced by every compute resource. Outputs are how those values flow between configurations.</p>
+  </div>
+  <div class="cb-code">
+    <div class="cb-code__hdr"><span class="cb-code__lang">HCL</span><span class="cb-code__file">outputs.tf — networking module outputs</span></div>
+    <div class="cb-code__body"><pre><span class="k">output</span> <span class="s">"vpc_id"</span> {
+  <span class="k">description</span> = <span class="s">"VPC ID — consumed by all downstream modules"</span>
+  <span class="k">value</span>       = <span class="n">aws_vpc</span>.<span class="v">main</span>.<span class="n">id</span>
+}
+
+<span class="k">output</span> <span class="s">"private_subnet_ids"</span> {
+  <span class="k">description</span> = <span class="s">"Private subnet IDs — for ASG placement"</span>
+  <span class="k">value</span>       = [<span class="k">for</span> <span class="n">s</span> <span class="k">in</span> <span class="n">aws_subnet</span>.<span class="v">private</span> : <span class="n">s</span>.<span class="v">id</span>]
+}
+
+<span class="k">output</span> <span class="s">"public_subnet_ids"</span> {
+  <span class="k">description</span> = <span class="s">"Public subnet IDs — for NLB/ALB placement"</span>
+  <span class="k">value</span>       = [<span class="k">for</span> <span class="n">s</span> <span class="k">in</span> <span class="n">aws_subnet</span>.<span class="v">public</span> : <span class="n">s</span>.<span class="v">id</span>]
+}
+
+<span class="k">output</span> <span class="s">"pf_engine_sg_id"</span> {
+  <span class="k">description</span> = <span class="s">"PF engine security group ID — attached to Launch Template"</span>
+  <span class="k">value</span>       = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+}
+
+<span class="k">output</span> <span class="s">"nlb_sg_id"</span> {
+  <span class="k">description</span> = <span class="s">"NLB security group ID — for PF engine SG rule source"</span>
+  <span class="k">value</span>       = <span class="n">aws_security_group</span>.<span class="v">nlb</span>.<span class="n">id</span>
+}</pre>
+    </div>
+  </div>
+  <div class="mn">
+    <div class="mn__av">🧑‍🏫</div>
+    <div class="mn__body">
+      <div class="mn__lbl">The dependency chain in practice</div>
+      <div class="mn__text">Notice how the networking module's outputs become the inputs to the compute module (M06). The ASG needs <code>private_subnet_ids</code> to know where to launch instances. The Launch Template needs <code>pf_engine_sg_id</code> to attach the right security group. The NLB needs <code>public_subnet_ids</code> to place its nodes correctly. <strong>This output → input chain is how enterprise Terraform configurations are composed from independent modules</strong> — each module has clear boundaries, and the state of each is accessible via remote state data sources.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── KNOWLEDGE CHECKS ── -->
+<section class="sec" id="knowledge-checks">
+  <div class="sec-lbl">Knowledge check</div>
+  <h2 class="sec-title">Test your networking understanding</h2>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc__q"><span class="kc-icon">Q</span>Why does the NAT Gateway live in the public subnet rather than the private subnet? Isn't it there to serve private subnet instances?<span class="kc-chev">▼</span></div>
+    <div class="kc__a"><strong style="color:var(--phase-color)">The NAT Gateway itself needs a path to the internet — which means it needs to be in a subnet with a route to the Internet Gateway.</strong> Private subnets have no route to the IGW; that's what makes them private. The NAT Gateway sits in the public subnet, which has an IGW route, and serves as a "translator" for private subnet instances: outbound traffic from private instances goes to the NAT GW, which uses its Elastic IP to send it to the internet. Return traffic comes back to the Elastic IP and is forwarded back to the originating private instance. The private instance never has a public IP — the NAT GW provides address translation on its behalf.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc__q"><span class="kc-icon">Q</span>A security group rule uses <code>source_security_group_id</code> instead of <code>cidr_blocks</code>. What does this actually mean at the network level?<span class="kc-chev">▼</span></div>
+    <div class="kc__a"><strong style="color:var(--phase-color)">It means "allow traffic from any instance that has this security group attached to its network interface."</strong> AWS enforces this at the hypervisor level — when a packet arrives, AWS checks the source instance's attached security groups. If one of them matches the <code>source_security_group_id</code>, the traffic is allowed. This is more precise and more robust than CIDR-based rules because: (1) it doesn't break when IP addresses change, (2) it models the actual trust relationship ("the NLB can reach the PF engine"), and (3) it works across availability zones without knowing the IP ranges.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc__q"><span class="kc-icon">Q</span>The PF engine security group has a rule allowing port 7600 inbound from itself (the same security group ID as source). Why? What does "self-reference" mean in a security group context?<span class="kc-chev">▼</span></div>
+    <div class="kc__a"><strong style="color:var(--phase-color)">A self-referencing security group rule allows traffic between instances that share the same security group.</strong> In the PingFederate engine cluster, every engine node has the same security group attached. A self-referencing rule on port 7600 means: any engine can communicate with any other engine on that port, but no other instance can. This is the JGroups cluster communication port that PingFederate uses for cluster state synchronisation, session replication, and node discovery. Without it, a new engine instance joining the cluster after an AMI refresh would be isolated — it would not be able to join the cluster or receive replicated session state from existing nodes.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc__q"><span class="kc-icon">Q</span>In the Terraform configuration, both public and private subnets use <code>for_each = var.public_subnets</code> for the NAT Gateways and route tables. Why iterate over the public subnet map when creating private route tables?<span class="kc-chev">▼</span></div>
+    <div class="kc__a"><strong style="color:var(--phase-color)">Because there is one NAT Gateway per availability zone, and each AZ's NAT GW sits in that AZ's public subnet.</strong> The pattern ensures AZ-to-AZ correspondence: private-1a uses NAT-1a, private-1b uses NAT-1b. By iterating over the public subnet map (which is keyed by AZ name), we ensure the correct NAT Gateway is referenced for each AZ's private route table. If we used a single shared NAT Gateway, all private subnet traffic would route through one AZ — cross-AZ traffic incurs data transfer costs and introduces a single point of failure if that AZ's NAT GW becomes unavailable. The per-AZ pattern is both more resilient and more cost-effective in production.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc__q"><span class="kc-icon">Q</span>A colleague suggests removing the NAT Gateway to save costs — "PF just needs to talk to S3, and S3 has a VPC endpoint." Is this a reasonable trade-off?<span class="kc-chev">▼</span></div>
+    <div class="kc__a"><strong style="color:var(--phase-color)">Partially — but removing the NAT Gateway entirely requires careful analysis of everything PF needs to reach outbound.</strong> S3 can indeed be accessed via a VPC Gateway Endpoint (free) without a NAT GW. However, PF also needs to reach: LDAP/AD (on-premises, requires NAT or Direct Connect), OCSP responders and CRL distribution points (public internet), AWS SSM (can be replaced with VPC Interface Endpoints, at cost), and potentially OIDC discovery endpoints for upstream IdPs. If all of these can be served by VPC endpoints or private connectivity (Direct Connect, Transit Gateway), the NAT GW could be removed. In practice, most enterprise environments keep the NAT GW because the alternative — managing 6-8 VPC Interface Endpoints — costs more than the NAT GW and adds operational complexity. Always model the full outbound dependency list before removing NAT.</div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)">
+    <div class="kc__q"><span class="kc-icon">Q</span>You run <code>terraform plan</code> and see that Terraform wants to destroy and recreate two private subnets. What is the most likely cause and why is this potentially catastrophic?<span class="kc-chev">▼</span></div>
+    <div class="kc__a"><strong style="color:var(--phase-color)">The most likely cause is a CIDR block change or an availability zone change — both of which are immutable attributes that force subnet recreation.</strong> AWS subnets cannot have their CIDR blocks changed after creation. If the variable value for a subnet's CIDR changed, Terraform must destroy and recreate it. This is catastrophic because: (1) the ASG instances running in those subnets will be terminated when the subnet is destroyed, (2) all ENIs in the subnet are terminated, (3) any EFS mount targets, RDS subnet group memberships, or VPC endpoint associations in those subnets are also destroyed. The correct approach when you must change subnet CIDRs is a blue/green VPC migration — provision a new VPC with the new CIDR, migrate workloads, decommission the old VPC. Never allow Terraform to destroy production subnets with running workloads.</div>
+  </div>
+</section>
+
+<!-- ── MINI LAB ── -->
+<section class="sec" id="lab">
+  <div class="sec-lbl">Mini lab</div>
+  <h2 class="sec-title">Networking exercises</h2>
+
+  <div class="lab">
+    <div class="lab__hdr"><span class="lab__badge">Lab 04-A</span><span class="lab__title">Design the CIDR allocation for a three-AZ PingFederate deployment</span></div>
+    <div class="lab__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">Given a VPC CIDR of <code>10.10.0.0/16</code>, design a subnet plan for a three-AZ deployment (us-east-1a, us-east-1b, us-east-1c). Requirements:</p>
+      <ol>
+        <li>Three <strong>public</strong> subnets (one per AZ) — for NLB nodes and NAT Gateways</li>
+        <li>Three <strong>private</strong> subnets (one per AZ) — for PingFederate engine nodes</li>
+        <li>Each subnet must accommodate at least 50 instances</li>
+        <li>Leave room in the VPC CIDR for future expansion (at least 50% unused)</li>
+        <li>Write the <code>var.public_subnets</code> and <code>var.private_subnets</code> variable values in HCL map format</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--space-sm)">
+    <div class="kc__q"><span class="kc-icon">✓</span>Reveal Lab 04-A solution<span class="kc-chev">▼</span></div>
+    <div class="kc__a">
+      <div class="cb-code" style="margin:0">
+        <div class="cb-code__hdr"><span class="cb-code__lang">HCL</span><span class="cb-code__file">terraform.tfvars — subnet plan</span></div>
+        <div class="cb-code__body"><pre><span class="c"># VPC: 10.10.0.0/16 — 65,536 addresses total</span>
+<span class="c"># Using /24 subnets = 256 addresses each (251 usable, AWS reserves 5)</span>
+<span class="c"># 6 subnets × 256 = 1,536 addresses = ~2.3% of VPC space → 97.7% remaining</span>
+
+<span class="n">public_subnets</span> = {
+  <span class="s">"pub-1a"</span> = { <span class="n">cidr</span> = <span class="s">"10.10.1.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1a"</span> }
+  <span class="s">"pub-1b"</span> = { <span class="n">cidr</span> = <span class="s">"10.10.2.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1b"</span> }
+  <span class="s">"pub-1c"</span> = { <span class="n">cidr</span> = <span class="s">"10.10.3.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1c"</span> }
+}
+
+<span class="n">private_subnets</span> = {
+  <span class="s">"priv-1a"</span> = { <span class="n">cidr</span> = <span class="s">"10.10.11.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1a"</span> }
+  <span class="s">"priv-1b"</span> = { <span class="n">cidr</span> = <span class="s">"10.10.12.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1b"</span> }
+  <span class="s">"priv-1c"</span> = { <span class="n">cidr</span> = <span class="s">"10.10.13.0/24"</span>, <span class="n">az</span> = <span class="s">"us-east-1c"</span> }
+}
+
+<span class="c"># Gap between 10.10.3.x and 10.10.11.x is intentional —</span>
+<span class="c"># 10.10.4–10 reserved for future use (management subnets, RDS, etc.)</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab" style="margin-top:var(--space-xl)">
+    <div class="lab__hdr"><span class="lab__badge">Lab 04-B</span><span class="lab__title">Add a missing security group rule for LDAP access</span></div>
+    <div class="lab__body">
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:var(--space-md);">The PF engine security group is missing the outbound rule for LDAP access to Active Directory. The AD servers are in the <code>10.50.0.0/16</code> network and listen on port 636 (LDAPS). Write the Terraform resource block for this rule.</p>
+      <ol>
+        <li>Resource type: <code>aws_security_group_rule</code>, name: <code>pf_egress_ldaps</code></li>
+        <li>Direction: egress from <code>aws_security_group.pf_engine</code></li>
+        <li>Port 636, TCP, destination CIDR <code>10.50.0.0/16</code></li>
+        <li>Include a meaningful description</li>
+        <li>Bonus: also add port 389 (LDAP) with a note in the description that plain LDAP should only be used in dev environments</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="kc" onclick="toggleKC(this)" style="margin-top:var(--space-sm)">
+    <div class="kc__q"><span class="kc-icon">✓</span>Reveal Lab 04-B solution<span class="kc-chev">▼</span></div>
+    <div class="kc__a">
+      <div class="cb-code" style="margin:0">
+        <div class="cb-code__hdr"><span class="cb-code__lang">HCL</span><span class="cb-code__file">security_groups.tf — LDAP egress rules</span></div>
+        <div class="cb-code__body"><pre><span class="c"># LDAPS (port 636) — secure LDAP for production use</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"pf_egress_ldaps"</span> {
+  <span class="k">type</span>              = <span class="s">"egress"</span>
+  <span class="k">security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+  <span class="k">from_port</span>         = <span class="num">636</span>
+  <span class="k">to_port</span>           = <span class="num">636</span>
+  <span class="k">protocol</span>          = <span class="s">"tcp"</span>
+  <span class="k">cidr_blocks</span>       = [<span class="s">"10.50.0.0/16"</span>]
+  <span class="k">description</span>       = <span class="s">"LDAPS to Active Directory — 10.50.0.0/16 AD subnet"</span>
+}
+
+<span class="c"># BONUS: LDAP (port 389) — dev environments only</span>
+<span class="k">resource</span> <span class="s">"aws_security_group_rule"</span> <span class="s">"pf_egress_ldap"</span> {
+  <span class="k">count</span>             = <span class="v">var.environment</span> == <span class="s">"dev"</span> <span class="p">?</span> <span class="num">1</span> <span class="p">:</span> <span class="num">0</span>  <span class="c"># only in dev</span>
+  <span class="k">type</span>              = <span class="s">"egress"</span>
+  <span class="k">security_group_id</span> = <span class="n">aws_security_group</span>.<span class="v">pf_engine</span>.<span class="n">id</span>
+  <span class="k">from_port</span>         = <span class="num">389</span>
+  <span class="k">to_port</span>           = <span class="num">389</span>
+  <span class="k">protocol</span>          = <span class="s">"tcp"</span>
+  <span class="k">cidr_blocks</span>       = [<span class="s">"10.50.0.0/16"</span>]
+  <span class="k">description</span>       = <span class="s">"LDAP (plaintext) — dev only. Use LDAPS in prod."</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECT REVIEW ── -->
+<div class="ar">
+  <div class="ar__hdr">
+    <span class="ar__badge">Senior Review</span>
+    <span class="ar__title">Networking questions a platform engineer might ask you</span>
+  </div>
+  <ul class="ar__list">
+    <li><span class="ar-n">01</span>The security team wants all PingFederate outbound traffic to route through a centralised inspection firewall rather than directly to the NAT Gateway. How would you modify the Terraform networking configuration to support this? What changes to the route tables?</li>
+    <li><span class="ar-n">02</span>We are migrating the PingFederate environment from a shared VPC managed by the networking team to an isolated VPC per application. The PF Terraform currently uses <code>data "terraform_remote_state"</code> to read the networking outputs. What changes when we own the VPC ourselves?</li>
+    <li><span class="ar-n">03</span>The platform team wants to add a VPC Interface Endpoint for S3 to avoid NAT Gateway costs for S3 traffic. What Terraform resources would you add, and how would this change (or not change) the PF engine security group rules?</li>
+    <li><span class="ar-n">04</span>A new engineer added a security group rule with <code>cidr_blocks = ["0.0.0.0/0"]</code> for inbound port 9999 (PF admin console). The plan shows it will be applied. What would you do before approving this PR?</li>
+    <li><span class="ar-n">05</span>After an AMI refresh, three of the new PF engine instances are failing the NLB health check on port 8080. The instances are running and PF is started. What network-layer checks would you perform first, and how does the Terraform security group configuration help or limit your diagnosis?</li>
+  </ul>
+</div>
+
+<!-- ── TAKEAWAY ── -->
+<div class="tk">
+  <div class="tk__hdr">
+    <div class="tk__icon">◆</div>
+    <div class="tk__title">Module 04 — Key Takeaways</div>
+  </div>
+  <ul class="tk-list">
+    <li>The VPC is the first resource provisioned — everything else depends on it. Terraform's implicit dependency graph ensures this ordering automatically through resource references.</li>
+    <li>PingFederate engine nodes live in private subnets with no public IPs. All inbound federation traffic arrives via the NLB in public subnets. All outbound traffic routes through NAT Gateways in public subnets.</li>
+    <li>One NAT Gateway per AZ is the production pattern — per-AZ resilience and cost-efficient cross-AZ traffic avoidance. A single shared NAT GW is acceptable only in dev/test.</li>
+    <li>Security groups are stateful and instance-level. NACLs are stateless and subnet-level. Use security groups for all access control; NACLs only for broad compliance blocks.</li>
+    <li>SG-to-SG references are the enterprise standard — they model trust relationships, survive IP changes, and provide clean audit evidence. Avoid CIDR blocks where a SG reference can be used instead.</li>
+    <li>The PF engine self-references port 7600 (JGroups) so cluster nodes can communicate with each other without opening that port to any other instance in the VPC.</li>
+    <li>VPC and subnet outputs (IDs) flow to downstream modules as inputs. The networking module is the dependency of all compute, load balancer, and storage modules.</li>
+    <li>Subnet CIDR blocks are immutable — changing them forces destroy and recreate. In production, this means migrating workloads first, not letting Terraform destroy live subnets.</li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="toc">
+    <div class="toc__lbl">In this module</div>
+    <a class="toc__item" href="#bridge">Bridge from M03</a>
+    <a class="toc__item" href="#vpc-fundamentals">VPC fundamentals</a>
+    <a class="toc__item" href="#topology">PF network topology</a>
+    <a class="toc__item" href="#security-groups">Security groups</a>
+    <a class="toc__item" href="#ports">Port reference</a>
+    <a class="toc__item" href="#nacl-vs-sg">NACLs vs SGs</a>
+    <a class="toc__item" href="#vpc-outputs">Networking outputs</a>
+    <a class="toc__item" href="#knowledge-checks">Knowledge checks</a>
+    <a class="toc__item" href="#lab">Mini lab</a>
+  </div>
+  <div class="qr">
+    <div class="qr__lbl">Key Resources</div>
+    <div class="qr__item"><span class="qr__term">aws_vpc</span><span class="qr__def">VPC container</span></div>
+    <div class="qr__item"><span class="qr__term">aws_subnet</span><span class="qr__def">Public or private subnet</span></div>
+    <div class="qr__item"><span class="qr__term">aws_internet_gateway</span><span class="qr__def">Public subnet internet</span></div>
+    <div class="qr__item"><span class="qr__term">aws_nat_gateway</span><span class="qr__def">Private subnet outbound</span></div>
+    <div class="qr__item"><span class="qr__term">aws_route_table</span><span class="qr__def">Subnet routing</span></div>
+    <div class="qr__item"><span class="qr__term">aws_security_group</span><span class="qr__def">Instance firewall</span></div>
+    <div class="qr__item"><span class="qr__term">aws_security_group_rule</span><span class="qr__def">Individual SG rule</span></div>
+    <div class="qr__item"><span class="qr__term">aws_eip</span><span class="qr__def">Elastic IP for NAT</span></div>
+  </div>
+  <div class="qr">
+    <div class="qr__lbl">PF Port Quick Ref</div>
+    <div class="qr__item"><span class="qr__term">9031</span><span class="qr__def">Federation (SAML/OIDC)</span></div>
+    <div class="qr__item"><span class="qr__term">9999</span><span class="qr__def">Admin console</span></div>
+    <div class="qr__item"><span class="qr__term">7600</span><span class="qr__def">JGroups cluster</span></div>
+    <div class="qr__item"><span class="qr__term">636</span><span class="qr__def">LDAPS to AD</span></div>
+    <div class="qr__item"><span class="qr__term">8080</span><span class="qr__def">NLB health check</span></div>
+  </div>
+  <div class="qr">
+    <div class="qr__lbl">Series Progress</div>
+    <div style="padding:var(--space-sm) 0">
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:var(--space-sm);background:var(--bg-surface-2);border-radius:var(--radius-md)">
+        <span style="font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:var(--radius-pill);background:var(--teal-glow);border:1px solid var(--teal-dim);color:var(--teal-dim)">M01–M03</span>
+        <span style="color:var(--text-tertiary);font-size:13px">›</span>
+        <span style="font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:var(--radius-pill);background:var(--phase-glow);border:1px solid var(--phase-color);color:var(--phase-color);font-weight:600;box-shadow:0 0 10px var(--phase-glow)">M04</span>
+        <span style="color:var(--text-tertiary);font-size:13px">›</span>
+        <span style="font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:var(--radius-pill);background:var(--bg-surface-3);border:1px solid var(--border-bright);color:var(--text-tertiary)">M05–10 ★</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /content -->
+
+<!-- BRIDGE -->
+<div class="bridge">
+  <div class="bridge-card">
+    <div class="bridge-card__eyebrow">Coming up next · Module 05</div>
+    <div class="bridge-card__title"><span>IAM &amp; Instance Profiles</span> — Your Domain, Applied to Infrastructure</div>
+    <div class="bridge-card__body">
+      The network foundation is in place. The VPC exists. The private subnets are ready for PingFederate engine nodes. The security groups define the traffic rules. The outputs expose IDs for downstream modules to consume.<br><br>
+      The next dependency before we can launch a single EC2 instance is identity. The PingFederate engine node needs an IAM role that lets it read the configuration bucket in S3, write logs to CloudWatch, register with Systems Manager, and interact with other AWS services — all without storing any credentials on the instance. This is the instance profile pattern, and it's where your deep IAM expertise gives you a significant structural advantage over most infrastructure engineers.
+    </div>
+    <div class="bridge-card__concepts">
+      <span class="badge b-new">IAM roles</span>
+      <span class="badge b-new">Trust policies</span>
+      <span class="badge b-new">Instance profiles</span>
+      <span class="badge b-new">Permission policies</span>
+      <span class="badge b-new">Least privilege</span>
+      <span class="badge b-new">S3 access for PF</span>
+    </div>
+    <a href="module-05.html" class="bridge-card__btn">Continue to Module 05 →</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer__l">M04 · VPC, Subnets &amp; Security Groups · Phase 2 · Terraform Mastery Series</div>
+  <div style="display:flex;gap:var(--space-sm);align-items:center">
+    <a href="module-03.html" class="badge b-prereq" style="text-decoration:none">← M03</a>
+    <a href="index.html" class="badge b-prereq" style="text-decoration:none">Index</a>
+    <a href="module-05.html" class="badge b-phase" style="text-decoration:none">M05 →</a>
+  </div>
+</footer>
+
+</div><!-- /portal-shell -->
+
+<script>
+function toggleKC(el){el.classList.toggle('open')}
+(function(){
+  const items=document.querySelectorAll('.toc__item');
+  const secs=[];
+  items.forEach(i=>{const id=i.getAttribute('href').replace('#','');const el=document.getElementById(id);if(el)secs.push({el,item:i})});
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){items.forEach(i=>i.classList.remove('active'));const f=secs.find(s=>s.el===en.target);if(f)f.item.classList.add('active')}}),{rootMargin:'-20% 0px -70% 0px'});
+  secs.forEach(s=>io.observe(s.el));
+})();
+(function(){
+  const io=new IntersectionObserver(e=>e.forEach(en=>{if(en.isIntersecting){en.target.style.opacity='1';en.target.style.transform='translateY(0)';io.unobserve(en.target)}}),{threshold:.06});
+  document.querySelectorAll('.sec,.card,.dw,.lab,.ar,.tk,.bridge-card,.kc').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(12px)';el.style.transition='opacity .45s ease,transform .45s ease';io.observe(el)});
+})();
+</script>
+</body>
+</html>

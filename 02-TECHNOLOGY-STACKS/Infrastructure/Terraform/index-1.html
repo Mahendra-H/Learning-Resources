@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terraform Mastery — PingFederate Migration Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══ TOKENS ══════════════════════════════════════════════════════ */
+:root{
+  --bg:     #06080e;
+  --s1:     #0b0e18;
+  --s2:     #0f1422;
+  --s3:     #141a2e;
+  --s4:     #1a2238;
+  --b1:     #1c2640;
+  --b2:     #263350;
+  --b3:     #334466;
+
+  --t1:     #e8eef8;
+  --t2:     #9aaac8;
+  --t3:     #4a5a7a;
+  --t4:     #2a3550;
+
+  /* Phase palette */
+  --vi:     #9b7fff;   --vi-d:#6040d0; --vi-b:rgba(155,127,255,.10); --vi-r:rgba(155,127,255,.30);
+  --tl:     #00e5c3;   --tl-d:#00a888; --tl-b:rgba(0,229,195,.10);  --tl-r:rgba(0,229,195,.30);
+  --sa:     #4a9eff;   --sa-d:#1a68cc; --sa-b:rgba(74,158,255,.10); --sa-r:rgba(74,158,255,.30);
+  --co:     #ff9040;   --co-d:#cc5800; --co-b:rgba(255,144,64,.10); --co-r:rgba(255,144,64,.30);
+  --gd:     #ffd060;   --gd-b:rgba(255,208,96,.10);
+  --rz:     #ff5575;   --rz-b:rgba(255,85,117,.10);
+  --jd:     #3ed4a0;
+
+  --sans:   'Space Grotesk', system-ui, sans-serif;
+  --mono:   'JetBrains Mono', 'Courier New', monospace;
+
+  --r-sm:   4px;
+  --r-md:   8px;
+  --r-lg:   14px;
+  --r-xl:   20px;
+  --r-pill: 999px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:15px}
+body{background:var(--bg);color:var(--t1);font-family:var(--sans);line-height:1.7;overflow-x:hidden}
+
+/* Subtle starfield bg */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(155,127,255,.5) 0%, transparent 0%),
+    radial-gradient(1px 1px at 34% 7%,  rgba(74,158,255,.4) 0%, transparent 0%),
+    radial-gradient(1px 1px at 56% 22%, rgba(0,229,195,.4) 0%, transparent 0%),
+    radial-gradient(1px 1px at 78% 11%, rgba(255,144,64,.4) 0%, transparent 0%),
+    radial-gradient(1px 1px at 91% 33%, rgba(155,127,255,.3) 0%, transparent 0%),
+    radial-gradient(1px 1px at 23% 44%, rgba(74,158,255,.3) 0%, transparent 0%),
+    radial-gradient(1px 1px at 67% 55%, rgba(0,229,195,.3) 0%, transparent 0%),
+    radial-gradient(1px 1px at 44% 66%, rgba(255,144,64,.3) 0%, transparent 0%),
+    radial-gradient(1.5px 1.5px at 8% 77%, rgba(155,127,255,.4) 0%, transparent 0%),
+    radial-gradient(1.5px 1.5px at 89% 82%, rgba(74,158,255,.3) 0%, transparent 0%);
+  background-size: 100% 100%;
+}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+::selection{background:var(--vi-b);color:var(--vi)}
+a{color:inherit;text-decoration:none}
+
+/* ═══ LAYOUT ═════════════════════════════════════════════════════ */
+.wrap{max-width:1100px;margin:0 auto;padding:0 40px;position:relative;z-index:1}
+@media(max-width:680px){.wrap{padding:0 18px}}
+
+/* ═══ NAV ════════════════════════════════════════════════════════ */
+.nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(6,8,14,.88);
+  backdrop-filter:blur(18px) saturate(1.6);
+  border-bottom:1px solid var(--b1);
+}
+.nav-inner{
+  max-width:1100px;margin:0 auto;padding:0 40px;
+  height:52px;display:flex;align-items:center;gap:16px;
+}
+.nav-logo{
+  font-family:var(--mono);font-size:12px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--tl);white-space:nowrap;
+}
+.nav-logo span{color:var(--t3);font-weight:400}
+.nav-sep{width:1px;height:18px;background:var(--b2);flex-shrink:0}
+.nav-sub{font-family:var(--mono);font-size:10px;color:var(--t3);flex:1;letter-spacing:.04em}
+.nav-pill{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:3px 11px;border-radius:var(--r-pill);
+  background:var(--tl-b);border:1px solid var(--tl-r);color:var(--tl);
+  letter-spacing:.04em;white-space:nowrap;
+}
+
+/* ═══ HERO ═══════════════════════════════════════════════════════ */
+.hero{
+  position:relative;padding:80px 0 56px;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 55% 60% at 8% 40%, rgba(155,127,255,.07) 0%,transparent 65%),
+    radial-gradient(ellipse 40% 50% at 92% 20%, rgba(0,229,195,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 30% 40% at 55% 0%,  rgba(74,158,255,.05) 0%,transparent 55%);
+}
+/* Grid fade top-left */
+.hero::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(28,38,64,.5) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(28,38,64,.5) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse 50% 70% at 4% 50%,black 0%,transparent 70%);
+  opacity:.5;
+}
+.hero-inner{position:relative;z-index:1}
+.hero-eye{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--tl);
+  margin-bottom:20px;
+}
+.hero-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--tl);
+  box-shadow:0 0 8px var(--tl);
+  animation:dot-pulse 2.2s ease-in-out infinite;
+}
+@keyframes dot-pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--tl)}50%{opacity:.4;box-shadow:0 0 3px var(--tl)}}
+.hero-h1{
+  font-family:var(--sans);font-size:clamp(36px,5.5vw,68px);font-weight:700;
+  letter-spacing:-.03em;line-height:1.04;color:var(--t1);
+  margin-bottom:16px;max-width:860px;
+}
+.hero-h1 .ac-vi{color:var(--vi)}
+.hero-h1 .ac-tl{color:var(--tl)}
+.hero-sub{
+  font-size:17px;font-weight:300;color:var(--t2);
+  max-width:600px;line-height:1.72;margin-bottom:32px;
+}
+.hero-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:56px}
+.tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  padding:4px 11px;border-radius:var(--r-pill);letter-spacing:.04em;
+  white-space:nowrap;
+}
+.tag-vi{background:var(--vi-b);border:1px solid var(--vi-r);color:var(--vi)}
+.tag-tl{background:var(--tl-b);border:1px solid var(--tl-r);color:var(--tl)}
+.tag-sa{background:var(--sa-b);border:1px solid var(--sa-r);color:var(--sa)}
+.tag-co{background:var(--co-b);border:1px solid var(--co-r);color:var(--co)}
+.tag-mu{background:var(--s2);border:1px solid var(--b2);color:var(--t3)}
+
+/* ═══ SECTION LABEL ═══════════════════════════════════════════════ */
+.sec-lbl{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:9.5px;font-weight:600;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--t3);
+  margin-bottom:20px;
+}
+.sec-lbl::before{content:'';width:22px;height:1px;background:var(--vi);flex-shrink:0}
+.sec-lbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--b1) 0%,transparent 100%)}
+
+/* ═══ RADIAL MIND MAP ════════════════════════════════════════════ */
+.map-wrap{
+  background:var(--s1);border:1px solid var(--b1);
+  border-radius:var(--r-xl);overflow:hidden;margin-bottom:80px;
+  position:relative;
+}
+.map-wrap::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--vi),var(--tl),var(--sa),var(--co));
+}
+.map-svg-box{position:relative;width:100%}
+.map-svg-box svg{display:block;width:100%;height:auto}
+
+/* Animations */
+@keyframes dash-flow{to{stroke-dashoffset:-40}}
+@keyframes ring-pulse{0%{r:60;opacity:.5}100%{r:130;opacity:0}}
+@keyframes float-node{0%,100%{transform:translateY(0px)}50%{transform:translateY(-4px)}}
+
+.dline{animation:dash-flow 2.8s linear infinite}
+.rpulse{animation:ring-pulse 3.2s ease-out infinite}
+.mnode{cursor:pointer;transition:opacity .2s}
+.mnode:hover{opacity:.75}
+.mnode.active .mnring{stroke-width:3!important;filter:drop-shadow(0 0 6px currentColor)}
+
+/* Detail panel */
+.map-panel{border-top:1px solid var(--b1);min-height:170px}
+.map-hint{
+  padding:30px;text-align:center;color:var(--t3);
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  display:flex;align-items:center;justify-content:center;gap:8px;min-height:140px;
+}
+.map-hint-arrow{font-size:18px;animation:bounce-x 1.6s ease-in-out infinite}
+@keyframes bounce-x{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+.map-detail{display:none}
+.map-detail.show{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.mdd-l{padding:26px 28px;border-right:1px solid var(--b1)}
+.mdd-r{padding:26px 28px}
+.mdd-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}
+.mdd-name{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+.mdd-ref{
+  font-family:var(--mono);font-size:9.5px;padding:2px 8px;
+  border-radius:var(--r-sm);background:var(--s3);border:1px solid var(--b1);
+  color:var(--t3);display:inline-block;letter-spacing:.04em;
+}
+.mdd-qlbl,.mdd-plbl{
+  font-family:var(--mono);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--t3);margin-bottom:10px;
+}
+.mdd-qs{list-style:none;display:flex;flex-direction:column;gap:7px}
+.mdd-qs li{
+  font-size:13.5px;color:var(--t2);display:flex;gap:8px;
+  align-items:flex-start;line-height:1.55;
+}
+.mdd-qs li::before{
+  content:'›';font-family:var(--mono);font-weight:700;
+  font-size:14px;flex-shrink:0;margin-top:0;color:var(--t3);
+}
+.mdd-principle{
+  font-size:13.5px;font-style:italic;line-height:1.8;
+  padding:14px 16px;border-radius:var(--r-md);
+  border-left:3px solid;margin-bottom:14px;color:var(--t1);
+}
+.mdd-tip{
+  font-size:12.5px;color:var(--t2);padding:10px 14px;
+  background:var(--s2);border-radius:var(--r-md);
+  border-left:2px solid var(--vi-d);line-height:1.65;
+}
+
+@media(max-width:640px){
+  .map-detail.show{grid-template-columns:1fr}
+  .mdd-l{border-right:none;border-bottom:1px solid var(--b1)}
+}
+
+/* ═══ PIPELINE SECTION ══════════════════════════════════════════ */
+.pipe-wrap{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-xl);
+  padding:32px 36px 28px;position:relative;overflow:hidden;margin-bottom:80px;
+}
+.pipe-wrap::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--vi),var(--tl),var(--sa),var(--co),var(--vi));
+  animation:gradient-shift 6s linear infinite;
+  background-size:200% 100%;
+}
+@keyframes gradient-shift{0%{background-position:0% 0%}100%{background-position:200% 0%}}
+.pipe-label{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--t3);margin-bottom:20px;display:flex;align-items:center;gap:8px;
+}
+.pipe-label::before{content:'◈';color:var(--tl);font-size:11px}
+
+/* ═══ PHASE SECTION ════════════════════════════════════════════ */
+.phase-hdr{
+  display:flex;align-items:center;gap:14px;
+  margin-bottom:18px;margin-top:64px;
+}
+.phase-hdr:first-of-type{margin-top:0}
+.phase-pip{
+  width:12px;height:12px;border-radius:50%;flex-shrink:0;
+  position:relative;
+}
+.phase-pip::after{
+  content:'';position:absolute;inset:-3px;border-radius:50%;
+  border:1px solid currentColor;opacity:.4;
+  animation:ring-spin 4s linear infinite;
+}
+@keyframes ring-spin{0%{transform:rotate(0deg) scale(1);opacity:.4}50%{transform:rotate(180deg) scale(1.15);opacity:.2}100%{transform:rotate(360deg) scale(1);opacity:.4}}
+.pip-vi{background:var(--vi);color:var(--vi)}
+.pip-tl{background:var(--tl);color:var(--tl)}
+.pip-sa{background:var(--sa);color:var(--sa)}
+.pip-co{background:var(--co);color:var(--co)}
+
+.phase-hdr-text{font-family:var(--sans);font-size:19px;font-weight:700;color:var(--t1)}
+.phase-hdr-sub{font-family:var(--mono);font-size:10px;color:var(--t3);margin-left:auto;white-space:nowrap}
+
+/* ═══ MODULE CARDS ══════════════════════════════════════════════ */
+.mods-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+  gap:12px;margin-bottom:28px;
+}
+.mcard{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-lg);
+  padding:20px 22px;display:flex;flex-direction:column;gap:10px;
+  position:relative;overflow:hidden;
+  transition:border-color .22s,transform .22s,box-shadow .22s;
+  cursor:pointer;
+  text-decoration:none;color:inherit;
+}
+/* Left phase stripe */
+.mcard::after{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
+  border-radius:var(--r-lg) 0 0 var(--r-lg);
+  background:var(--card-color,var(--tl));
+  transform:scaleY(0);transform-origin:top;
+  transition:transform .28s cubic-bezier(.22,1,.36,1);
+}
+.mcard:hover::after{transform:scaleY(1)}
+.mcard:hover{
+  border-color:var(--b3);
+  transform:translateY(-3px);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  color:inherit;
+}
+/* Glow shimmer on hover */
+.mcard::before{
+  content:'';position:absolute;inset:0;border-radius:var(--r-lg);
+  background:radial-gradient(circle at 30% 50%,var(--card-glow,rgba(0,229,195,.04)) 0%,transparent 60%);
+  opacity:0;transition:opacity .3s;
+}
+.mcard:hover::before{opacity:1}
+
+.mcard-vi{--card-color:var(--vi);--card-glow:rgba(155,127,255,.06)}
+.mcard-tl{--card-color:var(--tl);--card-glow:rgba(0,229,195,.06)}
+.mcard-sa{--card-color:var(--sa);--card-glow:rgba(74,158,255,.06)}
+.mcard-co{--card-color:var(--co);--card-glow:rgba(255,144,64,.06)}
+
+.mcard-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mcard-num{
+  font-family:var(--mono);font-size:9.5px;font-weight:600;
+  padding:2px 9px;border-radius:var(--r-pill);
+}
+.mn-vi{background:var(--vi-b);border:1px solid var(--vi-r);color:var(--vi)}
+.mn-tl{background:var(--tl-b);border:1px solid var(--tl-r);color:var(--tl)}
+.mn-sa{background:var(--sa-b);border:1px solid var(--sa-r);color:var(--sa)}
+.mn-co{background:var(--co-b);border:1px solid var(--co-r);color:var(--co)}
+.mcard-effort{font-family:var(--mono);font-size:9.5px;color:var(--t3)}
+.mcard-title{font-size:15.5px;font-weight:600;color:var(--t1);line-height:1.3;letter-spacing:-.01em}
+.mcard-desc{font-size:12.5px;color:var(--t2);line-height:1.7;flex:1}
+.mcard-anchor{
+  font-family:var(--mono);font-size:10px;color:var(--t3);
+  border-top:1px solid var(--b1);padding-top:9px;margin-top:2px;
+  display:flex;align-items:center;gap:5px;
+}
+.mcard-anchor::before{content:'⚑';font-size:9px}
+.mcard-arrow{
+  margin-left:auto;color:var(--t3);font-size:13px;
+  transition:transform .18s,color .18s;flex-shrink:0;
+}
+.mcard:hover .mcard-arrow{transform:translateX(5px);color:var(--card-color,var(--tl))}
+
+/* Capstone mega card */
+.mcard-cap{
+  --card-color:var(--co);--card-glow:rgba(255,144,64,.07);
+  background:linear-gradient(135deg,var(--s2) 0%,var(--s1) 100%);
+  border-color:var(--b2);grid-column:1/-1;
+}
+.mcard-cap .mcard-title{font-size:18px}
+
+/* ═══ LEARNING PATH STRIP ══════════════════════════════════════ */
+.path-wrap{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-xl);
+  padding:22px 30px;overflow-x:auto;
+  display:flex;align-items:center;gap:6px;
+  margin-bottom:80px;
+  scrollbar-width:thin;
+}
+.pnode{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0}
+.pnode-dot{
+  width:36px;height:36px;border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:9px;font-weight:600;
+  transition:all .2s;
+}
+.pnode-dot:hover{transform:scale(1.12)}
+.pd-vi{background:var(--vi-b);border:1px solid var(--vi-r);color:var(--vi)}
+.pd-tl{background:var(--tl-b);border:1px solid var(--tl-r);color:var(--tl)}
+.pd-sa{background:var(--sa-b);border:1px solid var(--sa-r);color:var(--sa)}
+.pd-co{background:var(--co-b);border:1px solid var(--co-r);color:var(--co)}
+.pd-star{
+  background:linear-gradient(135deg,var(--co-b),var(--vi-b));
+  border:1px solid var(--co-r);color:var(--co);font-size:14px;
+}
+.pnode-lbl{font-family:var(--mono);font-size:8.5px;color:var(--t3);white-space:nowrap;max-width:50px;text-align:center;overflow:hidden;text-overflow:ellipsis}
+.parr{color:var(--b2);font-size:13px;flex-shrink:0;align-self:center;margin-bottom:16px}
+
+/* ═══ READINESS PANEL ══════════════════════════════════════════ */
+.ready-wrap{
+  display:grid;grid-template-columns:1fr 1fr;gap:30px;
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-xl);
+  padding:36px;margin-bottom:80px;position:relative;overflow:hidden;
+}
+.ready-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--tl),var(--sa))}
+@media(max-width:640px){.ready-wrap{grid-template-columns:1fr}}
+.rc-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--b1)}
+.rc-title{font-size:19px;font-weight:700;color:var(--t1);margin-bottom:10px;letter-spacing:-.01em}
+.rc-body{font-size:13.5px;color:var(--t2);line-height:1.8}
+.rc-body p{margin-bottom:12px}
+.rc-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.rc-list li{
+  display:flex;align-items:flex-start;gap:9px;
+  font-size:13px;color:var(--t2);line-height:1.6;
+}
+.rc-list li::before{
+  content:'◆';color:var(--tl);font-size:7.5px;flex-shrink:0;margin-top:5px;
+}
+
+/* ═══ START CTA ════════════════════════════════════════════════ */
+.cta-wrap{
+  text-align:center;padding:64px 40px;
+  background:linear-gradient(135deg,var(--s2) 0%,var(--s1) 100%);
+  border:1px solid var(--b2);border-radius:var(--r-xl);
+  margin-bottom:80px;position:relative;overflow:hidden;
+}
+.cta-wrap::before{content:'';position:absolute;bottom:-80px;right:-80px;width:240px;height:240px;border-radius:50%;background:var(--vi-b);pointer-events:none}
+.cta-wrap::after{content:'';position:absolute;top:-50px;left:-50px;width:160px;height:160px;border-radius:50%;background:var(--tl-b);pointer-events:none}
+.cta-h{font-size:clamp(22px,3vw,34px);font-weight:700;color:var(--t1);letter-spacing:-.02em;margin-bottom:10px;position:relative;z-index:1}
+.cta-sub{font-size:15px;color:var(--t2);margin-bottom:32px;position:relative;z-index:1}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--vi);color:var(--bg);
+  font-family:var(--sans);font-size:15px;font-weight:700;
+  padding:14px 30px;border-radius:var(--r-pill);
+  transition:all .22s;letter-spacing:.01em;position:relative;z-index:1;
+}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(155,127,255,.35);color:var(--bg)}
+
+/* ═══ FOOTER ═══════════════════════════════════════════════════ */
+.foot{
+  padding:28px 0 32px;border-top:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.foot-l{font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.04em}
+.foot-r{display:flex;gap:6px}
+
+/* ═══ ANIMATIONS ═══════════════════════════════════════════════ */
+@keyframes fade-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.afu{animation:fade-up .55s ease both}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+.d4{animation-delay:.4s}.d5{animation-delay:.5s}.d6{animation-delay:.6s}.d7{animation-delay:.7s}
+
+/* Context cards */
+.ctx-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:80px}
+.ctx-card{
+  background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-lg);
+  padding:22px;transition:border-color .2s;
+}
+.ctx-card:hover{border-color:var(--b2)}
+.ctx-vi{border-left:2px solid var(--vi)}
+.ctx-tl{border-left:2px solid var(--tl)}
+.ctx-sa{border-left:2px solid var(--sa)}
+.ctx-co{border-left:2px solid var(--co)}
+.ctx-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
+.ctx-title{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:6px;letter-spacing:-.01em}
+.ctx-body{font-size:12.5px;color:var(--t2);line-height:1.72}
+
+/* ═══ OPERATING SEQUENCE (phase sequence) ═════════════════════ */
+.seq-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  margin-bottom:80px;
+}
+@media(max-width:640px){.seq-grid{grid-template-columns:repeat(2,1fr)}}
+.seq-card{
+  background:var(--s2);border:1px solid var(--b1);border-radius:var(--r-lg);
+  padding:18px 14px;text-align:center;position:relative;overflow:hidden;
+  transition:border-color .2s,transform .2s;
+}
+.seq-card:hover{border-color:var(--b2);transform:translateY(-2px)}
+.seq-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+.sc-0::after{background:var(--vi)}
+.sc-1::after{background:var(--tl)}
+.sc-2::after{background:var(--sa)}
+.sc-3::after{background:var(--co)}
+.seq-n{font-family:var(--mono);font-size:9px;color:var(--t3);margin-bottom:5px;letter-spacing:.06em}
+.seq-name{font-size:12px;font-weight:700;color:var(--t1);line-height:1.3;margin-bottom:5px;letter-spacing:.01em}
+.seq-count{font-family:var(--mono);font-size:10px;color:var(--t3)}
+
+@media(max-width:680px){.mods-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">Terraform<span> · Mastery</span></div>
+    <div class="nav-sep"></div>
+    <div class="nav-sub">PingFederate Migration · AWS Infrastructure · Enterprise Patterns</div>
+    <div class="nav-pill">10 Modules + Capstone</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eye afu">
+      <span class="hero-dot"></span>
+      Enterprise Learning Series · Staff Engineer Edition
+    </div>
+    <h1 class="hero-h1 afu d1">
+      Terraform Mastery<br>
+      for <span class="ac-vi">Infrastructure</span><br>
+      <span class="ac-tl">Engineers</span>
+    </h1>
+    <p class="hero-sub afu d2">
+      A project-anchored learning journey built around one real-world goal: owning the Terraform infrastructure layer of a live PingFederate-on-AWS migration. Not a certification prep course — a mentored path from zero to confident contributor.
+    </p>
+    <div class="hero-tags afu d3">
+      <span class="tag tag-vi">Phase 0–3</span>
+      <span class="tag tag-tl">10 Modules</span>
+      <span class="tag tag-co">Capstone Project</span>
+      <span class="tag tag-sa">45–55 hrs total</span>
+      <span class="tag tag-mu">PingFederate · AWS · IAM · ASG</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ RADIAL MIND MAP ══════════════════ -->
+<section style="margin-bottom:80px">
+  <div class="sec-lbl">The ten learning domains — click any node to explore</div>
+  <div class="map-wrap">
+    <div class="map-svg-box">
+      <svg viewBox="0 0 960 580" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Node glow gradients -->
+          <radialGradient id="gv"  cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9b7fff" stop-opacity=".35"/><stop offset="100%" stop-color="#9b7fff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gt1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#00e5c3" stop-opacity=".30"/><stop offset="100%" stop-color="#00e5c3" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gt2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#00e5c3" stop-opacity=".28"/><stop offset="100%" stop-color="#00e5c3" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gs1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4a9eff" stop-opacity=".28"/><stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gs2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4a9eff" stop-opacity=".26"/><stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gs3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4a9eff" stop-opacity=".26"/><stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gs4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4a9eff" stop-opacity=".26"/><stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gs5" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4a9eff" stop-opacity=".26"/><stop offset="100%" stop-color="#4a9eff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gc1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff9040" stop-opacity=".28"/><stop offset="100%" stop-color="#ff9040" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gc2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ff9040" stop-opacity=".26"/><stop offset="100%" stop-color="#ff9040" stop-opacity="0"/></radialGradient>
+          <radialGradient id="gctr" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#9b7fff" stop-opacity=".5"/><stop offset="100%" stop-color="#9b7fff" stop-opacity=".06"/></radialGradient>
+        </defs>
+
+        <!-- Outer orbit ring -->
+        <circle cx="480" cy="295" r="212" fill="none" stroke="rgba(255,255,255,.025)" stroke-width="1" stroke-dasharray="4 14"/>
+        <!-- Inner orbit ring -->
+        <circle cx="480" cy="295" r="100" fill="none" stroke="rgba(255,255,255,.018)" stroke-width="1" stroke-dasharray="2 10"/>
+
+        <!-- ── ANIMATED CONNECTOR LINES ── -->
+        <!-- M01 violet top -->
+        <line x1="480" y1="295" x2="480" y2="83"  stroke="rgba(155,127,255,.35)" stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:0s"/>
+        <!-- M02 teal top-right -->
+        <line x1="480" y1="295" x2="630" y2="115" stroke="rgba(0,229,195,.30)"   stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-.5s"/>
+        <!-- M03 teal right-high -->
+        <line x1="480" y1="295" x2="700" y2="200" stroke="rgba(0,229,195,.28)"   stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-1.0s"/>
+        <!-- M04 sapphire right -->
+        <line x1="480" y1="295" x2="696" y2="295" stroke="rgba(74,158,255,.28)"  stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-1.5s"/>
+        <!-- M05 sapphire right-low -->
+        <line x1="480" y1="295" x2="700" y2="390" stroke="rgba(74,158,255,.26)"  stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-2.0s"/>
+        <!-- M06 sapphire bottom-right -->
+        <line x1="480" y1="295" x2="630" y2="475" stroke="rgba(74,158,255,.26)"  stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-2.5s"/>
+        <!-- M07 sapphire bottom -->
+        <line x1="480" y1="295" x2="480" y2="507" stroke="rgba(74,158,255,.25)"  stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-3.0s"/>
+        <!-- M08 sapphire bottom-left -->
+        <line x1="480" y1="295" x2="330" y2="475" stroke="rgba(74,158,255,.25)"  stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-3.5s"/>
+        <!-- M09 copper left -->
+        <line x1="480" y1="295" x2="264" y2="295" stroke="rgba(255,144,64,.28)"  stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-4.0s"/>
+        <!-- M10 copper top-left -->
+        <line x1="480" y1="295" x2="330" y2="115" stroke="rgba(255,144,64,.26)"  stroke-width="1.5" stroke-dasharray="5 5" class="dline" style="animation-delay:-4.5s"/>
+
+        <!-- ── CENTER PULSE RINGS ── -->
+        <circle class="rpulse" cx="480" cy="295" r="60" fill="none" stroke="rgba(155,127,255,.5)" stroke-width="1.2" style="animation-delay:0s"/>
+        <circle class="rpulse" cx="480" cy="295" r="60" fill="none" stroke="rgba(155,127,255,.28)" stroke-width="1" style="animation-delay:1.1s"/>
+        <circle class="rpulse" cx="480" cy="295" r="60" fill="none" stroke="rgba(155,127,255,.14)" stroke-width=".8" style="animation-delay:2.2s"/>
+
+        <!-- ── CENTER NODE ── -->
+        <circle cx="480" cy="295" r="58" fill="url(#gctr)" stroke="rgba(155,127,255,.75)" stroke-width="2"/>
+        <text x="480" y="281" text-anchor="middle" fill="#9b7fff" font-size="9" font-weight="700" letter-spacing="3" font-family="JetBrains Mono,monospace">TERRAFORM</text>
+        <text x="480" y="295" text-anchor="middle" fill="#9b7fff" font-size="9" font-weight="700" letter-spacing="3" font-family="JetBrains Mono,monospace">MASTERY</text>
+        <text x="480" y="311" text-anchor="middle" fill="#9b7fff" font-size="9" font-weight="700" letter-spacing="2" font-family="JetBrains Mono,monospace">SERIES</text>
+        <text x="480" y="328" text-anchor="middle" fill="rgba(155,127,255,.4)" font-size="7.5" font-family="JetBrains Mono,monospace" letter-spacing="1.2">▸ CLICK A NODE</text>
+
+        <!-- ═════════════════════════════════════
+             DOMAIN NODES
+        ═════════════════════════════════════ -->
+
+        <!-- M01 · violet · 0° top -->
+        <g class="mnode" id="mn-m01" onclick="mapSelect('m01')">
+          <circle class="mnring" cx="480" cy="83" r="46" fill="url(#gv)" stroke="rgba(155,127,255,.55)" stroke-width="1.8"/>
+          <text x="480" y="71" text-anchor="middle" font-size="16" font-family="sans-serif">🧠</text>
+          <text x="480" y="86" text-anchor="middle" fill="#9b7fff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">MENTAL</text>
+          <text x="480" y="98" text-anchor="middle" fill="#9b7fff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">MODEL</text>
+          <text x="480" y="108" text-anchor="middle" fill="rgba(155,127,255,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M01</text>
+        </g>
+
+        <!-- M02 · teal · 36° top-right -->
+        <g class="mnode" id="mn-m02" onclick="mapSelect('m02')">
+          <circle class="mnring" cx="630" cy="115" r="44" fill="url(#gt1)" stroke="rgba(0,229,195,.55)" stroke-width="1.8"/>
+          <text x="630" y="103" text-anchor="middle" font-size="16" font-family="sans-serif">📄</text>
+          <text x="630" y="118" text-anchor="middle" fill="#00e5c3" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">HCL</text>
+          <text x="630" y="130" text-anchor="middle" fill="#00e5c3" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">FUNDMNTLS</text>
+          <text x="630" y="140" text-anchor="middle" fill="rgba(0,229,195,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M02</text>
+        </g>
+
+        <!-- M03 · teal · 72° right-high -->
+        <g class="mnode" id="mn-m03" onclick="mapSelect('m03')">
+          <circle class="mnring" cx="700" cy="200" r="44" fill="url(#gt2)" stroke="rgba(0,229,195,.55)" stroke-width="1.8"/>
+          <text x="700" y="188" text-anchor="middle" font-size="16" font-family="sans-serif">💾</text>
+          <text x="700" y="203" text-anchor="middle" fill="#00e5c3" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">STATE</text>
+          <text x="700" y="215" text-anchor="middle" fill="#00e5c3" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">MGMT</text>
+          <text x="700" y="225" text-anchor="middle" fill="rgba(0,229,195,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M03</text>
+        </g>
+
+        <!-- M04 · sapphire · 90° right -->
+        <g class="mnode" id="mn-m04" onclick="mapSelect('m04')">
+          <circle class="mnring" cx="696" cy="295" r="44" fill="url(#gs1)" stroke="rgba(74,158,255,.55)" stroke-width="1.8"/>
+          <text x="696" y="283" text-anchor="middle" font-size="16" font-family="sans-serif">🌐</text>
+          <text x="696" y="298" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">VPC / SGs</text>
+          <text x="696" y="315" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M04</text>
+        </g>
+
+        <!-- M05 · sapphire · 108° right-low -->
+        <g class="mnode" id="mn-m05" onclick="mapSelect('m05')">
+          <circle class="mnring" cx="700" cy="390" r="44" fill="url(#gs2)" stroke="rgba(74,158,255,.55)" stroke-width="1.8"/>
+          <text x="700" y="378" text-anchor="middle" font-size="16" font-family="sans-serif">🔑</text>
+          <text x="700" y="393" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">IAM</text>
+          <text x="700" y="405" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">PROFILES</text>
+          <text x="700" y="415" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M05</text>
+        </g>
+
+        <!-- M06 · sapphire · 144° bottom-right -->
+        <g class="mnode" id="mn-m06" onclick="mapSelect('m06')">
+          <circle class="mnring" cx="630" cy="475" r="44" fill="url(#gs3)" stroke="rgba(74,158,255,.55)" stroke-width="1.8"/>
+          <text x="630" y="463" text-anchor="middle" font-size="16" font-family="sans-serif">⚙️</text>
+          <text x="630" y="478" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">EC2 / ASG</text>
+          <text x="630" y="495" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M06</text>
+        </g>
+
+        <!-- M07 · sapphire · 180° bottom -->
+        <g class="mnode" id="mn-m07" onclick="mapSelect('m07')">
+          <circle class="mnring" cx="480" cy="507" r="44" fill="url(#gs4)" stroke="rgba(74,158,255,.55)" stroke-width="1.8"/>
+          <text x="480" y="495" text-anchor="middle" font-size="16" font-family="sans-serif">🔀</text>
+          <text x="480" y="510" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">LB &amp;</text>
+          <text x="480" y="522" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">ROUTE53</text>
+          <text x="480" y="532" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M07</text>
+        </g>
+
+        <!-- M08 · sapphire · 216° bottom-left -->
+        <g class="mnode" id="mn-m08" onclick="mapSelect('m08')">
+          <circle class="mnring" cx="330" cy="475" r="44" fill="url(#gs5)" stroke="rgba(74,158,255,.55)" stroke-width="1.8"/>
+          <text x="330" y="463" text-anchor="middle" font-size="16" font-family="sans-serif">🪣</text>
+          <text x="330" y="478" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">S3 &amp;</text>
+          <text x="330" y="490" text-anchor="middle" fill="#4a9eff" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">PERSIST</text>
+          <text x="330" y="500" text-anchor="middle" fill="rgba(74,158,255,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M08</text>
+        </g>
+
+        <!-- M09 · copper · 270° left -->
+        <g class="mnode" id="mn-m09" onclick="mapSelect('m09')">
+          <circle class="mnring" cx="264" cy="295" r="44" fill="url(#gc1)" stroke="rgba(255,144,64,.55)" stroke-width="1.8"/>
+          <text x="264" y="283" text-anchor="middle" font-size="16" font-family="sans-serif">🏗️</text>
+          <text x="264" y="298" text-anchor="middle" fill="#ff9040" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">MODULES</text>
+          <text x="264" y="315" text-anchor="middle" fill="rgba(255,144,64,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M09</text>
+        </g>
+
+        <!-- M10 · copper · 324° top-left -->
+        <g class="mnode" id="mn-m10" onclick="mapSelect('m10')">
+          <circle class="mnring" cx="330" cy="115" r="44" fill="url(#gc2)" stroke="rgba(255,144,64,.55)" stroke-width="1.8"/>
+          <text x="330" y="103" text-anchor="middle" font-size="16" font-family="sans-serif">🔧</text>
+          <text x="330" y="118" text-anchor="middle" fill="#ff9040" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">OPS &amp;</text>
+          <text x="330" y="130" text-anchor="middle" fill="#ff9040" font-size="8.5" font-weight="700" letter-spacing="1.5" font-family="JetBrains Mono,monospace">TSHOOT</text>
+          <text x="330" y="140" text-anchor="middle" fill="rgba(255,144,64,.45)" font-size="7.5" font-family="JetBrains Mono,monospace">M10</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Detail panel -->
+    <div class="map-panel">
+      <div class="map-hint" id="map-hint">
+        <span class="map-hint-arrow">›</span>
+        <span>Click any domain node to explore its focus, anchor, and what you will master</span>
+        <span class="map-hint-arrow">›</span>
+      </div>
+      <div class="map-detail" id="map-detail">
+        <div class="mdd-l">
+          <div class="mdd-top">
+            <div>
+              <div class="mdd-name" id="d-name"></div>
+              <div class="mdd-ref" id="d-ref"></div>
+            </div>
+          </div>
+          <div class="mdd-qlbl">What you will understand</div>
+          <ul class="mdd-qs" id="d-qs"></ul>
+        </div>
+        <div class="mdd-r">
+          <div class="mdd-plbl">PingFederate Anchor</div>
+          <div class="mdd-principle" id="d-principle"></div>
+          <div class="mdd-tip" id="d-tip"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ PIPELINE DIAGRAM ══════════════════ -->
+<section style="margin-bottom:80px">
+  <div class="sec-lbl">The deployment pipeline you are learning to own</div>
+  <div class="pipe-wrap">
+    <div class="pipe-label">PingFederate AMI Refresh · End-to-End Workflow</div>
+    <svg viewBox="0 0 1020 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:720px;display:block;">
+      <defs>
+        <marker id="arr" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto">
+          <polygon points="0 0, 7 3, 0 6" fill="#263350"/>
+        </marker>
+        <marker id="arr-tl" markerWidth="7" markerHeight="6" refX="6" refY="3" orient="auto">
+          <polygon points="0 0, 7 3, 0 6" fill="#00e5c3"/>
+        </marker>
+      </defs>
+
+      <!-- Column header labels -->
+      <text x="72"  y="18" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#2a3550" text-anchor="middle" letter-spacing=".1em" text-transform="uppercase">INFRA TEAM</text>
+      <text x="212" y="18" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#2a3550" text-anchor="middle" letter-spacing=".1em">APP TEAM</text>
+      <text x="352" y="18" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#5040c0" text-anchor="middle" letter-spacing=".1em">GITHUB ACTIONS</text>
+      <text x="508" y="18" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#00a888" text-anchor="middle" letter-spacing=".1em">TERRAFORM ← YOU</text>
+      <text x="668" y="18" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#1a68cc" text-anchor="middle" letter-spacing=".1em">ANSIBLE</text>
+      <text x="820" y="18" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#cc5800" text-anchor="middle" letter-spacing=".1em">PINGFEDERATE</text>
+      <text x="960" y="18" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#2a3550" text-anchor="middle" letter-spacing=".1em">TRAFFIC</text>
+
+      <!-- Box: AMI Released -->
+      <rect x="10" y="30" width="124" height="52" rx="6" fill="#0b0e18" stroke="#1c2640" stroke-width="1"/>
+      <text x="72" y="52" font-family="Space Grotesk,sans-serif" font-size="11" fill="#e8eef8" text-anchor="middle" font-weight="500">New AMI</text>
+      <text x="72" y="68" font-family="Space Grotesk,sans-serif" font-size="10" fill="#4a5a7a" text-anchor="middle">Released</text>
+
+      <!-- Box: Deployment Planned -->
+      <rect x="150" y="30" width="124" height="52" rx="6" fill="#0b0e18" stroke="#1c2640" stroke-width="1"/>
+      <text x="212" y="52" font-family="Space Grotesk,sans-serif" font-size="11" fill="#e8eef8" text-anchor="middle" font-weight="500">Deployment</text>
+      <text x="212" y="68" font-family="Space Grotesk,sans-serif" font-size="10" fill="#4a5a7a" text-anchor="middle">Planned</text>
+
+      <!-- Box: GHA -->
+      <rect x="290" y="30" width="124" height="52" rx="6" fill="#0c0a1e" stroke="rgba(155,127,255,.3)" stroke-width="1"/>
+      <text x="352" y="52" font-family="Space Grotesk,sans-serif" font-size="11" fill="#e8eef8" text-anchor="middle" font-weight="500">Pipeline</text>
+      <text x="352" y="68" font-family="Space Grotesk,sans-serif" font-size="10" fill="#9b7fff" text-anchor="middle">Triggered</text>
+
+      <!-- Box: Terraform — highlighted focal point -->
+      <rect x="446" y="24" width="124" height="64" rx="8" fill="#060e18" stroke="#00e5c3" stroke-width="1.5"/>
+      <text x="508" y="50" font-family="Space Grotesk,sans-serif" font-size="12" fill="#00e5c3" text-anchor="middle" font-weight="600">Terraform</text>
+      <text x="508" y="66" font-family="Space Grotesk,sans-serif" font-size="10" fill="#9aaac8" text-anchor="middle">Infra Updated</text>
+      <!-- subtle glow line -->
+      <line x1="454" y1="88" x2="562" y2="88" stroke="rgba(0,229,195,.25)" stroke-width="1"/>
+
+      <!-- Box: Ansible -->
+      <rect x="606" y="30" width="124" height="52" rx="6" fill="#0b0e18" stroke="rgba(74,158,255,.3)" stroke-width="1"/>
+      <text x="668" y="52" font-family="Space Grotesk,sans-serif" font-size="11" fill="#e8eef8" text-anchor="middle" font-weight="500">Ansible</text>
+      <text x="668" y="68" font-family="Space Grotesk,sans-serif" font-size="10" fill="#4a9eff" text-anchor="middle">Configures PF</text>
+
+      <!-- Box: PF Nodes -->
+      <rect x="760" y="30" width="120" height="52" rx="6" fill="#0b0e18" stroke="rgba(255,144,64,.3)" stroke-width="1"/>
+      <text x="820" y="52" font-family="Space Grotesk,sans-serif" font-size="11" fill="#e8eef8" text-anchor="middle" font-weight="500">PingFederate</text>
+      <text x="820" y="68" font-family="Space Grotesk,sans-serif" font-size="10" fill="#ff9040" text-anchor="middle">Nodes Online</text>
+
+      <!-- Box: Traffic -->
+      <rect x="910" y="30" width="100" height="52" rx="6" fill="#0b0e18" stroke="#1c2640" stroke-width="1"/>
+      <text x="960" y="52" font-family="Space Grotesk,sans-serif" font-size="11" fill="#e8eef8" text-anchor="middle" font-weight="500">Traffic</text>
+      <text x="960" y="68" font-family="Space Grotesk,sans-serif" font-size="10" fill="#4a5a7a" text-anchor="middle">Flowing</text>
+
+      <!-- Connecting arrows -->
+      <line x1="134" y1="56" x2="148" y2="56" stroke="#1c2640" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="274" y1="56" x2="288" y2="56" stroke="#1c2640" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="414" y1="56" x2="444" y2="56" stroke="#1c2640" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="570" y1="56" x2="604" y2="56" stroke="#00e5c3" stroke-width="1.5" marker-end="url(#arr-tl)"/>
+      <line x1="730" y1="56" x2="758" y2="56" stroke="#1c2640" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="880" y1="56" x2="908" y2="56" stroke="#1c2640" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- Terraform resource row -->
+      <text x="508" y="108" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#2a3550" text-anchor="middle" letter-spacing=".07em">TERRAFORM MANAGES ↓</text>
+
+      <rect x="20"  y="120" width="90" height="30" rx="4" fill="#0f1422" stroke="#1c2640" stroke-width="1"/>
+      <text x="65"  y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#4a5a7a" text-anchor="middle">VPC / Subnets</text>
+
+      <rect x="120" y="120" width="90" height="30" rx="4" fill="#0f1422" stroke="#1c2640" stroke-width="1"/>
+      <text x="165" y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#4a5a7a" text-anchor="middle">IAM Roles</text>
+
+      <rect x="220" y="120" width="100" height="30" rx="4" fill="#0f1422" stroke="#1c2640" stroke-width="1"/>
+      <text x="270" y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#4a5a7a" text-anchor="middle">Launch Tmpl</text>
+
+      <rect x="330" y="120" width="100" height="30" rx="4" fill="#0f1422" stroke="rgba(0,229,195,.22)" stroke-width="1"/>
+      <text x="380" y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#00a888" text-anchor="middle">ASG + Refresh</text>
+
+      <rect x="440" y="120" width="90" height="30" rx="4" fill="#0f1422" stroke="rgba(0,229,195,.22)" stroke-width="1"/>
+      <text x="485" y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#00a888" text-anchor="middle">NLB / ALB</text>
+
+      <rect x="540" y="120" width="80" height="30" rx="4" fill="#0f1422" stroke="#1c2640" stroke-width="1"/>
+      <text x="580" y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#4a5a7a" text-anchor="middle">Route53</text>
+
+      <rect x="630" y="120" width="80" height="30" rx="4" fill="#0f1422" stroke="#1c2640" stroke-width="1"/>
+      <text x="670" y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#4a5a7a" text-anchor="middle">S3 Config</text>
+
+      <rect x="720" y="120" width="90" height="30" rx="4" fill="#0f1422" stroke="#1c2640" stroke-width="1"/>
+      <text x="765" y="139" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#4a5a7a" text-anchor="middle">Sec Groups</text>
+
+      <!-- TF box to resource row connector -->
+      <line x1="508" y1="88" x2="508" y2="116" stroke="rgba(0,229,195,.2)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="65" y1="116" x2="765" y2="116" stroke="rgba(0,229,195,.12)" stroke-width="1"/>
+
+      <!-- S3 self-healing annotation -->
+      <rect x="60" y="170" width="880" height="26" rx="4" fill="rgba(74,158,255,.05)" stroke="rgba(74,158,255,.18)" stroke-width="1"/>
+      <text x="500" y="187" font-family="JetBrains Mono,monospace" font-size="8.5" fill="#1a68cc" text-anchor="middle">S3 → PF config survives instance replacement → new nodes self-heal on launch via user_data bootstrap</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ══════════════════ PHASE SEQUENCE ══════════════════ -->
+<section style="margin-bottom:48px">
+  <div class="sec-lbl">Four phases of mastery</div>
+  <div class="seq-grid">
+    <div class="seq-card sc-0">
+      <div class="seq-n">Phase 0</div>
+      <div class="seq-name">FOUNDATION & MENTAL MODEL</div>
+      <div class="seq-count">1 module · 3–4 hrs</div>
+    </div>
+    <div class="seq-card sc-1">
+      <div class="seq-n">Phase 1</div>
+      <div class="seq-name">CORE LANGUAGE & STATE</div>
+      <div class="seq-count">2 modules · 8–10 hrs</div>
+    </div>
+    <div class="seq-card sc-2">
+      <div class="seq-n">Phase 2</div>
+      <div class="seq-name">AWS INFRASTRUCTURE</div>
+      <div class="seq-count">5 modules · 20–24 hrs</div>
+    </div>
+    <div class="seq-card sc-3">
+      <div class="seq-n">Phase 3</div>
+      <div class="seq-name">ENTERPRISE TERRAFORM</div>
+      <div class="seq-count">2 modules · 8–10 hrs</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CONTEXT CARDS ══════════════════ -->
+<section style="margin-bottom:72px">
+  <div class="sec-lbl">What makes this series different</div>
+  <div class="ctx-grid">
+    <div class="ctx-card ctx-vi afu d1">
+      <div class="ctx-lbl">Not a certification course</div>
+      <div class="ctx-title">Project-anchored from day one</div>
+      <div class="ctx-body">Every concept is introduced in the context of the PingFederate migration project. You learn why a Launch Template exists because you need one to refresh AMIs. You learn S3 backends because your team already uses one.</div>
+    </div>
+    <div class="ctx-card ctx-tl afu d2">
+      <div class="ctx-lbl">Mentored progression</div>
+      <div class="ctx-title">Each module earns the next</div>
+      <div class="ctx-body">Each module builds a bridge to the next — explaining what knowledge you now have, what gap remains, and exactly why the next topic fills it. You will never wonder "why am I learning this?"</div>
+    </div>
+    <div class="ctx-card ctx-sa afu d3">
+      <div class="ctx-lbl">Your background is an asset</div>
+      <div class="ctx-title">IAM expertise, applied to infra</div>
+      <div class="ctx-body">Your deep IAM knowledge is a genuine advantage. IAM roles, instance profiles, S3 bucket policies, and least-privilege design are concepts you already own. This series leverages that and fills the infrastructure gaps.</div>
+    </div>
+    <div class="ctx-card ctx-co afu d4">
+      <div class="ctx-lbl">Real operational depth</div>
+      <div class="ctx-title">Read code, fix things, ship safely</div>
+      <div class="ctx-body">The goal is to confidently read existing code, understand why decisions were made, troubleshoot deployments, and contribute improvements to a real enterprise codebase — not write Terraform from scratch on day one.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ MODULE CARDS ══════════════════ -->
+<section>
+  <div class="sec-lbl">Your complete learning path</div>
+
+  <!-- PHASE 0 -->
+  <div class="phase-hdr">
+    <div class="phase-pip pip-vi"></div>
+    <div class="phase-hdr-text">Phase 0 — Foundation &amp; Mental Model</div>
+    <div class="phase-hdr-sub">1 module · ~3–4 hrs</div>
+  </div>
+  <div class="mods-grid">
+    <a href="module-01.html" class="mcard mcard-vi">
+      <div class="mcard-top"><span class="mcard-num mn-vi">M01</span><span class="mcard-effort">3–4 hrs</span></div>
+      <div class="mcard-title">Infrastructure as Code &amp; The Terraform Mental Model</div>
+      <div class="mcard-desc">Why IaC exists. Where Terraform fits in the four-component pipeline. HCL orientation. Validate and sharpen your existing understanding of the migration project before a single line of Terraform is written.</div>
+      <div class="mcard-anchor">GitHub Actions → Terraform → Ansible → PingFederate</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase-hdr">
+    <div class="phase-pip pip-tl"></div>
+    <div class="phase-hdr-text">Phase 1 — Core Language &amp; State</div>
+    <div class="phase-hdr-sub">2 modules · ~8–10 hrs</div>
+  </div>
+  <div class="mods-grid">
+    <a href="module-02.html" class="mcard mcard-tl">
+      <div class="mcard-top"><span class="mcard-num mn-tl">M02</span><span class="mcard-effort">4–5 hrs</span></div>
+      <div class="mcard-title">HCL Fundamentals</div>
+      <div class="mcard-desc">Providers, resources, data sources, variables, outputs, local values. Learn to read any <code style="font-family:var(--mono);font-size:11px;background:var(--s3);color:var(--tl);padding:1px 4px;border-radius:3px;">.tf</code> file confidently — including the dynamic AMI lookup pattern your project uses to find the latest approved AMI at plan time.</div>
+      <div class="mcard-anchor">Dynamic AMI lookup · Security group definitions</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+    <a href="module-03.html" class="mcard mcard-tl">
+      <div class="mcard-top"><span class="mcard-num mn-tl">M03</span><span class="mcard-effort">4–5 hrs</span></div>
+      <div class="mcard-title">State Management</div>
+      <div class="mcard-desc">The most important concept in Terraform. State file anatomy, remote state on S3, DynamoDB locking, drift detection, resource import, and state surgery. Understand what happens to state when an ASG replaces an instance during an AMI refresh.</div>
+      <div class="mcard-anchor">S3 remote backend · Instance refresh state behaviour</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="phase-hdr">
+    <div class="phase-pip pip-sa"></div>
+    <div class="phase-hdr-text">Phase 2 — AWS Infrastructure, Layer by Layer</div>
+    <div class="phase-hdr-sub">5 modules · ~20–24 hrs</div>
+  </div>
+  <div class="mods-grid">
+    <a href="module-04.html" class="mcard mcard-sa">
+      <div class="mcard-top"><span class="mcard-num mn-sa">M04</span><span class="mcard-effort">4–5 hrs</span></div>
+      <div class="mcard-title">VPC, Subnets &amp; Security Groups</div>
+      <div class="mcard-desc">VPC CIDR design, public/private subnets, route tables, IGW, NAT gateway, security group rules, and SG-to-SG references. Why the network layer is always provisioned before compute — and how PingFederate's network topology is expressed in Terraform.</div>
+      <div class="mcard-anchor">PingFederate port rules · Private subnet ASG placement</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+    <a href="module-05.html" class="mcard mcard-sa">
+      <div class="mcard-top"><span class="mcard-num mn-sa">M05</span><span class="mcard-effort">3–4 hrs</span></div>
+      <div class="mcard-title">IAM &amp; Instance Profiles</div>
+      <div class="mcard-desc">Your IAM expertise applied to infrastructure. Trust policies, permission policies, instance profiles. The IAM role that allows EC2 instances to read PingFederate config from S3 — why it exists, what it contains, and how Terraform creates and attaches it.</div>
+      <div class="mcard-anchor">PF-to-S3 read role · Least privilege in instance profiles</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+    <a href="module-06.html" class="mcard mcard-sa">
+      <div class="mcard-top"><span class="mcard-num mn-sa">M06</span><span class="mcard-effort">5–6 hrs</span></div>
+      <div class="mcard-title">EC2, Launch Templates &amp; Auto Scaling Groups</div>
+      <div class="mcard-desc">The heart of immutable infrastructure. Launch Template anatomy, AMI data source lookups, user_data bootstrap scripts, ASG desired/min/max, health checks, lifecycle hooks, and <code style="font-family:var(--mono);font-size:11px;background:var(--s3);color:var(--tl);padding:1px 4px;border-radius:3px;">instance_refresh</code>. How a Terraform plan triggers a rolling AMI replacement.</div>
+      <div class="mcard-anchor">AMI refresh workflow · user_data pulls PF config from S3</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+    <a href="module-07.html" class="mcard mcard-sa">
+      <div class="mcard-top"><span class="mcard-num mn-sa">M07</span><span class="mcard-effort">4–5 hrs</span></div>
+      <div class="mcard-title">Load Balancers &amp; Route53</div>
+      <div class="mcard-desc">ALB vs NLB decision criteria for PingFederate workloads. Target groups, listeners, health checks, and how the load balancer keeps traffic flowing during instance refresh. Route53 hosted zones, A records, alias records — the full DNS-to-node path in Terraform.</div>
+      <div class="mcard-anchor">NLB for TLS passthrough · Traffic continuity during refresh</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+    <a href="module-08.html" class="mcard mcard-sa">
+      <div class="mcard-top"><span class="mcard-num mn-sa">M08</span><span class="mcard-effort">3–4 hrs</span></div>
+      <div class="mcard-title">S3 &amp; Config Externalisation</div>
+      <div class="mcard-desc">S3 bucket provisioning, policies, versioning, and encryption. The config externalisation pattern that lets PingFederate nodes be replaced without losing configuration — and how Terraform models the storage layer that makes instance replacement safe.</div>
+      <div class="mcard-anchor">PF config bucket · The pattern that makes replacement safe</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div class="phase-hdr">
+    <div class="phase-pip pip-co"></div>
+    <div class="phase-hdr-text">Phase 3 — Enterprise Terraform</div>
+    <div class="phase-hdr-sub">2 modules · ~8–10 hrs</div>
+  </div>
+  <div class="mods-grid">
+    <a href="module-09.html" class="mcard mcard-co">
+      <div class="mcard-top"><span class="mcard-num mn-co">M09</span><span class="mcard-effort">4–5 hrs</span></div>
+      <div class="mcard-title">Modules &amp; Enterprise Patterns</div>
+      <div class="mcard-desc">Reusable modules, module structure, versioning, and the Terraform Registry. Dev/Test/Prod environment management — directory-per-env vs workspaces. DRY patterns. How to navigate an unfamiliar enterprise Terraform codebase on day one without getting lost.</div>
+      <div class="mcard-anchor">Multi-env PF deployment structure · Reading enterprise code</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+    <a href="module-10.html" class="mcard mcard-co">
+      <div class="mcard-top"><span class="mcard-num mn-co">M10</span><span class="mcard-effort">4–5 hrs</span></div>
+      <div class="mcard-title">Troubleshooting &amp; Operations</div>
+      <div class="mcard-desc">Reading Terraform plans like a senior engineer. Debugging failed applies. State incidents, dependency problems. The AMI refresh end-to-end with failure scenarios. Zero-downtime patterns, rollback strategies, and operational runbooks for enterprise deployments.</div>
+      <div class="mcard-anchor">AMI refresh failure modes · What to do when plan surprises you</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+  </div>
+
+  <!-- CAPSTONE -->
+  <div class="phase-hdr" style="margin-top:48px">
+    <div class="phase-pip" style="background:var(--co);color:var(--co);width:14px;height:14px"></div>
+    <div class="phase-hdr-text">Capstone — Build the Full Stack</div>
+    <div class="phase-hdr-sub">Standalone · ~4–5 hrs</div>
+  </div>
+  <div class="mods-grid">
+    <a href="capstone.html" class="mcard mcard-cap">
+      <div class="mcard-top"><span class="mcard-num mn-co">★ CAPSTONE</span><span class="mcard-effort">4–5 hrs · Standalone reference</span></div>
+      <div class="mcard-title">Build the PingFederate AWS Stack from Scratch</div>
+      <div class="mcard-desc">A guided self-build challenge from empty directory to a fully provisioned, production-pattern PingFederate environment on AWS. VPC → Security Groups → IAM → S3 → Launch Template → Auto Scaling Group → NLB → Route53. Each section is a challenge block with hint toggles and solution reveals — you write the Terraform, guided by meaningful prompts, not handed the answers. Completes with a 25-point enterprise readiness checklist so you know exactly when you're ready to contribute to the real project.</div>
+      <div class="mcard-anchor">Full AMI refresh workflow · Enterprise readiness checklist · Complete annotated architecture</div>
+      <span class="mcard-arrow">→</span>
+    </a>
+  </div>
+</section>
+
+<!-- ══════════════════ PATH STRIP ══════════════════ -->
+<section style="margin-top:64px;margin-bottom:12px">
+  <div class="sec-lbl">Recommended learning sequence</div>
+</section>
+<div class="path-wrap">
+  <div class="pnode"><div class="pnode-dot pd-vi">M01</div><div class="pnode-lbl">Mental Model</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-tl">M02</div><div class="pnode-lbl">HCL</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-tl">M03</div><div class="pnode-lbl">State</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-sa">M04</div><div class="pnode-lbl">VPC / SGs</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-sa">M05</div><div class="pnode-lbl">IAM</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-sa">M06</div><div class="pnode-lbl">EC2 / ASG</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-sa">M07</div><div class="pnode-lbl">LB / DNS</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-sa">M08</div><div class="pnode-lbl">S3</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-co">M09</div><div class="pnode-lbl">Modules</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-co">M10</div><div class="pnode-lbl">Ops</div></div>
+  <span class="parr">›</span>
+  <div class="pnode"><div class="pnode-dot pd-star">★</div><div class="pnode-lbl">Capstone</div></div>
+</div>
+
+<!-- ══════════════════ READINESS ══════════════════ -->
+<section style="margin-top:64px">
+  <div class="sec-lbl">What you will be able to do after this series</div>
+  <div class="ready-wrap">
+    <div>
+      <div class="rc-lbl">From reader to contributor</div>
+      <div class="rc-title">Zero to confident in one series</div>
+      <div class="rc-body">
+        <p>You are starting as a Staff Engineer with deep IAM expertise and solid software fundamentals. You're not starting from zero — you're extending your domain into infrastructure.</p>
+        <p>By the end, you will be able to open a Terraform PR in a real enterprise project, understand every resource and decision in scope, troubleshoot a failed deployment, and have an informed conversation with any platform or cloud engineer on the team.</p>
+      </div>
+    </div>
+    <div>
+      <div class="rc-lbl">Competencies unlocked</div>
+      <ul class="rc-list">
+        <li>Read and navigate any existing Terraform codebase confidently</li>
+        <li>Understand every AWS resource in the PingFederate migration stack</li>
+        <li>Explain the AMI refresh workflow end-to-end, including Terraform's role</li>
+        <li>Troubleshoot state issues, failed applies, and drift scenarios</li>
+        <li>Create and modify Terraform modules with correct input/output design</li>
+        <li>Participate in infrastructure architecture discussions as an informed contributor</li>
+        <li>Know what Terraform owns vs Ansible vs GitHub Actions — and why</li>
+        <li>Pass the 25-point capstone readiness checklist</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CTA ══════════════════ -->
+<div class="cta-wrap">
+  <h2 class="cta-h">Ready to begin?</h2>
+  <p class="cta-sub">Module 01 starts by validating your existing mental model of the project — before introducing a single line of HCL.</p>
+  <a href="module-01.html" class="cta-btn">Begin Module 01 — The Mental Model →</a>
+</div>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer class="foot">
+  <div class="foot-l">Terraform Mastery Series · 10 Modules + Capstone · PingFederate Migration Edition</div>
+  <div class="foot-r">
+    <span class="tag tag-vi">Phase 0</span>
+    <span class="tag tag-tl">Phase 1</span>
+    <span class="tag tag-sa">Phase 2</span>
+    <span class="tag tag-co">Phase 3</span>
+  </div>
+</footer>
+
+</div><!-- /wrap -->
+
+<script>
+/* ══ RADIAL MAP DATA ════════════════════════════════════════════ */
+const D = {
+  m01:{
+    name:'M01 · Mental Model',
+    ref:'Phase 0 · Foundation · 3–4 hrs',
+    color:'#9b7fff',border:'rgba(155,127,255,.2)',bg:'rgba(155,127,255,.07)',
+    questions:[
+      'Why does IaC exist — what problem does it solve compared to ClickOps?',
+      'What exactly does Terraform own vs GitHub Actions vs Ansible?',
+      'How does the four-component pipeline hang together in the PF migration?',
+      'What is a Terraform provider, and why does every deployment need one?',
+      'What is the difference between declarative and imperative infrastructure?'
+    ],
+    principle:'Before writing a single HCL resource, you need to own the mental map of the entire deployment pipeline. Every line of Terraform you write later will land in a system you already understand at this level.',
+    tip:'Your background in IAM protocol depth is a direct accelerant here. The concepts of trust, delegation, and policy precedence map directly onto how Terraform interacts with the AWS API. You are not starting from scratch.'
+  },
+  m02:{
+    name:'M02 · HCL Fundamentals',
+    ref:'Phase 1 · Core Language · 4–5 hrs',
+    color:'#00e5c3',border:'rgba(0,229,195,.2)',bg:'rgba(0,229,195,.07)',
+    questions:[
+      'How do you read an unfamiliar .tf file systematically, not randomly?',
+      'What is a data source and how does it differ from a resource?',
+      'How does a variable flow from tfvars → variable block → resource attribute?',
+      'Why does the AMI data source use filters instead of hardcoding an ID?',
+      'When should a value be a variable vs a local vs a hardcoded literal?'
+    ],
+    principle:'HCL is a config language, not a programming language. Reading it fluently is about recognising patterns — resource/data/variable/output — and following the dependency graph from output back to source.',
+    tip:'The dynamic AMI data source lookup is the single most important pattern to master in M02. It is how your project finds the latest company-approved AMI at plan time without hardcoding IDs — and it appears in every deploy.'
+  },
+  m03:{
+    name:'M03 · State Management',
+    ref:'Phase 1 · Core Concepts · 4–5 hrs',
+    color:'#00e5c3',border:'rgba(0,229,195,.2)',bg:'rgba(0,229,195,.07)',
+    questions:[
+      'What is in the state file and why does Terraform need it to exist?',
+      'What happens if two engineers run apply at the same time without locking?',
+      'How does terraform import work and when would you need it?',
+      'What is drift and how does Terraform detect and handle it?',
+      'What does state record about an ASG — individual instances or the group?'
+    ],
+    principle:'The state file is the source of truth for what Terraform believes about your infrastructure. It is also the most sensitive artifact in the stack — if it diverges from reality, every subsequent plan is a lie.',
+    tip:'The critical insight for your project: when an ASG replaces an instance during an AMI refresh, Terraform does NOT track the individual instances. It tracks the ASG resource. This is what makes immutable infrastructure work with Terraform.'
+  },
+  m04:{
+    name:'M04 · VPC, Subnets & Security Groups',
+    ref:'Phase 2 · AWS Networking · 4–5 hrs',
+    color:'#4a9eff',border:'rgba(74,158,255,.2)',bg:'rgba(74,158,255,.07)',
+    questions:[
+      'Why do PingFederate engine nodes live in private subnets, not public ones?',
+      'How does a security group rule reference another security group by ID?',
+      'What is the difference between a NACL and a security group?',
+      'How does the NAT gateway allow private subnet instances to reach S3?',
+      'What TCP ports must be open for SAML federation traffic to flow?'
+    ],
+    principle:'Networking is always provisioned first. Every compute resource, every load balancer, every S3 endpoint policy depends on the network layer existing. In Terraform, this means the VPC module is always a dependency of everything else.',
+    tip:'Your security group knowledge from the IAM/SSO world translates directly. PingFederate engines need inbound from the NLB on 9031 (federation) and 9999 (admin) — and outbound to your LDAP/AD, your S3 endpoint, and your internal CAs.'
+  },
+  m05:{
+    name:'M05 · IAM & Instance Profiles',
+    ref:'Phase 2 · Identity · 3–4 hrs',
+    color:'#4a9eff',border:'rgba(74,158,255,.2)',bg:'rgba(74,158,255,.07)',
+    questions:[
+      'What is the difference between an IAM role and an instance profile?',
+      'How does an EC2 instance assume an IAM role without storing credentials?',
+      'What does the trust policy look like for an EC2 service principal?',
+      'How does the PF instance use its attached role to read from the S3 config bucket?',
+      'What is the minimal permission set required for a PF instance to self-configure?'
+    ],
+    principle:'This is the module where your deep IAM expertise becomes a structural advantage. Every concept — trust relationships, permission boundaries, policy evaluation logic — maps directly. You are learning new Terraform resources, not new IAM concepts.',
+    tip:'The IAM role in this module is the linchpin that connects M05 (identity) to M08 (S3 persistence). Without the correct instance profile attached in the Launch Template, the user_data bootstrap script cannot read the PF config from S3 and the node cannot initialise.'
+  },
+  m06:{
+    name:'M06 · EC2, Launch Templates & ASG',
+    ref:'Phase 2 · Compute · 5–6 hrs',
+    color:'#4a9eff',border:'rgba(74,158,255,.2)',bg:'rgba(74,158,255,.07)',
+    questions:[
+      'What goes in a Launch Template and what does the ASG add on top of it?',
+      'How does user_data bootstrap a new EC2 instance from a blank AMI?',
+      'What triggers instance_refresh and what does Terraform do vs the ASG?',
+      'How does the ASG health check interact with the load balancer health check?',
+      'What is the difference between desired capacity, min size, and max size?'
+    ],
+    principle:'This is the most important module in the series. The Launch Template + ASG + instance_refresh combination IS the immutable infrastructure pattern. Understanding how Terraform manages the template while the ASG manages the instances is the central insight of the entire project.',
+    tip:'The user_data script is the bootstrap bridge between M06 (compute) and M08 (storage). It runs when the instance starts, uses the IAM role from M05 to authenticate, pulls the PF config from the S3 bucket in M08, and hands off to Ansible to complete the install. All in one launch.'
+  },
+  m07:{
+    name:'M07 · Load Balancers & Route53',
+    ref:'Phase 2 · Traffic · 4–5 hrs',
+    color:'#4a9eff',border:'rgba(74,158,255,.2)',bg:'rgba(74,158,255,.07)',
+    questions:[
+      'Why does PingFederate use NLB for federation traffic instead of ALB?',
+      'How does a target group health check prevent unhealthy nodes from receiving traffic?',
+      'How does the load balancer maintain availability during an instance refresh?',
+      'What is an alias record in Route53 and why is it used instead of a CNAME?',
+      'What does the full path look like from DNS resolution to a PingFederate response?'
+    ],
+    principle:'The load balancer is what makes zero-downtime AMI refresh possible. While new instances are initialising and being validated, old instances continue serving traffic. The NLB only shifts traffic when health checks pass — and Terraform models every rule of that handoff.',
+    tip:'NLB is chosen for PingFederate because it operates at Layer 4 (TCP/TLS) rather than Layer 7 (HTTP). This allows TLS to be terminated by PingFederate itself, which is required for many federation protocols where the server certificate identity matters to the SP.'
+  },
+  m08:{
+    name:'M08 · S3 & Config Externalisation',
+    ref:'Phase 2 · Persistence · 3–4 hrs',
+    color:'#4a9eff',border:'rgba(74,158,255,.2)',bg:'rgba(74,158,255,.07)',
+    questions:[
+      'What PingFederate configuration is stored in S3 and what lives in the AMI itself?',
+      'How does the bucket policy restrict access to only the PF instance IAM role?',
+      'Why is versioning enabled on the config bucket and how does it help?',
+      'What encryption option is appropriate for a config bucket holding PF keystores?',
+      'How does this pattern change when the configuration is too large for S3?'
+    ],
+    principle:'S3 is not just storage — it is the contract that makes immutable compute possible. By storing PingFederate configuration outside the instance, you sever the coupling between software state and compute state. The instance is now truly disposable.',
+    tip:'Think of S3 as the "handshake" bucket: the infrastructure team provisions it in Terraform (M08), the IAM role grants access (M05), the Launch Template references the bucket name in user_data (M06), and Ansible reads from it on first boot. Four modules, one coherent story.'
+  },
+  m09:{
+    name:'M09 · Modules & Enterprise Patterns',
+    ref:'Phase 3 · Enterprise Terraform · 4–5 hrs',
+    color:'#ff9040',border:'rgba(255,144,64,.2)',bg:'rgba(255,144,64,.07)',
+    questions:[
+      'What is the difference between a module input, a local, and a data source?',
+      'How does a team version modules so prod never accidentally gets a dev change?',
+      'When do workspaces make sense vs. separate directories per environment?',
+      'How do you read an unfamiliar enterprise Terraform repo on day one?',
+      'What does a well-designed module expose to its caller and what does it hide?'
+    ],
+    principle:'Enterprise Terraform is not harder Terraform — it is structured Terraform. Modules are how you write infrastructure once and deploy it safely to multiple environments. Understanding the module contract (inputs, outputs, no side effects) is what separates a contributor from someone who makes changes and hopes for the best.',
+    tip:'On day one in an enterprise repo, your first move is to map the module dependency tree before touching any code. Run terraform graph, read the module sources, and find out which modules your target resource depends on. You are an IAM engineer — you already know that permission changes have blast radii. Infrastructure is the same.'
+  },
+  m10:{
+    name:'M10 · Troubleshooting & Operations',
+    ref:'Phase 3 · Enterprise Ops · 4–5 hrs',
+    color:'#ff9040',border:'rgba(255,144,64,.2)',bg:'rgba(255,144,64,.07)',
+    questions:[
+      'What are the three things you look for first in a failed terraform apply output?',
+      'How do you diagnose a state drift problem without corrupting the state file?',
+      'What does a healthy instance_refresh look like in the AWS console vs. a stuck one?',
+      'How do you safely roll back an AMI refresh that has partially completed?',
+      'What is the difference between a resource dependency cycle and a provider error?'
+    ],
+    principle:'The ability to diagnose a broken deployment under time pressure — without making it worse — is what separates a senior infrastructure engineer from a junior one. This module teaches you to read the evidence, form a hypothesis, test it safely, and act with confidence.',
+    tip:'The most dangerous moment in a production Terraform deployment is a partial apply followed by an incorrect manual fix. If you touch resources outside of Terraform, the state diverges and the next plan is unpredictable. The discipline is: all changes go through Terraform, always, even in an incident.'
+  }
+};
+
+function mapSelect(id) {
+  document.querySelectorAll('.mnode').forEach(g => g.classList.remove('active'));
+  const node = document.getElementById('mn-'+id);
+  if (node) node.classList.add('active');
+
+  const d = D[id];
+  if (!d) return;
+
+  document.getElementById('map-hint').style.display = 'none';
+  const panel = document.getElementById('map-detail');
+  panel.classList.add('show');
+
+  document.getElementById('d-name').textContent = d.name;
+  document.getElementById('d-name').style.color = d.color;
+  document.getElementById('d-ref').textContent = d.ref;
+
+  document.getElementById('d-qs').innerHTML = d.questions.map(q => `<li>${q}</li>`).join('');
+
+  const pr = document.getElementById('d-principle');
+  pr.textContent = d.principle;
+  pr.style.borderColor = d.color;
+  pr.style.background = d.bg;
+
+  document.getElementById('d-tip').innerHTML =
+    `<strong style="color:${d.color};font-weight:600">Project anchor:</strong> ${d.tip}`;
+}
+
+/* Scroll-reveal for module cards */
+(function(){
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        e.target.style.opacity='1';
+        e.target.style.transform='translateY(0)';
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:.07});
+  document.querySelectorAll('.mcard,.ctx-card,.ready-wrap,.cta-wrap,.seq-card').forEach(el=>{
+    el.style.opacity='0';
+    el.style.transform='translateY(14px)';
+    el.style.transition='opacity .48s ease, transform .48s ease';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
