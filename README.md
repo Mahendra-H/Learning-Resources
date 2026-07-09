@@ -53,6 +53,7 @@ Personal learning library of course modules, notes, POCs, and reference material
 | `01-foundations/infrastructure/entra-id` | Entra ID + Graph | `EntraID_Doc1_...html` |
 | `01-foundations/infrastructure/ansible` | Ansible for PF migration | Part 1 HTML |
 | `02-courses/infrastructure/terraform-pingfederate` | Terraform mastery | `index.html` |
+| `02-courses/infrastructure/aws-certification` | AWS cert path (2026 + Security Specialty) | `aws-certification-guide-2026.html` |
 
 ### Security
 
