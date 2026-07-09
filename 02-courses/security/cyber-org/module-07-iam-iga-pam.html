@@ -1,0 +1,4659 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 07 — IAM, IGA & PAM Deep Dive</title>
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM — FROZEN TOKEN SET
+   ═══════════════════════════════════════════ */
+:root {
+  /* Backgrounds */
+  --bg-base:          #0A0A0B;
+  --bg-card:          #111113;
+  --bg-card-hover:    #161618;
+  --bg-elevated:      #1A1A1D;
+
+  /* Borders */
+  --border-default:   rgba(255,255,255,0.08);
+  --border-subtle:    rgba(255,255,255,0.05);
+  --border-strong:    rgba(255,255,255,0.14);
+
+  /* Text */
+  --text-primary:     #F0EFE9;
+  --text-secondary:   #9B9A94;
+  --text-muted:       #5C5B56;
+
+  /* Phase Colors */
+  --phase-foundation: #F59E0B;
+  --phase-operations: #3B82F6;
+  --phase-identity:   #10B981;
+  --phase-mastery:    #F59E0B;
+
+  /* Accent Colors */
+  --accent-primary:   #3B82F6;
+  --accent-purple:    #8B5CF6;
+  --accent-warning:   #F59E0B;
+  --accent-danger:    #EF4444;
+  --accent-success:   #10B981;
+
+  /* Typography */
+  --font-display:     'Georgia', 'Times New Roman', serif;
+  --font-sans:        -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:        'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+
+  /* Font Sizes */
+  --text-xs:    0.70rem;
+  --text-sm:    0.825rem;
+  --text-base:  1rem;
+  --text-lg:    1.125rem;
+  --text-xl:    1.375rem;
+  --text-2xl:   1.75rem;
+  --text-3xl:   2.25rem;
+  --text-4xl:   3rem;
+  --text-5xl:   3.75rem;
+
+  /* Weights */
+  --weight-light:   300;
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-bold:    700;
+
+  /* Spacing */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Radius */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows & Glows */
+  --glow-green:  0 0 24px rgba(16,185,129,0.20), 0 0 48px rgba(16,185,129,0.10);
+  --glow-blue:   0 0 24px rgba(59,130,246,0.20),  0 0 48px rgba(59,130,246,0.10);
+  --glow-purple: 0 0 24px rgba(139,92,246,0.20),  0 0 48px rgba(139,92,246,0.10);
+  --glow-amber:  0 0 24px rgba(245,158,11,0.20),  0 0 48px rgba(245,158,11,0.10);
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.40);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.50);
+
+  /* Left nav width */
+  --nav-width: 280px;
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+  color: var(--text-primary);
+  background: var(--bg-base);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-top: 54px;
+}
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+
+/* ═══════════════════════════════════════════
+   TOP NAVBAR
+   ═══════════════════════════════════════════ */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 52px;
+  background: rgba(10,10,11,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  z-index: 100;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.navbar-course {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.navbar-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border-default);
+}
+
+.navbar-module {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--phase-identity);
+  letter-spacing: 0.05em;
+}
+
+.navbar-center {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.nav-dot {
+  width: 24px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--border-default);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.nav-dot.phase-foundation { background: rgba(245,158,11,0.25); }
+.nav-dot.phase-operations { background: rgba(59,130,246,0.25); }
+.nav-dot.phase-identity   { background: var(--phase-identity); box-shadow: 0 0 8px rgba(16,185,129,0.50); }
+.nav-dot.phase-future     { background: var(--border-subtle); }
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.navbar-prev {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  transition: color 0.2s;
+  cursor: pointer;
+}
+.navbar-prev:hover { color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════
+   PROGRESS BAR
+   ═══════════════════════════════════════════ */
+.progress-bar-outer {
+  position: fixed;
+  top: 52px;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--border-subtle);
+  z-index: 99;
+}
+/* left-nav padding handled in main rule */
+.progress-bar-fill {
+  height: 100%;
+  width: 77%;
+  background: linear-gradient(90deg,
+    var(--phase-foundation) 0%,
+    var(--phase-operations) 33%,
+    var(--phase-identity) 77%);
+  position: relative;
+}
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: -1px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--phase-identity);
+  box-shadow: 0 0 6px rgba(16,185,129,0.80);
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT — SIDEBAR + MAIN
+   ═══════════════════════════════════════════ */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════════
+   LEFT NAVIGATION
+   ═══════════════════════════════════════════ */
+.left-nav {
+  width: var(--nav-width);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-default);
+  padding: var(--space-4) 0 var(--space-6);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
+  align-self: flex-start;
+}
+
+.left-nav::-webkit-scrollbar { width: 4px; }
+.left-nav::-webkit-scrollbar-track { background: transparent; }
+.left-nav::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+
+.nav-module-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-4);
+}
+
+.nav-badge-tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--phase-identity);
+  background: rgba(16,185,129,0.10);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+  letter-spacing: 0.08em;
+}
+
+.nav-module-info { flex: 1; }
+
+.nav-module-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.nav-module-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.nav-progress-track {
+  flex: 1;
+  height: 3px;
+  background: var(--border-default);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.nav-progress-fill {
+  height: 100%;
+  width: 77%;
+  background: var(--phase-identity);
+  border-radius: var(--radius-full);
+}
+
+.nav-progress-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--phase-identity);
+}
+
+/* Nav items */
+.nav-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: var(--space-4) var(--space-5) var(--space-1);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-5);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  position: relative;
+  text-decoration: none;
+}
+.nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.03);
+}
+.nav-item.active {
+  color: var(--phase-identity);
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 2px;
+  background: var(--phase-identity);
+  border-radius: 0 2px 2px 0;
+}
+.nav-item.sub {
+  padding-left: var(--space-8);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.nav-item.sub:hover { color: var(--text-secondary); }
+.nav-item.sub.active { color: var(--phase-identity); }
+
+.nav-item-num {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 18px;
+}
+
+/* Nav footer */
+.nav-footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  margin-top: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-footer-link {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.nav-footer-link:hover { color: var(--text-secondary); }
+.nav-footer-link.next { color: var(--phase-identity); }
+.nav-footer-link.next:hover { color: #34D399; }
+
+/* ═══════════════════════════════════════════
+   MAIN CONTENT AREA
+   ═══════════════════════════════════════════ */
+.main-content {
+  flex: 1;
+  min-width: 0;
+  max-width: 860px;
+  padding: 0 var(--space-10) var(--space-24);
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════
+   GLOBAL SECTION STYLES
+   ═══════════════════════════════════════════ */
+.section {
+  padding: var(--space-20) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.section:last-child { border-bottom: none; }
+
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--phase-identity);
+  margin-bottom: var(--space-3);
+}
+
+.section-headline {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-regular);
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: var(--space-4);
+}
+
+.section-subhead {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 640px;
+  font-style: italic;
+}
+
+/* ═══════════════════════════════════════════
+   REUSABLE COMPONENTS
+   ═══════════════════════════════════════════ */
+
+/* --- STORY BOX --- */
+.story-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--phase-identity);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10);
+  margin: var(--space-8) 0;
+  box-shadow: var(--shadow-card);
+}
+.story-box-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--phase-identity);
+  margin-bottom: var(--space-5);
+}
+.story-box-text {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.85;
+}
+.story-box-text p + p { margin-top: var(--space-4); }
+
+/* --- THINKING BUBBLE --- */
+.thinking-bubble {
+  background: rgba(16,185,129,0.05);
+  border: 1px solid rgba(16,185,129,0.20);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-8);
+  margin: var(--space-6) 0;
+  position: relative;
+}
+.thinking-bubble::before {
+  content: '"';
+  position: absolute;
+  top: -12px; left: var(--space-8);
+  font-family: var(--font-display);
+  font-size: 3rem;
+  color: var(--phase-identity);
+  opacity: 0.4;
+  line-height: 1;
+}
+.thinking-bubble-text {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-style: italic;
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+
+/* --- INSIGHT BOX --- */
+.insight-box {
+  background: rgba(16,185,129,0.04);
+  border: 1px solid rgba(16,185,129,0.18);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  margin: var(--space-8) 0;
+}
+.insight-box-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--phase-identity);
+  margin-bottom: var(--space-4);
+}
+.insight-box-text {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+.insight-box-text p + p { margin-top: var(--space-3); }
+
+/* --- MENTOR DIALOGUE --- */
+.mentor-dialogue {
+  padding: var(--space-6) 0;
+  margin: var(--space-6) 0;
+}
+.mentor-tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+}
+.mentor-text {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.85;
+}
+.mentor-text p + p { margin-top: var(--space-4); }
+.mentor-text strong {
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+}
+
+/* --- STAT CARD GRID --- */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin: var(--space-8) 0;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  text-align: center;
+}
+.stat-card-number {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  color: var(--phase-identity);
+  display: block;
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+.stat-card-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* --- CHARACTER CARD --- */
+.character-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-top: 2px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  margin-bottom: var(--space-5);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.character-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.character-card.identity  { border-top-color: var(--phase-identity); }
+.character-card.primary   { border-top-color: var(--accent-primary); }
+.character-card.purple    { border-top-color: var(--accent-purple); }
+.character-card.warning   { border-top-color: var(--accent-warning); }
+.character-card.featured {
+  border: 1px solid rgba(59,130,246,0.30);
+  border-top: 2px solid var(--accent-primary);
+  background: rgba(59,130,246,0.04);
+  box-shadow: var(--glow-blue);
+}
+
+.character-card-role {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+.character-card-name {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--text-primary);
+  margin-bottom: var(--space-5);
+}
+.character-card-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-2);
+  margin-top: var(--space-4);
+}
+.character-card-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.you-are-here {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--accent-primary);
+  border: 1px solid rgba(59,130,246,0.30);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  margin-bottom: var(--space-4);
+  letter-spacing: 0.08em;
+}
+
+/* --- HOW WE INTERACT CARD --- */
+.how-we-interact {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin: var(--space-8) 0;
+}
+.how-we-interact-header {
+  background: rgba(16,185,129,0.06);
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-4) var(--space-6);
+}
+.how-we-interact-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--phase-identity);
+}
+.how-we-interact-body { padding: var(--space-6); }
+.rhythm-row {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  align-items: start;
+}
+.rhythm-row:last-child { border-bottom: none; }
+.rhythm-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--phase-identity);
+  font-weight: var(--weight-medium);
+  padding-top: 2px;
+}
+.rhythm-items {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* --- SUMMARY CARDS GRID --- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin: var(--space-8) 0;
+}
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+.summary-card-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--phase-identity);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-3);
+}
+.summary-card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+.summary-card-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.summary-card.featured {
+  grid-column: 1 / -1;
+  border-color: rgba(16,185,129,0.30);
+  background: rgba(16,185,129,0.04);
+  box-shadow: var(--glow-green);
+}
+.summary-card.featured .summary-card-title {
+  font-size: var(--text-2xl);
+  color: var(--phase-identity);
+}
+
+/* --- DAY IN THE LIFE --- */
+.day-in-life {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin: var(--space-8) 0;
+}
+.day-header {
+  background: rgba(16,185,129,0.07);
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.day-header-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--phase-identity);
+}
+.day-header-role {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.day-body { padding: var(--space-2) 0; }
+.day-entry {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+  align-items: start;
+}
+.day-entry:last-child { border-bottom: none; }
+.day-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  padding-top: 2px;
+}
+.day-task {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* --- MODULE INTRO TILES --- */
+.intro-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-8) 0;
+}
+.intro-tile {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+.intro-tile:hover {
+  border-color: rgba(16,185,129,0.30);
+  box-shadow: 0 0 16px rgba(16,185,129,0.06);
+}
+.intro-tile-num {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--phase-identity);
+  margin-bottom: var(--space-2);
+}
+.intro-tile-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+.intro-tile-sub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.intro-tile-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+.intro-bottom-bar {
+  background: rgba(16,185,129,0.05);
+  border: 1px solid rgba(16,185,129,0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* --- CONTINUATION CARD --- */
+.continuation-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-left: 3px solid var(--phase-identity);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-8);
+  box-shadow: 0 0 24px rgba(16,185,129,0.06);
+  margin: var(--space-8) 0;
+}
+.continuation-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--phase-identity);
+  margin-bottom: var(--space-4);
+}
+.continuation-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.continuation-item.current {
+  color: var(--phase-identity);
+  font-weight: var(--weight-medium);
+}
+.continuation-check {
+  color: var(--phase-identity);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+.continuation-arrow {
+  color: var(--phase-identity);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+/* --- SCROLL-REVEAL ANIMATION UTILITY --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- MODULE BRIDGE (END) --- */
+.bridge-section {
+  padding: var(--space-20) 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 100%,
+    rgba(245,158,11,0.12) 0%, transparent 70%),
+    var(--bg-base);
+}
+.bridge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12);
+  align-items: start;
+}
+.bridge-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+.bridge-progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border-default);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.bridge-progress-fill {
+  height: 100%;
+  width: 77%;
+  background: linear-gradient(90deg,
+    var(--phase-foundation) 0%,
+    var(--phase-operations) 40%,
+    var(--phase-identity) 100%);
+  border-radius: var(--radius-full);
+}
+.bridge-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.bridge-check { color: var(--phase-identity); flex-shrink: 0; margin-top: 1px; }
+
+.bridge-next-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--phase-mastery);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--glow-amber);
+}
+.bridge-next-phase {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--phase-mastery);
+  margin-bottom: var(--space-2);
+}
+.bridge-next-module {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+.bridge-next-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+}
+.bridge-next-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: var(--space-6);
+}
+.bridge-next-text p + p { margin-top: var(--space-3); }
+.bridge-next-duration {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-5);
+}
+.btn-primary {
+  display: inline-block;
+  background: var(--phase-mastery);
+  color: #0A0A0B;
+  font-weight: var(--weight-bold);
+  font-size: var(--text-sm);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(245,158,11,0.30);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-ghost {
+  display: inline-block;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-left: var(--space-3);
+  transition: color 0.2s, border-color 0.2s;
+}
+.btn-ghost:hover { color: var(--text-secondary); border-color: var(--border-strong); }
+
+/* --- IGA DISTINCTION CARDS --- */
+.distinction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin: var(--space-8) 0;
+}
+.distinction-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-top: 2px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-7);
+}
+.distinction-card.iam  { border-top-color: var(--accent-primary); }
+.distinction-card.iga  { border-top-color: var(--accent-purple); }
+.distinction-card.pam  { border-top-color: var(--accent-warning); }
+.distinction-card-type {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-3);
+}
+.distinction-card.iam  .distinction-card-type { color: var(--accent-primary); }
+.distinction-card.iga  .distinction-card-type { color: var(--accent-purple); }
+.distinction-card.pam  .distinction-card-type { color: var(--accent-warning); }
+.distinction-question {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-style: italic;
+  color: var(--text-primary);
+  margin-bottom: var(--space-5);
+  line-height: 1.4;
+}
+.distinction-domain-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-2);
+}
+.distinction-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.distinction-tag {
+  font-size: var(--text-xs);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+}
+.distinction-summary {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-style: italic;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Responsive */
+/* responsive → see end of stylesheet */
+
+/* reduced-motion → see end of stylesheet */
+
+
+/* ═══════════════════════════════════════════
+   LIGHT THEME — data-theme="light"
+   ═══════════════════════════════════════════ */
+[data-theme="light"] {
+  --bg-base:          #F5F5F4;
+  --bg-card:          #FFFFFF;
+  --bg-card-hover:    #F0EFEB;
+  --bg-elevated:      #E8E7E2;
+
+  --border-default:   rgba(0,0,0,0.10);
+  --border-subtle:    rgba(0,0,0,0.06);
+  --border-strong:    rgba(0,0,0,0.18);
+
+  --text-primary:     #1A1917;
+  --text-secondary:   #44403C;
+  --text-muted:       #78716C;
+
+  --phase-identity:   #059669;
+  --phase-foundation: #D97706;
+  --phase-operations: #2563EB;
+  --phase-mastery:    #D97706;
+
+  --accent-primary:   #2563EB;
+  --accent-purple:    #7C3AED;
+  --accent-warning:   #D97706;
+  --accent-danger:    #DC2626;
+  --accent-success:   #059669;
+
+  --glow-green:  0 0 20px rgba(5,150,105,0.15), 0 0 40px rgba(5,150,105,0.08);
+  --glow-blue:   0 0 20px rgba(37,99,235,0.15),  0 0 40px rgba(37,99,235,0.08);
+  --glow-purple: 0 0 20px rgba(124,58,237,0.15), 0 0 40px rgba(124,58,237,0.08);
+  --glow-amber:  0 0 20px rgba(217,119,6,0.15),  0 0 40px rgba(217,119,6,0.08);
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.10);
+  --shadow-lg:   0 4px 20px rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] .navbar {
+  background: rgba(245,245,244,0.92);
+  border-bottom-color: rgba(0,0,0,0.10);
+}
+
+[data-theme="light"] .left-nav {
+  background: #FAFAF9;
+  border-right-color: rgba(0,0,0,0.10);
+}
+
+[data-theme="light"] .story-box {
+  background: #FFFFFF;
+}
+
+[data-theme="light"] .thinking-bubble {
+  background: rgba(5,150,105,0.05);
+  border-color: rgba(5,150,105,0.20);
+}
+
+[data-theme="light"] .insight-box {
+  background: rgba(5,150,105,0.04);
+  border-color: rgba(5,150,105,0.18);
+}
+
+[data-theme="light"] table thead tr {
+  background: rgba(5,150,105,0.07);
+}
+
+[data-theme="light"] table tbody tr:nth-child(even) {
+  background: rgba(0,0,0,0.02);
+}
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE BUTTON
+   ═══════════════════════════════════════════ */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  user-select: none;
+  white-space: nowrap;
+}
+.theme-toggle:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+.theme-toggle-icon { font-size: 0.75rem; }
+
+/* ═══════════════════════════════════════════
+   MOBILE NAV TOGGLE
+   ═══════════════════════════════════════════ */
+.mobile-nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+.mobile-nav-toggle:hover { background: var(--bg-card-hover); }
+
+/* ═══════════════════════════════════════════
+   MERGED IN-BODY COMPONENT STYLES
+   ═══════════════════════════════════════════ */
+.jml-step {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .jml-step.jml-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .jml-step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(16,185,129,0.15);
+      border: 1px solid rgba(16,185,129,0.35);
+      color: var(--accent-success);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: var(--weight-bold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .jml-step-body { flex: 1; }
+    .jml-step-title {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-medium);
+      color: var(--text-primary);
+      margin-bottom: 3px;
+    }
+    .jml-step-text {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .jml-connector {
+      width: 2px;
+      height: 16px;
+      background: var(--step-color, var(--border-default));
+      opacity: 0.25;
+      margin-left: 11px;
+      margin-top: 3px;
+      margin-bottom: 3px;
+    }
+@keyframes ring-appear {
+        from { opacity: 0; transform: scale(0.85); }
+        to   { opacity: 1; transform: scale(1); }
+      }
+@keyframes radar-in {
+            from { opacity: 0; transform-origin: 200px 200px; transform: scale(0.2); }
+            to   { opacity: 1; transform-origin: 200px 200px; transform: scale(1); }
+          }
+@keyframes pulse-node {
+          0%,100% { box-shadow: var(--glow-green); }
+          50%      { box-shadow: 0 0 40px rgba(16,185,129,0.40), 0 0 80px rgba(16,185,129,0.15); }
+        }
+        .career-stage {
+          opacity: 0;
+          transform: translateY(12px);
+          transition: opacity 0.45s ease, transform 0.45s ease;
+        }
+        .career-stage.career-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — TABLET
+   ═══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  :root { --nav-width: 220px; }
+  .main-content { padding: 0 var(--space-8) var(--space-20); }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — MOBILE
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .left-nav {
+    position: fixed;
+    top: 54px;
+    left: -280px;
+    width: 280px !important;
+    height: calc(100vh - 54px);
+    z-index: 90;
+    background: var(--bg-base);
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.30);
+  }
+  .left-nav.nav-open {
+    left: 0;
+  }
+  .nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.50);
+    z-index: 89;
+  }
+  .nav-overlay.active { display: block; }
+  .mobile-nav-toggle { display: flex; }
+  .main-content {
+    padding: 0 var(--space-5) var(--space-16);
+    max-width: 100%;
+  }
+  .section-headline { font-size: var(--text-2xl); }
+  .navbar-center { display: none; }
+  .day-entry { grid-template-columns: 52px 1fr; }
+  .rhythm-row { grid-template-columns: 80px 1fr; }
+  .distinction-grid { grid-template-columns: 1fr; }
+  .stat-cards { grid-template-columns: 1fr; }
+  .bridge-grid { grid-template-columns: 1fr; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .summary-card.featured { grid-column: 1; }
+  .intro-tiles { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+
+</style>
+</head>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     TOP NAVBAR
+     ═══════════════════════════════════ -->
+<nav class="navbar">
+  <div class="navbar-left">
+    <span class="navbar-course">Enterprise Security Masterclass</span>
+    <div class="navbar-divider"></div>
+    <span class="navbar-module">Module 07 of 09</span>
+  </div>
+  <div class="navbar-center">
+    <div class="nav-dot phase-foundation" title="Phase 1: Foundation"></div>
+    <div class="nav-dot phase-operations" title="Phase 2: Operations"></div>
+    <div class="nav-dot phase-identity" title="Phase 3: Identity (current)"></div>
+    <div class="nav-dot phase-future" title="Module 08"></div>
+    <div class="nav-dot phase-future" title="Module 09"></div>
+  </div>
+  <div class="navbar-right" style="display:flex;align-items:center;gap:var(--space-3);">
+    <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle navigation">☰</button>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <span class="theme-toggle-icon" id="themeIcon">☀️</span>
+      <span id="themeLabel">Light</span>
+    </button>
+    <a href="module-06-vulnerability-management.html" class="navbar-prev">← Module 06</a>
+  </div>
+</nav>
+
+<div class="progress-bar-outer">
+  <div class="progress-bar-fill"></div>
+</div>
+
+<!-- ═══════════════════════════════════
+     LAYOUT
+     ═══════════════════════════════════ -->
+<div class="nav-overlay" id="navOverlay"></div>
+<div class="layout">
+
+  <!-- LEFT NAVIGATION -->
+  <nav class="left-nav" aria-label="Module navigation">
+    <div class="nav-module-badge">
+      <span class="nav-badge-tag">M · 07</span>
+      <div class="nav-module-info">
+        <div class="nav-module-title">IAM, IGA & PAM — Deep Dive</div>
+        <div class="nav-module-progress">
+          <div class="nav-progress-track"><div class="nav-progress-fill"></div></div>
+          <span class="nav-progress-label">77%</span>
+        </div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:3px;font-family:var(--font-mono);">7 of 9 modules</div>
+      </div>
+    </div>
+
+    <a href="#introduction" class="nav-item">
+      <span class="nav-item-num">01 ·</span> Introduction
+    </a>
+    <a href="#opening-story" class="nav-item">
+      <span class="nav-item-num">02 ·</span> Opening Story
+    </a>
+    <a href="#defined" class="nav-item active">
+      <span class="nav-item-num">03 ·</span> IAM, IGA & PAM — Defined
+    </a>
+    <a href="#iam-what" class="nav-item sub">What IAM Is</a>
+    <a href="#iga-what" class="nav-item sub">What IGA Is</a>
+    <a href="#pam-what" class="nav-item sub">What PAM Is</a>
+    <a href="#distinctions" class="nav-item sub">The Critical Distinctions</a>
+
+    <a href="#iam-org" class="nav-item">
+      <span class="nav-item-num">04 ·</span> The IAM Organization
+    </a>
+    <a href="#org-structure" class="nav-item sub">Org Structure</a>
+    <a href="#leadership" class="nav-item sub">Leadership Roles</a>
+    <a href="#team-ops" class="nav-item sub">Team Interactions</a>
+
+    <a href="#iga-deep" class="nav-item">
+      <span class="nav-item-num">05 ·</span> IGA Deep Dive
+    </a>
+    <a href="#jml" class="nav-item sub">Joiner / Mover / Leaver</a>
+    <a href="#roles" class="nav-item sub">Role Management</a>
+    <a href="#certifications" class="nav-item sub">Access Certifications</a>
+
+    <a href="#pam-deep" class="nav-item">
+      <span class="nav-item-num">06 ·</span> PAM Deep Dive
+    </a>
+    <a href="#priv-types" class="nav-item sub">Privileged Account Types</a>
+    <a href="#pam-controls" class="nav-item sub">PAM Controls</a>
+    <a href="#sessions" class="nav-item sub">Session Recording</a>
+
+    <a href="#iam-enterprise" class="nav-item">
+      <span class="nav-item-num">07 ·</span> IAM Across The Enterprise
+    </a>
+
+    <a href="#iam-architect" class="nav-item">
+      <span class="nav-item-num">08 ·</span> The IAM Architect Role
+    </a>
+    <a href="#skills" class="nav-item sub">Skills & Competencies</a>
+    <a href="#career" class="nav-item sub">Career Path</a>
+
+    <a href="#summary" class="nav-item">
+      <span class="nav-item-num">09 ·</span> What You Now Know
+    </a>
+    <a href="#bridge" class="nav-item">
+      <span class="nav-item-num">10 ·</span> What Comes Next
+    </a>
+
+    <div class="nav-footer">
+      <a href="module-06-vulnerability-management.html" class="nav-footer-link">← Module 06</a>
+      <a href="module-08-risk-compliance-grc.html" class="nav-footer-link next">Module 08 →</a>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT — chunks inject here -->
+  <main class="main-content" id="main-content">
+<!-- ═══════════════════════════════════════════
+     SECTION 1 — HERO
+     id="hero"
+     ═══════════════════════════════════════════ -->
+<section id="hero" style="
+  padding: var(--space-20) 0 var(--space-16);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(16,185,129,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 30%,  rgba(59,130,246,0.12)  0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 20% 60%,  rgba(139,92,246,0.08)  0%, transparent 60%),
+    var(--bg-base);
+  text-align: center;
+">
+
+  <!-- Badge row -->
+  <div style="
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-8);
+  ">
+    <span style="
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--phase-identity);
+      background: rgba(16,185,129,0.10);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: var(--radius-full);
+      padding: 4px 12px;
+      letter-spacing: 0.08em;
+    ">Phase 3 · Identity</span>
+
+    <span style="color: var(--text-muted); font-size: var(--text-xs);">·</span>
+
+    <span style="
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    ">Module 07 of 09</span>
+
+    <span style="color: var(--text-muted); font-size: var(--text-xs);">·</span>
+
+    <span style="
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+    ">⏱ 150 min</span>
+
+    <span style="color: var(--text-muted); font-size: var(--text-xs);">·</span>
+
+    <span style="
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: var(--weight-bold);
+      color: var(--phase-identity);
+      background: rgba(16,185,129,0.15);
+      border: 1px solid rgba(16,185,129,0.30);
+      border-radius: var(--radius-sm);
+      padding: 3px 10px;
+      letter-spacing: 0.08em;
+    ">CORE MODULE</span>
+  </div>
+
+  <!-- Headline -->
+  <h1 style="
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, var(--text-5xl));
+    font-weight: var(--weight-light);
+    color: var(--text-primary);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: var(--space-3);
+  ">Identity, Governance,</h1>
+  <h1 style="
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, var(--text-5xl));
+    font-weight: var(--weight-light);
+    color: var(--text-primary);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: var(--space-4);
+  ">and Privileged Access</h1>
+
+  <!-- Sub line -->
+  <p style="
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-light);
+    font-style: italic;
+    color: var(--phase-identity);
+    margin-bottom: var(--space-8);
+  ">The Heart of Enterprise Security</p>
+
+  <!-- Subheadline -->
+  <div style="
+    max-width: 640px;
+    margin: 0 auto var(--space-10);
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    line-height: 1.75;
+    text-align: left;
+  ">
+    <p style="margin-bottom: var(--space-4);">
+      IAM is not a product you buy.<br>
+      IGA is not a compliance checkbox.<br>
+      PAM is not a password manager.
+    </p>
+    <p>
+      They are an organizational program — with teams, with leadership,
+      with interactions across every team you have already met — and with a
+      career path that leads to some of the most strategic roles in
+      enterprise security.
+    </p>
+    <p style="margin-top: var(--space-4); font-weight: var(--weight-medium); color: var(--text-primary);">
+      This is what you came here to understand.
+    </p>
+  </div>
+
+  <!-- Continuation card -->
+  <div class="continuation-card" style="text-align: left; max-width: 640px; margin: 0 auto;">
+    <div class="continuation-label">Everything was preparation for this</div>
+    <div class="continuation-item">
+      <span class="continuation-check">✓</span>
+      Enterprise mental models and the security organization (M01)
+    </div>
+    <div class="continuation-item">
+      <span class="continuation-check">✓</span>
+      Security leadership — CISO, VP, BISO, and board relationships (M02)
+    </div>
+    <div class="continuation-item">
+      <span class="continuation-check">✓</span>
+      All defensive operations teams — SOC, IR, Threat Intel, Threat Hunting (M03)
+    </div>
+    <div class="continuation-item">
+      <span class="continuation-check">✓</span>
+      Offensive and architecture teams — Red Team, SecArch, SecEng (M04)
+    </div>
+    <div class="continuation-item">
+      <span class="continuation-check">✓</span>
+      Cloud security, AppSec, and DevSecOps (M05)
+    </div>
+    <div class="continuation-item">
+      <span class="continuation-check">✓</span>
+      Vulnerability Management — the program behind the patch (M06)
+    </div>
+    <div class="continuation-item current" style="margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid rgba(16,185,129,0.15);">
+      <span class="continuation-arrow">→</span>
+      IAM, IGA & PAM begins now
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2 — INTRODUCTION
+     id="introduction"
+     ═══════════════════════════════════════════ -->
+<section id="introduction" class="section">
+
+  <div class="section-eyebrow">Module 07 · Introduction</div>
+  <h2 class="section-headline">What this module covers.</h2>
+  <p class="section-subhead">150 minutes. 10 topics. The deepest module in the course.</p>
+
+  <div class="intro-tiles" style="margin-top: var(--space-10);">
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">01</div>
+      <div class="intro-tile-title">What IAM Is</div>
+      <div class="intro-tile-sub">Identity as an organization, not a tool</div>
+      <div class="intro-tile-time">⏱ 10 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">02</div>
+      <div class="intro-tile-title">What IGA Is</div>
+      <div class="intro-tile-sub">The governance layer that controls what you can access</div>
+      <div class="intro-tile-time">⏱ 15 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">03</div>
+      <div class="intro-tile-title">What PAM Is</div>
+      <div class="intro-tile-sub">Privileged control — the tightest layer of identity</div>
+      <div class="intro-tile-time">⏱ 15 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">04</div>
+      <div class="intro-tile-title">Critical Distinctions</div>
+      <div class="intro-tile-sub">IAM vs IGA vs PAM — permanently clear after this</div>
+      <div class="intro-tile-time">⏱ 10 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">05</div>
+      <div class="intro-tile-title">IAM Org Structure</div>
+      <div class="intro-tile-sub">The team behind the program — roles, hierarchy, interactions</div>
+      <div class="intro-tile-time">⏱ 15 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">06</div>
+      <div class="intro-tile-title">IGA Deep Dive</div>
+      <div class="intro-tile-sub">Joiner/Mover/Leaver · role management · access certifications</div>
+      <div class="intro-tile-time">⏱ 20 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">07</div>
+      <div class="intro-tile-title">PAM Deep Dive</div>
+      <div class="intro-tile-sub">Account types · vault controls · session recording</div>
+      <div class="intro-tile-time">⏱ 20 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">08</div>
+      <div class="intro-tile-title">IAM Across The Enterprise</div>
+      <div class="intro-tile-sub">How IAM connects to every team you already know</div>
+      <div class="intro-tile-time">⏱ 15 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">09</div>
+      <div class="intro-tile-title">The IAM Architect Role</div>
+      <div class="intro-tile-sub">Skills, competencies, and what the role actually demands</div>
+      <div class="intro-tile-time">⏱ 15 min</div>
+    </div>
+
+    <div class="intro-tile reveal">
+      <div class="intro-tile-num">10</div>
+      <div class="intro-tile-title">Career Path</div>
+      <div class="intro-tile-sub">From analyst to VP of IAM — the full journey mapped</div>
+      <div class="intro-tile-time">⏱ 15 min</div>
+    </div>
+
+  </div>
+
+  <div class="intro-bottom-bar reveal">
+    By the end of this module, you will understand IAM, IGA, and PAM as a
+    complete organizational program — and see exactly where the IAM Architect
+    leads within the enterprise security ecosystem.
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3 — OPENING STORY
+     id="opening-story"
+     ═══════════════════════════════════════════ -->
+<section id="opening-story" class="section">
+
+  <div class="section-eyebrow">Opening Story</div>
+  <h2 class="section-headline">The admin account nobody knew existed.</h2>
+
+  <div class="story-box reveal">
+    <div class="story-box-title">The Ghost That Owned Everything</div>
+    <div class="story-box-text">
+      <p>
+        Three years into a CISO role at a financial services firm,
+        I commissioned a PAM discovery exercise.
+      </p>
+      <p>
+        The goal was simple: find every privileged account
+        in the environment and bring it under control.
+      </p>
+      <p style="font-size: var(--text-lg); color: var(--text-primary); font-weight: var(--weight-medium);">
+        We found 847 privileged accounts.
+      </p>
+      <p>
+        Our records showed 203.
+      </p>
+      <p>
+        The other 644 were what we call ghost accounts —
+        service accounts created by projects that ended,
+        admin accounts created for one-time tasks,
+        shared credentials that had been passed around
+        for years, default admin accounts on systems
+        that were never changed after installation.
+      </p>
+      <p>
+        644 accounts with domain admin equivalent access.
+        Nobody knew they existed.
+        Nobody owned them.
+        Nobody had changed their passwords in years.
+      </p>
+      <p style="color: var(--accent-danger); font-weight: var(--weight-medium);">
+        In the underground markets, one of them had already been sold three times.
+      </p>
+      <p>
+        We found out because an attacker who had purchased
+        it six months earlier was still using it —
+        quietly — accessing financial records,
+        watching our environment, moving slowly
+        toward our most sensitive systems.
+      </p>
+      <p style="font-size: var(--text-lg); color: var(--text-primary);">
+        47 days before we found them.
+      </p>
+      <p>
+        The PAM program we built after that discovery
+        was the single most impactful security initiative
+        in my tenure.
+      </p>
+      <p>
+        Not because of the technology.
+        Because of the organizational discipline it required to maintain.
+      </p>
+    </div>
+  </div>
+
+  <div class="thinking-bubble reveal">
+    <p class="thinking-bubble-text">
+      The most dangerous account in any enterprise
+      is not the one the attacker creates.<br><br>
+      It is the one your own organization forgot it had.
+    </p>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4 — IAM, IGA, PAM DEFINED
+     id="defined"
+     ═══════════════════════════════════════════ -->
+<section id="defined" class="section">
+
+  <div class="section-eyebrow">Section 03 · Concepts</div>
+  <h2 class="section-headline">Three programs. One identity ecosystem.</h2>
+  <p class="section-subhead">
+    The most common confusion in enterprise security is treating IAM, IGA,
+    and PAM as competing products. They are not. They are three layers
+    of a single, complete program.
+  </p>
+
+  <!-- Mentor setup dialogue -->
+  <div class="mentor-dialogue reveal">
+    <div class="mentor-tag">Mentor · Former CISO</div>
+    <div class="mentor-text">
+      <p>
+        Let me use your engineering background to make this permanent.
+      </p>
+      <p>
+        <strong>IAM is like your authentication system</strong> — it verifies who you are,
+        creates your identity in the directory, manages your credentials,
+        and controls how you sign in across every system.
+      </p>
+      <p>
+        <strong>IGA is like your authorization policy engine</strong> — it decides
+        what you should be able to do based on your role, checks whether
+        you still need that access, and produces the audit evidence that proves
+        the right people have the right access.
+      </p>
+      <p>
+        <strong>PAM is like your production access control</strong> — it governs
+        who can touch the most critical systems, under what conditions,
+        with mandatory approval workflows and full session recording.
+        It is the tightest layer. The one attackers want most.
+      </p>
+    </div>
+  </div>
+
+  <!-- IAM vs IGA vs PAM DISTINCTION CARDS -->
+  <div class="distinction-grid reveal">
+
+    <!-- IAM Card -->
+    <div class="distinction-card iam">
+      <div class="distinction-card-type">IAM — Identity & Access Management</div>
+      <div class="distinction-question">"Who are you?"</div>
+      <div class="distinction-domain-label">Domain</div>
+      <div class="distinction-tags">
+        <span class="distinction-tag">Authentication</span>
+        <span class="distinction-tag">Directory Services</span>
+        <span class="distinction-tag">SSO</span>
+        <span class="distinction-tag">Federation</span>
+        <span class="distinction-tag">MFA</span>
+        <span class="distinction-tag">Lifecycle Mgmt</span>
+      </div>
+      <div class="distinction-summary">
+        IAM controls how identities are created, authenticated, and managed.
+        It is the foundation every other identity program is built on.
+      </div>
+    </div>
+
+    <!-- IGA Card -->
+    <div class="distinction-card iga">
+      <div class="distinction-card-type">IGA — Identity Governance & Administration</div>
+      <div class="distinction-question">"What should you have access to?"</div>
+      <div class="distinction-domain-label">Domain</div>
+      <div class="distinction-tags">
+        <span class="distinction-tag">Role Management</span>
+        <span class="distinction-tag">Access Requests</span>
+        <span class="distinction-tag">Certifications</span>
+        <span class="distinction-tag">Segregation of Duties</span>
+        <span class="distinction-tag">Joiner/Mover/Leaver</span>
+        <span class="distinction-tag">Entitlement Mgmt</span>
+      </div>
+      <div class="distinction-summary">
+        IGA governs what access is appropriate and whether people still need it.
+        It is the governance layer — the difference between access
+        that is right and access that just exists.
+      </div>
+    </div>
+
+    <!-- PAM Card -->
+    <div class="distinction-card pam">
+      <div class="distinction-card-type">PAM — Privileged Access Management</div>
+      <div class="distinction-question">"How do we control the accounts with the most power?"</div>
+      <div class="distinction-domain-label">Domain</div>
+      <div class="distinction-tags">
+        <span class="distinction-tag">Privileged Vault</span>
+        <span class="distinction-tag">Session Recording</span>
+        <span class="distinction-tag">Just-in-Time Access</span>
+        <span class="distinction-tag">Least Privilege</span>
+        <span class="distinction-tag">Admin Account Control</span>
+        <span class="distinction-tag">Break-Glass Procedures</span>
+      </div>
+      <div class="distinction-summary">
+        PAM controls, monitors, and audits the accounts that can do the most
+        damage. It is the privileged control layer — the tightest controls
+        in the enterprise security program.
+      </div>
+    </div>
+
+  </div><!-- end distinction-grid -->
+
+  <!-- ─────────────────────────
+       id="iam-what"
+       IAM MIND MAP
+       ───────────────────────── -->
+  <div id="iam-what" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow">What IAM Is</div>
+    <h3 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--text-primary);margin-bottom:var(--space-6);font-weight:var(--weight-regular);">
+      Identity & Access Management
+    </h3>
+
+    <div class="reveal">
+      <svg width="100%" viewBox="0 0 680 340" role="img" aria-label="IAM mind map showing core domains">
+        <title>IAM mind map</title>
+        <desc>Central IAM node connected to eight branches: Authentication, Single Sign-On, Multi-Factor Authentication, Federation, Directory Services, Lifecycle Management, Identity Provisioning, Protocol Management</desc>
+        <defs>
+          <marker id="arr-iam" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Center node -->
+        <g>
+          <circle cx="340" cy="170" r="52" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.50)" stroke-width="1.5"/>
+          <text x="340" y="163" text-anchor="middle" dominant-baseline="central"
+            style="font-family:var(--font-display);font-size:18px;font-weight:600;fill:#3B82F6;">IAM</text>
+          <text x="340" y="182" text-anchor="middle" dominant-baseline="central"
+            style="font-family:var(--font-sans);font-size:10px;fill:rgba(59,130,246,0.70);">Identity & Access</text>
+        </g>
+
+        <!-- Branch lines -->
+        <!-- Top-left: Authentication -->
+        <line x1="299" y1="132" x2="192" y2="68" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+        <!-- Top: SSO -->
+        <line x1="327" y1="119" x2="280" y2="42" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+        <!-- Top-right: MFA -->
+        <line x1="370" y1="122" x2="420" y2="44" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+        <!-- Right-top: Federation -->
+        <line x1="391" y1="143" x2="520" y2="90" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+        <!-- Right-bottom: Directory Services -->
+        <line x1="389" y1="196" x2="516" y2="240" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+        <!-- Bottom-right: Lifecycle Mgmt -->
+        <line x1="366" y1="218" x2="400" y2="292" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+        <!-- Bottom-left: Identity Provisioning -->
+        <line x1="313" y1="219" x2="276" y2="292" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+        <!-- Left: Protocol Management -->
+        <line x1="289" y1="183" x2="154" y2="210" stroke="rgba(59,130,246,0.35)" stroke-width="1" marker-end="url(#arr-iam)"/>
+
+        <!-- Leaf nodes -->
+        <!-- Authentication -->
+        <g>
+          <rect x="80" y="46" width="142" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="151" y="68" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Authentication</text>
+        </g>
+        <!-- SSO -->
+        <g>
+          <rect x="213" y="20" width="134" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="280" y="42" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Single Sign-On (SSO)</text>
+        </g>
+        <!-- MFA -->
+        <g>
+          <rect x="354" y="20" width="142" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="425" y="42" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Multi-Factor Auth</text>
+        </g>
+        <!-- Federation -->
+        <g>
+          <rect x="464" y="68" width="120" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="524" y="90" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Federation</text>
+        </g>
+        <!-- Directory Services -->
+        <g>
+          <rect x="460" y="218" width="138" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="529" y="240" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Directory Services</text>
+        </g>
+        <!-- Lifecycle Mgmt -->
+        <g>
+          <rect x="334" y="270" width="148" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="408" y="292" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Lifecycle Management</text>
+        </g>
+        <!-- Identity Provisioning -->
+        <g>
+          <rect x="194" y="270" width="162" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="275" y="292" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Identity Provisioning</text>
+        </g>
+        <!-- Protocol Management -->
+        <g>
+          <rect x="40" y="188" width="160" height="44" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="120" y="204" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Protocol Mgmt</text>
+          <text x="120" y="220" text-anchor="middle" dominant-baseline="central" style="font-size:10px;fill:var(--text-secondary);font-family:var(--font-mono);">SAML · OIDC · OAuth · SCIM</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────
+       id="iga-what"
+       IGA MIND MAP
+       ───────────────────────── -->
+  <div id="iga-what" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow">What IGA Is</div>
+    <h3 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--text-primary);margin-bottom:var(--space-6);font-weight:var(--weight-regular);">
+      Identity Governance & Administration
+    </h3>
+
+    <div class="reveal">
+      <svg width="100%" viewBox="0 0 680 340" role="img" aria-label="IGA mind map showing governance domains">
+        <title>IGA mind map</title>
+        <desc>Central IGA node connected to eight branches: Role Management, Access Requests, Access Certifications, Segregation of Duties, Joiner/Mover/Leaver, Policy Enforcement, Audit & Compliance, Entitlement Management</desc>
+        <defs>
+          <marker id="arr-iga" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Center node -->
+        <g>
+          <circle cx="340" cy="170" r="52" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.50)" stroke-width="1.5"/>
+          <text x="340" y="163" text-anchor="middle" dominant-baseline="central"
+            style="font-family:var(--font-display);font-size:18px;font-weight:600;fill:#8B5CF6;">IGA</text>
+          <text x="340" y="182" text-anchor="middle" dominant-baseline="central"
+            style="font-family:var(--font-sans);font-size:10px;fill:rgba(139,92,246,0.70);">Identity Governance</text>
+        </g>
+
+        <!-- Branch lines -->
+        <line x1="300" y1="131" x2="192" y2="68" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+        <line x1="328" y1="119" x2="282" y2="42" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+        <line x1="368" y1="120" x2="416" y2="44" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+        <line x1="390" y1="142" x2="518" y2="90" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+        <line x1="390" y1="196" x2="516" y2="238" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+        <line x1="366" y1="218" x2="400" y2="290" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+        <line x1="315" y1="220" x2="278" y2="290" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+        <line x1="290" y1="184" x2="156" y2="210" stroke="rgba(139,92,246,0.35)" stroke-width="1" marker-end="url(#arr-iga)"/>
+
+        <!-- Leaf nodes -->
+        <g>
+          <rect x="86" y="46" width="140" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="156" y="68" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Role Management</text>
+        </g>
+        <g>
+          <rect x="216" y="20" width="136" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="284" y="42" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Access Requests</text>
+        </g>
+        <g>
+          <rect x="352" y="20" width="156" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="430" y="42" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Access Certifications</text>
+        </g>
+        <g>
+          <rect x="464" y="68" width="152" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="540" y="82" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Segregation</text>
+          <text x="540" y="98" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">of Duties</text>
+        </g>
+        <g>
+          <rect x="460" y="216" width="156" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="538" y="238" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Policy Enforcement</text>
+        </g>
+        <g>
+          <rect x="338" y="268" width="152" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="414" y="290" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Audit & Compliance</text>
+        </g>
+        <g>
+          <rect x="194" y="268" width="160" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="274" y="290" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Joiner / Mover / Leaver</text>
+        </g>
+        <g>
+          <rect x="38" y="188" width="164" height="44" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+          <text x="120" y="210" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Entitlement Management</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────
+       id="pam-what"
+       PAM MIND MAP
+       ───────────────────────── -->
+  <div id="pam-what" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow">What PAM Is</div>
+    <h3 style="font-family:var(--font-display);font-size:var(--text-2xl);color:var(--text-primary);margin-bottom:var(--space-6);font-weight:var(--weight-regular);">
+      Privileged Access Management
+    </h3>
+
+    <div class="reveal">
+      <svg width="100%" viewBox="0 0 680 340" role="img" aria-label="PAM mind map showing privileged access domains">
+        <title>PAM mind map</title>
+        <desc>Central PAM node connected to eight branches: Privileged Vault, Session Recording, Just-in-Time Access, Password Rotation, Least Privilege Enforcement, Admin Account Control, Break-Glass Procedures, Privileged Analytics</desc>
+        <defs>
+          <marker id="arr-pam" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Center node -->
+        <g>
+          <circle cx="340" cy="170" r="52" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.50)" stroke-width="1.5"/>
+          <text x="340" y="163" text-anchor="middle" dominant-baseline="central"
+            style="font-family:var(--font-display);font-size:18px;font-weight:600;fill:#F59E0B;">PAM</text>
+          <text x="340" y="182" text-anchor="middle" dominant-baseline="central"
+            style="font-family:var(--font-sans);font-size:10px;fill:rgba(245,158,11,0.70);">Privileged Access</text>
+        </g>
+
+        <!-- Branch lines -->
+        <line x1="300" y1="131" x2="194" y2="68" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+        <line x1="328" y1="119" x2="280" y2="42" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+        <line x1="368" y1="120" x2="416" y2="44" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+        <line x1="390" y1="142" x2="516" y2="90" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+        <line x1="390" y1="196" x2="514" y2="236" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+        <line x1="366" y1="218" x2="396" y2="290" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+        <line x1="316" y1="220" x2="280" y2="290" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+        <line x1="290" y1="185" x2="158" y2="212" stroke="rgba(245,158,11,0.35)" stroke-width="1" marker-end="url(#arr-pam)"/>
+
+        <!-- Leaf nodes -->
+        <g>
+          <rect x="86" y="46" width="144" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="158" y="68" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Privileged Vault</text>
+        </g>
+        <g>
+          <rect x="212" y="20" width="144" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="284" y="42" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Session Recording</text>
+        </g>
+        <g>
+          <rect x="352" y="20" width="152" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="428" y="42" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Just-in-Time Access</text>
+        </g>
+        <g>
+          <rect x="462" y="68" width="148" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="536" y="90" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Password Rotation</text>
+        </g>
+        <g>
+          <rect x="456" y="214" width="170" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="541" y="230" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Admin Account</text>
+          <text x="541" y="246" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Control</text>
+        </g>
+        <g>
+          <rect x="334" y="268" width="152" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="410" y="284" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Break-Glass</text>
+          <text x="410" y="300" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Procedures</text>
+        </g>
+        <g>
+          <rect x="198" y="268" width="164" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="280" y="284" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Least Privilege</text>
+          <text x="280" y="300" text-anchor="middle" dominant-baseline="central" style="font-size:11px;fill:var(--text-primary);font-family:var(--font-sans);">Enforcement</text>
+        </g>
+        <g>
+          <rect x="40" y="190" width="164" height="44" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+          <text x="122" y="212" text-anchor="middle" dominant-baseline="central" style="font-size:12px;fill:var(--text-primary);font-family:var(--font-sans);">Privileged Analytics</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────
+       id="distinctions"
+       INSIGHT BOX
+       ───────────────────────── -->
+  <div id="distinctions" style="margin-top: var(--space-12);">
+    <div class="insight-box reveal">
+      <div class="insight-box-label">The Critical Distinction — Permanent</div>
+      <div class="insight-box-text">
+        <p>
+          <strong style="color:var(--text-primary);">IAM, IGA, and PAM are not competing products. They are three layers of a complete identity program.</strong>
+        </p>
+        <p>
+          <strong style="color:var(--accent-primary);">IAM is the foundation</strong> — who exists and how they authenticate.
+          Without IAM, there is no identity infrastructure to build anything else on.
+        </p>
+        <p>
+          <strong style="color:var(--accent-purple);">IGA is the governance layer</strong> — what they should have access to
+          and whether they still need it. Without IGA, access accumulates until
+          an auditor finds it or an attacker exploits it.
+        </p>
+        <p>
+          <strong style="color:var(--accent-warning);">PAM is the privileged control layer</strong> — the tightest controls
+          for the accounts with the most power. Without PAM, the most dangerous
+          accounts in the enterprise are the least controlled.
+        </p>
+        <p>
+          An enterprise with strong IAM but no IGA has identities without governance.<br>
+          An enterprise with IGA but no PAM has governance without privileged control.<br>
+          All three together form a complete identity program.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5 — THE IAM ORGANIZATION
+     id="iam-org"
+     ═══════════════════════════════════════════ -->
+<section id="iam-org" class="section">
+
+  <div class="section-eyebrow">Section 04 · Organization</div>
+  <h2 class="section-headline">The IAM Organization.</h2>
+  <p class="section-subhead">The team behind the program.</p>
+
+  <div class="mentor-dialogue reveal">
+    <div class="mentor-tag">Mentor · Former CISO</div>
+    <div class="mentor-text">
+      <p>
+        When most engineers hear "IAM," they think of a product —
+        a directory, an SSO platform, a vault.
+      </p>
+      <p>
+        What they miss is the organization behind those tools.
+        The people who designed the program, who made the architectural decisions,
+        who maintain the discipline that makes the technology work.
+      </p>
+      <p>
+        <strong>IAM is a team. It has a hierarchy. It has career paths.
+        And it connects to every team in the enterprise security organization.</strong>
+      </p>
+      <p>
+        Let me show you what that organization looks like.
+      </p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────
+       id="org-structure"
+       IAM ORG CHART
+       ───────────────────────── -->
+  <div id="org-structure" style="margin-top: var(--space-10);">
+
+    <div class="section-eyebrow" style="margin-bottom: var(--space-4);">Org Structure</div>
+
+    <div class="reveal" style="
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-10);
+      max-width: 900px;
+    ">
+      <h3 style="
+        font-family: var(--font-display);
+        font-size: var(--text-xl);
+        font-style: italic;
+        text-align: center;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-10);
+      ">IAM Organization Structure</h3>
+
+      <!-- Level 1: VP/Director -->
+      <div style="display: flex; justify-content: center; margin-bottom: var(--space-6);">
+        <div style="
+          width: 200px;
+          background: rgba(16,185,129,0.08);
+          border: 1.5px solid var(--phase-identity);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4) var(--space-5);
+          text-align: center;
+          box-shadow: var(--glow-green);
+        ">
+          <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--phase-identity);letter-spacing:0.08em;margin-bottom:4px;">LEVEL 1</div>
+          <div style="font-weight:var(--weight-medium);color:var(--text-primary);font-size:var(--text-sm);">VP / Director of IAM</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">Reports to CISO</div>
+        </div>
+      </div>
+
+      <!-- Connector line down from Level 1 -->
+      <div style="display:flex;justify-content:center;margin-bottom:0;">
+        <div style="width:2px;height:24px;background:var(--border-default);"></div>
+      </div>
+
+      <!-- Horizontal connector spanning Level 2 -->
+      <div style="
+        display: flex;
+        justify-content: center;
+        margin-bottom: 0;
+        position: relative;
+      ">
+        <div style="
+          position: absolute;
+          top: 0;
+          left: calc(50% - 240px);
+          right: calc(50% - 240px);
+          width: 480px;
+          height: 2px;
+          background: var(--border-default);
+        "></div>
+        <!-- Three vertical drops -->
+        <div style="display:flex;width:480px;justify-content:space-between;">
+          <div style="width:2px;height:24px;background:var(--border-default);"></div>
+          <div style="width:2px;height:24px;background:var(--border-default);"></div>
+          <div style="width:2px;height:24px;background:var(--border-default);"></div>
+        </div>
+      </div>
+
+      <!-- Level 2: Three direct reports -->
+      <div style="
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-4);
+        margin-bottom: var(--space-6);
+      ">
+
+        <!-- IAM Architect (featured — YOU ARE HERE) -->
+        <div style="
+          background: rgba(59,130,246,0.08);
+          border: 2px solid var(--accent-primary);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4) var(--space-5);
+          text-align: center;
+          box-shadow: var(--glow-blue);
+          position: relative;
+        ">
+          <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-primary);letter-spacing:0.08em;margin-bottom:4px;">LEVEL 2</div>
+          <div style="font-weight:var(--weight-medium);color:var(--text-primary);font-size:var(--text-sm);">IAM Architect</div>
+          <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-primary);margin-top:8px;border:1px solid rgba(59,130,246,0.30);border-radius:var(--radius-sm);padding:2px 6px;display:inline-block;letter-spacing:0.06em;">YOU ARE HERE</div>
+        </div>
+
+        <!-- IGA Program Lead -->
+        <div style="
+          background: rgba(139,92,246,0.06);
+          border: 1.5px solid var(--accent-purple);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4) var(--space-5);
+          text-align: center;
+        ">
+          <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-purple);letter-spacing:0.08em;margin-bottom:4px;">LEVEL 2</div>
+          <div style="font-weight:var(--weight-medium);color:var(--text-primary);font-size:var(--text-sm);">IGA Program Lead</div>
+        </div>
+
+        <!-- PAM Lead -->
+        <div style="
+          background: rgba(245,158,11,0.06);
+          border: 1.5px solid var(--accent-warning);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4) var(--space-5);
+          text-align: center;
+        ">
+          <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-warning);letter-spacing:0.08em;margin-bottom:4px;">LEVEL 2</div>
+          <div style="font-weight:var(--weight-medium);color:var(--text-primary);font-size:var(--text-sm);">PAM Lead</div>
+        </div>
+
+      </div>
+
+      <!-- Connectors to Level 3 -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:0;">
+        <div style="display:flex;justify-content:space-around;">
+          <div style="width:2px;height:20px;background:var(--border-default);"></div>
+          <div style="width:2px;height:20px;background:var(--border-default);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-around;">
+          <div style="width:2px;height:20px;background:var(--border-default);"></div>
+          <div style="width:2px;height:20px;background:var(--border-default);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-around;">
+          <div style="width:2px;height:20px;background:var(--border-default);"></div>
+          <div style="width:2px;height:20px;background:var(--border-default);"></div>
+        </div>
+      </div>
+
+      <!-- Level 3: Individual contributors -->
+      <div style="
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-4);
+      ">
+
+        <!-- Under IAM Architect -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);">
+          <div style="
+            background: rgba(59,130,246,0.04);
+            border: 1px solid rgba(59,130,246,0.20);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-3);
+            text-align: center;
+          ">
+            <div style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);margin-bottom:3px;">L3</div>
+            <div style="font-size:var(--text-xs);color:var(--text-secondary);">IAM Engineer</div>
+          </div>
+          <div style="
+            background: rgba(59,130,246,0.04);
+            border: 1px solid rgba(59,130,246,0.20);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-3);
+            text-align: center;
+          ">
+            <div style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);margin-bottom:3px;">L3</div>
+            <div style="font-size:var(--text-xs);color:var(--text-secondary);">Directory Admin</div>
+          </div>
+        </div>
+
+        <!-- Under IGA Lead -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);">
+          <div style="
+            background: rgba(139,92,246,0.04);
+            border: 1px solid rgba(139,92,246,0.20);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-3);
+            text-align: center;
+          ">
+            <div style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);margin-bottom:3px;">L3</div>
+            <div style="font-size:var(--text-xs);color:var(--text-secondary);">IGA Developer</div>
+          </div>
+          <div style="
+            background: rgba(139,92,246,0.04);
+            border: 1px solid rgba(139,92,246,0.20);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-3);
+            text-align: center;
+          ">
+            <div style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);margin-bottom:3px;">L3</div>
+            <div style="font-size:var(--text-xs);color:var(--text-secondary);">Access Review Analyst</div>
+          </div>
+        </div>
+
+        <!-- Under PAM Lead -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);">
+          <div style="
+            background: rgba(245,158,11,0.04);
+            border: 1px solid rgba(245,158,11,0.20);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-3);
+            text-align: center;
+          ">
+            <div style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);margin-bottom:3px;">L3</div>
+            <div style="font-size:var(--text-xs);color:var(--text-secondary);">PAM Admin</div>
+          </div>
+          <div style="
+            background: rgba(245,158,11,0.04);
+            border: 1px solid rgba(245,158,11,0.20);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-3);
+            text-align: center;
+          ">
+            <div style="font-size:var(--text-xs);color:var(--text-muted);font-family:var(--font-mono);margin-bottom:3px;">L3</div>
+            <div style="font-size:var(--text-xs);color:var(--text-secondary);">Priv. Access Analyst</div>
+          </div>
+        </div>
+
+      </div><!-- end level 3 grid -->
+
+    </div><!-- end org chart container -->
+  </div>
+
+  <!-- ─────────────────────────
+       id="leadership"
+       CHARACTER CARDS
+       ───────────────────────── -->
+  <div id="leadership" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-6);">Leadership Roles</div>
+
+    <!-- VP / Director of IAM -->
+    <div class="character-card identity reveal">
+      <div class="character-card-role">Executive Leadership</div>
+      <div class="character-card-name">VP / Director of IAM</div>
+
+      <div class="character-card-label">Their World</div>
+      <div class="character-card-text">
+        Owns the entire identity program. Reports to the CISO. Manages budget, team, and
+        the relationships with the CIO, CTO, and business units.
+        Presents IAM program health to the CISO monthly and to the
+        Board's audit committee annually.
+      </div>
+
+      <div class="character-card-label">What Keeps Them Awake</div>
+      <div class="character-card-text">
+        A privileged account compromise that PAM should have caught.
+        An audit finding on access certifications that surfaces publicly.
+        A budget request that did not get approved — and the gap it leaves.
+      </div>
+
+      <div class="character-card-label">IAM Relevance</div>
+      <div class="character-card-text">
+        This is the destination for senior IAM Architects who develop
+        leadership and business skills alongside their technical depth.
+        The path runs directly through the role below.
+      </div>
+    </div>
+
+    <!-- IAM Architect (featured) -->
+    <div class="character-card featured reveal">
+      <span class="you-are-here">YOU ARE BUILDING TOWARD THIS ROLE</span>
+      <div class="character-card-role">Architecture & Strategy</div>
+      <div class="character-card-name" style="color: var(--accent-primary);">IAM Architect</div>
+
+      <div class="character-card-label">Their World</div>
+      <div class="character-card-text">
+        Designs the identity architecture. Makes platform decisions.
+        Writes the identity standards. Reviews every major system deployment
+        for identity requirements. Is the expert the entire security organization
+        calls when identity questions arise — from a new SaaS platform
+        to a zero trust initiative to an IR investigation.
+      </div>
+
+      <div class="character-card-label">What Keeps Them Awake</div>
+      <div class="character-card-text">
+        An architecture decision made without IAM review that becomes a
+        security gap three years later. A new cloud platform with no coherent
+        identity design. A PAM gap discovered by Red Team
+        before the IAM team found it themselves.
+      </div>
+
+      <div class="character-card-label">IAM Relevance</div>
+      <div class="character-card-text">
+        This is the role this entire course was building toward.
+        This module is the map for how to reach it — and what to do once you're there.
+      </div>
+    </div>
+
+    <!-- IGA Program Lead -->
+    <div class="character-card purple reveal">
+      <div class="character-card-role">Governance Leadership</div>
+      <div class="character-card-name">IGA Program Lead</div>
+
+      <div class="character-card-label">Their World</div>
+      <div class="character-card-text">
+        Owns the governance layer of the identity program. Manages the IGA platform,
+        drives the Joiner/Mover/Leaver process, runs access certification campaigns,
+        and owns the Segregation of Duties control framework.
+        Closest relationship with GRC and internal audit of any IAM role.
+      </div>
+
+      <div class="character-card-label">What Keeps Them Awake</div>
+      <div class="character-card-text">
+        A certification campaign that hits 60% completion with a deadline tomorrow.
+        A SoD violation that made it into production. An audit finding that
+        the last joiner cohort had access to production systems on day one.
+      </div>
+
+      <div class="character-card-label">IAM Relevance</div>
+      <div class="character-card-text">
+        The IGA Program Lead is the IAM team's primary interface to compliance and audit.
+        The IAM Architect designs the frameworks; the IGA Lead operates them.
+      </div>
+    </div>
+
+    <!-- PAM Lead -->
+    <div class="character-card warning reveal">
+      <div class="character-card-role">Privileged Access Leadership</div>
+      <div class="character-card-name">PAM Lead</div>
+
+      <div class="character-card-label">Their World</div>
+      <div class="character-card-text">
+        Owns the privileged access program. Manages the vault platform,
+        privileged account inventory, session recording infrastructure,
+        and the JIT access program. Closest relationship with IR, Red Team,
+        and Security Operations of any IAM role.
+      </div>
+
+      <div class="character-card-label">What Keeps Them Awake</div>
+      <div class="character-card-text">
+        A service account discovered outside the vault.
+        A Red Team finding that a privileged session was unrecorded.
+        An IR incident where the attacker used a privileged credential
+        that was three years old with no rotation.
+      </div>
+
+      <div class="character-card-label">IAM Relevance</div>
+      <div class="character-card-text">
+        The PAM Lead is the IAM team's primary interface to incident response
+        and offensive security. When a breach occurs, the PAM Lead is on
+        the IR call from minute one.
+      </div>
+    </div>
+
+  </div><!-- end leadership -->
+
+  <!-- ─────────────────────────
+       id="team-ops"
+       IAM OPERATING RHYTHM
+       ───────────────────────── -->
+  <div id="team-ops" style="margin-top: var(--space-12);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-4);">Team Interactions</div>
+
+    <div class="how-we-interact reveal">
+      <div class="how-we-interact-header">
+        <div class="how-we-interact-title">IAM Team Operating Rhythm</div>
+      </div>
+      <div class="how-we-interact-body">
+
+        <div class="rhythm-row">
+          <div class="rhythm-label">Daily</div>
+          <div class="rhythm-items">
+            Access request queue review and provisioning workflows ·
+            PAM vault monitoring and alert review ·
+            Privileged session anomaly checks ·
+            Directory replication and sync health
+          </div>
+        </div>
+
+        <div class="rhythm-row">
+          <div class="rhythm-label">Weekly</div>
+          <div class="rhythm-items">
+            IGA certification campaign completion review ·
+            Architecture Review Board participation for new systems ·
+            SOC / IR coordination on identity-related incidents ·
+            New platform SSO integration queue review
+          </div>
+        </div>
+
+        <div class="rhythm-row">
+          <div class="rhythm-label">Monthly</div>
+          <div class="rhythm-items">
+            Executive IAM program dashboard delivered to CISO ·
+            Access certification completion metrics and escalation report ·
+            Privileged account inventory audit ·
+            SoD violation review and remediation status
+          </div>
+        </div>
+
+        <div class="rhythm-row">
+          <div class="rhythm-label">Event-driven</div>
+          <div class="rhythm-items">
+            IR incident → IAM containment support (credential revocation,
+            account suspension, session termination) ·
+            New system deployment → IAM architecture review and integration design ·
+            Audit → evidence package preparation and access review export ·
+            M&A activity → identity integration planning and directory consolidation
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end team-ops -->
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 6 — IGA DEEP DIVE
+     id="iga-deep"
+     ═══════════════════════════════════════════ -->
+<section id="iga-deep" class="section">
+
+  <div class="section-eyebrow">Section 05 · IGA Deep Dive</div>
+  <h2 class="section-headline">IGA Deep Dive.</h2>
+  <p class="section-subhead">
+    Governance is the difference between access that is right
+    and access that just exists.
+  </p>
+
+  <!-- ─────────────────────────
+       id="jml"
+       JOINER / MOVER / LEAVER
+       ───────────────────────── -->
+  <div id="jml" style="margin-top: var(--space-10);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-4);">Joiner / Mover / Leaver</div>
+
+    <div class="mentor-dialogue reveal">
+      <div class="mentor-tag">Mentor · Former CISO</div>
+      <div class="mentor-text">
+        <p>
+          The Joiner/Mover/Leaver process sounds administrative.
+          It is actually one of the most security-critical processes in the enterprise.
+        </p>
+        <p>
+          The terminated employee who still has access 48 hours after leaving is a JML failure.
+          The contractor who was moved to a new project but kept access to the old one is a JML failure.
+          The new hire who has access to production on day one is a JML failure.
+        </p>
+        <p>
+          Every one of those is an audit finding.
+          Every one of those is a potential breach.
+        </p>
+        <p>
+          <strong>IGA exists to make JML systematic, auditable, and automatic.</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- JML ANIMATED FLOW -->
+    <div class="reveal" style="margin-top: var(--space-6);">
+      <div style="
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-6);
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-2xl);
+        padding: var(--space-8);
+      ">
+
+        <!-- JOINER Column -->
+        <div class="jml-col" data-col="0">
+          <div style="
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-success);
+            margin-bottom: var(--space-5);
+            text-align: center;
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid rgba(16,185,129,0.20);
+          ">Joiner</div>
+
+          <div class="jml-step" style="--step-color: var(--accent-success);">
+            <div class="jml-step-num">1</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">HR creates record</div>
+              <div class="jml-step-text">New employee record triggers IAM provisioning event via SCIM or HR connector</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-success);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-success);">
+            <div class="jml-step-num">2</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">Account provisioned</div>
+              <div class="jml-step-text">IAM creates directory account, email, and core system credentials</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-success);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-success);">
+            <div class="jml-step-num">3</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">IGA assigns role-based access</div>
+              <div class="jml-step-text">Role detected from HR record; entitlements provisioned automatically per role profile</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-success);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-success);">
+            <div class="jml-step-num">4</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">PAM account if needed</div>
+              <div class="jml-step-text">If role requires privileged access, PAM creates vaulted credential with approval workflow</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-success);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-success);">
+            <div class="jml-step-num">5</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">Access confirmed</div>
+              <div class="jml-step-text">User notified · Manager receives access summary for Day 1 certification</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MOVER Column -->
+        <div class="jml-col" data-col="1">
+          <div style="
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-primary);
+            margin-bottom: var(--space-5);
+            text-align: center;
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid rgba(59,130,246,0.20);
+          ">Mover</div>
+
+          <div class="jml-step" style="--step-color: var(--accent-primary);">
+            <div class="jml-step-num" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);border-color:rgba(59,130,246,0.30);">1</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">HR records role change</div>
+              <div class="jml-step-text">Transfer, promotion, or department change triggers IGA lifecycle event</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-primary);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-primary);">
+            <div class="jml-step-num" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);border-color:rgba(59,130,246,0.30);">2</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">IGA detects role delta</div>
+              <div class="jml-step-text">New role profile compared to current entitlements — diff computed automatically</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-primary);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-primary);">
+            <div class="jml-step-num" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);border-color:rgba(59,130,246,0.30);">3</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">Old access revoked</div>
+              <div class="jml-step-text">Entitlements from prior role removed · SoD check run on combined old + new state</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-primary);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-primary);">
+            <div class="jml-step-num" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);border-color:rgba(59,130,246,0.30);">4</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">New role provisioned</div>
+              <div class="jml-step-text">New role entitlements provisioned · Privileged access re-evaluated for new scope</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-primary);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-primary);">
+            <div class="jml-step-num" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);border-color:rgba(59,130,246,0.30);">5</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">Certification triggered</div>
+              <div class="jml-step-text">New manager receives access certification request to confirm appropriateness</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEAVER Column -->
+        <div class="jml-col" data-col="2">
+          <div style="
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-danger);
+            margin-bottom: var(--space-5);
+            text-align: center;
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid rgba(239,68,68,0.20);
+          ">Leaver</div>
+
+          <div class="jml-step" style="--step-color: var(--accent-danger);">
+            <div class="jml-step-num" style="background:rgba(239,68,68,0.12);color:var(--accent-danger);border-color:rgba(239,68,68,0.30);">1</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">HR records termination</div>
+              <div class="jml-step-text">Voluntary or involuntary separation triggers immediate IAM event — no delay</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-danger);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-danger);">
+            <div class="jml-step-num" style="background:rgba(239,68,68,0.12);color:var(--accent-danger);border-color:rgba(239,68,68,0.30);">2</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">Account suspended immediately</div>
+              <div class="jml-step-text">IAM suspends directory account and all active SSO sessions within minutes of HR event</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-danger);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-danger);">
+            <div class="jml-step-num" style="background:rgba(239,68,68,0.12);color:var(--accent-danger);border-color:rgba(239,68,68,0.30);">3</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">IGA revokes all entitlements</div>
+              <div class="jml-step-text">All application access, group memberships, and entitlements removed systematically</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-danger);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-danger);">
+            <div class="jml-step-num" style="background:rgba(239,68,68,0.12);color:var(--accent-danger);border-color:rgba(239,68,68,0.30);">4</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">PAM vaults privileged account</div>
+              <div class="jml-step-text">All privileged credentials rotated, sessions terminated, vault records archived</div>
+            </div>
+          </div>
+          <div class="jml-connector" style="--step-color: var(--accent-danger);"></div>
+
+          <div class="jml-step" style="--step-color: var(--accent-danger);">
+            <div class="jml-step-num" style="background:rgba(239,68,68,0.12);color:var(--accent-danger);border-color:rgba(239,68,68,0.30);">5</div>
+            <div class="jml-step-body">
+              <div class="jml-step-title">30-day review → deletion</div>
+              <div class="jml-step-text">Data retention period observed · Account permanently deleted with audit record</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end jml grid -->
+    </div><!-- end reveal -->
+  </div><!-- end jml -->
+
+  <!-- JML component styles -->
+  
+
+  <!-- ─────────────────────────
+       id="roles"
+       ROLE MANAGEMENT
+       ───────────────────────── -->
+  <div id="roles" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-4);">Role Management</div>
+
+    <div class="mentor-dialogue reveal">
+      <div class="mentor-tag">Mentor · Former CISO</div>
+      <div class="mentor-text">
+        <p>
+          Role-based access control is the foundation of access governance.
+        </p>
+        <p>
+          Instead of assigning individual permissions to individual people —
+          which creates thousands of unique permission sets that no one can
+          audit or manage — you assign roles.
+        </p>
+        <p>
+          <strong>Engineer role. Finance Analyst role. Manager role.</strong>
+        </p>
+        <p>
+          IGA defines what each role is allowed to access, enforces
+          Segregation of Duties — ensuring no single person can both
+          create and approve a payment, for example — and manages
+          role lifecycle as the organization changes over time.
+        </p>
+        <p>
+          The most common failure I see in IGA programs is role explosion:
+          organizations create so many fine-grained roles that the model
+          becomes unmanageable. A well-governed IGA program maintains a
+          clean role hierarchy with regular review and pruning.
+        </p>
+      </div>
+    </div>
+
+    <!-- Role management visual -->
+    <div class="reveal" style="
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      margin-top: var(--space-6);
+    ">
+      <div style="
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--accent-purple);
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        margin-bottom: var(--space-6);
+      ">Role Hierarchy Example</div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4);">
+        <div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-3);font-family:var(--font-mono);">BUSINESS ROLE</div>
+          <div style="
+            background: rgba(139,92,246,0.08);
+            border: 1px solid rgba(139,92,246,0.25);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            margin-bottom: var(--space-2);
+          ">
+            <div style="font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--text-primary);">Senior Engineer</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">Defines what the job function needs</div>
+          </div>
+          <div style="
+            background: rgba(139,92,246,0.05);
+            border: 1px solid rgba(139,92,246,0.15);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+          ">
+            <div style="font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--text-primary);">Finance Analyst</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;">Defines finance system scope</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;">
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;color:var(--text-muted);">→</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:var(--space-2);">IGA maps<br>role to<br>entitlements</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-3);font-family:var(--font-mono);">IT ENTITLEMENTS</div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+            <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);color:var(--text-secondary);">GitHub org: engineering-team</div>
+            <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);color:var(--text-secondary);">AWS: dev-environment-access</div>
+            <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);color:var(--text-secondary);">Jira: engineering-projects</div>
+            <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);color:var(--text-secondary);">Slack: #engineering channels</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="
+        margin-top: var(--space-6);
+        padding-top: var(--space-5);
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        gap: var(--space-6);
+      ">
+        <div style="
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--text-xs);
+          color: var(--accent-danger);
+        ">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-danger);flex-shrink:0;"></span>
+          SoD Violation: one person holds both "Create Payment" and "Approve Payment" roles
+        </div>
+        <div style="
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--text-xs);
+          color: var(--accent-success);
+        ">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-success);flex-shrink:0;"></span>
+          IGA detects and blocks — or flags for mandatory exception approval
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end roles -->
+
+  <!-- ─────────────────────────
+       id="certifications"
+       ACCESS CERTIFICATIONS
+       ───────────────────────── -->
+  <div id="certifications" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-4);">Access Certifications</div>
+
+    <div class="mentor-dialogue reveal">
+      <div class="mentor-tag">Mentor · Former CISO</div>
+      <div class="mentor-text">
+        <p>
+          Even with perfect role management, access drifts over time.
+        </p>
+        <p>
+          Someone was given temporary access that was never revoked.
+          A role was updated and no one checked whether the new entitlements
+          were still appropriate. A manager approved an access request
+          without fully understanding what it allows.
+        </p>
+        <p>
+          <strong>Access certifications are the periodic review process
+          where managers confirm that the access their team members have
+          is still appropriate.</strong>
+        </p>
+        <p>
+          Done well: fast, targeted, and meaningful — managers review
+          only exceptions and high-risk items, not every single entitlement.
+        </p>
+        <p>
+          Done poorly: a checkbox exercise that takes three weeks, achieves
+          95% rubber-stamp approvals, and creates false assurance that
+          would not survive an audit.
+        </p>
+      </div>
+    </div>
+
+    <div class="insight-box reveal">
+      <div class="insight-box-label">Access Certifications & Compliance — The Direct Connection</div>
+      <div class="insight-box-text">
+        <p>
+          Access certification is the IGA function most directly connected to
+          audit and compliance.
+        </p>
+        <p>
+          SOC 2, ISO 27001, PCI-DSS, HIPAA — all require evidence that access
+          is periodically reviewed and that inappropriate access is removed.
+          The IAM team produces this evidence. The GRC team uses it.
+        </p>
+        <p>
+          This is one of the most direct connections between IAM and the
+          governance layer you will meet in Module 08. When an auditor
+          asks for user access review evidence, the answer comes from
+          your IGA platform.
+        </p>
+        <p>
+          The IAM Architect who understands this connection —
+          who designs the IGA program with audit evidence in mind —
+          is the one the CISO trusts with the board presentation.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- end certifications -->
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 7 — PAM DEEP DIVE
+     id="pam-deep"
+     ═══════════════════════════════════════════ -->
+<section id="pam-deep" class="section">
+
+  <div class="section-eyebrow">Section 06 · PAM Deep Dive</div>
+  <h2 class="section-headline">PAM Deep Dive.</h2>
+  <p class="section-subhead">
+    The accounts that can do the most damage require the most control.
+  </p>
+
+  <!-- ─────────────────────────
+       id="priv-types"
+       PRIVILEGED ACCOUNT TYPES
+       ───────────────────────── -->
+  <div id="priv-types" style="margin-top: var(--space-10);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-4);">Privileged Account Types</div>
+
+    <div class="mentor-dialogue reveal">
+      <div class="mentor-tag">Mentor · Former CISO</div>
+      <div class="mentor-text">
+        <p>Not all privileged accounts are equal.</p>
+        <p>
+          Each type carries different risk.
+          Each type requires different PAM controls.
+          And the ones most organizations overlook are the most dangerous.
+        </p>
+      </div>
+    </div>
+
+    <!-- Account type cards -->
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-4);
+      margin: var(--space-6) 0;
+    ">
+
+      <div class="reveal" style="
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-left: 3px solid var(--accent-danger);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+      ">
+        <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-danger);margin-bottom:var(--space-2);letter-spacing:0.08em;">HIGHEST RISK</div>
+        <div style="font-weight:var(--weight-medium);color:var(--text-primary);margin-bottom:var(--space-2);">Domain Admin Accounts</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+          Full control of Active Directory. Can create, modify, or delete
+          any object in the directory. If compromised: complete domain takeover.
+          Every enterprise PAM program starts here.
+        </div>
+      </div>
+
+      <div class="reveal" style="
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-left: 3px solid #F97316;
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+      ">
+        <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:#F97316;margin-bottom:var(--space-2);letter-spacing:0.08em;">HIGH RISK</div>
+        <div style="font-weight:var(--weight-medium);color:var(--text-primary);margin-bottom:var(--space-2);">Local Admin Accounts</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+          Administrative access to individual systems. Often the initial
+          foothold for lateral movement. Hardest to inventory — every
+          endpoint may have a unique local admin credential.
+        </div>
+      </div>
+
+      <div class="reveal" style="
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-left: 3px solid var(--accent-warning);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+      ">
+        <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-warning);margin-bottom:var(--space-2);letter-spacing:0.08em;">MOST OVERLOOKED</div>
+        <div style="font-weight:var(--weight-medium);color:var(--text-primary);margin-bottom:var(--space-2);">Service Accounts</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+          Non-human accounts that run applications and automated processes.
+          Often have high privileges. Passwords rarely rotated.
+          Frequently undiscovered. The ones attackers find first because
+          no human notices a login.
+        </div>
+      </div>
+
+      <div class="reveal" style="
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-left: 3px solid var(--accent-purple);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+      ">
+        <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-purple);margin-bottom:var(--space-2);letter-spacing:0.08em;">CRITICAL CONTROL</div>
+        <div style="font-weight:var(--weight-medium);color:var(--text-primary);margin-bottom:var(--space-2);">Emergency / Break-Glass Accounts</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+          Used only in crises — when normal access channels fail.
+          Highest possible privilege. Tightest controls.
+          Every use triggers automatic audit alert and mandatory review.
+        </div>
+      </div>
+
+      <div class="reveal" style="
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-left: 3px solid var(--accent-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+      ">
+        <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-primary);margin-bottom:var(--space-2);letter-spacing:0.08em;">THIRD-PARTY RISK</div>
+        <div style="font-weight:var(--weight-medium);color:var(--text-primary);margin-bottom:var(--space-2);">Third-Party Vendor Accounts</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+          External access with high privilege — vendors, consultants, MSPs.
+          Often have persistent access long after engagement ends.
+          JIT provisioning is the right model: access only when needed,
+          fully logged, auto-expired.
+        </div>
+      </div>
+
+      <div class="reveal" style="
+        background: var(--bg-card);
+        border: 1px solid var(--border-default);
+        border-left: 3px solid var(--phase-identity);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+      ">
+        <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--phase-identity);margin-bottom:var(--space-2);letter-spacing:0.08em;">EMBEDDED RISK</div>
+        <div style="font-weight:var(--weight-medium);color:var(--text-primary);margin-bottom:var(--space-2);">Application / Embedded Credentials</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.6;">
+          Credentials hard-coded or embedded in applications, scripts,
+          and pipelines. No rotation. No visibility. Often discovered
+          only in code repositories — or in a breach investigation.
+          Secrets management platforms are the PAM answer here.
+        </div>
+      </div>
+
+    </div><!-- end account type cards -->
+
+    <!-- Stat cards -->
+    <div class="stat-cards reveal">
+      <div class="stat-card">
+        <span class="stat-card-number">80%</span>
+        <span class="stat-card-label">of major breaches involve compromised privileged credentials</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card-number">3 yrs</span>
+        <span class="stat-card-label">average age of passwords on unmanaged service accounts</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card-number">647</span>
+        <span class="stat-card-label">average privileged accounts discovered vs estimated in PAM exercises</span>
+      </div>
+    </div>
+
+  </div><!-- end priv-types -->
+
+  <!-- ─────────────────────────
+       id="pam-controls"
+       PAM CONTROLS VISUAL
+       ───────────────────────── -->
+  <div id="pam-controls" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-6);">PAM Controls</div>
+
+    <div class="reveal" style="
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-10);
+    ">
+      <div style="
+        font-family: var(--font-display);
+        font-size: var(--text-xl);
+        font-style: italic;
+        text-align: center;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-8);
+      ">Layers of Privileged Access Control</div>
+
+      <!-- Concentric rings diagram -->
+      <div style="
+        position: relative;
+        width: 380px;
+        height: 380px;
+        margin: 0 auto var(--space-8);
+      ">
+
+        <!-- Ring 5: outermost — Audit Logging -->
+        <div class="pam-ring" style="
+          position: absolute; inset: 0;
+          border-radius: 50%;
+          border: 2px solid rgba(16,185,129,0.30);
+          background: rgba(16,185,129,0.04);
+          display: flex; align-items: flex-start; justify-content: center;
+          padding-top: var(--space-3);
+          animation: ring-appear 0.5s ease 0.6s both;
+        ">
+          <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-success);letter-spacing:0.06em;">Audit Logging & Alerting</span>
+        </div>
+
+        <!-- Ring 4: Password Rotation -->
+        <div class="pam-ring" style="
+          position: absolute; inset: 42px;
+          border-radius: 50%;
+          border: 2px solid rgba(59,130,246,0.35);
+          background: rgba(59,130,246,0.05);
+          display: flex; align-items: flex-start; justify-content: center;
+          padding-top: var(--space-3);
+          animation: ring-appear 0.5s ease 0.45s both;
+        ">
+          <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-primary);letter-spacing:0.06em;">Password Rotation</span>
+        </div>
+
+        <!-- Ring 3: Session Recording -->
+        <div class="pam-ring" style="
+          position: absolute; inset: 84px;
+          border-radius: 50%;
+          border: 2px solid rgba(139,92,246,0.40);
+          background: rgba(139,92,246,0.06);
+          display: flex; align-items: flex-start; justify-content: center;
+          padding-top: var(--space-3);
+          animation: ring-appear 0.5s ease 0.3s both;
+        ">
+          <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-purple);letter-spacing:0.06em;">Session Recording</span>
+        </div>
+
+        <!-- Ring 2: Just-in-Time -->
+        <div class="pam-ring" style="
+          position: absolute; inset: 126px;
+          border-radius: 50%;
+          border: 2px solid rgba(245,158,11,0.45);
+          background: rgba(245,158,11,0.07);
+          display: flex; align-items: flex-start; justify-content: center;
+          padding-top: var(--space-3);
+          animation: ring-appear 0.5s ease 0.15s both;
+        ">
+          <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-warning);letter-spacing:0.06em;">JIT Provisioning</span>
+        </div>
+
+        <!-- Ring 1: innermost — Vault -->
+        <div class="pam-ring" style="
+          position: absolute; inset: 168px;
+          border-radius: 50%;
+          border: 2px solid rgba(239,68,68,0.50);
+          background: rgba(239,68,68,0.10);
+          display: flex; align-items: center; justify-content: center;
+          animation: ring-appear 0.5s ease 0s both;
+        ">
+          <div style="text-align:center;">
+            <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-danger);letter-spacing:0.06em;">Privileged</div>
+            <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-danger);letter-spacing:0.06em;">Vault</div>
+          </div>
+        </div>
+
+      </div><!-- end rings container -->
+
+      <!-- Ring legend -->
+      <div style="
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: var(--space-3);
+        margin-top: var(--space-4);
+      ">
+        <div style="text-align:center;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--accent-danger);margin:0 auto var(--space-2);"></div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);">Vault storage</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--accent-warning);margin:0 auto var(--space-2);"></div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);">JIT access</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--accent-purple);margin:0 auto var(--space-2);"></div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);">Session recording</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--accent-primary);margin:0 auto var(--space-2);"></div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);">Password rotation</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--accent-success);margin:0 auto var(--space-2);"></div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted);">Audit logging</div>
+        </div>
+      </div>
+
+    </div><!-- end pam controls card -->
+
+    
+
+  </div><!-- end pam-controls -->
+
+  <!-- ─────────────────────────
+       id="sessions"
+       SESSION RECORDING
+       ───────────────────────── -->
+  <div id="sessions" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-4);">Session Recording</div>
+
+    <div class="mentor-dialogue reveal">
+      <div class="mentor-tag">Mentor · Former CISO</div>
+      <div class="mentor-text">
+        <p>
+          PAM session recording is one of the most powerful forensic
+          capabilities in any enterprise security program.
+        </p>
+        <p>
+          When a privileged session is recorded — every command typed,
+          every file accessed, every screen change captured — you have
+          a complete audit trail of everything that happened under that account.
+        </p>
+        <p>
+          This matters in three scenarios:
+        </p>
+        <p>
+          <strong>Audit:</strong> Prove exactly what your admins did in a
+          regulated system. No disputes, no ambiguity — the recording is
+          the evidence.
+        </p>
+        <p>
+          <strong>Incident:</strong> When a privileged account is compromised,
+          session recordings show exactly what the attacker did —
+          every step of the lateral movement, every file accessed,
+          every command executed. This is how you scope a breach.
+        </p>
+        <p>
+          <strong>Insider threat:</strong> Behavioral analytics on session
+          recordings can detect unusual patterns before damage is done —
+          an admin accessing systems outside their normal scope,
+          at unusual hours, in unusual volume.
+        </p>
+        <p>
+          <strong>Session recording is not surveillance.
+          It is accountability infrastructure.</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- Day in the Life -->
+    <div class="day-in-life reveal" style="margin-top: var(--space-8);">
+      <div class="day-header">
+        <div class="day-header-title">A Day in the Life</div>
+        <div class="day-header-role">IAM Architect · Senior</div>
+      </div>
+      <div class="day-body">
+        <div class="day-entry">
+          <div class="day-time">08:30</div>
+          <div class="day-task">Architecture review request landed overnight: new SaaS platform needs SSO integration and role mapping. Assessing identity requirements before the engineering kickoff at 10.</div>
+        </div>
+        <div class="day-entry">
+          <div class="day-time">10:00</div>
+          <div class="day-task">IGA certification campaign review — 87% completion with two days remaining. Three managers unresponsive after two reminders. Escalating to their BISO for direct outreach.</div>
+        </div>
+        <div class="day-entry">
+          <div class="day-time">11:30</div>
+          <div class="day-task">PAM discovery scan results from last night: 14 new service accounts found outside the vault. Initiating onboarding workflow — account owners identified, credential rotation scheduled.</div>
+        </div>
+        <div class="day-entry">
+          <div class="day-time">13:00</div>
+          <div class="day-task">IR team contact: active incident requires credential revocation for 3 compromised user accounts and suspension of 1 service account. All four executed in 4 minutes. IR team briefed.</div>
+        </div>
+        <div class="day-entry">
+          <div class="day-time">14:30</div>
+          <div class="day-task">Architecture Review Board: presenting zero trust identity framework proposal. Two business unit leads in the room. Focus on JIT access model for production systems — questions on implementation timeline.</div>
+        </div>
+        <div class="day-entry">
+          <div class="day-time">16:00</div>
+          <div class="day-task">Purple Team debrief: Red Team found 2 weaknesses in PAM configuration — one session recording gap and one vault bypass path. Remediation plan drafted and sent to PAM Lead for implementation by Friday.</div>
+        </div>
+        <div class="day-entry" style="border-bottom:none;">
+          <div class="day-time">17:00</div>
+          <div class="day-task">Monthly IAM program dashboard finalized for CISO review tomorrow. Metrics packaged: access certification rates, privileged account inventory, incident response times, open architecture items.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end sessions -->
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 8 — IAM ACROSS THE ENTERPRISE
+     id="iam-enterprise"
+     ═══════════════════════════════════════════ -->
+<section id="iam-enterprise" class="section">
+
+  <div class="section-eyebrow">Section 07 · Enterprise</div>
+  <h2 class="section-headline">IAM connects to every team you have already met.</h2>
+  <p class="section-subhead">
+    In every module of this course, IAM appeared at the intersection
+    of other teams. Now you see why.
+  </p>
+
+  <!-- TEAM INTERACTION MAP — SVG -->
+  <div class="reveal" style="margin-top: var(--space-10);">
+    <div style="
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-8);
+    ">
+      <div style="
+        font-family: var(--font-display);
+        font-size: var(--text-xl);
+        font-style: italic;
+        text-align: center;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-6);
+      ">IAM — The Enterprise Identity Hub</div>
+
+      <svg width="100%" viewBox="0 0 700 640" role="img"
+        aria-label="IAM team interaction map showing IAM at the center connected to all enterprise security teams">
+        <title>IAM Enterprise Interaction Map</title>
+        <desc>IAM sits at the center connected by lines to: CISO Leadership, CIO/CTO, BISO, SOC, Incident Response, Threat Intelligence, Threat Hunting, Red Team, Security Architecture, Security Engineering, Cloud Security, AppSec, DevSecOps, Vulnerability Management</desc>
+
+        <!-- Connection lines first (behind nodes) -->
+        <!-- CISO Leadership -->
+        <line x1="350" y1="290" x2="178" y2="76"  stroke="rgba(16,185,129,0.25)" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- CIO/CTO -->
+        <line x1="350" y1="290" x2="350" y2="52"  stroke="rgba(16,185,129,0.20)" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- BISO -->
+        <line x1="350" y1="290" x2="522" y2="76"  stroke="rgba(16,185,129,0.20)" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- SOC -->
+        <line x1="350" y1="290" x2="88"  y2="180" stroke="rgba(59,130,246,0.30)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- IR -->
+        <line x1="350" y1="290" x2="52"  y2="320" stroke="rgba(59,130,246,0.30)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- Threat Intel -->
+        <line x1="350" y1="290" x2="88"  y2="454" stroke="rgba(59,130,246,0.25)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- Threat Hunting -->
+        <line x1="350" y1="290" x2="172" y2="556" stroke="rgba(59,130,246,0.25)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- Red Team -->
+        <line x1="350" y1="290" x2="350" y2="578" stroke="rgba(59,130,246,0.25)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- Sec Architecture -->
+        <line x1="350" y1="290" x2="612" y2="180" stroke="rgba(139,92,246,0.28)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- Sec Engineering -->
+        <line x1="350" y1="290" x2="648" y2="320" stroke="rgba(139,92,246,0.25)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- Cloud Security -->
+        <line x1="350" y1="290" x2="612" y2="454" stroke="rgba(245,158,11,0.28)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- AppSec -->
+        <line x1="350" y1="290" x2="528" y2="556" stroke="rgba(245,158,11,0.25)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- DevSecOps -->
+        <line x1="350" y1="290" x2="410" y2="576" stroke="rgba(245,158,11,0.22)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+        <!-- Vuln Mgmt -->
+        <line x1="350" y1="290" x2="290" y2="576" stroke="rgba(245,158,11,0.22)"  stroke-width="1.5" stroke-dasharray="4,3"/>
+
+        <!-- CENTER — IAM node -->
+        <g>
+          <circle cx="350" cy="290" r="62" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.55)" stroke-width="2"/>
+          <circle cx="350" cy="290" r="72" fill="none" stroke="rgba(16,185,129,0.15)" stroke-width="1" stroke-dasharray="3,4"/>
+          <text x="350" y="283" text-anchor="middle"
+            style="font-family:var(--font-display);font-size:20px;font-weight:700;fill:#10B981;">IAM</text>
+          <text x="350" y="302" text-anchor="middle"
+            style="font-family:var(--font-mono);font-size:9px;fill:rgba(16,185,129,0.70);letter-spacing:0.06em;">IDENTITY HUB</text>
+        </g>
+
+        <!-- LEADERSHIP NODES (top arc) -->
+        <!-- CISO Leadership -->
+        <g>
+          <rect x="96" y="48" width="164" height="56" rx="8" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.30)" stroke-width="1"/>
+          <text x="178" y="70" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">CISO Leadership</text>
+          <text x="178" y="86" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M02 · Phase 1</text>
+        </g>
+        <!-- CIO / CTO -->
+        <g>
+          <rect x="262" y="24" width="176" height="56" rx="8" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.22)" stroke-width="1"/>
+          <text x="350" y="46" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">CIO / CTO</text>
+          <text x="350" y="62" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M02 · Executive</text>
+        </g>
+        <!-- BISO -->
+        <g>
+          <rect x="440" y="48" width="164" height="56" rx="8" fill="rgba(16,185,129,0.06)" stroke="rgba(16,185,129,0.22)" stroke-width="1"/>
+          <text x="522" y="70" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">BISO</text>
+          <text x="522" y="86" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M02 · Business Unit</text>
+        </g>
+
+        <!-- DEFENSIVE OPS NODES (left arc) — blue -->
+        <!-- SOC -->
+        <g>
+          <rect x="16" y="152" width="144" height="56" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.30)" stroke-width="1"/>
+          <text x="88" y="174" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">SOC</text>
+          <text x="88" y="190" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M03 · Operations</text>
+        </g>
+        <!-- IR -->
+        <g>
+          <rect x="0" y="292" width="148" height="56" rx="8" fill="rgba(59,130,246,0.10)" stroke="rgba(59,130,246,0.35)" stroke-width="1"/>
+          <text x="74" y="314" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Incident Response</text>
+          <text x="74" y="330" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M03 · Operations</text>
+        </g>
+        <!-- Threat Intel -->
+        <g>
+          <rect x="16" y="426" width="144" height="56" rx="8" fill="rgba(59,130,246,0.07)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+          <text x="88" y="448" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Threat Intel</text>
+          <text x="88" y="464" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M03 · Operations</text>
+        </g>
+        <!-- Threat Hunting -->
+        <g>
+          <rect x="92" y="528" width="160" height="56" rx="8" fill="rgba(59,130,246,0.07)" stroke="rgba(59,130,246,0.22)" stroke-width="1"/>
+          <text x="172" y="550" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Threat Hunting</text>
+          <text x="172" y="566" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M03 · Operations</text>
+        </g>
+        <!-- Red Team -->
+        <g>
+          <rect x="268" y="550" width="164" height="56" rx="8" fill="rgba(59,130,246,0.07)" stroke="rgba(59,130,246,0.22)" stroke-width="1"/>
+          <text x="350" y="572" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Red Team</text>
+          <text x="350" y="588" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M04 · Offensive</text>
+        </g>
+
+        <!-- ARCHITECTURE / ENGINEERING NODES (right arc) — purple -->
+        <!-- Sec Architecture -->
+        <g>
+          <rect x="540" y="152" width="160" height="56" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.28)" stroke-width="1"/>
+          <text x="620" y="174" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Security Arch</text>
+          <text x="620" y="190" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M04 · Architecture</text>
+        </g>
+        <!-- Sec Engineering -->
+        <g>
+          <rect x="552" y="292" width="160" height="56" rx="8" fill="rgba(139,92,246,0.07)" stroke="rgba(139,92,246,0.24)" stroke-width="1"/>
+          <text x="632" y="314" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Security Eng</text>
+          <text x="632" y="330" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M04 · Engineering</text>
+        </g>
+
+        <!-- CLOUD / APPSEC / VULN NODES (bottom-right arc) — amber -->
+        <!-- Cloud Security -->
+        <g>
+          <rect x="540" y="426" width="160" height="56" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.28)" stroke-width="1"/>
+          <text x="620" y="448" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Cloud Security</text>
+          <text x="620" y="464" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M05 · Cloud</text>
+        </g>
+        <!-- AppSec -->
+        <g>
+          <rect x="448" y="528" width="160" height="56" rx="8" fill="rgba(245,158,11,0.07)" stroke="rgba(245,158,11,0.24)" stroke-width="1"/>
+          <text x="528" y="550" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">AppSec</text>
+          <text x="528" y="566" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M05 · Application</text>
+        </g>
+        <!-- DevSecOps -->
+        <g>
+          <rect x="358" y="550" width="148" height="56" rx="8" fill="rgba(245,158,11,0.06)" stroke="rgba(245,158,11,0.20)" stroke-width="1"/>
+          <text x="432" y="572" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">DevSecOps</text>
+          <text x="432" y="588" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M05 · Pipeline</text>
+        </g>
+        <!-- Vuln Mgmt -->
+        <g>
+          <rect x="176" y="550" width="160" height="56" rx="8" fill="rgba(245,158,11,0.06)" stroke="rgba(245,158,11,0.20)" stroke-width="1"/>
+          <text x="256" y="572" text-anchor="middle" style="font-size:11px;font-weight:600;fill:var(--text-primary);font-family:sans-serif;">Vuln Management</text>
+          <text x="256" y="588" text-anchor="middle" style="font-size:9px;fill:var(--text-muted);font-family:monospace;">M06 · Risk</text>
+        </g>
+
+      </svg>
+    </div>
+  </div>
+
+  <!-- DEPENDENCY GRID -->
+  <div class="reveal" style="margin-top: var(--space-10);">
+    <div style="
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--phase-identity);
+      margin-bottom: var(--space-6);
+    ">IAM Dependency Grid — Every Team, Every Direction</div>
+
+    <div style="overflow-x: auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:var(--text-xs);background:var(--bg-card);color:var(--text-primary);">
+        <thead>
+          <tr style="background: rgba(16,185,129,0.07); border-bottom: 1px solid rgba(16,185,129,0.20);">
+            <th style="padding: var(--space-3) var(--space-4); text-align:left; color:var(--phase-identity); font-family:var(--font-mono); font-weight:600; white-space:nowrap; font-size:var(--text-xs);">Team</th>
+            <th style="padding: var(--space-3) var(--space-4); text-align:left; color:var(--accent-success); font-family:var(--font-mono); font-weight:600; font-size:var(--text-xs);">What they take from IAM</th>
+            <th style="padding: var(--space-3) var(--space-4); text-align:left; color:var(--accent-primary); font-family:var(--font-mono); font-weight:600; font-size:var(--text-xs);">What they give back to IAM</th>
+            <th style="padding: var(--space-3) var(--space-4); text-align:left; color:var(--accent-danger); font-family:var(--font-mono); font-weight:600; font-size:var(--text-xs);">What breaks if IAM fails</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- SOC -->
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">SOC</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Identity context for alerts · User account metadata · Privileged session feeds</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Alert signals indicating compromised credentials · Anomalous login patterns</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Alerts without identity context · No way to correlate activity to users · Blind spots on privileged actions</td>
+          </tr>
+          <!-- IR -->
+          <tr style="border-bottom: 1px solid var(--border-subtle); background: rgba(255,255,255,0.01);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">Incident Response</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Credential revocation · Account containment · Session termination · Access audit history</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Compromised account indicators · Post-incident access gap findings</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Slow containment during active breach · Unable to terminate attacker sessions · No forensic trail of access</td>
+          </tr>
+          <!-- Threat Intel -->
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">Threat Intelligence</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Account and identity infrastructure data for TI enrichment</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Credential exposure intel · Dark web account listing alerts · TTPs targeting identity</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Credential intel not actioned · Exposed accounts not remediated · Identity TTPs not countered</td>
+          </tr>
+          <!-- Threat Hunting -->
+          <tr style="border-bottom: 1px solid var(--border-subtle); background: rgba(255,255,255,0.01);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">Threat Hunting</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Identity logs · Privileged account activity · Auth anomaly data for hunt hypotheses</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Identity misuse patterns discovered · Dormant account abuse findings</td>
+            <td style="padding: var(--space-3) var(--border-subtle); color:var(--text-secondary); line-height:1.5;">Hunt hypotheses have no identity data · Lateral movement invisible without auth logs</td>
+          </tr>
+          <!-- Red Team -->
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">Red Team</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Scoped access for exercises · Account provisioning for test identities</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">PAM gaps found · Privilege escalation paths · Identity attack surface findings</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Exercises find real gaps that aren't remediated · Real attackers succeed where Red Team did</td>
+          </tr>
+          <!-- Security Architecture -->
+          <tr style="border-bottom: 1px solid var(--border-subtle); background: rgba(255,255,255,0.01);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">Security Architecture</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Identity architecture standards · SSO integration patterns · Zero trust identity framework</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">New system architecture for IAM review · Security design principles for identity</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">New systems built without IAM review · Identity gaps baked into architecture from day one</td>
+          </tr>
+          <!-- Cloud Security -->
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">Cloud Security</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Cloud IAM role design · Federated identity for cloud platforms · CIEM policy frameworks</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Cloud-specific identity misconfigurations · Over-permissioned role findings</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Cloud identities unmanaged · AWS/Azure roles ungoverned · Cloud privilege sprawl unchecked</td>
+          </tr>
+          <!-- AppSec -->
+          <tr style="border-bottom: 1px solid var(--border-subtle); background: rgba(255,255,255,0.01);">
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">AppSec</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">OAuth / OIDC standards · API auth patterns · Service account provisioning for apps</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">App-level auth vulnerability findings · Embedded credential discoveries</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Applications build auth independently · Fragmented identity creates broken access models</td>
+          </tr>
+          <!-- Vuln Management -->
+          <tr>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-primary); font-weight:500; white-space:nowrap;">Vuln Management</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Scan credential management · Authenticated scanning account provisioning</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Identity-related vulnerability findings · Auth misconfiguration scan results</td>
+            <td style="padding: var(--space-3) var(--space-4); color:var(--text-secondary); line-height:1.5;">Scan accounts unmanaged · Vuln scanner credential exposed · Scan coverage degraded without auth</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Insight box -->
+  <div class="insight-box reveal" style="margin-top: var(--space-8);">
+    <div class="insight-box-label">Why IAM Is the Common Thread</div>
+    <div class="insight-box-text">
+      <p>
+        In every module of this course, we showed IAM appearing at the
+        intersection of other teams. Now you see why.
+      </p>
+      <p>
+        Identity is not one security function among many.
+        Identity is the common thread that connects every security
+        function in the enterprise.
+      </p>
+      <p>
+        The IAM Architect does not serve one team.
+        They serve the entire enterprise security ecosystem —
+        and every team in it depends on IAM working correctly.
+      </p>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 9 — THE IAM ARCHITECT ROLE
+     id="iam-architect"
+     ═══════════════════════════════════════════ -->
+<section id="iam-architect" class="section">
+
+  <div class="section-eyebrow">Section 08 · The Role</div>
+  <h2 class="section-headline">The IAM Architect Role.</h2>
+  <p class="section-subhead">Not a technical specialist. An organizational navigator.</p>
+
+  <!-- ─────────────────────────
+       id="skills"
+       SKILLS RADAR
+       ───────────────────────── -->
+  <div id="skills" style="margin-top: var(--space-10);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-6);">Skills & Competencies</div>
+
+    <!-- Skills radar SVG -->
+    <div class="reveal" style="
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-8);
+      display: flex;
+      gap: var(--space-10);
+      align-items: flex-start;
+      flex-wrap: wrap;
+    ">
+      <div style="flex: 0 0 auto;">
+        <div style="
+          font-family: var(--font-display);
+          font-size: var(--text-base);
+          font-style: italic;
+          color: var(--text-secondary);
+          text-align: center;
+          margin-bottom: var(--space-4);
+        ">IAM Architect Skill Profile</div>
+
+        <svg width="380" height="380" viewBox="0 0 400 400"
+          role="img" aria-label="Radar chart showing six IAM Architect skill domains">
+          <title>IAM Architect Skills Radar</title>
+          <desc>Hexagonal radar chart with six axes: Identity Protocols, Directory Services, IGA Platforms, PAM Platforms, Cloud IAM, and Organizational Skills. Two polygons show target senior proficiency versus entry-level profile.</desc>
+
+          <!-- Grid rings -->
+          <g opacity="0.15" stroke="rgba(255,255,255,0.3)" fill="none">
+            <!-- 20% ring -->
+            <polygon points="200,156 236,178 236,222 200,244 164,222 164,178" stroke-width="1"/>
+            <!-- 40% ring -->
+            <polygon points="200,112 272,156 272,244 200,288 128,244 128,156" stroke-width="1"/>
+            <!-- 60% ring -->
+            <polygon points="200,68 308,134 308,266 200,332 92,266 92,134" stroke-width="1"/>
+            <!-- 80% ring -->
+            <polygon points="200,24 344,112 344,288 200,376 56,288 56,112" stroke-width="1"/>
+          </g>
+
+          <!-- Axis lines -->
+          <g stroke="rgba(255,255,255,0.10)" stroke-width="1">
+            <!-- Top (Identity Protocols) -->
+            <line x1="200" y1="200" x2="200" y2="20"/>
+            <!-- Top-right (Directory Services) -->
+            <line x1="200" y1="200" x2="349" y2="110"/>
+            <!-- Bottom-right (IGA Platforms) -->
+            <line x1="200" y1="200" x2="349" y2="290"/>
+            <!-- Bottom (PAM Platforms) -->
+            <line x1="200" y1="200" x2="200" y2="380"/>
+            <!-- Bottom-left (Cloud IAM) -->
+            <line x1="200" y1="200" x2="51" y2="290"/>
+            <!-- Top-left (Org Skills) -->
+            <line x1="200" y1="200" x2="51" y2="110"/>
+          </g>
+
+          <!--
+            Axes (6 axes, 0° = top, clockwise):
+            0: Identity Protocols      → top       (200, 20)
+            1: Directory Services      → top-right (349,110)
+            2: IGA Platforms           → bot-right (349,290)
+            3: PAM Platforms           → bottom    (200,380)
+            4: Cloud IAM               → bot-left  (51, 290)
+            5: Organizational Skills   → top-left  (51, 110)
+
+            Center: (200,200)
+            Axis length: 180px
+
+            Target polygon (senior): 85%, 80%, 75%, 75%, 80%, 90%
+            Entry polygon: 45%, 55%, 30%, 30%, 40%, 20%
+
+            Point formula: center + pct * (axis - center)
+          -->
+
+          <!-- TARGET POLYGON — Senior IAM Architect -->
+          <!-- 0: 200 + 0.85*(200-200), 200 + 0.85*(20-200)  = 200, 47  -->
+          <!-- 1: 200 + 0.80*(349-200), 200 + 0.80*(110-200) = 319.2, 128 -->
+          <!-- 2: 200 + 0.75*(349-200), 200 + 0.75*(290-200) = 311.75, 267.5 -->
+          <!-- 3: 200 + 0.75*(200-200), 200 + 0.75*(380-200) = 200, 335 -->
+          <!-- 4: 200 + 0.80*(51-200),  200 + 0.80*(290-200) = 80.8, 272 -->
+          <!-- 5: 200 + 0.90*(51-200),  200 + 0.90*(110-200) = 65.9, 119 -->
+          <polygon
+            points="200,47 319,128 312,268 200,335 81,272 66,119"
+            fill="rgba(16,185,129,0.18)"
+            stroke="#10B981"
+            stroke-width="1.5"
+            opacity="0"
+            style="animation: radar-in 0.7s ease 0.3s forwards;"
+          />
+
+          <!-- ENTRY POLYGON — Typical entry-level -->
+          <!-- 0: 200, 200+0.45*(20-200)=119  -->
+          <!-- 1: 200+0.55*(149)=282, 200+0.55*(-90)=150.5 -->
+          <!-- 2: 200+0.30*(149)=244.7, 200+0.30*(90)=227 -->
+          <!-- 3: 200, 200+0.30*(180)=254 -->
+          <!-- 4: 200+0.40*(-149)=140.4, 200+0.40*(90)=236 -->
+          <!-- 5: 200+0.20*(-149)=170.2, 200+0.20*(-90)=182 -->
+          <polygon
+            points="200,119 282,151 245,227 200,254 140,236 170,182"
+            fill="rgba(59,130,246,0.12)"
+            stroke="#3B82F6"
+            stroke-width="1"
+            stroke-dasharray="4,3"
+            opacity="0"
+            style="animation: radar-in 0.7s ease 0.6s forwards;"
+          />
+
+          <!-- Axis labels -->
+          <!-- Identity Protocols — top -->
+          <text x="200" y="12" text-anchor="middle"
+            style="font-family:var(--font-mono);font-size:9.5px;fill:var(--text-secondary);">Identity Protocols</text>
+          <text x="200" y="22" text-anchor="middle"
+            style="font-family:var(--font-mono);font-size:8px;fill:var(--text-muted);">SAML · OIDC · OAuth</text>
+
+          <!-- Directory Services — top-right -->
+          <text x="358" y="104" text-anchor="start"
+            style="font-family:var(--font-mono);font-size:9.5px;fill:var(--text-secondary);">Directory Services</text>
+          <text x="358" y="114" text-anchor="start"
+            style="font-family:var(--font-mono);font-size:8px;fill:var(--text-muted);">AD · LDAP · Entra ID</text>
+
+          <!-- IGA Platforms — bottom-right -->
+          <text x="358" y="290" text-anchor="start"
+            style="font-family:var(--font-mono);font-size:9.5px;fill:var(--text-secondary);">IGA Platforms</text>
+          <text x="358" y="300" text-anchor="start"
+            style="font-family:var(--font-mono);font-size:8px;fill:var(--text-muted);">SailPoint · Saviynt</text>
+
+          <!-- PAM Platforms — bottom -->
+          <text x="200" y="394" text-anchor="middle"
+            style="font-family:var(--font-mono);font-size:9.5px;fill:var(--text-secondary);">PAM Platforms</text>
+          <text x="200" y="404" text-anchor="middle"
+            style="font-family:var(--font-mono);font-size:8px;fill:var(--text-muted);">CyberArk · BeyondTrust</text>
+
+          <!-- Cloud IAM — bottom-left -->
+          <text x="42" y="290" text-anchor="end"
+            style="font-family:var(--font-mono);font-size:9.5px;fill:var(--text-secondary);">Cloud IAM</text>
+          <text x="42" y="300" text-anchor="end"
+            style="font-family:var(--font-mono);font-size:8px;fill:var(--text-muted);">AWS · Azure · GCP</text>
+
+          <!-- Organizational Skills — top-left -->
+          <text x="42" y="104" text-anchor="end"
+            style="font-family:var(--font-mono);font-size:9.5px;fill:var(--text-secondary);">Organizational Skills</text>
+          <text x="42" y="114" text-anchor="end"
+            style="font-family:var(--font-mono);font-size:8px;fill:var(--text-muted);">Comms · Risk · Leadership</text>
+
+        </svg>
+        
+      </div>
+
+      <!-- Legend + text -->
+      <div style="flex: 1; min-width: 200px;">
+        <div style="margin-bottom: var(--space-6);">
+          <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2);">
+            <div style="width:32px;height:3px;background:var(--phase-identity);border-radius:2px;"></div>
+            <span style="font-size:var(--text-sm);color:var(--text-primary);font-weight:var(--weight-medium);">Senior IAM Architect</span>
+          </div>
+          <p style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.6;">
+            Target proficiency across all six domains. Strongest in Organizational Skills
+            — the dimension most underestimated by engineers building toward this role.
+          </p>
+        </div>
+        <div style="margin-bottom: var(--space-8);">
+          <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2);">
+            <div style="width:32px;height:2px;background:var(--accent-primary);border-radius:2px;border-top: 1px dashed var(--accent-primary);"></div>
+            <span style="font-size:var(--text-sm);color:var(--text-secondary);">Typical Entry-Level Profile</span>
+          </div>
+          <p style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.6;">
+            Strong in Directory Services and IAM protocols. Weak in IGA and PAM platforms
+            (tool-specific depth takes time). Minimal organizational skills — the gap
+            to close on the path to Architect.
+          </p>
+        </div>
+
+        <!-- Six skill callouts -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--phase-identity);flex-shrink:0;"></div>
+            <span style="font-size:var(--text-xs);color:var(--text-secondary);"><strong style="color:var(--text-primary);">Identity Protocols</strong> — SAML, OIDC, OAuth, SCIM: the language of federation</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--phase-identity);flex-shrink:0;"></div>
+            <span style="font-size:var(--text-xs);color:var(--text-secondary);"><strong style="color:var(--text-primary);">Directory Services</strong> — Active Directory, LDAP, Entra ID: the foundation</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--phase-identity);flex-shrink:0;"></div>
+            <span style="font-size:var(--text-xs);color:var(--text-secondary);"><strong style="color:var(--text-primary);">IGA Platforms</strong> — SailPoint, Saviynt: governance program design</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--phase-identity);flex-shrink:0;"></div>
+            <span style="font-size:var(--text-xs);color:var(--text-secondary);"><strong style="color:var(--text-primary);">PAM Platforms</strong> — CyberArk, BeyondTrust: privileged control depth</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--phase-identity);flex-shrink:0;"></div>
+            <span style="font-size:var(--text-xs);color:var(--text-secondary);"><strong style="color:var(--text-primary);">Cloud IAM</strong> — AWS IAM, Azure RBAC, GCP: cloud identity at scale</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--phase-identity);flex-shrink:0;"></div>
+            <span style="font-size:var(--text-xs);color:var(--text-secondary);"><strong style="color:var(--text-primary);">Organizational Skills</strong> — The differentiator. Communication, risk framing, leadership</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- What the role really requires -->
+    <div class="mentor-dialogue reveal" style="margin-top: var(--space-10);">
+      <div class="mentor-tag">Mentor · Former CISO — What I Actually Look For When I Hire</div>
+      <div class="mentor-text">
+        <p>
+          When I hire an IAM Architect, I am not looking for the best
+          SailPoint developer or the best CyberArk administrator.
+        </p>
+        <p>
+          I am looking for someone who can do five things:
+        </p>
+        <p>
+          <strong>Design:</strong> Create an identity architecture that serves the
+          business for the next five years — not just solves the problem
+          in front of them today.
+        </p>
+        <p>
+          <strong>Communicate:</strong> Explain complex identity concepts to the CISO,
+          the CFO, and the VP of Engineering in language each one
+          understands — and get budget approved because of it.
+        </p>
+        <p>
+          <strong>Navigate:</strong> Build relationships with every team in the security
+          organization and every business unit that touches identity —
+          and be the person those teams call when they have an identity problem.
+        </p>
+        <p>
+          <strong>Decide:</strong> Make platform and design decisions that have
+          multi-million dollar implications — and own those decisions
+          even when they are difficult.
+        </p>
+        <p>
+          <strong>Lead:</strong> Develop and mentor an IAM team while managing vendor
+          relationships and executive expectations simultaneously.
+        </p>
+        <p>
+          The technical knowledge is a prerequisite.
+          These five capabilities are the job.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- end skills -->
+
+  <!-- ─────────────────────────
+       id="career"
+       CAREER PATH TIMELINE
+       ───────────────────────── -->
+  <div id="career" style="margin-top: var(--space-16);">
+    <div class="section-eyebrow" style="margin-bottom: var(--space-6);">Career Path</div>
+
+    <!-- Career timeline -->
+    <div class="reveal" style="
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-2xl);
+      padding: var(--space-10);
+      overflow-x: auto;
+    ">
+      <div style="
+        font-family: var(--font-display);
+        font-size: var(--text-xl);
+        font-style: italic;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-10);
+        text-align: center;
+      ">The IAM Career Journey</div>
+
+      <!-- Timeline track -->
+      <div style="position: relative; min-width: 700px;">
+
+        <!-- Gradient connecting line -->
+        <div style="
+          position: absolute;
+          top: 32px;
+          left: 60px;
+          right: 60px;
+          height: 3px;
+          background: linear-gradient(90deg,
+            var(--text-muted) 0%,
+            var(--accent-primary) 40%,
+            var(--phase-identity) 60%,
+            var(--accent-warning) 100%);
+          border-radius: var(--radius-full);
+          z-index: 0;
+        "></div>
+
+        <!-- Stage nodes -->
+        <div style="
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          position: relative;
+          z-index: 1;
+        ">
+
+          <!-- Stage 1 -->
+          <div class="career-stage" style="width: 130px; text-align: center;" data-stage="0">
+            <div style="
+              width: 64px; height: 64px;
+              border-radius: 50%;
+              background: rgba(92,92,92,0.15);
+              border: 2px solid var(--text-muted);
+              margin: 0 auto var(--space-4);
+              display: flex; align-items: center; justify-content: center;
+              font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted);
+            ">S1</div>
+            <div style="font-weight:var(--weight-medium);color:var(--text-secondary);font-size:var(--text-sm);margin-bottom:var(--space-2);">IAM Analyst<br>/ Engineer</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.5;margin-bottom:var(--space-2);">Directory admin · Ticket work · Basic provisioning</div>
+            <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted);">Years 1–3</div>
+          </div>
+
+          <!-- Stage 2 -->
+          <div class="career-stage" style="width: 130px; text-align: center;" data-stage="1">
+            <div style="
+              width: 64px; height: 64px;
+              border-radius: 50%;
+              background: rgba(59,130,246,0.10);
+              border: 2px solid var(--accent-primary);
+              margin: 0 auto var(--space-4);
+              display: flex; align-items: center; justify-content: center;
+              font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent-primary);
+            ">S2</div>
+            <div style="font-weight:var(--weight-medium);color:var(--text-secondary);font-size:var(--text-sm);margin-bottom:var(--space-2);">Senior IAM<br>Engineer</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.5;margin-bottom:var(--space-2);">Platform config · IGA workflows · PAM admin · Integrations</div>
+            <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-primary);">Years 3–6</div>
+          </div>
+
+          <!-- Stage 3 — YOU ARE HERE (GOAL) -->
+          <div class="career-stage" style="width: 150px; text-align: center;" data-stage="2">
+            <div style="
+              width: 80px; height: 80px;
+              border-radius: 50%;
+              background: rgba(16,185,129,0.15);
+              border: 2.5px solid var(--phase-identity);
+              margin: -8px auto var(--space-3);
+              display: flex; align-items: center; justify-content: center;
+              font-family: var(--font-mono); font-size: var(--text-sm); color: var(--phase-identity);
+              font-weight: var(--weight-bold);
+              box-shadow: var(--glow-green);
+              animation: pulse-node 2.5s ease-in-out infinite;
+            ">S3</div>
+            <div style="
+              font-family: var(--font-mono);
+              font-size: var(--text-xs);
+              color: var(--phase-identity);
+              border: 1px solid rgba(16,185,129,0.30);
+              border-radius: var(--radius-full);
+              padding: 2px 10px;
+              display: inline-block;
+              margin-bottom: var(--space-2);
+              letter-spacing: 0.06em;
+            ">YOU ARE HERE (GOAL)</div>
+            <div style="font-weight:var(--weight-bold);color:var(--phase-identity);font-size:var(--text-sm);margin-bottom:var(--space-2);">IAM Architect</div>
+            <div style="font-size:var(--text-xs);color:var(--text-secondary);line-height:1.5;margin-bottom:var(--space-2);">Program design · Architecture decisions · Stakeholder mgmt · Strategy</div>
+            <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--phase-identity);">Years 6–10</div>
+          </div>
+
+          <!-- Stage 4 -->
+          <div class="career-stage" style="width: 130px; text-align: center;" data-stage="3">
+            <div style="
+              width: 64px; height: 64px;
+              border-radius: 50%;
+              background: rgba(245,158,11,0.08);
+              border: 2px solid rgba(245,158,11,0.50);
+              margin: 0 auto var(--space-4);
+              display: flex; align-items: center; justify-content: center;
+              font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent-warning);
+            ">S4</div>
+            <div style="font-weight:var(--weight-medium);color:var(--text-secondary);font-size:var(--text-sm);margin-bottom:var(--space-2);">IAM Program<br>Lead / Manager</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.5;margin-bottom:var(--space-2);">Team leadership · Budget ownership · CISO relationships · Vendor mgmt</div>
+            <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--accent-warning);">Years 8–14</div>
+          </div>
+
+          <!-- Stage 5 -->
+          <div class="career-stage" style="width: 130px; text-align: center;" data-stage="4">
+            <div style="
+              width: 64px; height: 64px;
+              border-radius: 50%;
+              background: rgba(245,158,11,0.05);
+              border: 1.5px solid rgba(245,158,11,0.30);
+              margin: 0 auto var(--space-4);
+              display: flex; align-items: center; justify-content: center;
+              font-family: var(--font-mono); font-size: var(--text-xs); color: rgba(245,158,11,0.60);
+            ">S5</div>
+            <div style="font-weight:var(--weight-medium);color:var(--text-muted);font-size:var(--text-sm);margin-bottom:var(--space-2);">VP/Director<br>of IAM · CISO</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);line-height:1.5;margin-bottom:var(--space-2);">Executive leadership · Board reporting · Enterprise security strategy</div>
+            <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted);">Years 12+</div>
+          </div>
+
+        </div><!-- end stage row -->
+      </div><!-- end timeline track -->
+
+      
+
+    </div><!-- end career card -->
+
+    <!-- Mentor career advice -->
+    <div class="mentor-dialogue reveal" style="margin-top: var(--space-10);">
+      <div class="mentor-tag">Mentor · Former CISO — Three Things I Look For Before Promoting</div>
+      <div class="mentor-text">
+        <p>
+          I want to give you something practical before we leave this section.
+        </p>
+        <p>
+          Three signals I look for when considering promoting an IAM Engineer
+          to IAM Architect:
+        </p>
+        <p>
+          <strong>One:</strong> They have stopped asking what to build
+          and started asking why we should build it.
+          An Architect thinks about business outcomes first,
+          technical solutions second.
+        </p>
+        <p>
+          <strong>Two:</strong> They have developed a genuine relationship with
+          at least one team outside of IAM — usually SOC, IR, or Security
+          Architecture — and are seen as a trusted partner by that team.
+          Not just someone who fulfills tickets.
+        </p>
+        <p>
+          <strong>Three:</strong> They have presented at least once to the CISO
+          or an executive stakeholder and received positive feedback.
+          Not a technical deep-dive — a business communication.
+          If they can do that once, they can do it every month.
+        </p>
+        <p>
+          Technical expertise opens the door.
+          Organizational navigation builds the career.
+        </p>
+      </div>
+    </div>
+
+  </div><!-- end career -->
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 10 — WHAT YOU NOW KNOW
+     id="summary"
+     ═══════════════════════════════════════════ -->
+<section id="summary" class="section">
+
+  <div class="section-eyebrow">Section 09 · Summary</div>
+  <h2 class="section-headline">What you now know.</h2>
+  <p class="section-subhead">
+    Six concepts. One complete identity program.
+  </p>
+
+  <div class="summary-grid" style="margin-top: var(--space-10);">
+
+    <!-- Card 1: IAM -->
+    <div class="summary-card reveal">
+      <div class="summary-card-label">01 · IAM</div>
+      <div class="summary-card-title">Identity & Access Management</div>
+      <div class="summary-card-text">
+        Who you are and how you authenticate. The foundation of the entire
+        identity program — authentication, SSO, MFA, federation, directory
+        services, and identity lifecycle. Without IAM, nothing else has a
+        foundation to stand on.
+      </div>
+    </div>
+
+    <!-- Card 2: IGA -->
+    <div class="summary-card reveal">
+      <div class="summary-card-label">02 · IGA</div>
+      <div class="summary-card-title">Identity Governance & Administration</div>
+      <div class="summary-card-text">
+        What you should have access to — and whether you still need it.
+        Role management, Joiner/Mover/Leaver lifecycle, access certifications,
+        and Segregation of Duties enforcement. The governance layer
+        that connects IAM to audit, compliance, and risk.
+      </div>
+    </div>
+
+    <!-- Card 3: PAM -->
+    <div class="summary-card reveal">
+      <div class="summary-card-label">03 · PAM</div>
+      <div class="summary-card-title">Privileged Access Management</div>
+      <div class="summary-card-text">
+        The highest-privilege accounts — vaulted, rotated, just-in-time
+        provisioned, and fully session-recorded. The accounts attackers want
+        most. The layer of the identity program that most directly
+        determines the blast radius of a breach.
+      </div>
+    </div>
+
+    <!-- Card 4: IAM Organization -->
+    <div class="summary-card reveal">
+      <div class="summary-card-label">04 · Organization</div>
+      <div class="summary-card-title">The IAM Organization</div>
+      <div class="summary-card-text">
+        A team with structure, leadership, and career paths — not just
+        a platform. VP of IAM, IAM Architect, IGA Program Lead, PAM Lead,
+        and the engineers and analysts who make the program operate
+        at enterprise scale.
+      </div>
+    </div>
+
+    <!-- Card 5: Enterprise -->
+    <div class="summary-card reveal">
+      <div class="summary-card-label">05 · Enterprise</div>
+      <div class="summary-card-title">IAM Across The Enterprise</div>
+      <div class="summary-card-text">
+        Connected to every security team you have met in this course.
+        The common thread of the entire enterprise security ecosystem —
+        because every team depends on identity working correctly,
+        and every incident eventually touches identity.
+      </div>
+    </div>
+
+    <!-- Card 6: NORTH STAR — IAM Architect (featured, full width) -->
+    <div class="summary-card featured reveal">
+      <div class="summary-card-label" style="color: var(--phase-identity); font-size: var(--text-sm);">06 · The Destination</div>
+      <div class="summary-card-title">The IAM Architect</div>
+      <div class="summary-card-text" style="font-size: var(--text-base); line-height: 1.8; color: var(--text-secondary);">
+        Not a technical specialist. An organizational navigator.<br><br>
+        Designer. Communicator. Decision-maker. Leader.<br><br>
+        The professional at the intersection of every security function
+        in the enterprise. The role who the CISO trusts with the board
+        presentation on identity risk. The role who IR calls in the first
+        minute of a breach. The role who Security Architecture consults
+        before any new system is built.<br><br>
+        The role this entire course was building toward.
+      </div>
+    </div>
+
+  </div><!-- end summary-grid -->
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 11 — WHAT COMES NEXT (BRIDGE)
+     id="bridge"
+     ═══════════════════════════════════════════ -->
+<section id="bridge" class="bridge-section">
+
+  <div style="max-width: 860px;">
+
+    <div class="bridge-grid">
+
+      <!-- LEFT: Module 07 complete -->
+      <div>
+        <div style="
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--phase-identity);
+          margin-bottom: var(--space-4);
+        ">Module 07 Complete · Phase 3 Complete</div>
+
+        <h2 style="
+          font-family: var(--font-display);
+          font-size: var(--text-3xl);
+          font-weight: var(--weight-light);
+          font-style: italic;
+          color: var(--text-primary);
+          line-height: 1.2;
+          margin-bottom: var(--space-6);
+        ">You understand identity now.</h2>
+
+        <!-- Progress bar -->
+        <div class="bridge-progress">
+          <div class="bridge-progress-track">
+            <div class="bridge-progress-fill"></div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--phase-identity);">77%</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-8);">
+          7 of 9 modules complete
+        </div>
+
+        <!-- Checklist -->
+        <div style="margin-bottom: var(--space-8);">
+          <div class="bridge-checklist-item">
+            <span class="bridge-check">✓</span>
+            IAM as an organization, not a product
+          </div>
+          <div class="bridge-checklist-item">
+            <span class="bridge-check">✓</span>
+            IGA — the governance layer, JML, and access certifications
+          </div>
+          <div class="bridge-checklist-item">
+            <span class="bridge-check">✓</span>
+            PAM — privileged control, vault design, and session recording
+          </div>
+          <div class="bridge-checklist-item">
+            <span class="bridge-check">✓</span>
+            IAM organization structure and leadership roles
+          </div>
+          <div class="bridge-checklist-item">
+            <span class="bridge-check">✓</span>
+            IAM Architect skills, competencies, and the radar
+          </div>
+          <div class="bridge-checklist-item">
+            <span class="bridge-check">✓</span>
+            IAM connected to every enterprise security team
+          </div>
+          <div class="bridge-checklist-item">
+            <span class="bridge-check">✓</span>
+            Why identity is the common thread of everything
+          </div>
+        </div>
+
+        <!-- Thinking bubble adapted for bridge -->
+        <div style="
+          background: rgba(16,185,129,0.05);
+          border: 1px solid rgba(16,185,129,0.18);
+          border-radius: var(--radius-lg);
+          padding: var(--space-5) var(--space-6);
+        ">
+          <div style="
+            font-family: var(--font-display);
+            font-style: italic;
+            font-size: var(--text-base);
+            color: var(--text-secondary);
+            line-height: 1.7;
+          ">
+            "Phase 3 is complete. You have the deepest module in the course behind you.
+            Two modules remain — and they converge on everything you have built."
+          </div>
+          <div style="
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            color: var(--phase-identity);
+            margin-top: var(--space-3);
+          ">— Mentor, Former CISO</div>
+        </div>
+
+      </div><!-- end left column -->
+
+      <!-- RIGHT: Module 08 preview -->
+      <div>
+        <div style="
+          font-family: var(--font-mono);
+          font-size: var(--text-xs);
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: var(--phase-mastery);
+          margin-bottom: var(--space-4);
+        ">Entering Phase 4 · Mastery</div>
+
+        <h2 style="
+          font-family: var(--font-display);
+          font-size: var(--text-3xl);
+          font-weight: var(--weight-light);
+          font-style: italic;
+          color: var(--text-primary);
+          line-height: 1.2;
+          margin-bottom: var(--space-8);
+        ">Two modules left.<br>Then you see everything.</h2>
+
+        <!-- Module 08 preview card -->
+        <div class="bridge-next-card">
+          <div class="bridge-next-phase">Phase 4 · Mastery</div>
+          <div class="bridge-next-module">M · 08</div>
+          <div class="bridge-next-title">Risk, Compliance & GRC</div>
+
+          <div class="bridge-next-text">
+            <p>
+              Phase 3 is complete. You understand identity.
+            </p>
+            <p>
+              Now you see the governance layer that shapes every security
+              program in the enterprise.
+            </p>
+            <p>
+              GRC, Risk Management, Compliance, Third Party Risk —
+              the teams that define what the security program must do
+              and provide the evidence that it is doing it.
+            </p>
+            <p>
+              And critically: the teams that conduct the audits
+              that make IAM program evidence essential.
+            </p>
+            <p>
+              After Module 08, you have one module left:
+              The capstone. Where everything converges.
+            </p>
+          </div>
+
+          <div class="bridge-next-duration">⏱ 75 minutes</div>
+
+          <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+            <a href="module-08-risk-compliance-grc.html" class="btn-primary">
+              Begin Module 08 →
+            </a>
+            <a href="module-06-vulnerability-management.html" class="btn-ghost">
+              ← Back to Module 06
+            </a>
+          </div>
+        </div>
+
+        <!-- Module 09 teaser (smaller) -->
+        <div style="
+          margin-top: var(--space-5);
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4) var(--space-5);
+          display: flex;
+          align-items: center;
+          gap: var(--space-4);
+        ">
+          <div style="
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            color: var(--text-muted);
+            flex-shrink: 0;
+          ">M · 09</div>
+          <div>
+            <div style="font-size:var(--text-sm);color:var(--text-secondary);font-weight:var(--weight-medium);">Capstone — The Complete Picture</div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);margin-top:2px;">All nine modules converge. The enterprise security organization, complete.</div>
+          </div>
+        </div>
+
+      </div><!-- end right column -->
+
+    </div><!-- end bridge-grid -->
+
+  </div><!-- end bridge inner -->
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     ALL PAGE JAVASCRIPT
+     (animations, JML reveal, career stages)
+     ═══════════════════════════════════════════ -->
+<script>
+(function() {
+
+  // ── THEME TOGGLE ─────────────────────────
+  var themeToggle = document.getElementById('themeToggle');
+  var themeIcon   = document.getElementById('themeIcon');
+  var themeLabel  = document.getElementById('themeLabel');
+  var htmlEl      = document.documentElement;
+
+  // Restore saved theme
+  var saved = localStorage.getItem('m07-theme') || 'dark';
+  htmlEl.setAttribute('data-theme', saved);
+  updateThemeUI(saved);
+
+  function updateThemeUI(theme) {
+    if (theme === 'light') {
+      themeIcon.textContent  = '🌙';
+      themeLabel.textContent = 'Dark';
+    } else {
+      themeIcon.textContent  = '☀️';
+      themeLabel.textContent = 'Light';
+    }
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function() {
+      var current = htmlEl.getAttribute('data-theme');
+      var next    = current === 'dark' ? 'light' : 'dark';
+      htmlEl.setAttribute('data-theme', next);
+      localStorage.setItem('m07-theme', next);
+      updateThemeUI(next);
+    });
+  }
+
+  // ── MOBILE NAV ───────────────────────────
+  var mobileToggle = document.getElementById('mobileNavToggle');
+  var leftNav      = document.querySelector('.left-nav');
+  var navOverlay   = document.getElementById('navOverlay');
+
+  function closeNav() {
+    if (leftNav)    leftNav.classList.remove('nav-open');
+    if (navOverlay) navOverlay.classList.remove('active');
+  }
+
+  if (mobileToggle) {
+    mobileToggle.addEventListener('click', function() {
+      var isOpen = leftNav && leftNav.classList.contains('nav-open');
+      if (isOpen) { closeNav(); } else {
+        if (leftNav)    leftNav.classList.add('nav-open');
+        if (navOverlay) navOverlay.classList.add('active');
+      }
+    });
+  }
+
+  if (navOverlay) {
+    navOverlay.addEventListener('click', closeNav);
+  }
+
+  // Close nav on link click (mobile)
+  document.querySelectorAll('.nav-item').forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 768) closeNav();
+    });
+  });
+
+
+  // ── JML STEP ANIMATIONS ──────────────────
+  // Stagger JML steps: columns left-to-right,
+  // steps top-to-bottom with 0.08s per step
+  const JML_BASE_DELAY_MS = 80;
+
+  function initJml() {
+    const cols = document.querySelectorAll('.jml-col');
+    cols.forEach((col, colIdx) => {
+      const steps = col.querySelectorAll('.jml-step');
+      const colDelay = colIdx * steps.length * JML_BASE_DELAY_MS;
+      steps.forEach((step, stepIdx) => {
+        step.style.transitionDelay = (colDelay + stepIdx * JML_BASE_DELAY_MS) + 'ms';
+      });
+    });
+
+    const jmlSection = document.getElementById('jml');
+    if (!jmlSection) return;
+
+    const jmlObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          const steps = document.querySelectorAll('.jml-step');
+          steps.forEach(s => s.classList.add('jml-visible'));
+          jmlObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.10 });
+    jmlObs.observe(jmlSection);
+  }
+
+  // ── CAREER STAGE ANIMATIONS ──────────────
+  function initCareer() {
+    const stages = document.querySelectorAll('.career-stage');
+    stages.forEach((stage, idx) => {
+      stage.style.transitionDelay = (idx * 120) + 'ms';
+    });
+
+    const careerSection = document.getElementById('career');
+    if (!careerSection) return;
+
+    const careerObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          stages.forEach(s => s.classList.add('career-visible'));
+          careerObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.10 });
+    careerObs.observe(careerSection);
+  }
+
+  // ── PAM RING ANIMATIONS ──────────────────
+  // Rings already animated via CSS @keyframes with animation-delay.
+  // We trigger them once the section enters view by adding a class.
+  function initPamRings() {
+    const pamSection = document.getElementById('pam-controls');
+    if (!pamSection) return;
+
+    const rings = pamSection.querySelectorAll('.pam-ring');
+    // Reset to paused initially
+    rings.forEach(r => {
+      r.style.animationPlayState = 'paused';
+    });
+
+    const pamObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          rings.forEach(r => {
+            r.style.animationPlayState = 'running';
+          });
+          pamObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    pamObs.observe(pamSection);
+  }
+
+  // ── RADAR CHART — trigger animation on view ──
+  function initRadar() {
+    const radarSection = document.getElementById('skills');
+    if (!radarSection) return;
+
+    const polygons = radarSection.querySelectorAll('polygon');
+    polygons.forEach(p => {
+      p.style.animationPlayState = 'paused';
+    });
+
+    const radarObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          polygons.forEach(p => {
+            p.style.animationPlayState = 'running';
+          });
+          radarObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    radarObs.observe(radarSection);
+  }
+
+  // ── STAT CARD COUNTER ANIMATION ──────────
+  function animateCounters() {
+    const statNums = document.querySelectorAll('.stat-card-number');
+    const countObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.style.opacity = '0';
+          e.target.style.transform = 'translateY(8px)';
+          e.target.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          setTimeout(() => {
+            e.target.style.opacity = '1';
+            e.target.style.transform = 'translateY(0)';
+          }, 100);
+          countObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.5 });
+    statNums.forEach(n => countObs.observe(n));
+  }
+
+  // ── SCROLL REVEAL (global) ────────────────
+  function initReveal() {
+    const els = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.06 });
+    els.forEach(el => obs.observe(el));
+  }
+
+  // ── ACTIVE NAV HIGHLIGHTING ───────────────
+  function initNavHighlight() {
+    const sections = document.querySelectorAll('[id]');
+    const navLinks = document.querySelectorAll('.nav-item');
+    const sectionObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          navLinks.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector('.nav-item[href="#' + e.target.id + '"]');
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-25% 0px -65% 0px' });
+    sections.forEach(s => sectionObs.observe(s));
+  }
+
+  // ── INIT ALL ──────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    initReveal();
+    initJml();
+    initCareer();
+    initPamRings();
+    initRadar();
+    animateCounters();
+    initNavHighlight();
+  });
+
+  // Fallback: if DOM already ready
+  if (document.readyState !== 'loading') {
+    initReveal();
+    initJml();
+    initCareer();
+    initPamRings();
+    initRadar();
+    animateCounters();
+    initNavHighlight();
+  }
+
+})();
+</script>
+
+  </main>
+
+</div><!-- end .layout -->
+
+
+</body>
