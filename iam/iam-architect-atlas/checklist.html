@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IAM Architecture Review Checklist — IAM Architect Atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════════════
+       CSS CUSTOM PROPERTIES — LIGHT & DARK MODES
+    ═══════════════════════════════════════════════════ */
+    :root {
+      --bg:            #F5F3EE;
+      --surface:       #FFFFFF;
+      --surface-alt:   #F9F8F5;
+      --text:          #1A1D24;
+      --text-muted:    #6B6F7A;
+      --border:        #DEDAD1;
+      --border-strong: #C8C4BB;
+      --radius:        12px;
+      --radius-sm:     8px;
+      --radius-xs:     4px;
+
+      /* Domain accent colors */
+      --accent-amber:  #E8A33D;
+      --accent-red:    #D9534F;
+      --accent-violet: #7B6FE0;
+      --accent-green:  #4FB286;
+      --accent-blue:   #5B8FF0;
+
+      /* Semantic status colors */
+      --status-yes:     #2E9E68;
+      --status-yes-bg:  #E8F7F1;
+      --status-part:    #D4870A;
+      --status-part-bg: #FEF3E2;
+      --status-no:      #C93B37;
+      --status-no-bg:   #FDECEC;
+      --status-unk:     #5A5F6E;
+      --status-unk-bg:  #EEEDF0;
+
+      /* Priority badge */
+      --p1-color:  #C93B37;
+      --p1-bg:     #FDECEC;
+
+      /* Typography scale */
+      --font-display: 'Inter Tight', sans-serif;
+      --font-body:    'IBM Plex Sans', sans-serif;
+      --font-mono:    'IBM Plex Mono', monospace;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+
+      /* Transitions */
+      --transition: 150ms ease;
+    }
+
+    html.dark {
+      --bg:            #0B0E14;
+      --surface:       #151A24;
+      --surface-alt:   #1A2030;
+      --text:          #E8E6E1;
+      --text-muted:    #8A8F9C;
+      --border:        #262B38;
+      --border-strong: #333A4A;
+
+      --status-yes-bg:  #0D2E1E;
+      --status-part-bg: #2A1E06;
+      --status-no-bg:   #2A0E0D;
+      --status-unk-bg:  #1C1E26;
+      --p1-bg:          #2A0E0D;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════════ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       LAYOUT WRAPPER
+    ═══════════════════════════════════════════════════ */
+    .page-wrapper {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       TOP BAR (screen only)
+    ═══════════════════════════════════════════════════ */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .top-bar-left .lock-icon {
+      font-size: 1rem;
+    }
+
+    .top-bar-center {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+      text-align: center;
+      flex: 1;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--border-strong);
+      color: var(--text);
+      background: var(--surface-alt);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       NAV BREADCRUMB
+    ═══════════════════════════════════════════════════ */
+    .nav-breadcrumb {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0 0;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .nav-breadcrumb a {
+      color: var(--accent-blue);
+      text-decoration: none;
+      transition: opacity var(--transition);
+    }
+
+    .nav-breadcrumb a:hover {
+      opacity: 0.75;
+      text-decoration: underline;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       ASSESSMENT HEADER
+    ═══════════════════════════════════════════════════ */
+    .assessment-header {
+      padding: 32px 0 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .assessment-header h1 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.85rem;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .assessment-header h1 .check-accent {
+      color: var(--accent-green);
+    }
+
+    .assessment-subtitle {
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 640px;
+      margin-bottom: 24px;
+    }
+
+    /* Metadata form fields */
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+      margin-bottom: 20px;
+    }
+
+    .meta-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-field label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .meta-field input {
+      background: transparent;
+      border: none;
+      border-bottom: 1.5px solid var(--border-strong);
+      padding: 4px 2px;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+      width: 100%;
+    }
+
+    .meta-field input:focus {
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .meta-field input::placeholder {
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 16px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .stat-pill .stat-num {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .stat-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SCORING GUIDE CARD
+    ═══════════════════════════════════════════════════ */
+    .scoring-guide {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .scoring-guide-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    .scoring-legend {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .legend-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .legend-label.yes    { color: var(--status-yes); }
+    .legend-label.part   { color: var(--status-part); }
+    .legend-label.no     { color: var(--status-no); }
+    .legend-label.unk    { color: var(--status-unk); }
+
+    .legend-desc {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .priority-guide {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .priority-row {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .priority-row .p-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-right: 6px;
+    }
+
+    .p-badge.p1 { background: var(--p1-bg); color: var(--p1-color); }
+    .p-badge.p2 { background: var(--status-no-bg); color: var(--status-no); }
+    .p-badge.p3 { background: var(--status-part-bg); color: var(--status-part); }
+
+    /* ═══════════════════════════════════════════════════
+       DOMAIN HEADER STRIP
+    ═══════════════════════════════════════════════════ */
+    .checklist-domain {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      margin: 36px 0 16px;
+      border-radius: var(--radius);
+      /* border-left set per domain inline style */
+      border-left-width: 4px;
+      border-left-style: solid;
+    }
+
+    .domain-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.0rem;
+      /* color set per domain */
+    }
+
+    .domain-meta {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       QUESTION CARD
+    ═══════════════════════════════════════════════════ */
+    .check-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color var(--transition);
+    }
+
+    .check-card:hover {
+      border-color: var(--border-strong);
+    }
+
+    /* Card answered state — subtle left accent */
+    .check-card.answered-yes     { border-left: 3px solid var(--status-yes); }
+    .check-card.answered-partial { border-left: 3px solid var(--status-part); }
+    .check-card.answered-no      { border-left: 3px solid var(--status-no); }
+    .check-card.answered-unknown { border-left: 3px solid var(--status-unk); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .check-number {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .check-priority-badge {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: var(--radius-xs);
+      background: var(--p1-bg);
+      color: var(--p1-color);
+    }
+
+    .check-question {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.93rem;
+      color: var(--text);
+      line-height: 1.45;
+      margin-bottom: 4px;
+    }
+
+    .check-module-tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .check-why {
+      font-family: var(--font-body);
+      font-size: 0.81rem;
+      color: var(--text-muted);
+      font-style: italic;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    /* Answer buttons */
+    .answer-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .ans-btn {
+      padding: 5px 14px;
+      border-radius: var(--radius-xs);
+      border: 1.5px solid var(--border);
+      background: transparent;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .ans-btn:hover {
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+
+    .ans-btn.selected-yes {
+      background: var(--status-yes);
+      border-color: var(--status-yes);
+      color: #fff;
+    }
+
+    .ans-btn.selected-partial {
+      background: var(--status-part);
+      border-color: var(--status-part);
+      color: #fff;
+    }
+
+    .ans-btn.selected-no {
+      background: var(--status-no);
+      border-color: var(--status-no);
+      color: #fff;
+    }
+
+    .ans-btn.selected-unknown {
+      background: var(--status-unk);
+      border-color: var(--status-unk);
+      color: #fff;
+    }
+
+    /* Notes toggle + textarea */
+    .notes-toggle {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--accent-blue);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: none;
+      transition: opacity var(--transition);
+    }
+
+    .notes-toggle:hover {
+      opacity: 0.7;
+    }
+
+    .notes-area {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .notes-area.open {
+      display: block;
+    }
+
+    .notes-area textarea {
+      width: 100%;
+      min-height: 56px;
+      padding: 8px 10px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      transition: border-color var(--transition);
+      line-height: 1.5;
+    }
+
+    .notes-area textarea:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .notes-area textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SUMMARY CARD
+    ═══════════════════════════════════════════════════ */
+    .summary-section {
+      margin-top: 48px;
+      border-top: 2px solid var(--border);
+      padding-top: 32px;
+    }
+
+    .summary-section-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 8px;
+      border-radius: var(--radius-sm);
+      gap: 4px;
+    }
+
+    .summary-stat.s-yes  { background: var(--status-yes-bg); }
+    .summary-stat.s-part { background: var(--status-part-bg); }
+    .summary-stat.s-no   { background: var(--status-no-bg); }
+    .summary-stat.s-unk  { background: var(--status-unk-bg); }
+
+    .summary-stat .s-count {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    .summary-stat.s-yes  .s-count { color: var(--status-yes); }
+    .summary-stat.s-part .s-count { color: var(--status-part); }
+    .summary-stat.s-no   .s-count { color: var(--status-no); }
+    .summary-stat.s-unk  .s-count { color: var(--status-unk); }
+
+    .summary-stat .s-label {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin-bottom: 16px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .progress-track {
+      height: 8px;
+      background: var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+      border-radius: 100px;
+      transition: width 400ms ease;
+      width: 0%;
+    }
+
+    /* Interpretation guide */
+    .interpretation-guide {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .interp-row {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .interp-row .interp-range {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-right: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       FINDINGS SECTION
+    ═══════════════════════════════════════════════════ */
+    .findings-section {
+      margin-bottom: 32px;
+    }
+
+    .findings-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.0rem;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .findings-group {
+      margin-bottom: 20px;
+    }
+
+    .findings-group-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 6px 10px;
+      border-radius: var(--radius-xs);
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+
+    .findings-group-title.p1 {
+      background: var(--p1-bg);
+      color: var(--p1-color);
+    }
+
+    .findings-group-title.p2 {
+      background: var(--status-no-bg);
+      color: var(--status-no);
+    }
+
+    .findings-list-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .finding-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .finding-item .finding-qnum {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+      padding-top: 1px;
+    }
+
+    .finding-item .finding-text {
+      flex: 1;
+    }
+
+    .finding-item .finding-q {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.45;
+      margin-bottom: 3px;
+    }
+
+    .finding-item .finding-module {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .finding-item .finding-answer {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+
+    .finding-item .finding-answer.ans-no  { background: var(--status-no-bg);  color: var(--status-no);  }
+    .finding-item .finding-answer.ans-unk { background: var(--status-unk-bg); color: var(--status-unk); }
+
+    .findings-empty {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px;
+      background: var(--status-yes-bg);
+      border: 1px solid rgba(46,158,104,0.2);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--status-yes);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RECOMMENDATIONS TEXTAREA
+    ═══════════════════════════════════════════════════ */
+    .recommendations-section {
+      margin-bottom: 32px;
+    }
+
+    .rec-label {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .rec-textarea {
+      width: 100%;
+      min-height: 110px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color var(--transition);
+    }
+
+    .rec-textarea:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .rec-textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.55;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       NEXT STEPS CARD
+    ═══════════════════════════════════════════════════ */
+    .next-steps-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .next-steps-title {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .next-step-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--accent-blue);
+      text-decoration: none;
+      transition: opacity var(--transition);
+    }
+
+    .next-step-link:hover {
+      opacity: 0.75;
+      text-decoration: underline;
+    }
+
+    /* Reset link */
+    .reset-link {
+      display: block;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-bottom: 24px;
+      transition: color var(--transition);
+    }
+
+    .reset-link:hover {
+      color: var(--status-no);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════════════ */
+    .page-footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 0;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       UTILITY
+    ═══════════════════════════════════════════════════ */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESPONSIVE — 375px+
+    ═══════════════════════════════════════════════════ */
+    @media (max-width: 600px) {
+      .top-bar-center { display: none; }
+      .metadata-grid  { grid-template-columns: 1fr; }
+      .scoring-legend { grid-template-columns: 1fr 1fr; }
+      .summary-stats  { grid-template-columns: repeat(2, 1fr); }
+      .interpretation-guide { grid-template-columns: 1fr; }
+      .answer-buttons .ans-btn { padding: 5px 10px; font-size: 0.68rem; }
+      .assessment-header h1 { font-size: 1.45rem; }
+      .stats-row { flex-wrap: wrap; gap: 8px; }
+    }
+
+    @media (max-width: 400px) {
+      .page-wrapper { padding: 0 14px 60px; }
+      .top-bar { padding: 0 14px; }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       PRINT STYLES
+    ═══════════════════════════════════════════════════ */
+    @media print {
+      /* Force light mode for print */
+      html, html.dark {
+        --bg:          #FFFFFF;
+        --surface:     #FFFFFF;
+        --surface-alt: #F9F8F5;
+        --text:        #1A1D24;
+        --text-muted:  #5A5F6E;
+        --border:      #CCCCCC;
+        --border-strong: #AAAAAA;
+        --shadow-sm:   none;
+        --shadow-md:   none;
+      }
+
+      /* Hide interactive chrome */
+      .top-bar,
+      .nav-breadcrumb,
+      .notes-toggle,
+      .btn-icon,
+      .reset-link,
+      .next-steps-card { display: none !important; }
+
+      /* Always show notes areas */
+      .notes-area { display: block !important; }
+
+      body {
+        font-size: 0.82rem;
+        background: #fff;
+        color: #1A1D24;
+      }
+
+      .page-wrapper {
+        max-width: 100%;
+        padding: 0 18pt;
+      }
+
+      .assessment-header {
+        padding-top: 0;
+      }
+
+      .assessment-header h1 {
+        font-size: 1.4rem;
+      }
+
+      /* Make meta fields look like underlines for pen */
+      .meta-field input {
+        border: none;
+        border-bottom: 1px solid #999;
+        padding: 2px;
+      }
+
+      /* Domain breaks */
+      .checklist-domain {
+        page-break-before: always;
+        margin-top: 0;
+      }
+
+      /* First domain — no page break before it */
+      .checklist-domain:first-of-type {
+        page-break-before: avoid;
+      }
+
+      /* Cards: clean white */
+      .check-card {
+        box-shadow: none;
+        border: 1px solid #CCCCCC;
+        page-break-inside: avoid;
+        margin-bottom: 8pt;
+      }
+
+      /* Answer buttons: print as labeled boxes */
+      .answer-buttons {
+        display: flex;
+        gap: 5pt;
+        flex-wrap: nowrap;
+      }
+
+      .ans-btn {
+        border: 1.5px solid #999;
+        background: transparent !important;
+        color: #444 !important;
+        padding: 3px 10px;
+        font-size: 0.65rem;
+      }
+
+      /* Selected button: shown with filled box */
+      .ans-btn.selected-yes,
+      .ans-btn.selected-partial,
+      .ans-btn.selected-no,
+      .ans-btn.selected-unknown {
+        background: #1A1D24 !important;
+        color: #FFFFFF !important;
+        border-color: #1A1D24 !important;
+      }
+
+      /* Notes area */
+      .notes-area textarea {
+        border: 1px solid #CCCCCC;
+        background: #FAFAFA;
+        min-height: 36pt;
+        width: 100%;
+        color: #000;
+      }
+
+      /* Summary card */
+      .summary-card {
+        box-shadow: none;
+        border: 1.5px solid #CCCCCC;
+      }
+
+      .summary-stats {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .summary-stat {
+        border: 1px solid #CCCCCC;
+        background: #F9F9F9 !important;
+      }
+
+      .summary-stat .s-count { font-size: 1.3rem; }
+
+      /* Findings */
+      .finding-item {
+        box-shadow: none;
+        border: 1px solid #CCCCCC;
+        page-break-inside: avoid;
+      }
+
+      /* Progress bar */
+      .progress-fill {
+        background: #444 !important;
+        transition: none;
+      }
+
+      /* Recommendations */
+      .rec-textarea {
+        border: 1px solid #CCCCCC;
+        background: #FAFAFA;
+        min-height: 80pt;
+        color: #000;
+      }
+
+      /* Scoring guide */
+      .scoring-guide {
+        box-shadow: none;
+        border: 1px solid #CCCCCC;
+      }
+
+      /* Page header via @page */
+      @page {
+        margin: 18mm 14mm;
+        size: A4;
+      }
+
+      .page-footer {
+        display: block !important;
+        font-size: 0.65rem;
+        border-top: 1px solid #CCC;
+        padding-top: 8pt;
+        margin-top: 24pt;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════
+       CONTENT PLACEHOLDER — Chunks 2–8 insert here
+  ═══════════════════════════════════════ -->
+
+  <!-- ═══════════════════════════════════════
+       TOP BAR
+  ═══════════════════════════════════════ -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <span class="lock-icon">🔐</span>
+      IAM Architect Atlas
+    </div>
+    <div class="top-bar-center">✅ IAM Architecture Review Checklist</div>
+    <div class="top-bar-right">
+      <button class="btn-icon theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark mode">◐ Theme</button>
+      <button class="btn-icon print-btn" onclick="window.print()" title="Print checklist">🖨️ Print</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       PAGE WRAPPER OPENS
+  ═══════════════════════════════════════ -->
+  <div class="page-wrapper">
+
+    <!-- NAV BREADCRUMB -->
+    <nav class="nav-breadcrumb">
+      <a href="index.html">← Back to Portal Index</a>
+      <a href="dictionary.html">📖 Open Dictionary →</a>
+    </nav>
+
+    <!-- ═══════════════════════════════════════
+         ASSESSMENT HEADER
+    ═══════════════════════════════════════ -->
+    <header class="assessment-header">
+      <h1>IAM Architecture <span class="check-accent">Review Checklist</span></h1>
+      <p class="assessment-subtitle">
+        20 essential questions across 6 domains. Use this to assess any enterprise IAM environment.
+        Each question cites the module where the topic is taught in full architectural depth.
+        Fill in the metadata below, work through each domain, then review your findings summary.
+      </p>
+
+      <div class="metadata-grid">
+        <div class="meta-field">
+          <label for="meta-org">Organization</label>
+          <input type="text" id="meta-org" placeholder="e.g. Acme Corporation" />
+        </div>
+        <div class="meta-field">
+          <label for="meta-reviewer">Reviewer</label>
+          <input type="text" id="meta-reviewer" placeholder="Your name / role" />
+        </div>
+        <div class="meta-field">
+          <label for="meta-date">Date</label>
+          <input type="text" id="meta-date" placeholder="e.g. 2025-06-15" />
+        </div>
+        <div class="meta-field">
+          <label for="meta-scope">Scope</label>
+          <input type="text" id="meta-scope" placeholder="e.g. Corporate workforce identity, AWS + Azure" />
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill"><span class="stat-num">20</span> Questions</div>
+        <div class="stat-divider"></div>
+        <div class="stat-pill"><span class="stat-num">6</span> Domains</div>
+        <div class="stat-divider"></div>
+        <div class="stat-pill"><span class="stat-num">~90</span> min to complete</div>
+        <div class="stat-divider"></div>
+        <div class="stat-pill"><span class="stat-num">7</span> Critical controls marked ★</div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         SCORING GUIDE CARD
+    ═══════════════════════════════════════ -->
+    <div class="scoring-guide">
+      <div class="scoring-guide-title">How to Score Each Question</div>
+      <div class="scoring-legend">
+        <div class="legend-item">
+          <div class="legend-label yes">✅ YES</div>
+          <div class="legend-desc">Control is in place and demonstrably effective</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-label part">⚠️ PARTIAL</div>
+          <div class="legend-desc">Partially implemented or effectiveness uncertain</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-label no">❌ NO</div>
+          <div class="legend-desc">Control is absent or clearly ineffective</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-label unk">❓ UNKNOWN</div>
+          <div class="legend-desc">Cannot assess without further investigation</div>
+        </div>
+      </div>
+      <div class="priority-guide">
+        <div class="priority-row"><span class="p-badge p1">P1 CRITICAL</span> ❌ or ❓ on any ★ starred question</div>
+        <div class="priority-row"><span class="p-badge p2">P2 HIGH</span> ❌ or ❓ on any non-starred question</div>
+        <div class="priority-row"><span class="p-badge p3">P3 MEDIUM</span> ⚠️ PARTIAL on any question</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DOMAIN 1: AUTHENTICATION & FEDERATION
+    ═══════════════════════════════════════ -->
+    <div class="checklist-domain" style="background:color-mix(in srgb,#E8A33D 10%,var(--surface));border-left-color:#E8A33D;">
+      <div>
+        <div class="domain-title" style="color:#E8A33D;">Authentication &amp; Federation</div>
+      </div>
+      <div class="domain-meta">Questions 1–5 · Modules M03, M04, M05, M06</div>
+    </div>
+
+    <!-- Q1 ★ CRITICAL -->
+    <div class="check-card" id="card-q1" data-question="1" data-critical="true">
+      <div class="card-header">
+        <span class="check-number">Q1</span>
+        <span class="check-priority-badge">★ Critical</span>
+      </div>
+      <div class="check-question">Is phishing-resistant MFA (FIDO2/WebAuthn/hardware security key) enforced for all administrative and privileged access — not just regular employee SSO?</div>
+      <div class="check-module-tag">→ Module 05: FIDO2 &amp; WebAuthn Architecture</div>
+      <div class="check-why">AiTM phishing proxies defeat TOTP and push MFA in real time — only FIDO2's origin-binding is structurally phishing-resistant, making unprotected administrative accounts the most critical entry point for identity-based attacks.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="1" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="1" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="1" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="1" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q1')">📝 Notes</button>
+      <div class="notes-area" id="notes-q1">
+        <textarea placeholder="Add notes for Q1..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="check-card" id="card-q2" data-question="2" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q2</span>
+      </div>
+      <div class="check-question">Are all federation trust relationships (SAML metadata, OIDC signing certificates, federation partner agreements) tracked in a central inventory with expiry alerts at 90, 60, and 30 days before expiry?</div>
+      <div class="check-module-tag">→ Module 04: PingFederate Architecture · Module 12: Certificate Lifecycle</div>
+      <div class="check-why">An expired SAML metadata or signing certificate causes a total SSO outage for all applications behind that trust relationship — often with no warning until users report login failures.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="2" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="2" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="2" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="2" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q2')">📝 Notes</button>
+      <div class="notes-area" id="notes-q2">
+        <textarea placeholder="Add notes for Q2..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q3 ★ CRITICAL -->
+    <div class="check-card" id="card-q3" data-question="3" data-critical="true">
+      <div class="card-header">
+        <span class="check-number">Q3</span>
+        <span class="check-priority-badge">★ Critical</span>
+      </div>
+      <div class="check-question">Is legacy authentication (NTLM, HTTP Basic Auth, IMAP/POP with password, OAuth ROPC grant) explicitly blocked by Conditional Access or equivalent policy — not just discouraged?</div>
+      <div class="check-module-tag">→ Module 03: Deprecated OAuth Grants · Module 14: Conditional Access Blind Spots</div>
+      <div class="check-why">Legacy authentication protocols bypass Conditional Access policy enforcement entirely, allowing an attacker with stolen credentials to completely circumvent MFA requirements applied to modern authentication flows.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="3" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="3" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="3" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="3" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q3')">📝 Notes</button>
+      <div class="notes-area" id="notes-q3">
+        <textarea placeholder="Add notes for Q3..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="check-card" id="card-q4" data-question="4" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q4</span>
+      </div>
+      <div class="check-question">Does VPN authentication enforce the same MFA policy as web SSO — or is there a gap where a password alone grants VPN access?</div>
+      <div class="check-module-tag">→ Module 06: VPN Authentication Architecture</div>
+      <div class="check-why">Enforcing FIDO2 or push MFA on web SSO while allowing password-only VPN authentication creates an architectural bypass — an attacker with credentials skips the MFA-protected SSO layer entirely and reaches internal resources directly.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="4" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="4" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="4" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="4" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q4')">📝 Notes</button>
+      <div class="notes-area" id="notes-q4">
+        <textarea placeholder="Add notes for Q4..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="check-card" id="card-q5" data-question="5" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q5</span>
+      </div>
+      <div class="check-question">Are Linux server SSH access controls governed through a centralized SSH Certificate Authority model — or do unmanaged authorized_keys files proliferate across servers?</div>
+      <div class="check-module-tag">→ Module 07: SSH Key Management &amp; SSH CA</div>
+      <div class="check-why">SSH key sprawl means former-employee keys persist on servers indefinitely, remain invisible to IGA certification, and provide persistent access that survives all other deprovisioning steps — an SSH CA with short-lived certificates solves this architecturally.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="5" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="5" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="5" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="5" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q5')">📝 Notes</button>
+      <div class="notes-area" id="notes-q5">
+        <textarea placeholder="Add notes for Q5..."></textarea>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DOMAIN 2: AUTHORIZATION & GOVERNANCE
+    ═══════════════════════════════════════ -->
+    <div class="checklist-domain" style="background:color-mix(in srgb,#D9534F 10%,var(--surface));border-left-color:#D9534F;">
+      <div>
+        <div class="domain-title" style="color:#D9534F;">Authorization &amp; Governance</div>
+      </div>
+      <div class="domain-meta">Questions 6–10 · Modules M08, M09</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="check-card" id="card-q6" data-question="6" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q6</span>
+      </div>
+      <div class="check-question">Is there a current, complete entitlement catalog in the IGA platform covering all material applications — with business-readable entitlement names, not just technical IDs?</div>
+      <div class="check-module-tag">→ Module 09: Entitlement Catalog Architecture</div>
+      <div class="check-why">Access certification campaigns are meaningless if reviewers see "APP_ROLE_12847" instead of "Finance Manager — Accounts Payable" — without a readable entitlement catalog, certifiers rubber-stamp approvals because they cannot evaluate what they are certifying.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="6" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="6" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="6" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="6" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q6')">📝 Notes</button>
+      <div class="notes-area" id="notes-q6">
+        <textarea placeholder="Add notes for Q6..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="check-card" id="card-q7" data-question="7" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q7</span>
+      </div>
+      <div class="check-question">Are access certifications completing on schedule with a revocation rate consistently above 2%? (A rate below 2% is a strong indicator of rubber-stamping.)</div>
+      <div class="check-module-tag">→ Module 09: Access Certification Architecture</div>
+      <div class="check-why">A certification campaign with a 0.5% revocation rate is compliance theater — it produces audit evidence without meaningful access control, and the revocation rate is the most reliable signal of whether certifications represent genuine review.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="7" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="7" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="7" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="7" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q7')">📝 Notes</button>
+      <div class="notes-area" id="notes-q7">
+        <textarea placeholder="Add notes for Q7..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q8 ★ CRITICAL -->
+    <div class="check-card" id="card-q8" data-question="8" data-critical="true">
+      <div class="card-header">
+        <span class="check-number">Q8</span>
+        <span class="check-priority-badge">★ Critical</span>
+      </div>
+      <div class="check-question">Is there a functioning, fully automated Mover workflow that actively REMOVES access that is no longer appropriate for a user's new role — not just ADDS new access at transfer time?</div>
+      <div class="check-module-tag">→ Module 09: Mover Workflow Architecture</div>
+      <div class="check-why">Without active removal at Mover events, access accumulates permanently with each role change — a user through five role changes over ten years holds the union of every permission they ever needed, a severe over-permission state invisible to most routine reviews.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="8" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="8" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="8" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="8" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q8')">📝 Notes</button>
+      <div class="notes-area" id="notes-q8">
+        <textarea placeholder="Add notes for Q8..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="check-card" id="card-q9" data-question="9" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q9</span>
+      </div>
+      <div class="check-question">Are all material SoD rules defined AND checked at access REQUEST TIME (preventive control), not only discovered during periodic certification campaigns (detective control)?</div>
+      <div class="check-module-tag">→ Module 09: SoD Architecture — Preventive vs. Detective</div>
+      <div class="check-why">SoD violations discovered in quarterly certification campaigns represent up to three months of unchecked exposure — preventive SoD checking at request time eliminates the violation before it exists, applying the same security principle as input validation at the API boundary.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="9" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="9" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="9" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="9" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q9')">📝 Notes</button>
+      <div class="notes-area" id="notes-q9">
+        <textarea placeholder="Add notes for Q9..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="check-card" id="card-q10" data-question="10" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q10</span>
+      </div>
+      <div class="check-question">Is the organization's authorization model documented — which systems use RBAC, which use ABAC, where a dedicated Policy Decision Point (PDP) exists — with PEPs confirmed to fail-closed when the PDP is unreachable?</div>
+      <div class="check-module-tag">→ Module 08: PDP/PEP Architecture · Authorization Model Selection</div>
+      <div class="check-why">A PEP that fails-open when the PDP is unreachable creates a complete authorization bypass exploitable by causing a PDP outage — this failure mode is almost never tested until it occurs in production, and undocumented authorization models accumulate inconsistency silently.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="10" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="10" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="10" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="10" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q10')">📝 Notes</button>
+      <div class="notes-area" id="notes-q10">
+        <textarea placeholder="Add notes for Q10..."></textarea>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DOMAIN 3: PRIVILEGED & MACHINE IDENTITY
+    ═══════════════════════════════════════ -->
+    <div class="checklist-domain" style="background:color-mix(in srgb,#7B6FE0 10%,var(--surface));border-left-color:#7B6FE0;">
+      <div>
+        <div class="domain-title" style="color:#7B6FE0;">Privileged &amp; Machine Identity</div>
+      </div>
+      <div class="domain-meta">Questions 11–15 · Modules M10, M11, M12</div>
+    </div>
+
+    <!-- Q11 ★ CRITICAL -->
+    <div class="check-card" id="card-q11" data-question="11" data-critical="true">
+      <div class="card-header">
+        <span class="check-number">Q11</span>
+        <span class="check-priority-badge">★ Critical</span>
+      </div>
+      <div class="check-question">Are all privileged accounts (Domain Admin, Cloud Admin, root, DBA) vaulted in PAM with JIT access enforced — no standing privileged sessions, and session recording enabled for all privileged connections?</div>
+      <div class="check-module-tag">→ Module 10: CyberArk Architecture · JIT Access</div>
+      <div class="check-why">Standing privileged credentials are the highest-value target in any environment — JIT reduces the attack window from 8,760 hours per year to the actual task duration (typically 30–120 minutes), and a Domain Admin account that exists permanently is available for compromise permanently.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="11" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="11" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="11" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="11" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q11')">📝 Notes</button>
+      <div class="notes-area" id="notes-q11">
+        <textarea placeholder="Add notes for Q11..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="check-card" id="card-q12" data-question="12" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q12</span>
+      </div>
+      <div class="check-question">Is there a complete inventory of non-human identities (service accounts, API keys, Kubernetes service accounts, RPA bot accounts) with a documented human owner for every entry?</div>
+      <div class="check-module-tag">→ Module 11: Non-Human Identity Governance Framework</div>
+      <div class="check-why">Unowned service accounts are the identity equivalent of orphaned user accounts — but with often-broader permissions, no behavioral monitoring, and no lifecycle trigger to decommission them when the application they serve is retired.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="12" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="12" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="12" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="12" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q12')">📝 Notes</button>
+      <div class="notes-area" id="notes-q12">
+        <textarea placeholder="Add notes for Q12..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q13 ★ CRITICAL -->
+    <div class="check-card" id="card-q13" data-question="13" data-critical="true">
+      <div class="card-header">
+        <span class="check-number">Q13</span>
+        <span class="check-priority-badge">★ Critical</span>
+      </div>
+      <div class="check-question">Are service accounts using gMSA (Group Managed Service Accounts) or equivalent automated password rotation — and are there any static service account passwords older than 90 days currently in use?</div>
+      <div class="check-module-tag">→ Module 11: Service Account Governance · Module 10: CPM Credential Rotation</div>
+      <div class="check-why">Kerberoasting extracts service ticket material encrypted with the service account's password and cracks it offline — a 1,000-day-old service account password is a cracking exercise, not a security control, and service accounts with stale passwords are the primary Kerberoasting target.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="13" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="13" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="13" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="13" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q13')">📝 Notes</button>
+      <div class="notes-area" id="notes-q13">
+        <textarea placeholder="Add notes for Q13..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q14 -->
+    <div class="check-card" id="card-q14" data-question="14" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q14</span>
+      </div>
+      <div class="check-question">Are CI/CD pipelines, Kubernetes workloads, and cloud automation using workload identity federation (IRSA / Azure Workload Identity / GCP WIF) — with zero static long-lived cloud credentials stored in pipeline secrets or config files?</div>
+      <div class="check-module-tag">→ Module 11: Workload Identity Federation · Module 13: Cloud Identity</div>
+      <div class="check-why">Static cloud access keys stored in CI/CD pipeline secrets or Kubernetes Secret objects are the machine-identity equivalent of hardcoded passwords in source code — a single repository with a leaked key can grant persistent cloud access to an attacker indefinitely.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="14" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="14" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="14" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="14" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q14')">📝 Notes</button>
+      <div class="notes-area" id="notes-q14">
+        <textarea placeholder="Add notes for Q14..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q15 -->
+    <div class="check-card" id="card-q15" data-question="15" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q15</span>
+      </div>
+      <div class="check-question">Is the enterprise Root CA private key HSM-protected, and is there an active expiry alert calendar covering all internal certificates with alerts at 90, 60, and 30 days?</div>
+      <div class="check-module-tag">→ Module 12: PKI Architecture · HSM Concepts · Certificate Lifecycle</div>
+      <div class="check-why">Root CA private key compromise invalidates every certificate ever issued, and software-protected Root CA keys are exposed to anyone with OS-level access to the CA server — separately, certificate expiry incidents are entirely preventable but remain among the most common self-inflicted outages in enterprise infrastructure.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="15" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="15" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="15" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="15" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q15')">📝 Notes</button>
+      <div class="notes-area" id="notes-q15">
+        <textarea placeholder="Add notes for Q15..."></textarea>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DOMAIN 4: CLOUD IDENTITY
+    ═══════════════════════════════════════ -->
+    <div class="checklist-domain" style="background:color-mix(in srgb,#4FB286 10%,var(--surface));border-left-color:#4FB286;">
+      <div>
+        <div class="domain-title" style="color:#4FB286;">Cloud Identity</div>
+      </div>
+      <div class="domain-meta">Questions 16–17 · Module M13</div>
+    </div>
+
+    <!-- Q16 ★ CRITICAL -->
+    <div class="check-card" id="card-q16" data-question="16" data-critical="true">
+      <div class="card-header">
+        <span class="check-number">Q16</span>
+        <span class="check-priority-badge">★ Critical</span>
+      </div>
+      <div class="check-question">Is workforce identity fully federated into all cloud platforms (AWS, Azure, GCP) — with no active native cloud IAM Users holding long-lived static access keys used by human employees for console or API access?</div>
+      <div class="check-module-tag">→ Module 13: Workforce Identity Federation</div>
+      <div class="check-why">Native cloud IAM Users with static access keys are invisible to the enterprise's IGA leaver workflow — a terminated employee's cloud access persists indefinitely if created natively in the cloud platform rather than federated from the central identity source, which is exactly the orphaned account risk at cloud scale.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="16" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="16" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="16" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="16" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q16')">📝 Notes</button>
+      <div class="notes-area" id="notes-q16">
+        <textarea placeholder="Add notes for Q16..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q17 -->
+    <div class="check-card" id="card-q17" data-question="17" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q17</span>
+      </div>
+      <div class="check-question">Are cloud IAM entitlements (IAM roles, Azure RBAC assignments, GCP IAM bindings) included in IGA certification campaigns on the same cadence as on-premises application entitlements — or are cloud permissions outside the governance program entirely?</div>
+      <div class="check-module-tag">→ Module 13: Multi-Cloud Identity Governance · Module 09: IGA Integration</div>
+      <div class="check-why">Cloud IAM entitlement sprawl grows faster than any other category of identity risk — without IGA coverage, cloud role assignments never get reviewed for continued appropriateness, and the "who has access to what" question becomes unanswerable for an increasingly large portion of the technology estate.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="17" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="17" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="17" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="17" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q17')">📝 Notes</button>
+      <div class="notes-area" id="notes-q17">
+        <textarea placeholder="Add notes for Q17..."></textarea>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DOMAIN 5: IDENTITY SECURITY POSTURE
+    ═══════════════════════════════════════ -->
+    <div class="checklist-domain" style="background:color-mix(in srgb,#5B8FF0 10%,var(--surface));border-left-color:#5B8FF0;">
+      <div>
+        <div class="domain-title" style="color:#5B8FF0;">Identity Security Posture</div>
+      </div>
+      <div class="domain-meta">Questions 18–20 · Module M14, M15</div>
+    </div>
+
+    <!-- Q18 ★ CRITICAL -->
+    <div class="check-card" id="card-q18" data-question="18" data-critical="true">
+      <div class="card-header">
+        <span class="check-number">Q18</span>
+        <span class="check-priority-badge">★ Critical</span>
+      </div>
+      <div class="check-question">Is ITDR (Identity Threat Detection and Response) deployed and actively reviewed by the SOC — with identity detection signals (AD Kerberos anomalies, privileged session behavior, OAuth consent grants) correlated with SIEM events for kill-chain visibility?</div>
+      <div class="check-module-tag">→ Module 14: ITDR Architecture</div>
+      <div class="check-why">Identity attacks (Golden Ticket, DCSync, Kerberoasting) use 100% legitimate protocol messages with no malware signature to catch — without ITDR, an attacker using these techniques operates undetected until the breach surfaces externally, with average dwell time exceeding 100 days.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="18" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="18" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="18" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="18" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q18')">📝 Notes</button>
+      <div class="notes-area" id="notes-q18">
+        <textarea placeholder="Add notes for Q18..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q19 -->
+    <div class="check-card" id="card-q19" data-question="19" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q19</span>
+      </div>
+      <div class="check-question">Is Continuous Access Evaluation (or equivalent near-real-time session revocation) enabled for all sensitive applications — ensuring that a terminated account's active sessions are revoked within minutes rather than waiting for token expiry?</div>
+      <div class="check-module-tag">→ Module 14: Continuous Access Evaluation · Module 09: Leaver SLA</div>
+      <div class="check-why">Without CAE, already-issued tokens remain valid for their full lifetime even after the AD account is disabled — a terminated employee's open browser session to a sensitive application can remain active for hours after their account is technically deprovisioned.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="19" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="19" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="19" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="19" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q19')">📝 Notes</button>
+      <div class="notes-area" id="notes-q19">
+        <textarea placeholder="Add notes for Q19..."></textarea>
+      </div>
+    </div>
+
+    <!-- Q20 -->
+    <div class="check-card" id="card-q20" data-question="20" data-critical="false">
+      <div class="card-header">
+        <span class="check-number">Q20</span>
+      </div>
+      <div class="check-question">Is IAM platform configuration (PingFederate SP connections, Saviynt SoD rules, CyberArk safe policies, Conditional Access policies) managed as version-controlled code with peer review — or changed through admin consoles with no history, no rollback, and no change review process?</div>
+      <div class="check-module-tag">→ Module 15: Configuration as Code · IAM Platform Engineering</div>
+      <div class="check-why">A misconfigured SP connection, a silently changed SoD rule, or a production-only Conditional Access policy that was never tested can cause immediate, widespread access failures or undetected security regressions — console-managed IAM configuration with no version history is the infrastructure equivalent of deploying application code without source control.</div>
+      <div class="answer-buttons">
+        <button class="ans-btn" data-q="20" data-val="YES">✅ YES</button>
+        <button class="ans-btn" data-q="20" data-val="PARTIAL">⚠️ PARTIAL</button>
+        <button class="ans-btn" data-q="20" data-val="NO">❌ NO</button>
+        <button class="ans-btn" data-q="20" data-val="UNKNOWN">❓ UNKNOWN</button>
+      </div>
+      <button class="notes-toggle" onclick="toggleNotes('notes-q20')">📝 Notes</button>
+      <div class="notes-area" id="notes-q20">
+        <textarea placeholder="Add notes for Q20..."></textarea>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SUMMARY SECTION
+    ═══════════════════════════════════════ -->
+    <div class="summary-section">
+      <div class="summary-section-title">Assessment Summary</div>
+
+      <div class="summary-card">
+        <div class="summary-stats">
+          <div class="summary-stat s-yes">
+            <div class="s-count" id="count-yes">0</div>
+            <div class="s-label">✅ YES</div>
+          </div>
+          <div class="summary-stat s-part">
+            <div class="s-count" id="count-partial">0</div>
+            <div class="s-label">⚠️ PARTIAL</div>
+          </div>
+          <div class="summary-stat s-no">
+            <div class="s-count" id="count-no">0</div>
+            <div class="s-label">❌ NO</div>
+          </div>
+          <div class="summary-stat s-unk">
+            <div class="s-count" id="count-unknown">0</div>
+            <div class="s-label">❓ UNKNOWN</div>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span>Posture score</span>
+            <span id="progress-label">0 / 20 answered</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="interpretation-guide">
+          <div class="interp-row"><span class="interp-range">17–20 YES</span>Strong posture — focus on roadmap maturity</div>
+          <div class="interp-row"><span class="interp-range">13–16 YES</span>Moderate posture — address NO/UNKNOWN findings</div>
+          <div class="interp-row"><span class="interp-range">9–12 YES</span>Significant gaps — prioritize P1 findings</div>
+          <div class="interp-row"><span class="interp-range">Below 9</span>Critical posture risk — immediate remediation needed</div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           FINDINGS SECTION
+      ═══════════════════════════════════ -->
+      <div class="findings-section">
+        <div class="findings-title">Priority Findings</div>
+
+        <!-- P1 Critical Findings -->
+        <div class="findings-group" id="findings-p1-group">
+          <div class="findings-group-title p1">★ P1 — Critical Findings</div>
+          <div class="findings-list-items" id="findings-p1-list">
+            <div class="findings-empty">✅ No P1 critical findings. Answer the questions above to populate findings.</div>
+          </div>
+        </div>
+
+        <!-- P2 High Findings -->
+        <div class="findings-group" id="findings-p2-group">
+          <div class="findings-group-title p2">P2 — High Findings</div>
+          <div class="findings-list-items" id="findings-p2-list">
+            <div class="findings-empty" style="color:var(--text-muted);background:var(--surface-alt);border-color:var(--border);">No P2 findings identified yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           RECOMMENDATIONS
+      ═══════════════════════════════════ -->
+      <div class="recommendations-section">
+        <div class="rec-label">Top 3 Recommended Actions</div>
+        <textarea class="rec-textarea" placeholder="Based on this assessment, the three highest-priority architectural investments are:&#10;1. &#10;2. &#10;3. "></textarea>
+      </div>
+
+      <!-- ═══════════════════════════════════
+           NEXT STEPS CARD
+      ═══════════════════════════════════ -->
+      <div class="next-steps-card">
+        <div class="next-steps-title">Next Steps</div>
+        <a href="index.html#module16" class="next-step-link">📖 Revisit Module 16 for the full IAM maturity roadmap →</a>
+        <a href="dictionary.html" class="next-step-link">📚 Return to the IAM Architect Dictionary for term clarity →</a>
+        <a href="index.html" class="next-step-link">🏠 Back to the Portal Index →</a>
+      </div>
+
+      <!-- Reset link -->
+      <button class="reset-link" onclick="resetChecklist()">Reset all answers and notes</button>
+
+    </div><!-- /.summary-section -->
+
+  </div><!-- /.page-wrapper -->
+
+  <!-- ═══════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════ -->
+  <footer class="page-footer" style="max-width:860px;margin:0 auto;padding-left:20px;padding-right:20px;">
+    IAM Architect Atlas &nbsp;·&nbsp; Architecture Review Checklist &nbsp;·&nbsp; Module 16, Section 16.8
+    <br />© IAM Architect Atlas — All modules self-contained for offline use
+  </footer>
+
+  <script>
+    /* ═══════════════════════════════════════════════════
+       STATE
+    ═══════════════════════════════════════════════════ */
+    const state = {
+      q1:'', q2:'', q3:'', q4:'', q5:'',
+      q6:'', q7:'', q8:'', q9:'', q10:'',
+      q11:'', q12:'', q13:'', q14:'', q15:'',
+      q16:'', q17:'', q18:'', q19:'', q20:''
+    };
+
+    /* Question metadata for findings renderer */
+    const questions = [
+      { id:1,  critical:true,  short:'Phishing-resistant MFA (FIDO2/WebAuthn) enforced for all admin/privileged access?',   module:'Module 05: FIDO2 & WebAuthn Architecture' },
+      { id:2,  critical:false, short:'Federation trust relationships tracked with 90/60/30-day expiry alerts?',              module:'Module 04: PingFederate · Module 12: Certificate Lifecycle' },
+      { id:3,  critical:true,  short:'Legacy authentication (NTLM, Basic Auth, ROPC) explicitly blocked by policy?',        module:'Module 03: Deprecated OAuth Grants · Module 14: Conditional Access' },
+      { id:4,  critical:false, short:'VPN authentication enforces the same MFA policy as web SSO?',                         module:'Module 06: VPN Authentication Architecture' },
+      { id:5,  critical:false, short:'Linux SSH access governed through a centralized SSH Certificate Authority?',           module:'Module 07: SSH Key Management & SSH CA' },
+      { id:6,  critical:false, short:'Complete entitlement catalog with business-readable names in IGA platform?',           module:'Module 09: Entitlement Catalog Architecture' },
+      { id:7,  critical:false, short:'Access certifications completing with revocation rate consistently above 2%?',         module:'Module 09: Access Certification Architecture' },
+      { id:8,  critical:true,  short:'Automated Mover workflow actively REMOVES access, not just adds at transfer?',        module:'Module 09: Mover Workflow Architecture' },
+      { id:9,  critical:false, short:'SoD rules checked at request time (preventive), not only at certification?',          module:'Module 09: SoD Architecture' },
+      { id:10, critical:false, short:'Authorization model documented; PEPs confirmed to fail-closed on PDP outage?',        module:'Module 08: PDP/PEP Architecture' },
+      { id:11, critical:true,  short:'All privileged accounts vaulted in PAM with JIT access and session recording?',      module:'Module 10: CyberArk Architecture · JIT Access' },
+      { id:12, critical:false, short:'Complete non-human identity inventory with documented human owner per entry?',         module:'Module 11: Non-Human Identity Governance' },
+      { id:13, critical:true,  short:'Service accounts using gMSA / automated rotation; no static passwords >90 days?',    module:'Module 11: Service Account Governance · Module 10: CPM' },
+      { id:14, critical:false, short:'CI/CD and Kubernetes using workload identity federation; zero static cloud keys?',    module:'Module 11: Workload Identity Federation · Module 13' },
+      { id:15, critical:false, short:'Root CA private key HSM-protected; active certificate expiry alert calendar?',        module:'Module 12: PKI Architecture · HSM · Certificate Lifecycle' },
+      { id:16, critical:true,  short:'Workforce identity federated into all cloud platforms; no native IAM Users?',         module:'Module 13: Workforce Identity Federation' },
+      { id:17, critical:false, short:'Cloud IAM entitlements included in IGA certification on same cadence as on-prem?',   module:'Module 13: Multi-Cloud Governance · Module 09: IGA' },
+      { id:18, critical:true,  short:'ITDR deployed and SOC-reviewed; identity signals correlated with SIEM?',              module:'Module 14: ITDR Architecture' },
+      { id:19, critical:false, short:'Continuous Access Evaluation enabled; terminated sessions revoked within minutes?',   module:'Module 14: Continuous Access Evaluation · Module 09' },
+      { id:20, critical:false, short:'IAM platform configuration managed as version-controlled code with peer review?',     module:'Module 15: Configuration as Code · Platform Engineering' }
+    ];
+
+    /* ═══════════════════════════════════════════════════
+       DARK MODE TOGGLE
+    ═══════════════════════════════════════════════════ */
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    /* ═══════════════════════════════════════════════════
+       ANSWER BUTTON SELECTION
+    ═══════════════════════════════════════════════════ */
+    document.querySelectorAll('.ans-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const q   = this.dataset.q;
+        const val = this.dataset.val;
+
+        /* Deselect all siblings in this group */
+        document.querySelectorAll(`.ans-btn[data-q="${q}"]`).forEach(b => {
+          b.classList.remove('selected-yes','selected-partial','selected-no','selected-unknown');
+        });
+
+        /* Toggle: clicking same button again deselects it */
+        if (state['q' + q] === val) {
+          state['q' + q] = '';
+          updateCardState(q, '');
+        } else {
+          /* Select this button */
+          const cls = {
+            'YES':     'selected-yes',
+            'PARTIAL': 'selected-partial',
+            'NO':      'selected-no',
+            'UNKNOWN': 'selected-unknown'
+          }[val];
+          this.classList.add(cls);
+          state['q' + q] = val;
+          updateCardState(q, val);
+        }
+
+        updateSummary();
+      });
+    });
+
+    function updateCardState(q, val) {
+      const card = document.getElementById('card-q' + q);
+      if (!card) return;
+      card.classList.remove('answered-yes','answered-partial','answered-no','answered-unknown');
+      if (val === 'YES')     card.classList.add('answered-yes');
+      if (val === 'PARTIAL') card.classList.add('answered-partial');
+      if (val === 'NO')      card.classList.add('answered-no');
+      if (val === 'UNKNOWN') card.classList.add('answered-unknown');
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SUMMARY AUTO-UPDATE
+    ═══════════════════════════════════════════════════ */
+    function updateSummary() {
+      let yes = 0, partial = 0, no = 0, unknown = 0, answered = 0;
+
+      Object.values(state).forEach(v => {
+        if (v === 'YES')     { yes++;     answered++; }
+        if (v === 'PARTIAL') { partial++; answered++; }
+        if (v === 'NO')      { no++;      answered++; }
+        if (v === 'UNKNOWN') { unknown++; answered++; }
+      });
+
+      document.getElementById('count-yes').textContent     = yes;
+      document.getElementById('count-partial').textContent = partial;
+      document.getElementById('count-no').textContent      = no;
+      document.getElementById('count-unknown').textContent = unknown;
+
+      /* Progress bar: YES + PARTIAL*0.5, out of 20 */
+      const score = (yes + partial * 0.5) / 20 * 100;
+      document.getElementById('progress-fill').style.width = score.toFixed(1) + '%';
+      document.getElementById('progress-label').textContent = answered + ' / 20 answered';
+
+      rebuildFindings(no, unknown);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       FINDINGS LIST REBUILD
+    ═══════════════════════════════════════════════════ */
+    function rebuildFindings() {
+      const p1Items = [];
+      const p2Items = [];
+
+      questions.forEach(q => {
+        const ans = state['q' + q.id];
+        if (ans === 'NO' || ans === 'UNKNOWN') {
+          const item = { ...q, answer: ans };
+          if (q.critical) p1Items.push(item);
+          else            p2Items.push(item);
+        }
+      });
+
+      renderFindingsList('findings-p1-list', p1Items, '✅ No P1 critical findings in this assessment.');
+      renderFindingsList('findings-p2-list', p2Items, 'No P2 high findings identified.', true);
+    }
+
+    function renderFindingsList(listId, items, emptyMsg, muted) {
+      const container = document.getElementById(listId);
+      if (!container) return;
+
+      if (items.length === 0) {
+        const cls   = muted ? 'color:var(--text-muted);background:var(--surface-alt);border-color:var(--border)' : '';
+        const color = muted ? 'var(--text-muted)' : 'var(--status-yes)';
+        container.innerHTML = `<div class="findings-empty" style="${cls};color:${color};">${emptyMsg}</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(item => {
+        const ansCls   = item.answer === 'NO' ? 'ans-no' : 'ans-unk';
+        const ansLabel = item.answer === 'NO' ? '❌ NO'  : '❓ UNKNOWN';
+        return `
+          <div class="finding-item">
+            <span class="finding-qnum">Q${item.id}</span>
+            <div class="finding-text">
+              <div class="finding-q">${item.short}</div>
+              <div class="finding-module">→ See ${item.module} for architectural remediation</div>
+            </div>
+            <span class="finding-answer ${ansCls}">${ansLabel}</span>
+          </div>`;
+      }).join('');
+    }
+
+    /* ═══════════════════════════════════════════════════
+       NOTES TOGGLE
+    ═══════════════════════════════════════════════════ */
+    function toggleNotes(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('open');
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESET
+    ═══════════════════════════════════════════════════ */
+    function resetChecklist() {
+      if (!confirm('Reset all answers and notes? This cannot be undone.')) return;
+
+      /* Clear state */
+      Object.keys(state).forEach(k => state[k] = '');
+
+      /* Clear button selections */
+      document.querySelectorAll('.ans-btn').forEach(b => {
+        b.classList.remove('selected-yes','selected-partial','selected-no','selected-unknown');
+      });
+
+      /* Clear card border states */
+      document.querySelectorAll('.check-card').forEach(c => {
+        c.classList.remove('answered-yes','answered-partial','answered-no','answered-unknown');
+      });
+
+      /* Clear notes textareas */
+      document.querySelectorAll('.notes-area textarea').forEach(t => t.value = '');
+
+      /* Close all notes panels */
+      document.querySelectorAll('.notes-area').forEach(n => n.classList.remove('open'));
+
+      /* Clear metadata fields */
+      document.querySelectorAll('.meta-field input').forEach(i => i.value = '');
+
+      /* Clear recommendations */
+      const rec = document.querySelector('.rec-textarea');
+      if (rec) rec.value = '';
+
+      updateSummary();
+    }
+
+    /* ═══════════════════════════════════════════════════
+       INIT
+    ═══════════════════════════════════════════════════ */
+    updateSummary();
+  </script>
+
+
+</body>
+</html>

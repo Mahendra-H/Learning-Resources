@@ -46,7 +46,8 @@ Personal learning library organized by **technology domain** (not foundations vs
 | `iam/02-oauth-oidc` | OAuth 2.0 + OIDC | Markdown guides |
 | `iam/03-saml` | SAML | Markdown guide |
 | `iam/entra-id` | Entra ID + Graph | `EntraID_Doc1_...html` |
-| `iam/iam-architect-portal` | IAM Architect series | `INDEX.html` |
+| `iam/iam-architect-atlas` | IAM Architect Atlas (16 modules) | `index.html` |
+| `iam/iam-architect-portal` | IAM Architect Portal (shorter series) | `INDEX.html` |
 | `iam/ping-federation` | PingFederate + PingDirectory | Architecture / install guides |
 
 ### Cloud (`cloud/`)

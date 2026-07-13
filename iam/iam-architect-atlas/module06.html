@@ -1,0 +1,2643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 06 · Network Authentication — IAM Architect Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   IAM ARCHITECT ATLAS — MODULE 06 — PHASE 3 · ATLAS CIRCUIT
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --text: #1A1D24;
+  --text-muted: #6B6F7A;
+  --border: #DEDAD1;
+  --radius: 12px;
+
+  --accent-blue: #5B8FF0;
+  --accent-amber: #E8A33D;
+  --accent-green: #4FB286;
+  --accent-violet: #7B6FE0;
+  --accent-red: #D9534F;
+  --accent-primary: #7B6FE0;
+
+  --font-display: 'Inter Tight', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --shadow-sm: 0 1px 3px rgba(26,29,36,0.06);
+  --shadow-md: 0 4px 16px rgba(26,29,36,0.08);
+}
+
+html.dark {
+  --bg: #0B0E14;
+  --surface: #151A24;
+  --text: #E8E6E1;
+  --text-muted: #8A8F9C;
+  --border: #262B38;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+a { color: var(--accent-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ───────────── LAYOUT SHELL ───────────── */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 980px) {
+  .app-shell { grid-template-columns: 1fr; }
+}
+
+/* ───────────── SIDEBAR ───────────── */
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1.25rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (max-width: 980px) {
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 300px;
+    max-width: 85vw;
+    z-index: 200;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--shadow-md);
+  }
+  .sidebar.open { transform: translateX(0); }
+}
+
+.sidebar-scrim {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 190;
+}
+.sidebar-scrim.open { display: block; }
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.phase-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sidebar-subtitle {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: -0.5rem;
+}
+
+.back-link {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.back-link:hover { color: var(--accent-primary); text-decoration: none; }
+
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.theme-toggle {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.theme-toggle:hover { border-color: var(--accent-primary); }
+
+.search-box {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+}
+.search-box:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+.search-box::placeholder { color: var(--text-muted); }
+
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin: 0.4rem 0 0.1rem;
+  padding-left: 0.4rem;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.nav-list a {
+  display: block;
+  padding: 0.42rem 0.6rem;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.85rem;
+  border-left: 2px solid transparent;
+}
+.nav-list a:hover {
+  background: var(--bg);
+  text-decoration: none;
+}
+.nav-list a.active {
+  color: var(--accent-primary);
+  border-left: 2px solid var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+  font-weight: 600;
+}
+
+/* Identity stack rail */
+.stack-rail {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.stack-rail-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
+}
+
+.stack-layer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  padding: 0.22rem 0.3rem;
+  border-radius: 6px;
+  opacity: 0.45;
+  transition: opacity 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.stack-layer .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stack-layer.lit {
+  opacity: 1;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-primary) 6%, transparent);
+}
+.stack-layer.lit .dot {
+  background: var(--accent-primary);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-primary) 70%, transparent);
+}
+
+/* ───────────── MAIN COLUMN ───────────── */
+
+.main-col { min-width: 0; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topbar-label {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+.topbar-label strong { color: var(--accent-primary); }
+
+.menu-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px; height: 36px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text);
+}
+@media (max-width: 980px) {
+  .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .topbar { padding: 0.75rem 1.25rem; }
+}
+
+.progress-track {
+  height: 3px;
+  background: var(--border);
+  position: sticky;
+  top: 49px;
+  z-index: 49;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-primary);
+  transition: width 0.1s ease-out;
+}
+
+.content {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2.5rem 2.5rem 6rem;
+}
+@media (max-width: 980px) {
+  .content { padding: 2rem 1.25rem 5rem; }
+}
+
+/* ───────────── TYPOGRAPHY ───────────── */
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
+  display: inline-block;
+  border-bottom: 3px solid var(--accent-primary);
+  padding-bottom: 0.4rem;
+  margin: 0 0 1.5rem;
+  line-height: 1.15;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+  margin: 0 0 1.25rem;
+}
+
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.12rem;
+  margin: 1.75rem 0 0.75rem;
+}
+
+h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 1.25rem 0 0.5rem;
+}
+
+p { margin: 0 0 1.1rem; }
+ul, ol { margin: 0 0 1.1rem; padding-left: 1.3rem; }
+li { margin-bottom: 0.4rem; }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+}
+
+/* ───────────── MODULE / SECTION DIVIDER ───────────── */
+
+.module {
+  margin-top: 3.5rem;
+  scroll-margin-top: 70px;
+}
+
+.module-divider {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.module-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.4rem;
+  color: var(--accent-primary);
+  opacity: 0.3;
+  line-height: 1;
+}
+
+.module-divider h2 {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin: 0;
+}
+
+/* ───────────── CALLOUT BOXES ───────────── */
+
+.callout {
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.callout-concept { border-left-color: var(--accent-blue); }
+.callout-concept .callout-title { color: var(--accent-blue); }
+
+.callout-cost { border-left-color: var(--accent-amber); }
+.callout-cost .callout-title { color: var(--accent-amber); }
+
+.callout-architect { border-left-color: var(--accent-green); }
+.callout-architect .callout-title { color: var(--accent-green); }
+
+.callout-security { border-left-color: var(--accent-violet); }
+.callout-security .callout-title { color: var(--accent-violet); }
+
+.callout-red { border-left-color: var(--accent-red); }
+.callout-red .callout-title { color: var(--accent-red); }
+
+/* ───────────── ANALOGY ───────────── */
+
+.analogy {
+  border: 1.5px dashed var(--accent-violet);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.5rem 0;
+  background: color-mix(in srgb, var(--accent-violet) 5%, var(--surface));
+}
+.analogy-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-violet);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.analogy.green { border-color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 5%, var(--surface)); }
+.analogy.green .analogy-title { color: var(--accent-green); }
+.analogy p:last-child { margin-bottom: 0; }
+
+/* ───────────── USE CASE ───────────── */
+
+.usecase {
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.5rem 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.usecase-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+.usecase p:last-child { margin-bottom: 0; }
+
+/* ───────────── DEEP DIVE ───────────── */
+
+details.deepdive {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1.5rem 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+details.deepdive summary {
+  cursor: pointer;
+  padding: 0.95rem 1.3rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--accent-violet);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+details.deepdive summary::-webkit-details-marker { display: none; }
+details.deepdive summary::before {
+  content: '▶';
+  font-size: 0.65rem;
+  transition: transform 0.2s ease;
+}
+details.deepdive[open] summary::before { transform: rotate(90deg); }
+details.deepdive .deepdive-body {
+  padding: 0 1.3rem 1.2rem;
+  color: var(--text-muted);
+}
+details.deepdive .deepdive-body p:last-child { margin-bottom: 0; }
+
+/* ───────────── LAB ───────────── */
+
+.lab {
+  border: 1.5px solid var(--accent-green);
+  background: color-mix(in srgb, var(--accent-green) 6%, var(--surface));
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.5rem 0;
+}
+.lab-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-green);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.lab p:last-child { margin-bottom: 0; }
+
+/* ───────────── DIAGRAM BOX ───────────── */
+
+.diagram-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1.75rem 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+.diagram-box svg { width: 100%; height: auto; display: block; }
+.diagram-caption {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 0.85rem;
+  font-style: italic;
+}
+
+/* ───────────── TABLES ───────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.88rem;
+}
+th, td {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+tbody tr:nth-child(even) { background: color-mix(in srgb, var(--text) 3%, transparent); }
+
+/* ───────────── WHERE AM I CARD ───────────── */
+
+.whereami {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.4rem;
+  margin: 2rem 0;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.whereami-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.whereami-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.whereami-bar-fill {
+  height: 100%;
+  width: 37%;
+  background: var(--accent-primary);
+  border-radius: 999px;
+}
+
+/* ───────────── CHEAT GRID ───────────── */
+
+.cheat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+@media (max-width: 700px) { .cheat-grid { grid-template-columns: 1fr; } }
+.cheat-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.15rem;
+  background: var(--surface);
+  font-size: 0.88rem;
+}
+.cheat-item strong { color: var(--accent-primary); }
+
+/* ───────────── BRIDGE BAND ───────────── */
+
+.bridge-band {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+@media (max-width: 700px) { .bridge-band { grid-template-columns: 1fr; } }
+.bridge-half {
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+}
+.bridge-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.6rem;
+  opacity: 0.85;
+}
+.bridge-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin-bottom: 0.6rem;
+}
+
+/* ───────────── KNOWLEDGE CHECK / ARQ ───────────── */
+
+.qa-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.25rem 0;
+  background: var(--surface);
+}
+.qa-num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+.qa-block p:last-child { margin-bottom: 0; }
+
+/* ───────────── SCENARIO BOX ───────────── */
+
+.scenario {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent-red);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.5rem;
+  margin: 1.75rem 0;
+  background: var(--surface);
+}
+.scenario h4 {
+  margin-top: 1.2rem;
+  color: var(--accent-red);
+}
+.scenario h4:first-child { margin-top: 0; }
+
+/* ───────────── CTA BUTTON ───────────── */
+
+.cta-button {
+  display: inline-block;
+  background: var(--accent-primary);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  text-decoration: none;
+  margin-top: 0.75rem;
+}
+.cta-button:hover { text-decoration: none; opacity: 0.9; }
+
+hr.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 3rem 0;
+}
+
+@media print {
+  .sidebar, .topbar, .progress-track { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar-scrim" id="sidebarScrim"></div>
+
+<div class="app-shell">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">🔐 IAM Architect Atlas</div>
+    <div class="phase-label">MODULE 06 · ATLAS CIRCUIT</div>
+    <div class="sidebar-subtitle">Network Authentication — RADIUS, TACACS+, 802.1X &amp; NAC</div>
+    <a class="back-link" href="index.html">← Back to Index</a>
+
+    <input class="search-box" type="text" id="searchBox" placeholder="🔍 Search this module...">
+
+    <div class="theme-toggle-row">
+      <span>Theme</span>
+      <button class="theme-toggle" id="themeToggle">🌙 <span id="themeLabel">Dark</span></button>
+    </div>
+
+    <div>
+      <div class="nav-group-label">Network Authentication Architecture</div>
+      <ul class="nav-list">
+        <li><a href="#s6-1" data-nav>6.1 The Network Identity Layer</a></li>
+        <li><a href="#s6-2" data-nav>6.2 RADIUS — Architecture &amp; Protocol</a></li>
+        <li><a href="#s6-3" data-nav>6.3 RADIUS in Enterprise Deployments</a></li>
+        <li><a href="#s6-4" data-nav>6.4 TACACS+ — Device Authentication</a></li>
+        <li><a href="#s6-5" data-nav>6.5 802.1X &amp; EAP — Network Access Control</a></li>
+        <li><a href="#s6-6" data-nav>6.6 NAC Architecture</a></li>
+        <li><a href="#s6-7" data-nav>6.7 VPN Authentication Architecture</a></li>
+        <li><a href="#s6-8" data-nav>6.8 PingID + RADIUS Integration</a></li>
+        <li><a href="#s6-9" data-nav>6.9 Cisco ISE — Enterprise NAC Platform</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="nav-group-label">Wrap-Up</div>
+      <ul class="nav-list">
+        <li><a href="#cheatsheet" data-nav>📋 Architecture Cheat Sheet</a></li>
+        <li><a href="#mindmap" data-nav>🧠 Mind Map</a></li>
+        <li><a href="#knowledgecheck" data-nav>✅ Knowledge Check</a></li>
+        <li><a href="#architectreview" data-nav>🏗️ Architect Review</a></li>
+        <li><a href="#bridge" data-nav>🌉 Bridge to Module 07</a></li>
+      </ul>
+    </div>
+
+    <div class="stack-rail">
+      <div class="stack-rail-label">Identity Stack</div>
+      <div class="stack-layer" data-layer="applications"><span class="dot"></span>👤 Applications &amp; Portals</div>
+      <div class="stack-layer" data-layer="sso"><span class="dot"></span>🔐 SSO &amp; Federation</div>
+      <div class="stack-layer" data-layer="tokens"><span class="dot"></span>🎫 Token &amp; Protocol Layer</div>
+      <div class="stack-layer" data-layer="authz"><span class="dot"></span>⚖️ Authorization Engine</div>
+      <div class="stack-layer" data-layer="iga"><span class="dot"></span>📋 IGA &amp; Lifecycle</div>
+      <div class="stack-layer" data-layer="pam"><span class="dot"></span>🏦 PAM &amp; Privileged</div>
+      <div class="stack-layer" data-layer="directory"><span class="dot"></span>📂 Directory &amp; Stores</div>
+      <div class="stack-layer" data-layer="network"><span class="dot"></span>🌐 Network &amp; Infra Auth</div>
+      <div class="stack-layer" data-layer="cloud"><span class="dot"></span>☁️ Cloud &amp; Machine</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN COLUMN ═══════════════ -->
+  <div class="main-col">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <div class="topbar-label">Module <strong>06</strong> of 16 · ⚡ Atlas Circuit · ~2.5 hr read</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="content" id="content">
+
+<div class="eyebrow">⚡ MODULE 06 · ATLAS CIRCUIT · PHASE 3 · ~2.5 HR READ</div>
+<h1>Network Authentication: RADIUS, TACACS+, 802.1X &amp; NAC</h1>
+
+<p>Before a user ever sees PingFederate's login page, their device has already been authenticated at least once — by the network. The Wi-Fi access point checked their 802.1X certificate. The VPN concentrator validated their credentials against a RADIUS server. The network switch decided whether to put them on the corporate VLAN or the guest VLAN based on a NAC policy. This entire identity layer operates below the web, uses completely different protocols, and is almost never part of an IAM engineer's formal education — which is exactly why it's also the layer that attackers exploit when they've already bypassed web authentication. This module teaches you the architecture of network identity: what it is, how it works, how it connects to the enterprise IAM ecosystem you already know, and how to design it. ⚡</p>
+
+<div class="callout callout-architect">
+  <div class="callout-title">🟢 Phase 3 begins — the descent below the web</div>
+  <p>Phases 1 and 2 covered the identity <em>data</em> layer (directories — Module 02) and the web authentication and federation layer (protocols and the Ping platform — Modules 03–05). Phase 3 descends below the web into infrastructure identity: the network layer (this module) and the Linux/server layer (Module 07). The violet color shift across the portal signals this descent. Notice that the security callout color is now the same as the phase's primary accent — that's not a coincidence. Phase 3 carries the highest density of security-critical architectural decisions in the entire portal, because this is the layer where a single misconfiguration (a fail-open RADIUS server, a switch port with no 802.1X) gives an attacker direct access to the network itself, before any web control ever gets a chance to fire.</p>
+</div>
+
+<div class="callout callout-concept">
+  <div class="callout-title">🔵 Carrying Forward from Previous Modules</div>
+  <p><strong>PingID + RADIUS teaser from Module 05:</strong> now delivered in full architectural detail in Section 6.8. <strong>Kerberos from Module 02:</strong> the directory-authentication concepts you learned there now extend into the network authentication context — RADIUS and 802.1X both ultimately validate against the same AD/LDAP backend Kerberos uses. <strong>Defense in Depth from Module 01:</strong> network authentication is a critical defense layer that most IAM programs systematically underinvest in, precisely because it doesn't sit inside the IAM team's usual ownership boundary. <strong>AD as directory from Module 02:</strong> RADIUS validates credentials against AD constantly — the integration architecture between the two is a central topic of this module.</p>
+</div>
+
+<div class="whereami">
+  <div class="whereami-top">
+    <span>📍 Module 06 / Phase 3 — Infrastructure Identity</span>
+    <span>Progress: 6 of 16 (37%)</span>
+  </div>
+  <div class="whereami-bar"><div class="whereami-bar-fill"></div></div>
+</div>
+<!-- CHUNK:HERO -->
+<div class="module" id="s6-1" data-stack-layers="network,directory">
+  <div class="module-divider">
+    <div class="module-num">6.1</div>
+    <h2>🌐 The Network Identity Layer: Why It Exists</h2>
+  </div>
+
+  <p>Every enterprise identity stack you've studied so far in this portal — directories, protocols, the Ping platform, modern authentication — operates at the web layer. A user opens a browser or an app, authenticates, and gets a token or assertion that grants access to a resource. But none of that happens in a vacuum. Before a laptop can even reach PingFederate's login page, it had to get onto the network in the first place. That's a separate identity decision, made by separate systems, using separate protocols, and it's the subject of this module.</p>
+
+  <h3>A layered identity model</h3>
+  <p>Think of enterprise identity as three distinct layers stacked on top of each other. At the top sits <strong>web identity</strong> — OAuth, SAML, OIDC — the layer you already know deeply. Beneath that sits <strong>network identity</strong> — RADIUS, 802.1X — which determines whether a device gets onto the network at all, and what it can reach once it's there. Beneath that sits <strong>physical infrastructure identity</strong> — TACACS+ — which governs who can administer the network devices themselves. These layers are architecturally distinct, but they're not isolated: network identity constantly delegates back up to the same directories (AD, LDAP) that your web identity stack already relies on.</p>
+
+  <h3>Why network authentication is architecturally separate</h3>
+  <p>It would be convenient if RADIUS and OAuth were the same protocol wearing different clothes. They're not, and the reasons are structural:</p>
+  <ul>
+    <li><strong>Different actors.</strong> Web identity authenticates users (and increasingly, services). Network identity authenticates <em>devices</em> as a first-class concern — a laptop, a phone, an IP phone, a printer, an IoT sensor — often before any human has logged into anything.</li>
+    <li><strong>Different protocols.</strong> Web identity runs over HTTPS with JSON tokens. Network identity runs at or near Layer 2 — before a device even has an IP address — using protocols designed in the dial-up and early-Ethernet era.</li>
+    <li><strong>Different threat model.</strong> Web identity defends against credential theft and phishing aimed at a person. Network identity defends against an attacker plugging an unauthorized device directly into a switch port or impersonating a trusted access point.</li>
+    <li><strong>Different failure modes.</strong> When PingFederate has an outage, users can't log into apps — painful, but contained. When a RADIUS server has an outage and the network fails open, every device on every switch port and every Wi-Fi AP gets unauthenticated access to the corporate network simultaneously.</li>
+  </ul>
+
+  <h3>The network access decision</h3>
+  <p>Before a device receives an IP address on the corporate network, something has to decide whether it should get one — and if so, which network segment it lands on. That decision is what Network Access Control (NAC) exists to make, and it's built on top of the authentication protocols this module covers.</p>
+
+  <h3>The four network identity questions</h3>
+  <p>Every enterprise, whether it has formalized this or not, has to answer four questions before granting network access. Most enterprises only consciously answer the first one — which is exactly the gap this module will help you close:</p>
+  <ol>
+    <li><strong>Who is this user?</strong> Answered by querying the same user store your web stack already uses — LDAP or AD.</li>
+    <li><strong>What device is this?</strong> Answered by device certificates, MDM enrollment records, or device fingerprinting.</li>
+    <li><strong>Is this device healthy?</strong> Answered by posture assessment — patch level, disk encryption, antivirus status — typically sourced from NAC or MDM.</li>
+    <li><strong>What network access should they get?</strong> Answered by policy that maps the answers to the first three questions onto a VLAN, an ACL, or a deny decision.</li>
+  </ol>
+
+  <p>Network identity doesn't operate in isolation from the rest of your IAM stack — it integrates constantly. RADIUS servers query AD or LDAP for credential validation and group membership, exactly the way PingFederate does. Device certificates used in 802.1X are issued by the same enterprise PKI that might issue certificates for other purposes. NAC policy engines read posture data from MDM platforms like Intune or JAMF. The network layer is a consumer of the identity infrastructure you already operate — it just speaks a different protocol to get there.</p>
+
+  <h3>The attack surface when network identity is weak</h3>
+  <p>When this layer is absent or poorly designed, the consequences are severe and often invisible until a penetration test or an incident surfaces them: rogue devices plugged into conference room ports landing directly on the corporate VLAN, Wi-Fi networks secured only by a shared PSK that every employee (and every departed employee) knows, and network device management planes reachable by anyone who can guess a local admin password. These aren't theoretical — Section 6.9 walks through exactly this scenario as a guided use case.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 560" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .stk-box { fill: var(--bg); stroke: var(--border); stroke-width: 1.5; }
+        .stk-box-hi { fill: color-mix(in srgb, var(--accent-violet) 18%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2.5; }
+        .stk-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; fill: var(--text); }
+        .stk-text-hi { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 16px; fill: var(--accent-violet); }
+        .stk-muted { fill: var(--text-muted); }
+        .stk-cap { font-family: 'IBM Plex Mono', monospace; font-size: 12px; fill: var(--text-muted); }
+      </style>
+      <text x="350" y="28" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="17" fill="var(--text)">Enterprise Identity Stack — Network Layer Highlighted</text>
+
+      <rect class="stk-box" x="100" y="50" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="77" text-anchor="middle">👤 Applications &amp; Portals</text>
+
+      <rect class="stk-box" x="100" y="104" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="131" text-anchor="middle">🔐 SSO &amp; Federation (PingFederate)</text>
+
+      <rect class="stk-box" x="100" y="158" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="185" text-anchor="middle">🎫 Token &amp; Protocol Layer (OAuth / SAML)</text>
+
+      <rect class="stk-box" x="100" y="212" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="239" text-anchor="middle">⚖️ Authorization Engine</text>
+
+      <rect class="stk-box" x="100" y="266" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="293" text-anchor="middle">📋 IGA &amp; Lifecycle</text>
+
+      <rect class="stk-box" x="100" y="320" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="347" text-anchor="middle">🏦 PAM &amp; Privileged</text>
+
+      <rect class="stk-box" x="100" y="374" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="401" text-anchor="middle">📂 Directory &amp; Stores (AD / PingDirectory)</text>
+
+      <rect class="stk-box-hi" x="90" y="428" width="520" height="54" rx="9"/>
+      <text x="350" y="452" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="var(--accent-violet)">▶ THIS MODULE ◀</text>
+      <text class="stk-text-hi" x="350" y="472" text-anchor="middle">🌐 Network &amp; Infra Auth</text>
+
+      <rect class="stk-box" x="100" y="492" width="500" height="44" rx="8"/>
+      <text class="stk-text stk-muted" x="350" y="519" text-anchor="middle">☁️ Cloud &amp; Machine Identity</text>
+
+      <text class="stk-cap" x="350" y="555" text-anchor="middle">Network authentication operates below the web layer — before any OAuth token or SAML assertion is ever requested.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 1 of 21 — The full enterprise identity stack, with the network and infrastructure authentication layer highlighted.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .q-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .q-title { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 15px; fill: var(--accent-violet); }
+        .q-body { font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; fill: var(--text-muted); }
+        .q-center { fill: color-mix(in srgb, var(--accent-violet) 14%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+        .q-center-text { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 14px; fill: var(--accent-violet); }
+      </style>
+      <text x="350" y="28" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="17" fill="var(--text)">The Four Network Identity Questions</text>
+
+      <rect class="q-box" x="40" y="55" width="280" height="140" rx="10"/>
+      <text class="q-title" x="60" y="85">Q1 · Who is this user?</text>
+      <text class="q-body" x="60" y="112">Answered by RADIUS querying</text>
+      <text class="q-body" x="60" y="130">the same AD / LDAP store your</text>
+      <text class="q-body" x="60" y="148">web identity stack already uses.</text>
+
+      <rect class="q-box" x="380" y="55" width="280" height="140" rx="10"/>
+      <text class="q-title" x="400" y="85">Q2 · What device is this?</text>
+      <text class="q-body" x="400" y="112">Answered by 802.1X + PKI</text>
+      <text class="q-body" x="400" y="130">certificates issued to managed</text>
+      <text class="q-body" x="400" y="148">devices via enterprise CA.</text>
+
+      <rect class="q-box" x="40" y="265" width="280" height="140" rx="10"/>
+      <text class="q-title" x="60" y="295">Q3 · Is this device healthy?</text>
+      <text class="q-body" x="60" y="322">Answered by NAC + MDM posture</text>
+      <text class="q-body" x="60" y="340">checks — patch level, disk</text>
+      <text class="q-body" x="60" y="358">encryption, AV status.</text>
+
+      <rect class="q-box" x="380" y="265" width="280" height="140" rx="10"/>
+      <text class="q-title" x="400" y="295">Q4 · What access should</text>
+      <text class="q-title" x="400" y="313">they get?</text>
+      <text class="q-body" x="400" y="338">Answered by RADIUS policy +</text>
+      <text class="q-body" x="400" y="356">VLAN assignment / ACL.</text>
+
+      <rect class="q-center" x="255" y="195" width="190" height="70" rx="35"/>
+      <text class="q-center-text" x="350" y="225" text-anchor="middle">Network Access</text>
+      <text class="q-center-text" x="350" y="245" text-anchor="middle">Decision</text>
+
+      <line x1="320" y1="125" x2="280" y2="210" stroke="var(--accent-violet)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <line x1="380" y1="125" x2="420" y2="210" stroke="var(--accent-violet)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <line x1="320" y1="335" x2="280" y2="250" stroke="var(--accent-violet)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <line x1="380" y1="335" x2="420" y2="250" stroke="var(--accent-violet)" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+      <text x="350" y="440" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="var(--text-muted)">Every device that joins the network is implicitly asked all four — whether or not the architecture answers them.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 2 of 21 — The four questions every network access decision answers, explicitly or by default.</div>
+  </div>
+
+  <div class="analogy">
+    <div class="analogy-title">Analogy</div>
+    <p>Network authentication is the building lobby security system. Before you reach the elevator bank (the corporate network), the lobby runs three checks: your badge scan (user identity, via RADIUS), your access card's embedded chip (device identity, via 802.1X), and your visitor-versus-employee status (access policy, via NAC, which decides which floors the elevator will even let you select). The elevator only stops at floors you're authorized for — that's your VLAN assignment. PingFederate's login page is the reception desk on the 12th floor: you only get there if you cleared the lobby first. Most IAM programs obsess over hardening the 12th floor and never look at the lobby. That's exactly where the risk lives.</p>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔒 Security</div>
+    <p>The most common network identity gap: web SSO gets hardened with MFA and adaptive authentication, but the VPN endpoint accepts username and password without MFA because "it's a separate system." This means an attacker holding stolen credentials can authenticate to VPN — bypassing web SSO entirely — and reach internal resources that implicitly trust anything arriving from the corporate network. Network and web authentication must be governed by the same identity policy. Separate systems is fine. Unified policy is not optional.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Map your company's network authentication architecture. What happens when a laptop connects to corporate Wi-Fi? Is there any authentication before IP assignment? What about when a user connects to VPN? Draw the actual flow — even if the honest answer is "nothing happens." That is also important architecture information, and it's the starting point for everything else in this module.</p>
+  </div>
+</div>
+<!-- CHUNK:6.1 -->
+<div class="module" id="s6-2" data-stack-layers="network,directory,sso">
+  <div class="module-divider">
+    <div class="module-num">6.2</div>
+    <h2>📡 RADIUS — Architecture &amp; Protocol Deep Dive</h2>
+  </div>
+
+  <p>RADIUS — Remote Authentication Dial-In User Service — is the single most deployed network authentication protocol in enterprise IT, and its name is a fossil. "Dial-In" refers to its origin in the early 1990s, when it was built to authenticate users dialing into ISP modem banks. Telco-era heritage notwithstanding, RADIUS remains the dominant protocol for VPN, Wi-Fi, and switch-port authentication today — not because nothing better was invented, but because it's simple, fast, universally supported by network hardware, and good enough when deployed correctly. Understanding RADIUS deeply is the foundation for everything else in this module.</p>
+
+  <h3>The RADIUS model: three roles</h3>
+  <p>RADIUS architecture has three actors, and getting the terminology right matters because it's used constantly in vendor documentation and troubleshooting:</p>
+  <ul>
+    <li><strong>RADIUS Client</strong> — also called the NAS (Network Access Server). This is <em>not</em> the end-user device. It's the network equipment that mediates access: a VPN concentrator, a Wi-Fi controller, or a managed switch. The NAS is the thing standing between the user and the network, deciding whether to let them through based on what RADIUS tells it.</li>
+    <li><strong>RADIUS Server</strong> — the authentication authority. This is Windows NPS (Network Policy Server), FreeRADIUS, a PingFederate RADIUS adapter, or Cisco ISE. It receives requests from the NAS, validates credentials (usually against AD or LDAP), applies policy, and returns a decision.</li>
+    <li><strong>RADIUS Proxy</strong> — an optional intermediary that routes requests between NAS devices and the correct RADIUS server, typically based on realm (Section 6.3 covers this in depth).</li>
+  </ul>
+
+  <h3>The protocol itself</h3>
+  <p>RADIUS runs over UDP — port 1812 for authentication, port 1813 for accounting (the legacy ports 1645/1646 still appear in older deployments). UDP was chosen for performance: it's lightweight and fast, which mattered enormously when RADIUS was authenticating thousands of simultaneous dial-up sessions on constrained hardware. The tradeoff is reliability — UDP doesn't guarantee delivery, so RADIUS implementations build their own retry logic on top, and packet loss can manifest as confusing authentication timeouts that have nothing to do with credentials being wrong.</p>
+
+  <p>Every RADIUS client and server pair share a <strong>shared secret</strong> — a pre-configured password known only to the two of them. This secret is used to obscure the password field in transit and to verify packet integrity. It is the single most important configuration value in a RADIUS deployment, and Section 6.2's first security callout explains exactly why.</p>
+
+  <h3>RADIUS packet types</h3>
+  <table>
+    <tr><th>Packet</th><th>Direction</th><th>Meaning</th></tr>
+    <tr><td>Access-Request</td><td>NAS → Server</td><td>"Here are credentials — is this user allowed in?"</td></tr>
+    <tr><td>Access-Accept</td><td>Server → NAS</td><td>"Yes — and here's the policy to apply (VLAN, ACL, timeout)."</td></tr>
+    <tr><td>Access-Reject</td><td>Server → NAS</td><td>"No — deny access."</td></tr>
+    <tr><td>Access-Challenge</td><td>Server → NAS</td><td>"Not done yet — I need more information (e.g. an OTP)." Enables multi-step flows like MFA inside the RADIUS protocol.</td></tr>
+  </table>
+
+  <h3>RADIUS attributes</h3>
+  <p>RADIUS messages carry their payload as a series of <strong>attributes</strong> — typed key-value pairs. Standard attributes include <code>User-Name</code>, <code>User-Password</code>, <code>NAS-IP-Address</code>, <code>NAS-Port</code>, and <code>Called-Station-Id</code>. Vendors extend the protocol with <strong>Vendor-Specific Attributes (VSAs)</strong> — for example, Cisco's <code>Cisco-AVPair</code> attribute carries Cisco-specific authorization data that a generic RADIUS attribute can't express. Attributes are how RADIUS carries both identity (in the request) and policy (in the response) — there's no separate "token" the way OAuth has a JWT; the Access-Accept packet's attribute set <em>is</em> the authorization decision.</p>
+
+  <h3>Authentication, authorization, and accounting</h3>
+  <p>The RADIUS authentication flow moves credentials from the user, through the NAS, to the RADIUS server, which in turn validates them against AD or LDAP — usually via an LDAP bind. Authorization happens in the same exchange: the Access-Accept packet carries attributes that tell the NAS what to do — which VLAN to assign, which ACL to apply, how long the session should last. RADIUS accounting is a separate, parallel stream of packets (Accounting-Request / Accounting-Response on port 1813) that record session start and stop events — the audit trail you'll rely on for "who was on the network at 2pm last Tuesday."</p>
+
+  <h3>Password encoding — not encryption</h3>
+  <p>A detail that surprises engineers coming from the OAuth/SAML world: the <code>User-Password</code> attribute in standard RADIUS is <em>encoded</em> using the shared secret and MD5 — it is not encrypted in the cryptographic sense the word usually implies. This is a meaningfully weaker guarantee than TLS-protected credentials, and it's the core motivation behind RadSec.</p>
+
+  <h3>RADIUS over TLS (RadSec)</h3>
+  <p>RadSec (RFC 6614) wraps RADIUS traffic inside a TLS tunnel, replacing UDP with TCP-over-TLS and replacing the shared-secret trust model with mutual TLS certificate authentication. It fixes the password-encoding weakness and the packet-forgery risk described below. Enterprise adoption is growing but still far from universal — most organizations still run plain RADIUS on trusted internal network segments and reserve RadSec for cases where RADIUS traffic must cross untrusted networks (for example, federated eduroam-style Wi-Fi or multi-site RADIUS proxying over the internet).</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .r-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .r-box-hi { fill: color-mix(in srgb, var(--accent-violet) 14%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+        .r-title { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 14px; fill: var(--text); }
+        .r-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--text-muted); }
+        .r-arrow-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--accent-violet); }
+      </style>
+      <text x="350" y="26" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="17" fill="var(--text)">RADIUS Architecture — Three Roles</text>
+
+      <rect class="r-box" x="270" y="48" width="160" height="50" rx="9"/>
+      <text class="r-title" x="350" y="68" text-anchor="middle">User / Device</text>
+      <text class="r-sub" x="350" y="86" text-anchor="middle">submits credentials</text>
+
+      <line x1="350" y1="98" x2="350" y2="138" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+      <rect class="r-box-hi" x="240" y="140" width="220" height="64" rx="9"/>
+      <text class="r-title" x="350" y="163" text-anchor="middle">RADIUS Client (NAS)</text>
+      <text class="r-sub" x="350" y="182" text-anchor="middle">VPN concentrator · Wi-Fi controller</text>
+      <text class="r-sub" x="350" y="197" text-anchor="middle">switch</text>
+
+      <line x1="350" y1="204" x2="350" y2="244" stroke="var(--accent-violet)" stroke-width="1.5"/>
+      <text class="r-arrow-label" x="365" y="228">Access-Request (UDP 1812)</text>
+
+      <rect class="r-box-hi" x="240" y="246" width="220" height="64" rx="9"/>
+      <text class="r-title" x="350" y="269" text-anchor="middle">RADIUS Server</text>
+      <text class="r-sub" x="350" y="288" text-anchor="middle">NPS · FreeRADIUS · ISE</text>
+      <text class="r-sub" x="350" y="303" text-anchor="middle">PingFederate RADIUS adapter</text>
+
+      <line x1="350" y1="310" x2="350" y2="350" stroke="var(--text-muted)" stroke-width="1.5"/>
+      <text class="r-arrow-label" x="365" y="334">LDAP bind / search</text>
+
+      <rect class="r-box" x="240" y="352" width="220" height="50" rx="9"/>
+      <text class="r-title" x="350" y="372" text-anchor="middle">Directory</text>
+      <text class="r-sub" x="350" y="390" text-anchor="middle">Active Directory / PingDirectory</text>
+
+      <text x="350" y="40" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--text-muted)">Server returns: Access-Accept / Access-Reject / Access-Challenge → NAS → allow / deny / challenge → User</text>
+    </svg>
+    <div class="diagram-caption">Diagram 3 of 21 — The three RADIUS roles: client (NAS), server, and the directory the server delegates to.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 620" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .seq-line { stroke: var(--border); stroke-width: 1.5; }
+        .seq-actor { font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 13px; fill: var(--text); }
+        .seq-step { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; fill: var(--text-muted); }
+        .seq-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--accent-violet); font-weight: 600; }
+        .seq-pkt { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--text); }
+        .seq-box { fill: color-mix(in srgb, var(--accent-violet) 8%, var(--surface)); stroke: var(--accent-violet); stroke-width: 1; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">RADIUS Packet Flow — Full Sequence</text>
+
+      <text class="seq-actor" x="60" y="55">User</text>
+      <text class="seq-actor" x="240" y="55">NAS (VPN)</text>
+      <text class="seq-actor" x="430" y="55">RADIUS Server</text>
+      <text class="seq-actor" x="620" y="55">AD</text>
+      <line class="seq-line" x1="60" y1="65" x2="60" y2="600"/>
+      <line class="seq-line" x1="240" y1="65" x2="240" y2="600"/>
+      <line class="seq-line" x1="430" y1="65" x2="430" y2="600"/>
+      <line class="seq-line" x1="620" y1="65" x2="620" y2="600"/>
+
+      <text class="seq-num" x="20" y="92">1</text>
+      <text class="seq-step" x="80" y="92">User submits credentials to VPN client</text>
+      <line x1="60" y1="98" x2="240" y2="98" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <text class="seq-num" x="20" y="130">2</text>
+      <text class="seq-step" x="250" y="120">NAS → RADIUS: Access-Request</text>
+      <rect class="seq-box" x="250" y="128" width="280" height="86" rx="6"/>
+      <text class="seq-pkt" x="262" y="146">User-Name: jsmith@company.com</text>
+      <text class="seq-pkt" x="262" y="162">User-Password: [PAP-encoded]</text>
+      <text class="seq-pkt" x="262" y="178">NAS-IP-Address: 10.1.1.1</text>
+      <text class="seq-pkt" x="262" y="194">NAS-Port: 1234</text>
+      <text class="seq-pkt" x="262" y="210">Called-Station-Id: vpn.company.com</text>
+      <line x1="240" y1="100" x2="430" y2="120" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+      <text class="seq-num" x="20" y="250">3</text>
+      <text class="seq-step" x="440" y="250">RADIUS → AD: LDAP bind + group search</text>
+      <line x1="430" y1="255" x2="620" y2="255" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+      <text class="seq-num" x="20" y="282">4</text>
+      <text class="seq-step" x="440" y="282">AD → RADIUS: auth result + group memberships</text>
+      <line x1="620" y1="288" x2="430" y2="288" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+      <text class="seq-num" x="20" y="316">5</text>
+      <text class="seq-step" x="250" y="308">RADIUS → NAS: Access-Accept</text>
+      <rect class="seq-box" x="250" y="316" width="280" height="100" rx="6"/>
+      <text class="seq-pkt" x="262" y="334">Tunnel-Type: VLAN</text>
+      <text class="seq-pkt" x="262" y="350">Tunnel-Medium-Type: IEEE-802</text>
+      <text class="seq-pkt" x="262" y="366">Tunnel-Private-Group-ID: "100"</text>
+      <text class="seq-pkt" x="262" y="382">  (Corporate VLAN)</text>
+      <text class="seq-pkt" x="262" y="398">Session-Timeout: 28800</text>
+      <text class="seq-pkt" x="262" y="412">[VSA] Cisco-AVPair: ip:vrf-id=corp</text>
+      <line x1="430" y1="295" x2="240" y2="318" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+      <text class="seq-num" x="20" y="450">6</text>
+      <text class="seq-step" x="80" y="450">NAS assigns user to VLAN 100, grants access</text>
+      <line x1="240" y1="425" x2="60" y2="450" stroke="var(--text-muted)" stroke-width="1.5"/>
+
+      <rect x="40" y="475" width="620" height="115" rx="8" fill="none" stroke="var(--border)" stroke-width="1"/>
+      <text class="seq-step" x="56" y="498" font-weight="600" fill="var(--text)">What decision is being made at each step:</text>
+      <text class="seq-step" x="56" y="518">Step 2 carries identity (who) and context (where from). Step 3–4 is the</text>
+      <text class="seq-step" x="56" y="536">delegated trust check against the directory you already operate.</text>
+      <text class="seq-step" x="56" y="554">Step 5 is simultaneously the authentication AND authorization decision —</text>
+      <text class="seq-step" x="56" y="572">unlike OAuth, there's no separate token issuance step.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 4 of 21 — Full RADIUS authentication sequence, from credential submission to VLAN assignment.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .cmp-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .cmp-h { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 15px; }
+        .cmp-row { font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; fill: var(--text); }
+        .cmp-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--text-muted); }
+      </style>
+      <text x="350" y="26" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="17" fill="var(--text)">RADIUS vs OAuth — Same Question, Different Protocol</text>
+
+      <text x="350" y="52" text-anchor="middle" class="cmp-row" fill="var(--text-muted)">Both answer: who is this user, and what are they allowed to do?</text>
+
+      <rect class="cmp-box" x="40" y="70" width="290" height="200" rx="10" stroke="var(--accent-violet)"/>
+      <text class="cmp-h" x="185" y="98" text-anchor="middle" fill="var(--accent-violet)">RADIUS</text>
+      <text class="cmp-row" x="60" y="126">Transport: UDP</text>
+      <text class="cmp-row" x="60" y="150">Trust: shared secret</text>
+      <text class="cmp-row" x="60" y="174">Initiated by: NAS</text>
+      <text class="cmp-row" x="60" y="198">Result: attributes in Access-Accept</text>
+      <text class="cmp-row" x="60" y="222">State: stateful at the NAS</text>
+      <text class="cmp-row" x="60" y="246">Use case: network access</text>
+
+      <rect class="cmp-box" x="370" y="70" width="290" height="200" rx="10" stroke="var(--accent-blue)"/>
+      <text class="cmp-h" x="515" y="98" text-anchor="middle" fill="var(--accent-blue)">OAuth</text>
+      <text class="cmp-row" x="390" y="126">Transport: HTTPS</text>
+      <text class="cmp-row" x="390" y="150">Trust: bearer tokens</text>
+      <text class="cmp-row" x="390" y="174">Initiated by: client app</text>
+      <text class="cmp-row" x="390" y="198">Result: scopes in JWT</text>
+      <text class="cmp-row" x="390" y="222">State: stateless, self-contained</text>
+      <text class="cmp-row" x="390" y="246">Use case: API access</text>
+    </svg>
+    <div class="diagram-caption">Diagram 5 of 21 — RADIUS and OAuth solve the same architectural problem for different layers of access.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔒 Security</div>
+    <p>The RADIUS shared secret is the weakest link in the entire RADIUS security model. It's a pre-configured password known to both the NAS and the RADIUS server, used to encode (not truly encrypt) the <code>User-Password</code> attribute and to verify packet integrity via MD5. If the shared secret is guessed or leaked, an attacker can decode passwords from captured RADIUS packets <em>and</em> forge RADIUS responses — sending a fake Access-Accept to a NAS that has no way to know it's lying. Every RADIUS shared secret should be long (32+ characters), genuinely random, unique per NAS device, and rotated on a schedule. RadSec eliminates this vulnerability entirely by replacing the shared-secret model with TLS mutual authentication.</p>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔒 Security</div>
+    <p>PAP vs CHAP vs EAP in RADIUS determines exactly how much protection the password gets in transit. <strong>PAP</strong> (Password Authentication Protocol) sends the password encoded with the shared secret — capture the packet, know the shared secret, and you recover the plaintext password. <strong>CHAP</strong> (Challenge Handshake) never sends the password at all, only a hash of the challenge plus the password. <strong>EAP</strong> (Extensible Authentication Protocol) tunnels an entire authentication method inside RADIUS, which is what makes certificate-based auth, TOTP, and FIDO2 possible at the network access layer. For enterprise deployments, EAP-TLS — certificate-based authentication — is the gold standard. Section 6.5 covers it in full depth.</p>
+  </div>
+
+  <div class="analogy">
+    <div class="analogy-title">Analogy</div>
+    <p>RADIUS is to network access what an API gateway is to API access. The API gateway (the NAS equivalent) sits in front of protected resources. When a request arrives, the gateway calls the authorization server (the RADIUS server equivalent) to validate credentials and retrieve policy. The authorization server returns a decision packed with attributes — scopes for OAuth, VLAN assignment for RADIUS. The gateway enforces the policy it's handed. Neither the NAS nor the API gateway makes the identity decision themselves — they delegate it entirely. The pattern is identical between the two worlds. Only the protocol differs.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: Why MD5 in RADIUS is cryptographically weak, and what RadSec fixes</summary>
+    <div class="deepdive-body">
+      <p>Standard RADIUS uses MD5 to compute the Response Authenticator and to obscure the <code>User-Password</code> attribute, combining the shared secret with a Request Authenticator value via repeated MD5 hashing. MD5 has been considered cryptographically broken for collision resistance since the mid-2000s, and even setting collisions aside, the scheme's security rests entirely on the secrecy of the shared secret — there's no forward secrecy, no protection against an attacker who has captured enough traffic and computing time to attempt offline attacks, and no protection at all if the shared secret leaks. RadSec (RFC 6614) replaces this entire trust model: RADIUS packets are carried inside a TLS tunnel established with mutual certificate authentication between the RADIUS client and server. This gets you modern cipher suites, forward secrecy, and certificate-based mutual trust instead of a static shared password — the same upgrade path web authentication took years earlier when it moved from basic auth over HTTP to certificate-anchored TLS everywhere.</p>
+    </div>
+  </details>
+
+  <div class="usecase">
+    <div class="usecase-tag">Use Case</div>
+    <p>Your VPN system uses RADIUS for authentication against Active Directory. An attacker has captured network traffic between the VPN concentrator and the RADIUS server using a compromised network device. Walk through what the attacker can recover from the captured traffic given: (a) PAP authentication, (b) CHAP authentication, (c) EAP-TLS certificate authentication. What does each scenario mean architecturally? With PAP and a known or crackable shared secret, the attacker can recover plaintext credentials directly. With CHAP, they capture only a challenge-response hash — not directly reusable, though still vulnerable to offline attack if the password is weak. With EAP-TLS, there's no password in the exchange to capture at all — the attacker would need to compromise a private key, a fundamentally harder problem. The architectural takeaway: your RADIUS deployment's actual security posture is determined entirely by which authentication method sits inside it, not by the fact that "RADIUS is being used."</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Find the RADIUS client configuration on your VPN concentrator or Wi-Fi controller. What is the RADIUS server IP? What authentication method is configured — PAP, CHAP, or EAP? What shared secret is used, and when was it last rotated? Now find the Windows NPS or FreeRADIUS configuration on the server side. What user store does it authenticate against — AD, LDAP? What groups are required for VPN access?</p>
+  </div>
+</div>
+<!-- CHUNK:6.2 -->
+<div class="module" id="s6-3" data-stack-layers="network,directory,authz">
+  <div class="module-divider">
+    <div class="module-num">6.3</div>
+    <h2>🏢 RADIUS in Enterprise Deployments</h2>
+  </div>
+
+  <p>A single RADIUS server is a demo, not a production architecture. Every enterprise deployment needs to account for high availability, multi-domain routing, policy complexity, and the inevitable Monday-morning authentication surge. This section covers what RADIUS looks like once it leaves the lab.</p>
+
+  <h3>Topology: from single server to clustered</h3>
+  <p>A single RADIUS server is a single point of failure — if it goes down, every VPN connection, every Wi-Fi authentication, every 802.1X port fails along with it. The minimum viable production topology is primary plus failover, where the NAS is configured with a backup RADIUS server to try if the primary doesn't respond within a timeout window. The enterprise standard goes further: a clustered deployment behind a load balancer or RADIUS proxy, where multiple RADIUS servers share session state (particularly important for accounting continuity) and any one node can fail without authentication capacity dropping below demand.</p>
+
+  <h3>RADIUS proxy and realm-based routing</h3>
+  <p>A RADIUS proxy is an intermediary that sits between NAS devices and RADIUS servers, routing each Access-Request to the correct backend server. The most common routing mechanism is <strong>realm-based routing</strong>: the username carries a realm suffix (<code>user@realm</code>), and the proxy uses that realm to decide which RADIUS server — and by extension, which identity domain — should handle the request. This pattern shows up constantly in multi-tenant environments, partner access scenarios, and — directly relevant to your M&A and divestiture work — acquisition integration, where an acquired company's users need network access routed to their own RADIUS server and AD domain before (or instead of) a full directory migration.</p>
+
+  <h3>RADIUS and Active Directory: Windows NPS</h3>
+  <p>Windows NPS (Network Policy Server) is the most common enterprise RADIUS server because it ships with Windows Server and integrates natively with AD. NPS organizes policy into two layers: <strong>Connection Request Policies</strong>, which decide how to handle the incoming request (which NPS server processes it, whether to proxy it elsewhere), and <strong>Network Policies</strong>, which decide whether to grant access and what attributes to return — the VLAN, the session timeout, the ACL. This two-layer model is conceptually similar to how PingFederate separates authentication policy from authorization decisions.</p>
+
+  <h3>High availability: fail-open vs fail-closed</h3>
+  <p>When the RADIUS server becomes unreachable, the NAS faces a binary choice: fail-open (let everyone in without authentication) or fail-closed (deny all access until RADIUS recovers). This single configuration decision has outsized security consequences, covered in the callout below.</p>
+
+  <h3>RADIUS and MFA: the Access-Challenge pattern</h3>
+  <p>RADIUS wasn't designed with MFA in mind, but the protocol's Access-Challenge packet type makes it possible to bolt on without breaking anything. After validating a username and password successfully, the RADIUS server can respond with Access-Challenge instead of Access-Accept, prompting the NAS to collect one more piece of information — an OTP code — before issuing a final decision. This is exactly the mechanism PingID's RADIUS integration uses, covered in full in Section 6.8.</p>
+
+  <h3>Capacity planning</h3>
+  <p>RADIUS server sizing has to account for peak authentication load, not average load. The classic failure scenario is the Monday-morning VPN surge: thousands of remote employees connecting within the same fifteen-minute window as the workday begins across a time zone. Undersized RADIUS infrastructure drops requests under this burst, and because RADIUS runs over UDP with NAS-side retry logic, a struggling server can produce a confusing mix of successful authentications, outright rejections, and silent timeouts — all from the same root cause.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 460" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .t-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .t-box-hi { fill: color-mix(in srgb, var(--accent-violet) 12%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+        .t-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; fill: var(--text); }
+        .t-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--text-muted); }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">Enterprise RADIUS Topology</text>
+
+      <rect class="t-box" x="20" y="50" width="150" height="40" rx="8"/>
+      <text class="t-text" x="95" y="74" text-anchor="middle">Remote Users</text>
+      <rect class="t-box" x="20" y="105" width="150" height="40" rx="8"/>
+      <text class="t-text" x="95" y="129" text-anchor="middle">Office Users</text>
+      <rect class="t-box" x="20" y="160" width="150" height="40" rx="8"/>
+      <text class="t-text" x="95" y="184" text-anchor="middle">Branch Users</text>
+
+      <rect class="t-box" x="225" y="50" width="170" height="40" rx="8"/>
+      <text class="t-text" x="310" y="74" text-anchor="middle">VPN Concentrator</text>
+      <rect class="t-box" x="225" y="105" width="170" height="40" rx="8"/>
+      <text class="t-text" x="310" y="129" text-anchor="middle">Wi-Fi Controller</text>
+      <rect class="t-box" x="225" y="160" width="170" height="40" rx="8"/>
+      <text class="t-text" x="310" y="184" text-anchor="middle">Switch (802.1X)</text>
+
+      <line x1="170" y1="70" x2="225" y2="70" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <line x1="170" y1="125" x2="225" y2="125" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <line x1="170" y1="180" x2="225" y2="180" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <line x1="310" y1="90" x2="310" y2="245" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <line x1="310" y1="145" x2="450" y2="245" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <line x1="310" y1="200" x2="450" y2="245" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <rect class="t-box-hi" x="210" y="250" width="280" height="40" rx="8"/>
+      <text class="t-text" x="350" y="274" text-anchor="middle" font-weight="600">Load Balancer / RADIUS Proxy</text>
+
+      <line x1="350" y1="290" x2="280" y2="330" stroke="var(--accent-violet)" stroke-width="1.5"/>
+      <line x1="350" y1="290" x2="480" y2="330" stroke="var(--accent-violet)" stroke-width="1.5"/>
+
+      <rect class="t-box-hi" x="190" y="335" width="180" height="42" rx="8"/>
+      <text class="t-text" x="280" y="361" text-anchor="middle">Primary RADIUS (NPS/ISE)</text>
+
+      <rect class="t-box" x="400" y="335" width="180" height="42" rx="8"/>
+      <text class="t-text" x="490" y="361" text-anchor="middle">Failover RADIUS</text>
+
+      <line x1="280" y1="377" x2="350" y2="415" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <line x1="490" y1="377" x2="420" y2="415" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <rect class="t-box" x="270" y="418" width="180" height="36" rx="8"/>
+      <text class="t-text" x="360" y="441" text-anchor="middle">AD Domain Controllers</text>
+    </svg>
+    <div class="diagram-caption">Diagram 6 of 21 — Full enterprise RADIUS topology: NAS fan-in, proxy/load balancer, primary + failover, AD backend.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .rl-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .rl-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; fill: var(--text); }
+        .rl-mono { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--accent-violet); }
+        .rl-proxy { fill: color-mix(in srgb, var(--accent-violet) 12%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">RADIUS Proxy — Realm-Based Routing</text>
+
+      <text class="rl-mono" x="20" y="60">jsmith@corp.company.com</text>
+      <text class="rl-mono" x="20" y="135">partner@acquired-corp.com</text>
+      <text class="rl-mono" x="20" y="210">vendor@external.com</text>
+
+      <rect class="rl-proxy" x="240" y="115" width="200" height="50" rx="9"/>
+      <text class="rl-text" x="340" y="135" text-anchor="middle" font-weight="600">RADIUS Proxy</text>
+      <text class="rl-text" x="340" y="152" text-anchor="middle" font-size="11" fill="var(--text-muted)">routes by realm suffix</text>
+
+      <line x1="230" y1="55" x2="240" y2="125" stroke="var(--text-muted)" stroke-width="1.2"/>
+      <line x1="230" y1="130" x2="240" y2="140" stroke="var(--text-muted)" stroke-width="1.2"/>
+      <line x1="230" y1="205" x2="240" y2="155" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <rect class="rl-box" x="500" y="35" width="180" height="46" rx="8"/>
+      <text class="rl-text" x="590" y="55" text-anchor="middle" font-size="11.5">Corporate RADIUS</text>
+      <text class="rl-text" x="590" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">→ Corporate AD</text>
+
+      <rect class="rl-box" x="500" y="112" width="180" height="46" rx="8"/>
+      <text class="rl-text" x="590" y="132" text-anchor="middle" font-size="11.5">Acquired-Corp RADIUS</text>
+      <text class="rl-text" x="590" y="147" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">→ Acquired Corp AD</text>
+
+      <rect class="rl-box" x="500" y="189" width="180" height="46" rx="8"/>
+      <text class="rl-text" x="590" y="209" text-anchor="middle" font-size="11.5">Guest RADIUS</text>
+      <text class="rl-text" x="590" y="224" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">→ Guest user store</text>
+
+      <line x1="440" y1="130" x2="500" y2="58" stroke="var(--accent-violet)" stroke-width="1.3"/>
+      <line x1="440" y1="138" x2="500" y2="135" stroke="var(--accent-violet)" stroke-width="1.3"/>
+      <line x1="440" y1="150" x2="500" y2="212" stroke="var(--accent-violet)" stroke-width="1.3"/>
+
+      <text x="350" y="290" text-anchor="middle" font-family="IBM Plex Mono" font-size="11.5" fill="var(--text-muted)">Realm-based routing enables a single NAS to serve multiple identity domains —</text>
+      <text x="350" y="308" text-anchor="middle" font-family="IBM Plex Mono" font-size="11.5" fill="var(--text-muted)">essential during M&amp;A integration before directory consolidation completes.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 7 of 21 — Realm suffix routing lets one RADIUS proxy serve multiple AD domains, including post-acquisition.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 560" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .mf-line { stroke: var(--border); stroke-width: 1.5; }
+        .mf-actor { font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 12.5px; fill: var(--text); }
+        .mf-step { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; fill: var(--text-muted); }
+        .mf-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--accent-violet); font-weight: 600; }
+        .mf-box { fill: color-mix(in srgb, var(--accent-violet) 8%, var(--surface)); stroke: var(--accent-violet); stroke-width: 1; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">RADIUS MFA Challenge Flow (Access-Challenge)</text>
+
+      <text class="mf-actor" x="50" y="55">User</text>
+      <text class="mf-actor" x="220" y="55">NAS</text>
+      <text class="mf-actor" x="400" y="55">RADIUS Server</text>
+      <text class="mf-actor" x="610" y="55">AD / PingID</text>
+      <line class="mf-line" x1="50" y1="65" x2="50" y2="540"/>
+      <line class="mf-line" x1="220" y1="65" x2="220" y2="540"/>
+      <line class="mf-line" x1="400" y1="65" x2="400" y2="540"/>
+      <line class="mf-line" x1="610" y1="65" x2="610" y2="540"/>
+
+      <text class="mf-num" x="15" y="92">1</text>
+      <text class="mf-step" x="60" y="92">Submit username + password to VPN</text>
+      <line x1="50" y1="98" x2="220" y2="98" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="126">2</text>
+      <text class="mf-step" x="230" y="126">Access-Request (user + password)</text>
+      <line x1="220" y1="132" x2="400" y2="132" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="160">3</text>
+      <text class="mf-step" x="410" y="160">Validate password against AD — success</text>
+      <line x1="400" y1="166" x2="610" y2="166" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <line x1="610" y1="178" x2="400" y2="178" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="206">4</text>
+      <text class="mf-step" x="410" y="206">Password valid — MFA required. Send OTP challenge</text>
+
+      <text class="mf-num" x="15" y="238">5</text>
+      <rect class="mf-box" x="230" y="216" width="280" height="40" rx="6"/>
+      <text class="mf-step" x="242" y="240" fill="var(--text)" font-family="IBM Plex Mono" font-size="10.5">Access-Challenge { Reply-Message: "Enter OTP:" }</text>
+      <line x1="400" y1="216" x2="220" y2="216" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="280">6</text>
+      <text class="mf-step" x="60" y="280">NAS displays OTP prompt to user</text>
+      <line x1="220" y1="265" x2="50" y2="280" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="316">7</text>
+      <text class="mf-step" x="60" y="316">User enters OTP code</text>
+
+      <text class="mf-num" x="15" y="350">8</text>
+      <rect class="mf-box" x="230" y="330" width="280" height="34" rx="6"/>
+      <text class="mf-step" x="242" y="352" fill="var(--text)" font-family="IBM Plex Mono" font-size="10.5">Access-Request { User-Password: [OTP] }</text>
+      <line x1="50" y1="330" x2="220" y2="330" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="392">9</text>
+      <text class="mf-step" x="410" y="392">RADIUS → PingID: validate OTP</text>
+      <line x1="400" y1="398" x2="610" y2="398" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="430">10</text>
+      <text class="mf-step" x="410" y="430">PingID: OTP valid</text>
+      <line x1="610" y1="424" x2="400" y2="424" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="mf-num" x="15" y="466">11</text>
+      <text class="mf-step" x="230" y="466">RADIUS → NAS: Access-Accept</text>
+      <line x1="400" y1="455" x2="220" y2="466" stroke="var(--accent-violet)" stroke-width="1.5"/>
+
+      <rect x="40" y="490" width="610" height="46" rx="8" fill="none" stroke="var(--border)"/>
+      <text class="mf-step" x="56" y="512" font-weight="600" fill="var(--text)">This multi-step exchange is how RADIUS implements MFA</text>
+      <text class="mf-step" x="56" y="528">without changing the underlying protocol at all.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 8 of 21 — RADIUS Access-Challenge enables OTP-based MFA without breaking the protocol.</div>
+  </div>
+
+  <div class="callout callout-cost">
+    <div class="callout-title">💰 Architecture Trade-off</div>
+    <p>RADIUS fail-open vs fail-closed: when the RADIUS server is unreachable, the NAS must decide whether to let everyone in without authentication (fail-open) or deny all access until RADIUS recovers (fail-closed). Fail-open sounds operationally appealing — users keep working through an outage. But it means your network perimeter has zero identity enforcement for the duration of the outage window. If the RADIUS outage is itself caused by an attacker rather than an accident, fail-open hands them exactly the access they were trying to achieve. For all enterprise deployments, RADIUS should fail-closed, and RADIUS HA should be robust enough that the server is effectively never actually unavailable. Fail-open is acceptable only for specific low-sensitivity network segments with compensating controls already in place.</p>
+  </div>
+
+  <div class="usecase">
+    <div class="usecase-tag">Use Case</div>
+    <p>Monday morning, 8:47am. 4,000 users attempt VPN connection within fifteen minutes as the East Coast workday begins. Your RADIUS server starts dropping requests under load — some users get in, some get Access-Reject, some get silent timeouts. Walk through the architecture decisions that prevent this: RADIUS server sizing based on peak (not average) concurrent authentication rate, an HA topology with enough headroom to absorb burst load on one node failure, connection request queuing on the proxy layer, and sane NAS retry/backoff behavior so a momentary delay doesn't compound into a retry storm that makes the load problem worse.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Find your Windows NPS logs (Event Viewer → Security, or the NPS-specific log). Identify a successful RADIUS Access-Accept. What RADIUS attributes were returned? Which Network Policy matched? Now find a failed Access-Reject. What was the rejection reason? These logs are your RADIUS audit trail and your first diagnostic tool for network authentication failures.</p>
+  </div>
+</div>
+<!-- CHUNK:6.3 -->
+<div class="module" id="s6-4" data-stack-layers="network,pam,authz">
+  <div class="module-divider">
+    <div class="module-num">6.4</div>
+    <h2>🛡️ TACACS+ — Infrastructure Device Authentication</h2>
+  </div>
+
+  <p>RADIUS answers "should this user/device get on the network?" TACACS+ answers a different and more privileged question: "should this engineer be allowed to run <em>this specific command</em> on this router?" TACACS+ is the protocol that governs administrative access to network infrastructure itself — switches, routers, firewalls — and it's architecturally distinct from RADIUS in ways that matter.</p>
+
+  <h3>TACACS+ vs RADIUS: the structural differences</h3>
+  <table>
+    <tr><th>Dimension</th><th>RADIUS</th><th>TACACS+</th></tr>
+    <tr><td>Transport</td><td>UDP</td><td>TCP (reliable)</td></tr>
+    <tr><td>Encryption</td><td>Password field only (encoded, not true encryption)</td><td>Full payload encrypted</td></tr>
+    <tr><td>AAA model</td><td>AuthN + AuthZ bundled in one exchange</td><td>Authentication, authorization, accounting kept as distinct transactions</td></tr>
+    <tr><td>Primary use case</td><td>User network access (VPN, Wi-Fi, 802.1X)</td><td>Infrastructure device management</td></tr>
+    <tr><td>Typical client</td><td>VPN concentrator, Wi-Fi controller</td><td>Cisco IOS, Juniper JunOS devices</td></tr>
+  </table>
+
+  <h3>The AAA model in TACACS+</h3>
+  <p>TACACS+ separates the three classic AAA functions into independent transactions rather than folding them together the way RADIUS does:</p>
+  <ul>
+    <li><strong>Authentication:</strong> who are you? Validated against AD/LDAP or a local store.</li>
+    <li><strong>Authorization:</strong> what commands are you allowed to run? Evaluated per-command, not just per-session.</li>
+    <li><strong>Accounting:</strong> what commands did you actually run? Logged with full fidelity, command by command.</li>
+  </ul>
+  <p>This separation is what makes TACACS+ suited to a fundamentally different problem than RADIUS solves. RADIUS makes one binary decision — let this session in or don't. TACACS+ continuously re-evaluates authorization throughout a session, because a network engineer's SSH session to a core router might run dozens of commands, and not every command should be permitted at every privilege level.</p>
+
+  <h3>TACACS+ and Cisco IOS</h3>
+  <p>The dominant real-world use case for TACACS+ is network engineers authenticating into Cisco (and other vendor) infrastructure via SSH. Cisco IOS uses a privilege level model ranging from 0 to 15: privilege level 1 is basic user mode with read-only visibility, and privilege level 15 is full enable mode with unrestricted configuration access. TACACS+ is what maps a user's AD group membership onto the correct privilege level — and, critically, what governs which specific commands are authorized once they're at that level.</p>
+
+  <h3>Command authorization in detail</h3>
+  <p>Every command a TACACS+-protected device receives — not just login, but each individual CLI command — can trigger a separate authorization check against the TACACS+ server. The server's policy decides whether <code>enable</code>, <code>configure terminal</code>, or a specific interface command is permitted for that user, that group, on that device. This is command-level granularity that RADIUS architecturally cannot provide, because RADIUS authorization happens once, at session start, not continuously throughout the session.</p>
+
+  <h3>TACACS+ and PAM — a connection worth naming now</h3>
+  <p>TACACS+ is, functionally, a network-layer privileged access control mechanism — it's what PAM (Privileged Access Management, covered in full in Module 10) is for general server infrastructure, applied specifically to network devices. If you're familiar with CyberArk's approach to privileged session management, TACACS+ command accounting is solving the same architectural problem one layer down the stack, for routers and switches instead of servers.</p>
+
+  <h3>When to use TACACS+ vs RADIUS — the decision framework</h3>
+  <p>The decision isn't usually either/or — most enterprises run both, for different purposes. Use RADIUS when the question is "should this user or device get network access" (VPN, Wi-Fi, 802.1X). Use TACACS+ when the question is "should this administrator be allowed to manage this network device, and what exactly are they allowed to do once they're in." Running RADIUS for device management instead of TACACS+ is a common and consequential architectural mistake — covered in the security callout below.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .cv-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .cv-h { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 15px; }
+        .cv-row { font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; fill: var(--text); }
+      </style>
+      <text x="350" y="26" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="17" fill="var(--text)">RADIUS vs TACACS+ — Architecture Comparison</text>
+
+      <rect class="cv-box" x="40" y="50" width="290" height="240" rx="10" stroke="var(--accent-violet)"/>
+      <text class="cv-h" x="185" y="80" text-anchor="middle" fill="var(--accent-violet)">RADIUS</text>
+      <text class="cv-row" x="60" y="112">Protocol: UDP</text>
+      <text class="cv-row" x="60" y="140">partially encrypted</text>
+      <text class="cv-row" x="60" y="172">AAA: AuthN+AuthZ bundled</text>
+      <text class="cv-row" x="60" y="200">Encryption: password field only</text>
+      <text class="cv-row" x="60" y="232">Use case: user network access</text>
+      <text class="cv-row" x="60" y="260">(VPN, Wi-Fi, 802.1X)</text>
+
+      <rect class="cv-box" x="370" y="50" width="290" height="240" rx="10" stroke="var(--accent-green)"/>
+      <text class="cv-h" x="515" y="80" text-anchor="middle" fill="var(--accent-green)">TACACS+</text>
+      <text class="cv-row" x="390" y="112">Protocol: TCP</text>
+      <text class="cv-row" x="390" y="140">full payload encrypted</text>
+      <text class="cv-row" x="390" y="172">AAA: AuthN/AuthZ/Acct separated</text>
+      <text class="cv-row" x="390" y="200">Encryption: entire payload</text>
+      <text class="cv-row" x="390" y="232">Use case: device management</text>
+      <text class="cv-row" x="390" y="260">(routers, switches, firewalls)</text>
+    </svg>
+    <div class="diagram-caption">Diagram 9 of 21 — RADIUS handles user network access; TACACS+ handles infrastructure device administration.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 600" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .tc-line { stroke: var(--border); stroke-width: 1.5; }
+        .tc-actor { font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 12.5px; fill: var(--text); }
+        .tc-step { font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px; fill: var(--text-muted); }
+        .tc-num { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--accent-green); font-weight: 600; }
+        .tc-box { fill: color-mix(in srgb, var(--accent-green) 8%, var(--surface)); stroke: var(--accent-green); stroke-width: 1; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">TACACS+ Command Authorization Flow</text>
+
+      <text class="tc-actor" x="60" y="55">Engineer</text>
+      <text class="tc-actor" x="280" y="55">Switch / Router</text>
+      <text class="tc-actor" x="520" y="55">TACACS+ Server / AD</text>
+      <line class="tc-line" x1="60" y1="65" x2="60" y2="580"/>
+      <line class="tc-line" x1="280" y1="65" x2="280" y2="580"/>
+      <line class="tc-line" x1="520" y1="65" x2="520" y2="580"/>
+
+      <text class="tc-num" x="15" y="90">1</text>
+      <text class="tc-step" x="70" y="90">SSH login</text>
+      <line x1="60" y1="96" x2="280" y2="96" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="124">2</text>
+      <rect class="tc-box" x="290" y="104" width="230" height="34" rx="6"/>
+      <text class="tc-step" x="300" y="125" font-family="IBM Plex Mono" font-size="10.5" fill="var(--text)">user: neteng01, password: [encrypted]</text>
+      <line x1="280" y1="104" x2="520" y2="104" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="166">3</text>
+      <text class="tc-step" x="290" y="166">Validate credentials against AD</text>
+      <line x1="520" y1="172" x2="520" y2="172" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="196">4</text>
+      <text class="tc-step" x="290" y="196">Authentication PASS</text>
+      <line x1="520" y1="190" x2="280" y2="190" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="226">5</text>
+      <text class="tc-step" x="70" y="226">Logged in — privilege level 1 (user mode)</text>
+
+      <text class="tc-num" x="15" y="256">6</text>
+      <text class="tc-step" x="70" y="256">Types "enable" — request privilege elevation</text>
+      <line x1="60" y1="262" x2="280" y2="262" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="290">7</text>
+      <rect class="tc-box" x="290" y="270" width="230" height="34" rx="6"/>
+      <text class="tc-step" x="300" y="291" font-family="IBM Plex Mono" font-size="10.5" fill="var(--text)">authz: service=shell, cmd=enable</text>
+      <line x1="280" y1="270" x2="520" y2="270" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="332">8</text>
+      <text class="tc-step" x="290" y="332">neteng01 ∈ Network-Engineers</text>
+      <text class="tc-step" x="290" y="348">→ authorized for privilege 15</text>
+
+      <text class="tc-num" x="15" y="380">9</text>
+      <text class="tc-step" x="290" y="380">Authorization PASS, priv-level=15</text>
+      <line x1="520" y1="374" x2="280" y2="374" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="412">10</text>
+      <text class="tc-step" x="70" y="412">Now at enable mode (privilege 15)</text>
+
+      <text class="tc-num" x="15" y="442">11</text>
+      <text class="tc-step" x="70" y="442">Types "conf t" (configure terminal)</text>
+      <line x1="60" y1="448" x2="280" y2="448" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="474">12</text>
+      <text class="tc-step" x="290" y="474">Authorization request: cmd=conf t</text>
+      <line x1="280" y1="448" x2="520" y2="474" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <text class="tc-num" x="15" y="506">13</text>
+      <text class="tc-step" x="290" y="506">conf t allowed for Network-Engineers</text>
+
+      <rect x="40" y="525" width="600" height="56" rx="8" fill="none" stroke="var(--border)"/>
+      <text class="tc-step" x="56" y="546" font-weight="600" fill="var(--text)">14 · Every command the engineer runs is authorized AND</text>
+      <text class="tc-step" x="56" y="564">recorded in TACACS+ accounting — full command-level audit trail.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 10 of 21 — Full TACACS+ sequence: authentication, privilege elevation, and per-command authorization.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔒 Security</div>
+    <p>TACACS+ command accounting is the network-layer equivalent of privileged session recording in CyberArk (Module 10). Every command a network engineer executes on a device is logged: who ran it, on which device, at what time, with what output. This is your audit trail for "who changed that firewall rule at 2am last Tuesday" — a question that is genuinely unanswerable without TACACS+ accounting in place. Enterprises that run RADIUS for device management instead of TACACS+ lose this command-level accountability entirely, because RADIUS authorization is session-level (you're allowed in) rather than command-level (you're allowed to run this specific command). This is one of the clearest examples in the whole module of "the protocol you chose determines what evidence you'll have during an incident response."</p>
+  </div>
+
+  <div class="analogy">
+    <div class="analogy-title">Analogy</div>
+    <p>TACACS+ is to network devices what CyberArk PSM is to servers. CyberArk PSM records every command executed in a privileged server session — who did what, when, on which server. TACACS+ records every command executed in a network device CLI session — who did what, when, on which router or switch. Both are privileged access control mechanisms. Both separate the "who are you" question (authentication) from the "what can you do" question (command authorization) from the "what did you do" question (accounting). The domain is different — servers versus network infrastructure. The architecture is the same.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>If your organization uses Cisco devices, find the AAA configuration on a switch or router (<code>show running-config | include aaa</code>). What TACACS+ server is configured? What authentication, authorization, and accounting methods are enabled? If TACACS+ is not configured, ask: what controls prevent a network engineer from running any command on any device without authorization? That absence is your finding — and it's a more common finding in real enterprises than you might expect.</p>
+  </div>
+</div>
+<!-- CHUNK:6.4 -->
+<div class="module" id="s6-5" data-stack-layers="network,tokens,directory">
+  <div class="module-divider">
+    <div class="module-num">6.5</div>
+    <h2>🎫 802.1X &amp; EAP: Network Access Control at the Port</h2>
+  </div>
+
+  <p>RADIUS tells a NAS whether to grant access. 802.1X is the standard that defines how that decision gets enforced at the most granular point possible — the individual switch port or Wi-Fi association — and it does so before the device even receives an IP address. This is genuinely Layer 2 security, operating beneath where most network engineers (let alone IAM engineers) usually think about identity.</p>
+
+  <h3>What 802.1X is</h3>
+  <p>802.1X is the IEEE standard for port-based network access control. Until a device successfully authenticates, the physical or logical port it's connected to stays blocked — no DHCP, no IP address, no network reachability at all, except for the narrow EAP exchange needed to authenticate. This is meaningfully stronger than "authenticate, then get an IP and maybe get blocked by a firewall later" — the port itself simply doesn't pass traffic until identity is established.</p>
+
+  <h3>The three 802.1X roles</h3>
+  <ul>
+    <li><strong>Supplicant:</strong> the client device seeking access — the laptop, phone, or IoT device, running 802.1X client software.</li>
+    <li><strong>Authenticator:</strong> the network device enforcing the port state — a managed switch port or a Wi-Fi access point.</li>
+    <li><strong>Authentication Server:</strong> the RADIUS server making the actual identity decision.</li>
+  </ul>
+  <p>Notice this maps cleanly onto the RADIUS three-role model from Section 6.2 — the Authenticator <em>is</em> the RADIUS client (NAS), just operating at Layer 2 rather than mediating an IP-layer service like VPN.</p>
+
+  <h3>How it works: EAP over the wire</h3>
+  <p>EAP (Extensible Authentication Protocol) messages flow between the supplicant and the authenticator over Layer 2 — specifically EAPOL, EAP over LAN — before the device has any IP connectivity at all. The authenticator relays these EAP messages to the RADIUS server wrapped inside standard RADIUS Access-Request/Access-Challenge packets, and the RADIUS server's responses flow back the same way. The authenticator itself never makes the authentication decision — exactly the delegation pattern from Section 6.2's API gateway analogy.</p>
+
+  <h3>EAP methods — the architectural comparison that matters</h3>
+  <p>"802.1X" tells you authentication happens at the port. It tells you nothing about <em>how strong</em> that authentication is — that's entirely determined by which EAP method is configured underneath:</p>
+  <ul>
+    <li><strong>EAP-TLS:</strong> certificate-based, mutual authentication, the most secure option, requires PKI on both client and server.</li>
+    <li><strong>PEAP (EAP inside a TLS tunnel):</strong> an inner method, typically MSCHAPv2, runs inside a TLS tunnel. Only the server presents a certificate; the client still authenticates with a password — encrypted in transit, but still a password.</li>
+    <li><strong>EAP-TTLS:</strong> architecturally similar to PEAP, with more flexibility in inner method choice.</li>
+    <li><strong>EAP-FAST:</strong> Cisco-proprietary, no certificate required at all — uses a Protected Access Credential (PAC) instead.</li>
+  </ul>
+
+  <h3>Why EAP-TLS is the gold standard</h3>
+  <p>EAP-TLS does for network access what FIDO2 does for web authentication, and the underlying reasoning is identical. A certificate represents both device identity and (when issued per-user) user identity. There's no password in the exchange to steal, phish, or dictionary-attack. Mutual authentication means the client verifies the server's certificate too — which is what prevents rogue access point attacks, where an attacker stands up a fake Wi-Fi AP hoping to harvest credentials. And because certificate-based authentication doesn't require a logged-in user, EAP-TLS supports <strong>machine authentication</strong> — a domain-joined laptop can authenticate to the network using its machine certificate before anyone logs in, which matters enormously for things like Group Policy delivery at boot.</p>
+
+  <h3>VLAN assignment and the quarantine path</h3>
+  <p>Just as with standard RADIUS, the Access-Accept packet returned to the 802.1X authenticator carries VLAN-assignment attributes, which the switch enforces by placing the port on the specified VLAN. Devices that fail 802.1X — wrong credentials, expired certificate, or simply no supplicant configured at all — typically land in a <strong>Guest VLAN</strong> or <strong>Auth-Fail VLAN</strong>, a quarantine segment with deliberately limited reachability rather than a hard network cutoff. Section 6.6 goes deeper on designing that quarantine policy correctly.</p>
+
+  <h3>The MAB fallback and its risks</h3>
+  <p>Not every device can run 802.1X — printers, older IP phones, and many IoT devices have no supplicant capability at all. <strong>MAC Authentication Bypass (MAB)</strong> exists as a fallback: the switch authenticates the device by its MAC address instead of running an EAP exchange. MAC addresses are trivially spoofable, which means MAB is a meaningfully weaker control than genuine 802.1X — the deep dive below covers exactly how much weaker, and why.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .ex-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .ex-box-hi { fill: color-mix(in srgb, var(--accent-violet) 12%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+        .ex-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; fill: var(--text); }
+        .ex-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--accent-violet); }
+        .ex-port { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--text-muted); }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">802.1X Three-Role Architecture</text>
+
+      <rect class="ex-box-hi" x="260" y="45" width="180" height="50" rx="9"/>
+      <text class="ex-text" x="350" y="68" text-anchor="middle" font-weight="600">Supplicant</text>
+      <text class="ex-port" x="350" y="84" text-anchor="middle">laptop + 802.1X client</text>
+
+      <line x1="350" y1="95" x2="350" y2="135" stroke="var(--accent-violet)" stroke-width="1.5"/>
+      <text class="ex-label" x="365" y="118">EAP over LAN (EAPOL) — L2</text>
+
+      <rect class="ex-box-hi" x="240" y="137" width="220" height="56" rx="9"/>
+      <text class="ex-text" x="350" y="160" text-anchor="middle" font-weight="600">Authenticator</text>
+      <text class="ex-port" x="350" y="178" text-anchor="middle">managed switch / Wi-Fi AP</text>
+
+      <line x1="350" y1="193" x2="350" y2="233" stroke="var(--accent-violet)" stroke-width="1.5"/>
+      <text class="ex-label" x="365" y="216">EAP over RADIUS (UDP 1812)</text>
+
+      <rect class="ex-box-hi" x="240" y="235" width="220" height="56" rx="9"/>
+      <text class="ex-text" x="350" y="258" text-anchor="middle" font-weight="600">Authentication Server</text>
+      <text class="ex-port" x="350" y="276" text-anchor="middle">RADIUS + NPS / ISE</text>
+
+      <line x1="350" y1="291" x2="350" y2="325" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <text class="ex-label" x="365" y="312" fill="var(--text-muted)">LDAP</text>
+
+      <rect class="ex-box" x="220" y="327" width="260" height="36" rx="8"/>
+      <text class="ex-text" x="350" y="349" text-anchor="middle">AD / Certificate Authority</text>
+    </svg>
+    <div class="diagram-caption">Diagram 11 of 21 — The 802.1X three-role model: supplicant, authenticator, and the RADIUS auth server behind it.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 600" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .et-line { stroke: var(--border); stroke-width: 1.5; }
+        .et-actor { font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 12px; fill: var(--text); }
+        .et-step { font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; fill: var(--text-muted); }
+        .et-num { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--accent-violet); font-weight: 600; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">EAP-TLS Authentication Flow</text>
+
+      <text class="et-actor" x="60" y="50">Switch</text>
+      <text class="et-actor" x="280" y="50">Laptop (Supplicant)</text>
+      <text class="et-actor" x="540" y="50">RADIUS</text>
+      <line class="et-line" x1="60" y1="60" x2="60" y2="580"/>
+      <line class="et-line" x1="280" y1="60" x2="280" y2="580"/>
+      <line class="et-line" x1="540" y1="60" x2="540" y2="580"/>
+
+      <text class="et-num" x="15" y="85">1</text>
+      <text class="et-step" x="70" y="85">Port connected — send EAP-Request/Identity</text>
+      <line x1="60" y1="90" x2="280" y2="90" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <text class="et-num" x="15" y="115">2</text>
+      <text class="et-step" x="70" y="115">EAP-Response/Identity (username)</text>
+      <line x1="280" y1="120" x2="60" y2="120" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <text class="et-num" x="15" y="145">3</text>
+      <text class="et-step" x="70" y="145">Switch → RADIUS: Access-Request (EAP-Response)</text>
+      <line x1="60" y1="150" x2="540" y2="150" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <text class="et-num" x="15" y="175">4</text>
+      <text class="et-step" x="550" y="175">Initiate TLS handshake</text>
+
+      <text class="et-num" x="15" y="205">5</text>
+      <text class="et-step" x="70" y="205">EAP-Request (TLS Start), relayed switch → laptop</text>
+      <line x1="540" y1="210" x2="60" y2="210" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <text class="et-num" x="15" y="235">6</text>
+      <text class="et-step" x="70" y="235">Client Hello (via switch)</text>
+      <line x1="280" y1="240" x2="540" y2="240" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <text class="et-num" x="15" y="265">7</text>
+      <text class="et-step" x="70" y="265">Server Hello + Server Certificate</text>
+      <line x1="540" y1="270" x2="280" y2="270" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <text class="et-num" x="15" y="295">8</text>
+      <text class="et-step" x="290" y="295">Validate server cert — trusted enterprise CA?</text>
+
+      <text class="et-num" x="15" y="325">9</text>
+      <text class="et-step" x="70" y="325">Client Certificate</text>
+      <line x1="280" y1="330" x2="540" y2="330" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <text class="et-num" x="15" y="355">10</text>
+      <text class="et-step" x="550" y="355">Validate client cert — enterprise CA? Not revoked?</text>
+
+      <text class="et-num" x="15" y="385">11</text>
+      <text class="et-step" x="70" y="385">TLS handshake complete — mutual authentication done</text>
+
+      <text class="et-num" x="15" y="415">12</text>
+      <text class="et-step" x="550" y="415">Verify user/computer object against AD</text>
+
+      <text class="et-num" x="15" y="445">13</text>
+      <text class="et-step" x="70" y="445">Access-Accept { VLAN: 100, Session-Timeout: 28800 }</text>
+      <line x1="540" y1="450" x2="60" y2="450" stroke="var(--accent-violet)" stroke-width="1.5"/>
+
+      <text class="et-num" x="15" y="480">14</text>
+      <text class="et-step" x="70" y="480">Switch opens port, assigns VLAN 100</text>
+
+      <rect x="40" y="500" width="600" height="56" rx="8" fill="none" stroke="var(--border)"/>
+      <text class="et-step" x="56" y="522" font-weight="600" fill="var(--text)">PKI requirement: steps 7–10 depend on enterprise PKI issuing</text>
+      <text class="et-step" x="56" y="540">device + server certs via SCEP/NDES/ADCS auto-enrollment.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 12 of 21 — Full EAP-TLS handshake: mutual certificate validation before the port ever opens.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .em-h { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .em-row { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; fill: var(--text); }
+        .em-good { fill: var(--accent-green); }
+        .em-bad { fill: var(--accent-red); }
+        .em-line { stroke: var(--border); stroke-width: 1; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">EAP Method Comparison</text>
+
+      <text class="em-h" x="20" y="55">Method</text>
+      <text class="em-h" x="155" y="55">Client Cert</text>
+      <text class="em-h" x="255" y="55">Server Cert</text>
+      <text class="em-h" x="355" y="55">Password</text>
+      <text class="em-h" x="450" y="55">Phish-Resist</text>
+      <text class="em-h" x="565" y="55">Use</text>
+      <line class="em-line" x1="20" y1="65" x2="680" y2="65"/>
+
+      <text class="em-row" x="20" y="92" font-weight="700">EAP-TLS</text>
+      <text class="em-row em-good" x="155" y="92">Yes</text>
+      <text class="em-row em-good" x="255" y="92">Yes</text>
+      <text class="em-row" x="355" y="92">No</text>
+      <text class="em-row em-good" x="450" y="92">Yes</text>
+      <text class="em-row" x="565" y="92">Gold standard</text>
+      <line class="em-line" x1="20" y1="104" x2="680" y2="104"/>
+
+      <text class="em-row" x="20" y="130">PEAP/MSCHAPv2</text>
+      <text class="em-row em-bad" x="155" y="130">No</text>
+      <text class="em-row em-good" x="255" y="130">Yes</text>
+      <text class="em-row" x="355" y="130">Yes (encrypted)</text>
+      <text class="em-row em-bad" x="450" y="130">No</text>
+      <text class="em-row" x="565" y="130">Common</text>
+      <line class="em-line" x1="20" y1="142" x2="680" y2="142"/>
+
+      <text class="em-row" x="20" y="168">EAP-TTLS</text>
+      <text class="em-row em-bad" x="155" y="168">No</text>
+      <text class="em-row em-good" x="255" y="168">Yes</text>
+      <text class="em-row" x="355" y="168">Yes (encrypted)</text>
+      <text class="em-row em-bad" x="450" y="168">No</text>
+      <text class="em-row" x="565" y="168">Less common</text>
+      <line class="em-line" x1="20" y1="180" x2="680" y2="180"/>
+
+      <text class="em-row" x="20" y="206">EAP-FAST</text>
+      <text class="em-row em-bad" x="155" y="206">No</text>
+      <text class="em-row em-bad" x="255" y="206">No</text>
+      <text class="em-row" x="355" y="206">Optional (PAC)</text>
+      <text class="em-row em-bad" x="450" y="206">No</text>
+      <text class="em-row" x="565" y="206">Cisco legacy</text>
+      <line class="em-line" x1="20" y1="218" x2="680" y2="218"/>
+
+      <text class="em-row" x="20" y="244">MAB</text>
+      <text class="em-row em-bad" x="155" y="244">No</text>
+      <text class="em-row em-bad" x="255" y="244">No</text>
+      <text class="em-row" x="355" y="244">No</text>
+      <text class="em-row" x="450" y="244" fill="var(--text-muted)">N/A</text>
+      <text class="em-row" x="565" y="244">Fallback only</text>
+    </svg>
+    <div class="diagram-caption">Diagram 13 of 21 — EAP method strength comparison: only EAP-TLS is genuinely phishing-resistant.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔒 Security</div>
+    <p>EAP-TLS eliminates password-based attacks on network access entirely. A laptop presenting an EAP-TLS machine certificate offers cryptographic proof of device identity — no password, no credential to phish, no dictionary attack surface at all. Combined with user certificate authentication (both machine <em>and</em> user must present valid certificates), 802.1X becomes as phishing-resistant as FIDO2 is for web authentication, covered in Module 05. The architectural requirement underneath this: enterprise PKI has to issue certificates to every managed device, typically via SCEP/NDES/ADCS auto-enrollment, and to every user. This is real infrastructure work — but it's achievable, and it's the same Active Directory Certificate Services + Group Policy auto-enrollment pattern that's likely already partially in place for other purposes in a mature AD environment.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: MAC Authentication Bypass — why it exists and what it risks</summary>
+    <div class="deepdive-body">
+      <p>MAB exists because a meaningful population of enterprise network devices simply cannot run an 802.1X supplicant — older IP phones, network printers, badge readers, and a long tail of IoT and OT devices that were never designed with port-based authentication in mind. MAB lets the switch authenticate these devices by MAC address against a RADIUS-backed allowlist instead of running a real EAP exchange. The risk is structural: MAC addresses are visible on the wire to anyone who can see traffic on the segment, and they're trivially spoofable with standard tooling on virtually any operating system. An enterprise that relies heavily on MAB is effectively trusting a value that offers no cryptographic guarantee at all — an attacker who learns a permitted MAC address (often by observing a legitimate device's traffic) can clone it and gain the same network access. The architectural mitigation is to treat MAB strictly as a narrow exception for devices that genuinely cannot do better, place MAB-authenticated devices on tightly scoped VLANs with minimal lateral reachability, and pair MAB with device profiling (Section 6.6) so that a device claiming to be a printer that suddenly behaves like a laptop gets flagged rather than silently trusted.</p>
+    </div>
+  </details>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Check whether 802.1X is enabled on your corporate Wi-Fi. Connect a device and check logs for the EAP exchange — what EAP method is configured? Is it EAP-TLS (certificate-based) or PEAP (password-based)? If it's PEAP, what would migrating to EAP-TLS actually require? What PKI infrastructure does that depend on, and is it already in place for any other purpose? That gap analysis is your 802.1X maturity assessment.</p>
+  </div>
+</div>
+<!-- CHUNK:6.5 -->
+<div class="module" id="s6-6" data-stack-layers="network,authz,directory">
+  <div class="module-divider">
+    <div class="module-num">6.6</div>
+    <h2>🩺 NAC Architecture: Who Gets What Network Access</h2>
+  </div>
+
+  <p>RADIUS and 802.1X answer "is this identity valid." NAC asks the question underneath that — "even if this identity is valid, is this device healthy enough to deserve network access right now." This is the policy layer that turns raw authentication into a graduated, risk-aware access decision, and it's where network security architecture and identity architecture genuinely converge.</p>
+
+  <h3>NAC policy components</h3>
+  <p>A mature NAC policy evaluates several independent signals together, not just one:</p>
+  <ul>
+    <li><strong>Identity:</strong> who is the user — sourced from RADIUS/802.1X authentication.</li>
+    <li><strong>Device type:</strong> laptop, phone, IoT sensor, printer — established through device fingerprinting.</li>
+    <li><strong>Device health:</strong> is the device MDM-enrolled, patched, running current antivirus, disk-encrypted, OS-compliant?</li>
+    <li><strong>Ownership:</strong> corporate-managed, BYOD, or guest?</li>
+    <li><strong>Location:</strong> office, remote, or partner site?</li>
+  </ul>
+
+  <h3>Enforcement outcomes — graduated, not binary</h3>
+  <p>NAC enforcement isn't a single allow/deny switch. Mature deployments support a spectrum: <strong>full access</strong> (corporate VLAN, all resources reachable), <strong>limited access</strong> (a restricted VLAN — internet-only, or scoped to specific SaaS apps), <strong>quarantine</strong> (a remediation VLAN with reachability to patch servers and nothing else), and <strong>deny</strong> (no access at all, with an alert generated for follow-up).</p>
+
+  <h3>Two architecture models: inline vs out-of-band</h3>
+  <p><strong>Inline NAC</strong> places an appliance directly in the traffic path — an older architecture pattern that creates both a bottleneck and a single point of failure. <strong>Out-of-band NAC</strong>, the modern standard, is RADIUS-based: there's no inline appliance, and enforcement happens through the same VLAN assignment mechanism RADIUS and 802.1X already use. The NAC platform's value-add is the policy intelligence behind the RADIUS decision, not a separate piece of hardware sitting in the data path.</p>
+
+  <h3>Posture assessment: agent-based vs agentless</h3>
+  <p>Device health checks happen one of two ways. <strong>Agent-based</strong> posture assessment runs lightweight software on the endpoint that reports compliance status directly — accurate, but requires deployment and maintenance. <strong>Agentless</strong> assessment relies on network-observable signals — DHCP fingerprinting, traffic profiling, device behavior patterns — to infer device type and rough health without installing anything. Agentless methods are essential for devices that can't run an agent at all (IoT, OT, guest devices) but offer less granular, less trustworthy signal than a real agent report.</p>
+
+  <h3>NAC and MDM integration</h3>
+  <p>Platforms like Cisco ISE and Aruba ClearPass don't typically reinvent posture assessment from scratch — they query existing MDM platforms (Intune, JAMF, Workspace ONE) for compliance status that's already being tracked there. This is the same integration pattern you've seen throughout this module: the network identity layer delegates to systems of record it doesn't own, rather than duplicating that data.</p>
+
+  <h3>NAC as the first Zero Trust enforcement point</h3>
+  <p>Module 14 covers Zero Trust architecture in depth, but it's worth naming the connection now: NAC at the network layer is frequently the <em>first</em> enforcement point in a Zero Trust design — the moment a device's identity and posture get evaluated, before it ever reaches an application. Where traditional perimeter security trusted anything already inside the network, Zero Trust treats network admission itself as just one more continuously-evaluated decision, not a one-time gate.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 480" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .nc-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .nc-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; fill: var(--text); }
+        .nc-check { font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+        .nc-good { fill: var(--accent-green); }
+        .nc-bad { fill: var(--accent-red); }
+        .nc-hi { fill: color-mix(in srgb, var(--accent-violet) 12%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">NAC Policy Decision Architecture</text>
+
+      <rect class="nc-box" x="240" y="45" width="220" height="38" rx="8"/>
+      <text class="nc-text" x="350" y="68" text-anchor="middle">Device connects to network</text>
+      <line x1="350" y1="83" x2="350" y2="113" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <rect class="nc-box" x="200" y="115" width="300" height="48" rx="8"/>
+      <text class="nc-text" x="350" y="135" text-anchor="middle">802.1X / RADIUS authentication</text>
+      <text class="nc-text" x="350" y="151" text-anchor="middle" fill="var(--text-muted)" font-size="10.5">Identity: Jane Smith · Device: MacBook-JSmith</text>
+      <line x1="350" y1="163" x2="350" y2="193" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <rect class="nc-hi" x="160" y="195" width="380" height="120" rx="9"/>
+      <text class="nc-text" x="350" y="216" text-anchor="middle" font-weight="700">NAC Policy Engine Evaluates</text>
+      <text class="nc-check nc-good" x="185" y="240">✓ User in AD group: FullAccess-Employees</text>
+      <text class="nc-check nc-good" x="185" y="260">✓ Device in MDM: enrolled in Intune</text>
+      <text class="nc-check nc-good" x="185" y="280">✓ OS version current · disk encrypted · AV current</text>
+      <text class="nc-check" x="185" y="300" fill="var(--text-muted)">→ all compliance checks pass</text>
+
+      <line x1="350" y1="315" x2="350" y2="345" stroke="var(--accent-violet)" stroke-width="1.5"/>
+
+      <rect class="nc-box" x="220" y="347" width="260" height="40" rx="8" stroke="var(--accent-green)"/>
+      <text class="nc-text" x="350" y="371" text-anchor="middle" fill="var(--accent-green)" font-weight="700">VLAN 100 — Corporate Full Access</text>
+      <line x1="350" y1="387" x2="350" y2="412" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <text class="nc-text" x="350" y="430" text-anchor="middle" font-size="11">RADIUS Access-Accept {VLAN: 100} → switch assigns VLAN 100</text>
+
+      <text x="350" y="460" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--text-muted)">Alternative path: OS out of date → Access-Accept {VLAN: 200 — Quarantine, patch server only}</text>
+    </svg>
+    <div class="diagram-caption">Diagram 14 of 21 — NAC combines identity, device, and posture signals into a single graduated access decision.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .mx-axis { font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: var(--text-muted); }
+        .mx-cell { font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px; font-weight: 600; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">NAC Enforcement Outcome Matrix</text>
+
+      <text class="mx-axis" x="350" y="50" text-anchor="middle">Device Posture →</text>
+      <text class="mx-axis" x="180" y="76" text-anchor="middle">Compliant</text>
+      <text class="mx-axis" x="350" y="76" text-anchor="middle">Non-compliant</text>
+      <text class="mx-axis" x="520" y="76" text-anchor="middle">Unknown</text>
+
+      <text class="mx-axis" x="40" y="150" text-anchor="middle" transform="rotate(-90 40 150)">Authenticated</text>
+      <text class="mx-axis" x="40" y="280" text-anchor="middle" transform="rotate(-90 40 280)">Failed</text>
+
+      <rect x="100" y="90" width="160" height="100" rx="8" fill="color-mix(in srgb, var(--accent-green) 18%, var(--surface))" stroke="var(--accent-green)" stroke-width="1.5"/>
+      <text class="mx-cell" x="180" y="130" text-anchor="middle" fill="var(--accent-green)">VLAN 100</text>
+      <text class="mx-cell" x="180" y="150" text-anchor="middle" fill="var(--text-muted)" font-weight="400" font-size="10.5">Full Access</text>
+
+      <rect x="270" y="90" width="160" height="100" rx="8" fill="color-mix(in srgb, var(--accent-amber) 18%, var(--surface))" stroke="var(--accent-amber)" stroke-width="1.5"/>
+      <text class="mx-cell" x="350" y="130" text-anchor="middle" fill="var(--accent-amber)">VLAN 200</text>
+      <text class="mx-cell" x="350" y="150" text-anchor="middle" fill="var(--text-muted)" font-weight="400" font-size="10.5">Quarantine</text>
+
+      <rect x="440" y="90" width="160" height="100" rx="8" fill="color-mix(in srgb, var(--accent-amber) 12%, var(--surface))" stroke="var(--accent-amber)" stroke-width="1.5"/>
+      <text class="mx-cell" x="520" y="130" text-anchor="middle" fill="var(--accent-amber)">VLAN 250</text>
+      <text class="mx-cell" x="520" y="150" text-anchor="middle" fill="var(--text-muted)" font-weight="400" font-size="10.5">Limited / Profiling</text>
+
+      <rect x="100" y="200" width="500" height="60" rx="8" fill="color-mix(in srgb, var(--accent-red) 14%, var(--surface))" stroke="var(--accent-red)" stroke-width="1.5"/>
+      <text class="mx-cell" x="350" y="226" text-anchor="middle" fill="var(--accent-red)">Deny — no VLAN assigned</text>
+      <text class="mx-cell" x="350" y="244" text-anchor="middle" fill="var(--text-muted)" font-weight="400" font-size="10.5">Alert generated regardless of posture</text>
+
+      <text x="350" y="295" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--text-muted)">Green = full · Amber = limited/quarantine · Red = deny</text>
+    </svg>
+    <div class="diagram-caption">Diagram 15 of 21 — The outcome matrix: authentication and posture combine to determine the access tier, not just pass/fail.</div>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: How agentless device profiling actually works</summary>
+    <div class="deepdive-body">
+      <p>Agentless posture and device-type identification rely on passively observable network signals rather than software running on the endpoint. DHCP fingerprinting examines the specific sequence and content of DHCP options a device requests during IP assignment — different operating systems and device classes request options in characteristic patterns, which is often enough to distinguish a Windows laptop from an iPhone from a network printer without asking the device anything directly. HTTP user-agent inspection captures browser and OS strings the first time a device makes an unencrypted web request. MAC OUI lookup maps the first three octets of a MAC address to the manufacturer that was assigned that range, narrowing device type immediately on connection, before any traffic analysis is even possible. CDP and LLDP, where supported, have devices actively announce their own identity to the switch. None of these signals is individually conclusive — OUI ranges can be spoofed, DHCP fingerprints can be forged by a sufficiently motivated attacker — which is why mature NAC platforms combine multiple signals and treat profiling confidence as probabilistic rather than binary, weighting authorization decisions accordingly rather than trusting any single fingerprint outright.</p>
+    </div>
+  </details>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Architect's Take</div>
+    <p>NAC policy design is where identity architecture meets network security architecture, and the common mistake is treating it as a binary allow/deny system. Modern NAC architecture uses graduated access: a non-compliant device doesn't get denied outright — it gets quarantined to a remediation VLAN where it can reach the patch server, the MDM enrollment portal, and nothing else. This lets the device self-remediate without a helpdesk ticket, and without leaving a security gap open in the meantime. The real architecture question is: what does your quarantine VLAN actually allow? Just patch servers? Also general internet access for updates? That single decision carries real security implications either way — design it deliberately, don't inherit it as a default from whatever the NAC vendor ships out of the box.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>If your organization has NAC deployed, find the NAC policy configuration (ISE, ClearPass, or NPS). What posture checks are performed? What VLAN does a non-compliant device land in? What can it reach from that VLAN? If no NAC is deployed, identify what controls exist to prevent an unmanaged device from connecting to the corporate network — and honestly assess how effective those controls actually are in practice.</p>
+  </div>
+</div>
+<!-- CHUNK:6.6 -->
+<div class="module" id="s6-7" data-stack-layers="network,sso,tokens">
+  <div class="module-divider">
+    <div class="module-num">6.7</div>
+    <h2>🔑 VPN Authentication Architecture</h2>
+  </div>
+
+  <p>VPN deserves its own section because it sits at a unique architectural intersection: it's the primary remote access control point for an enterprise, and unlike Wi-Fi or wired 802.1X, its authentication design varies enormously between organizations — from username-and-password with no MFA at all to fully SAML-integrated SSO. How a VPN authenticates determines exactly what a remote user can reach, which makes it one of the highest-leverage places in the network identity layer to get right.</p>
+
+  <h3>VPN authentication models, weakest to strongest</h3>
+  <ul>
+    <li><strong>Username + password:</strong> the weakest model, and still surprisingly common — no MFA, no device verification, just a shared secret an attacker can phish or stuff.</li>
+    <li><strong>Username + password + RADIUS OTP:</strong> the most common enterprise pattern — adds MFA via the RADIUS Access-Challenge mechanism from Section 6.3.</li>
+    <li><strong>Certificate-based VPN:</strong> strong device identity verification, no password to steal, but typically says nothing about which specific user is connecting unless paired with user-level certs.</li>
+    <li><strong>SAML-based VPN:</strong> modern VPN clients (Cisco AnyConnect, Palo Alto GlobalProtect) support SAML authentication through the system browser — bringing full web SSO to the VPN authentication layer.</li>
+    <li><strong>Certificate + SAML:</strong> the strongest model — device identity via certificate, user identity via SAML, both verified independently.</li>
+  </ul>
+
+  <h3>SAML SSO for VPN — closing the policy gap</h3>
+  <p>This is the architectural development worth understanding deeply. Modern VPN clients can launch the system browser and authenticate the user through it, exactly the way a web application would — meaning PingFederate becomes the identity provider for VPN authentication, not just web SSO. The user goes through PingFederate's actual authentication policy tree: the same MFA requirements, the same adaptive authentication signals, the same risk-based policies that protect every other application behind PingFederate. This is the single biggest lever an IAM architect has for closing the historically common gap between hardened web SSO and loosely-governed VPN access.</p>
+
+  <h3>Split tunneling and Always-On VPN</h3>
+  <p><strong>Split tunneling</strong> routes only corporate-destined traffic through the VPN tunnel while everything else (general internet browsing) goes direct — it exists for performance and bandwidth reasons, but it has identity and security implications worth naming: traffic that doesn't traverse the tunnel isn't subject to corporate network controls at all. <strong>Always-On VPN</strong> is the architecture for remote workers where the device maintains a persistent VPN connection, typically anchored by certificate-based machine authentication so the tunnel can establish before any user has logged in — this is what makes things like remote Group Policy delivery and centralized patching reliable for an always-remote workforce.</p>
+
+  <h3>ZTNA vs VPN — the teaser for Module 14</h3>
+  <p>Traditional VPN grants network-level access: once connected, a user typically has IP reachability to a broad swath of the internal network, with further restriction left to firewall rules. Zero Trust Network Access (ZTNA) inverts this: access is evaluated and granted per-application, with identity verification happening continuously rather than once at tunnel establishment. Module 14 covers this transition in full architectural depth — for now, the important framing is that VPN and ZTNA aren't simply "old vs new" implementations of the same idea; they represent genuinely different trust models.</p>
+
+  <h3>The MFA consistency problem, revisited</h3>
+  <p>This connects directly back to Module 05's MFA bypass discussion and Section 6.1's security callout: when VPN runs RADIUS-based MFA on one policy and PingFederate runs adaptive MFA on a separate policy, an attacker with stolen credentials has two doors to try, and they'll try the weaker one. SAML-based VPN authentication through PingFederate eliminates this by construction — there's only one policy tree, applied consistently regardless of which door the user walks through.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .vm-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .vm-h { font-family: 'Inter Tight', sans-serif; font-weight: 800; font-size: 14px; }
+        .vm-row { font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px; fill: var(--text); }
+        .vm-note { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--text-muted); }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">VPN Authentication Architecture Models</text>
+
+      <rect class="vm-box" x="20" y="45" width="200" height="320" rx="10"/>
+      <text class="vm-h" x="120" y="75" text-anchor="middle" fill="var(--text-muted)">Model 1: Traditional RADIUS</text>
+      <text class="vm-row" x="40" y="105">VPN Client</text>
+      <text class="vm-row" x="40" y="128">↓</text>
+      <text class="vm-row" x="40" y="150">VPN Concentrator</text>
+      <text class="vm-row" x="40" y="173">↓</text>
+      <text class="vm-row" x="40" y="195">RADIUS</text>
+      <text class="vm-row" x="40" y="218">↓</text>
+      <text class="vm-row" x="40" y="240">Active Directory</text>
+      <rect x="32" y="270" width="170" height="70" rx="6" fill="color-mix(in srgb, var(--accent-red) 10%, var(--surface))" stroke="var(--accent-red)" stroke-width="1"/>
+      <text class="vm-note" x="42" y="290" fill="var(--accent-red)">Weakness:</text>
+      <text class="vm-note" x="42" y="306">separate MFA policy</text>
+      <text class="vm-note" x="42" y="322">from web SSO</text>
+
+      <rect class="vm-box" x="250" y="45" width="200" height="320" rx="10" stroke="var(--accent-violet)"/>
+      <text class="vm-h" x="350" y="75" text-anchor="middle" fill="var(--accent-violet)">Model 2: SAML-Based VPN</text>
+      <text class="vm-row" x="270" y="105">VPN Client</text>
+      <text class="vm-row" x="270" y="128">↓</text>
+      <text class="vm-row" x="270" y="150">System Browser</text>
+      <text class="vm-row" x="270" y="173">↓</text>
+      <text class="vm-row" x="270" y="195">PingFederate</text>
+      <text class="vm-row" x="270" y="218">↓ SAML assertion</text>
+      <text class="vm-row" x="270" y="240">VPN Concentrator</text>
+      <rect x="262" y="270" width="170" height="70" rx="6" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)" stroke-width="1"/>
+      <text class="vm-note" x="272" y="290" fill="var(--accent-green)">Strength:</text>
+      <text class="vm-note" x="272" y="306">unified identity policy</text>
+      <text class="vm-note" x="272" y="322">across web and VPN</text>
+
+      <rect class="vm-box" x="480" y="45" width="200" height="320" rx="10" stroke="var(--accent-green)"/>
+      <text class="vm-h" x="580" y="75" text-anchor="middle" fill="var(--accent-green)">Model 3: Cert + SAML</text>
+      <text class="vm-row" x="500" y="105">Machine cert</text>
+      <text class="vm-row" x="500" y="120" fill="var(--text-muted)" font-size="10">authenticates device</text>
+      <text class="vm-row" x="500" y="150">+</text>
+      <text class="vm-row" x="500" y="180">SAML (browser +</text>
+      <text class="vm-row" x="500" y="195">PingFederate)</text>
+      <text class="vm-row" x="500" y="210" fill="var(--text-muted)" font-size="10">authenticates user</text>
+      <rect x="492" y="270" width="170" height="70" rx="6" fill="color-mix(in srgb, var(--accent-green) 14%, var(--surface))" stroke="var(--accent-green)" stroke-width="1"/>
+      <text class="vm-note" x="502" y="290" fill="var(--accent-green)">Strongest:</text>
+      <text class="vm-note" x="502" y="306">both device AND user</text>
+      <text class="vm-note" x="502" y="322">identity verified</text>
+    </svg>
+    <div class="diagram-caption">Diagram 16 of 21 — Three VPN authentication models, from weakest policy isolation to strongest dual verification.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 540" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .sv-line { stroke: var(--border); stroke-width: 1.5; }
+        .sv-actor { font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 11.5px; fill: var(--text); }
+        .sv-step { font-family: 'IBM Plex Sans', sans-serif; font-size: 10.8px; fill: var(--text-muted); }
+        .sv-num { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--accent-violet); font-weight: 600; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">SAML VPN Authentication Flow — AnyConnect + PingFederate</text>
+
+      <text class="sv-actor" x="40" y="50">User</text>
+      <text class="sv-actor" x="200" y="50">AnyConnect</text>
+      <text class="sv-actor" x="360" y="50">Browser</text>
+      <text class="sv-actor" x="500" y="50">VPN (ASA)</text>
+      <text class="sv-actor" x="630" y="50">PingFederate</text>
+      <line class="sv-line" x1="40" y1="58" x2="40" y2="500"/>
+      <line class="sv-line" x1="200" y1="58" x2="200" y2="500"/>
+      <line class="sv-line" x1="360" y1="58" x2="360" y2="500"/>
+      <line class="sv-line" x1="500" y1="58" x2="500" y2="500"/>
+      <line class="sv-line" x1="630" y1="58" x2="630" y2="500"/>
+
+      <text class="sv-num" x="10" y="80">1</text>
+      <text class="sv-step" x="50" y="80">Connect VPN in AnyConnect client</text>
+      <line x1="40" y1="85" x2="200" y2="85" stroke="var(--text-muted)" stroke-width="1.1"/>
+
+      <text class="sv-num" x="10" y="110">2</text>
+      <text class="sv-step" x="210" y="110">Open system browser to VPN auth URL</text>
+      <line x1="200" y1="115" x2="360" y2="115" stroke="var(--text-muted)" stroke-width="1.1"/>
+
+      <text class="sv-num" x="10" y="140">3</text>
+      <text class="sv-step" x="210" y="140">GET /+webvpn+/saml/sp/acs</text>
+      <line x1="360" y1="145" x2="500" y2="145" stroke="var(--text-muted)" stroke-width="1.1"/>
+
+      <text class="sv-num" x="10" y="170">4</text>
+      <text class="sv-step" x="370" y="170">Redirect to PingFederate IdP</text>
+      <line x1="500" y1="175" x2="630" y2="175" stroke="var(--text-muted)" stroke-width="1.1"/>
+
+      <text class="sv-num" x="10" y="200">5</text>
+      <text class="sv-step" x="370" y="200">Browser authenticates with PingFederate</text>
+      <line x1="360" y1="205" x2="630" y2="205" stroke="var(--text-muted)" stroke-width="1.1"/>
+
+      <text class="sv-num" x="10" y="235">6</text>
+      <text class="sv-step" x="450" y="230">HTML Form → LDAP bind → PingID MFA</text>
+      <text class="sv-step" x="450" y="246" fill="var(--accent-violet)" font-weight="600">(same MFA policy as web SSO)</text>
+
+      <text class="sv-num" x="10" y="280">7</text>
+      <text class="sv-step" x="210" y="280">SAML assertion (POST) → Browser</text>
+      <line x1="630" y1="285" x2="360" y2="285" stroke="var(--text-muted)" stroke-width="1.1"/>
+
+      <text class="sv-num" x="10" y="312">8</text>
+      <text class="sv-step" x="370" y="312">POST /+webvpn+/saml/sp/acs (SAML assertion)</text>
+      <line x1="360" y1="317" x2="500" y2="317" stroke="var(--text-muted)" stroke-width="1.1"/>
+
+      <text class="sv-num" x="10" y="344">9</text>
+      <text class="sv-step" x="510" y="344">Validate assertion, extract groups</text>
+
+      <text class="sv-num" x="10" y="376">10</text>
+      <text class="sv-step" x="510" y="376">(optional) RADIUS authorization-only check</text>
+
+      <text class="sv-num" x="10" y="408">11</text>
+      <text class="sv-step" x="510" y="408">Establish tunnel with authorization policy</text>
+
+      <rect x="20" y="430" width="660" height="56" rx="8" fill="none" stroke="var(--border)"/>
+      <text class="sv-step" x="36" y="452" font-weight="600" fill="var(--text)">PingID MFA enforced at step 6 — exactly the same policy tree</text>
+      <text class="sv-step" x="36" y="470">a web SSO login would traverse. No separate VPN MFA policy exists.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 17 of 21 — SAML-based VPN authentication routes through PingFederate's full policy tree, MFA included.</div>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Architect's Take</div>
+    <p>SAML-based VPN authentication is the architectural bridge that closes the MFA gap between web SSO and VPN access. When a VPN client authenticates via SAML through PingFederate, it goes through exactly the same authentication policy tree as a web SSO login — same MFA requirements, same adaptive auth signals, same risk-based policies. An attacker who steals credentials cannot bypass MFA by connecting to VPN instead of the web app, because both paths converge on the same policy engine. This is the architecture, not a configuration nicety. If your VPN team is still running username+password+RADIUS-OTP with a separate, weaker MFA policy than web SSO, pushing them toward SAML authentication is one of the highest-leverage security improvements available in the entire network identity layer.</p>
+  </div>
+
+  <div class="usecase">
+    <div class="usecase-tag">Use Case</div>
+    <p>A remote employee on a personal MacBook needs VPN access to internal resources. Design the authentication architecture that provides device identity verification (is this a trusted device?), user identity verification with MFA, and access policy enforcement (which internal resources can they actually reach?). On a corporate-managed device, this is straightforward: machine certificate plus SAML through PingFederate, full Always-On VPN. On BYOD, device identity verification becomes much harder — you generally can't issue a trusted machine certificate to a device you don't manage, so the architecture has to lean more heavily on user identity (SAML + strong MFA) and compensate with tighter authorization policy: limited resource reachability, no Always-On posture requirement, and likely a ZTNA-style per-application model rather than broad network-level VPN access.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Find your VPN concentrator's authentication configuration. What method does it use — RADIUS + password, RADIUS + OTP, SAML, or certificate? If RADIUS: does the RADIUS server enforce the same MFA policy as PingFederate? If SAML: which IdP, and is the MFA policy identical to web SSO? The answer tells you directly whether your VPN and web authentication are policy-unified or siloed — and if siloed, exactly where the gap is.</p>
+  </div>
+</div>
+<!-- CHUNK:6.7 -->
+<div class="module" id="s6-8" data-stack-layers="network,sso,tokens">
+  <div class="module-divider">
+    <div class="module-num">6.8</div>
+    <h2>🔗 PingID + RADIUS Integration Architecture</h2>
+  </div>
+
+  <p>Module 05 teased this integration when covering PingID's MFA architecture; here's the full picture. When SAML-based VPN (Section 6.7) isn't available — legacy VPN concentrators, network devices, OT/ICS environments — RADIUS is still the access path, and PingID can still deliver MFA into it. This section covers exactly how a cloud push-MFA service plugs into a protocol that predates it by two decades.</p>
+
+  <h3>The integration pattern</h3>
+  <p>PingID acts as the MFA provider for RADIUS-authenticated network access through a component generally called the PingID RADIUS Bridge (or, depending on deployment, a PingFederate RADIUS Server adapter). Architecturally, it sits exactly where a standard RADIUS server would sit, but with an extra step woven in:</p>
+  <ol>
+    <li>Receives the RADIUS Access-Request from the NAS, same as any RADIUS server.</li>
+    <li>Validates primary credentials via an LDAP bind against AD/PingDirectory.</li>
+    <li>If primary credentials succeed, triggers a PingID MFA challenge through PingOne.</li>
+    <li>Returns Access-Accept or Access-Reject to the NAS based on the final MFA result.</li>
+  </ol>
+
+  <h3>How push-based MFA fits inside RADIUS</h3>
+  <p>The mechanism that makes this work is the same Access-Challenge pattern from Section 6.3 — except instead of prompting the user to type an OTP, the RADIUS Bridge holds the session open while PingOne sends a push notification to the user's phone and waits for approval. The NAS never needs to know anything about PingID at all; from its perspective, it sent an Access-Request and is waiting on a response, exactly like talking to any other RADIUS server. The push notification experience is invisible to the protocol — it's purely something the Bridge orchestrates behind the scenes during the wait.</p>
+
+  <h3>Deployment topology and dependencies</h3>
+  <p>The PingID RADIUS Bridge typically deploys close to the existing RADIUS infrastructure — often directly alongside or replacing a Windows NPS instance — and depends on connectivity to both the internal directory (for primary credential validation) and PingOne Cloud (for the MFA challenge itself). For VPN deployments specifically, the configuration change is concentrated entirely on the VPN side: point the VPN concentrator's RADIUS client configuration at the Bridge instead of at NPS directly, and the rest of the VPN configuration is unchanged.</p>
+
+  <h3>RADIUS-based MFA for SSH</h3>
+  <p>The same Bridge pattern extends to protecting SSH access to servers — a preview of the Linux/Unix authentication territory Module 07 covers in depth. A PAM module on the Linux host can be configured to authenticate against RADIUS instead of (or in addition to) local credentials, which means the same PingID push-MFA experience that protects VPN can protect direct SSH access to a server, using the identical underlying mechanism.</p>
+
+  <h3>The honest limitation</h3>
+  <p>RADIUS-based MFA, even with PingID behind it, is still fundamentally OTP/push-based — not phishing-resistant in the way EAP-TLS certificate authentication or FIDO2 are. A sufficiently motivated, real-time phishing or push-fatigue attack can still defeat it, the same risk Module 05 covered for web-based push MFA. SAML+PingFederate, when it's architecturally available, is the stronger option precisely because it can layer in adaptive risk signals and isn't constrained by what RADIUS as a protocol can express. RADIUS+PingID earns its place specifically where SAML isn't available: legacy VPN that can't do SAML, network devices, and OT/ICS environments where modern web-auth flows simply aren't supported.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 520" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .pb-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .pb-box-hi { fill: color-mix(in srgb, var(--accent-violet) 12%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+        .pb-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; fill: var(--text); }
+        .pb-label { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--text-muted); }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">PingID RADIUS Integration Architecture</text>
+
+      <rect class="pb-box" x="240" y="44" width="220" height="42" rx="8"/>
+      <text class="pb-text" x="350" y="69" text-anchor="middle">VPN Concentrator / NAS</text>
+      <line x1="350" y1="86" x2="350" y2="116" stroke="var(--text-muted)" stroke-width="1.4"/>
+      <text class="pb-label" x="365" y="106">Access-Request (user+pw)</text>
+
+      <rect class="pb-box-hi" x="220" y="118" width="260" height="48" rx="8"/>
+      <text class="pb-text" x="350" y="138" text-anchor="middle" font-weight="600">PingID RADIUS Bridge</text>
+      <text class="pb-text" x="350" y="154" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">PingFederate RADIUS adapter</text>
+
+      <line x1="350" y1="166" x2="350" y2="196" stroke="var(--text-muted)" stroke-width="1.4"/>
+      <text class="pb-label" x="365" y="186">LDAP bind</text>
+
+      <rect class="pb-box" x="240" y="198" width="220" height="40" rx="8"/>
+      <text class="pb-text" x="350" y="222" text-anchor="middle">AD / PingDirectory</text>
+      <text class="pb-label" x="350" y="252" text-anchor="middle">Primary auth: success</text>
+
+      <line x1="350" y1="260" x2="350" y2="290" stroke="var(--accent-violet)" stroke-width="1.4"/>
+      <text class="pb-label" x="365" y="280" fill="var(--accent-violet)">PingID MFA request (REST)</text>
+
+      <rect class="pb-box-hi" x="240" y="292" width="220" height="42" rx="8"/>
+      <text class="pb-text" x="350" y="317" text-anchor="middle">PingOne Cloud / PingID</text>
+
+      <line x1="350" y1="334" x2="350" y2="364" stroke="var(--accent-violet)" stroke-width="1.4"/>
+      <text class="pb-label" x="365" y="354" fill="var(--accent-violet)">Push notification</text>
+
+      <rect class="pb-box" x="220" y="366" width="260" height="42" rx="8"/>
+      <text class="pb-text" x="350" y="391" text-anchor="middle">User's Mobile Device — PingID App</text>
+
+      <line x1="350" y1="408" x2="350" y2="438" stroke="var(--text-muted)" stroke-width="1.4"/>
+      <text class="pb-label" x="365" y="428">User approves push</text>
+
+      <line x1="350" y1="438" x2="220" y2="138" stroke="var(--accent-violet)" stroke-width="1.2" stroke-dasharray="3,3"/>
+      <text class="pb-label" x="40" y="290" fill="var(--accent-violet)">approval routes back</text>
+      <text class="pb-label" x="40" y="304" fill="var(--accent-violet)">to Bridge via PingOne</text>
+
+      <rect class="pb-box" x="240" y="440" width="220" height="40" rx="8" stroke="var(--accent-green)"/>
+      <text class="pb-text" x="350" y="464" text-anchor="middle" fill="var(--accent-green)" font-weight="600">Access-Accept → VPN grants access</text>
+
+      <text x="350" y="500" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--text-muted)">Timeout if push unanswered → Access-Reject (fail-closed)</text>
+    </svg>
+    <div class="diagram-caption">Diagram 18 of 21 — PingID push-MFA wraps inside RADIUS Access-Challenge; the NAS never sees PingID directly.</div>
+  </div>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 Concept</div>
+    <p>The RADIUS-to-PingID integration works because RADIUS Access-Challenge provides a stateful, multi-step authentication mechanism within a protocol that's otherwise stateless per-exchange. The NAS doesn't need to know about PingID at all — it just sees a RADIUS challenge-and-response cycle, identical in shape to the OTP challenge flow from Section 6.3. PingID's push notification happens entirely outside the RADIUS protocol's awareness; the Bridge holds the RADIUS session open while waiting for the push approval, then responds to the NAS once it has an answer. This is architecturally elegant precisely because nothing about the NAS configuration changes — the user experience gains a push notification, and MFA gets enforced at the network layer, without touching the decades-old protocol underneath.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>If PingID RADIUS integration is deployed: find the RADIUS Bridge configuration. What is the timeout for push notification approval? What happens if the user doesn't respond — does it fail-open or fail-closed? If PingID RADIUS is not deployed: find what MFA protection, if any, exists on VPN and SSH access. Is it the same policy as web SSO? If not, that gap is your finding — and it's exactly the gap this section exists to help you close.</p>
+  </div>
+</div>
+<!-- CHUNK:6.8 -->
+<div class="module" id="s6-9" data-stack-layers="network,authz,directory">
+  <div class="module-divider">
+    <div class="module-num">6.9</div>
+    <h2>🧭 Cisco ISE: Enterprise NAC Platform Architecture</h2>
+  </div>
+
+  <p>Everything covered in Sections 6.2 through 6.6 — RADIUS, TACACS+, 802.1X, NAC policy — is frequently consolidated into a single platform in real enterprise deployments. Cisco ISE (Identity Services Engine) is the dominant example, and understanding its component architecture gives you a concrete reference implementation for every concept covered so far in this module.</p>
+
+  <h3>What ISE actually is</h3>
+  <p>ISE combines a RADIUS server, a TACACS+ server, device profiling, posture assessment, a guest access portal, and MDM integration into a single platform with a unified policy engine. Rather than standing up separate point solutions for each of these functions — a RADIUS server here, a TACACS+ server there, a separate NAC appliance — ISE centralizes network identity policy across the entire enterprise.</p>
+
+  <h3>Architectural components</h3>
+  <ul>
+    <li><strong>Policy Administration Node (PAN):</strong> the central configuration point — where policy sets, authorization rules, and global settings are defined.</li>
+    <li><strong>Policy Service Node (PSN):</strong> the workhorse — handles actual RADIUS and TACACS+ requests from NAS devices. Enterprises typically deploy multiple PSNs for capacity and geographic distribution.</li>
+    <li><strong>Monitoring Node (MNT):</strong> centralizes logging and reporting across all PSNs, the source for the Live Logs trace used in the lab below.</li>
+    <li><strong>pxGrid:</strong> a publish-subscribe API that lets ISE share identity and posture context with other security platforms — covered in the deep dive below.</li>
+  </ul>
+
+  <h3>ISE and Active Directory</h3>
+  <p>ISE connects to AD for user authentication and group membership lookup, the same delegation pattern every other system in this module relies on. ISE maintains some configuration and policy data in its own local store, but it deliberately does not duplicate the identity data itself — AD remains the system of record, exactly as it does for PingFederate.</p>
+
+  <h3>Policy sets: how ISE organizes decisions</h3>
+  <p>ISE structures its decision-making into <strong>policy sets</strong>, each containing an <strong>authentication policy</strong> (who is this, and how should their credentials be validated — EAP-TLS via certificate profile, or PEAP via AD profile) and an <strong>authorization policy</strong> (given who they are, what access do they get). Authorization policies are ordered rule sets, evaluated top to bottom, where the first matching rule determines the outcome — an <strong>authorization profile</strong> that specifies exactly which RADIUS attributes to return (VLAN, ACL, session timeout).</p>
+
+  <h3>Device profiling</h3>
+  <p>ISE fingerprints connecting devices using multiple passive signals — DHCP options, HTTP user-agent strings, MAC OUI (organizationally unique identifier) ranges, CDP/LLDP discovery protocol data — to classify device type without requiring an agent. This profiling data feeds directly into authorization policy: a device profiled as "Cisco IP Phone" can be routed to a voice VLAN automatically, while a device profiled as "Unknown" can be routed to a restricted segment pending manual review.</p>
+
+  <h3>Posture assessment</h3>
+  <p>ISE's posture service evaluates device compliance using either a lightweight posture agent or agentless methods, checking the same kind of signals covered in Section 6.6 — patch level, AV status, disk encryption — and feeding the result directly into the authorization policy evaluation.</p>
+
+  <h3>Guest access</h3>
+  <p>ISE's guest portal architecture supports self-registration, sponsor-based approval (an employee vouches for a visitor), or SMS-based verification, each landing the guest device on an appropriately restricted VLAN with time-bound access.</p>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .ie-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .ie-box-hi { fill: color-mix(in srgb, var(--accent-violet) 12%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2; }
+        .ie-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px; fill: var(--text); }
+        .ie-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; fill: var(--text-muted); }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">Cisco ISE Architecture — Component Overview</text>
+
+      <rect class="ie-box" x="30" y="50" width="140" height="40" rx="8"/>
+      <text class="ie-text" x="100" y="74" text-anchor="middle">Admin Workstation</text>
+
+      <rect class="ie-box-hi" x="280" y="50" width="140" height="40" rx="8"/>
+      <text class="ie-text" x="350" y="74" text-anchor="middle" font-weight="600">PAN</text>
+      <line x1="170" y1="70" x2="280" y2="70" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <rect class="ie-box" x="530" y="50" width="140" height="40" rx="8"/>
+      <text class="ie-text" x="600" y="74" text-anchor="middle">Monitoring console</text>
+
+      <rect class="ie-box-hi" x="220" y="130" width="120" height="44" rx="8"/>
+      <text class="ie-text" x="280" y="156" text-anchor="middle">PSN-1</text>
+      <rect class="ie-box-hi" x="360" y="130" width="120" height="44" rx="8"/>
+      <text class="ie-text" x="420" y="156" text-anchor="middle">PSN-2</text>
+      <line x1="350" y1="90" x2="280" y2="130" stroke="var(--text-muted)" stroke-width="1.2"/>
+      <line x1="350" y1="90" x2="420" y2="130" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <rect class="ie-box" x="530" y="130" width="140" height="44" rx="8"/>
+      <text class="ie-text" x="600" y="156" text-anchor="middle">MNT</text>
+      <line x1="600" y1="90" x2="600" y2="130" stroke="var(--text-muted)" stroke-width="1.2"/>
+      <line x1="280" y1="174" x2="600" y2="148" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="2,2"/>
+      <line x1="420" y1="174" x2="600" y2="160" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="2,2"/>
+
+      <rect class="ie-box" x="160" y="220" width="140" height="40" rx="8"/>
+      <text class="ie-text" x="230" y="244" text-anchor="middle">Active Directory</text>
+      <line x1="280" y1="174" x2="230" y2="220" stroke="var(--text-muted)" stroke-width="1.2"/>
+      <line x1="420" y1="174" x2="230" y2="220" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <rect class="ie-box" x="400" y="220" width="140" height="40" rx="8"/>
+      <text class="ie-text" x="470" y="244" text-anchor="middle">MDM: Intune/JAMF</text>
+      <line x1="280" y1="174" x2="470" y2="220" stroke="var(--text-muted)" stroke-width="1.2"/>
+      <line x1="420" y1="174" x2="470" y2="220" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+      <rect class="ie-box" x="80" y="300" width="200" height="40" rx="8" stroke="var(--accent-violet)"/>
+      <text class="ie-text" x="180" y="324" text-anchor="middle" fill="var(--accent-violet)">pxGrid → Firewall (FMC)</text>
+
+      <rect class="ie-box" x="380" y="300" width="200" height="40" rx="8" stroke="var(--accent-violet)"/>
+      <text class="ie-text" x="480" y="324" text-anchor="middle" fill="var(--accent-violet)">pxGrid → SIEM (Splunk)</text>
+      <line x1="280" y1="174" x2="180" y2="300" stroke="var(--accent-violet)" stroke-width="1.2" stroke-dasharray="3,3"/>
+      <line x1="420" y1="174" x2="480" y2="300" stroke="var(--accent-violet)" stroke-width="1.2" stroke-dasharray="3,3"/>
+
+      <text x="350" y="380" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--text-muted)">ISE centralizes network identity policy across every NAS device in the enterprise.</text>
+    </svg>
+    <div class="diagram-caption">Diagram 19 of 21 — ISE's PAN/PSN/MNT architecture, with pxGrid distributing identity context to other security platforms.</div>
+  </div>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .pe-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .pe-text { font-family: 'IBM Plex Sans', sans-serif; font-size: 11.5px; fill: var(--text); }
+        .pe-mono { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+      </style>
+      <text x="350" y="24" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="16" fill="var(--text)">ISE Policy Evaluation Flow</text>
+
+      <rect class="pe-box" x="240" y="44" width="220" height="36" rx="7"/>
+      <text class="pe-text" x="350" y="66" text-anchor="middle">Incoming RADIUS request</text>
+      <line x1="350" y1="80" x2="350" y2="108" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <rect class="pe-box" x="170" y="110" width="360" height="64" rx="8"/>
+      <text class="pe-text" x="350" y="130" text-anchor="middle" font-weight="600">Authentication Policy</text>
+      <text class="pe-mono" x="190" y="150" fill="var(--text-muted)">IF EAP-TLS → Certificate Auth Profile</text>
+      <text class="pe-mono" x="190" y="166" fill="var(--text-muted)">IF PEAP → AD Auth Profile</text>
+      <line x1="350" y1="174" x2="350" y2="200" stroke="var(--text-muted)" stroke-width="1.3"/>
+
+      <rect class="pe-box" x="110" y="202" width="480" height="156" rx="8" stroke="var(--accent-violet)"/>
+      <text class="pe-text" x="350" y="222" text-anchor="middle" font-weight="700" fill="var(--accent-violet)">Authorization Policy (top-to-bottom)</text>
+      <text class="pe-mono" x="130" y="244">Rule 1: AD-Domain-Computers + EAP-TLS + Windows-PC</text>
+      <text class="pe-mono" x="148" y="260" fill="var(--text-muted)">→ Profile: CorporateAccess</text>
+      <text class="pe-mono" x="130" y="282">Rule 2: AD-Employees + posture=compliant</text>
+      <text class="pe-mono" x="148" y="298" fill="var(--text-muted)">→ Profile: FullAccess</text>
+      <text class="pe-mono" x="130" y="320">Rule 3: posture=non-compliant</text>
+      <text class="pe-mono" x="148" y="336" fill="var(--text-muted)">→ Profile: Quarantine</text>
+      <text class="pe-mono" x="130" y="352" fill="var(--accent-red)">Rule 4: DEFAULT → Profile: DenyAccess</text>
+
+      <line x1="350" y1="358" x2="350" y2="384" stroke="var(--text-muted)" stroke-width="1.3"/>
+      <rect class="pe-box" x="180" y="386" width="340" height="30" rx="7" stroke="var(--accent-green)"/>
+      <text class="pe-text" x="350" y="406" text-anchor="middle" fill="var(--accent-green)">RADIUS Access-Accept: VLAN + ACL attributes</text>
+    </svg>
+    <div class="diagram-caption">Diagram 20 of 21 — ISE policy sets evaluate authentication, then authorization, top-to-bottom, first match wins.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔒 Security</div>
+    <p>ISE itself becomes one of the highest-value targets in the enterprise once deployed, because it holds the keys to network admission for every device on every segment. Treat the PAN and PSNs with the same rigor you'd apply to a domain controller: no default credentials, administrative access itself governed by TACACS+ or a comparable control, the management interface reachable only from a dedicated, restricted management network, and ISE software kept current against published CVEs. A compromised ISE deployment doesn't just expose one system — it potentially gives an attacker the ability to grant themselves full VLAN access from any port in the building.</p>
+  </div>
+
+  <div class="analogy green">
+    <div class="analogy-title">Analogy</div>
+    <p>Cisco ISE policy evaluation is exactly like PingFederate's authentication policy tree from Module 04. Both systems evaluate a request against an ordered set of rules — each rule has conditions (user attributes, device type, posture state) and an outcome (an access profile, a VLAN, or a step-up requirement). Both support ordered evaluation where the first matching rule wins. Both delegate to external systems — AD for user groups, MDM for posture, PingID for MFA — rather than owning that data themselves. The mental model you already built around PingFederate's policy tree transfers directly to ISE's authorization policy sets. Different domain, same policy engine architecture.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: ISE pxGrid and context-aware security</summary>
+    <div class="deepdive-body">
+      <p>pxGrid is a publish-subscribe API that lets ISE share live identity and posture context with other security platforms — next-generation firewalls, SIEM tools, threat detection systems — without those systems needing their own integration into RADIUS or AD. When a user authenticates to the network via 802.1X, ISE knows their username, their device, and their posture state; pxGrid publishes that context to subscribers in near real time. A next-generation firewall subscribing to pxGrid can then enforce identity-aware policy — "block this specific user from reaching this segment" — without the user ever having authenticated directly to the firewall itself. A SIEM subscribing to the same feed can correlate network events with actual user identity rather than just IP addresses, which matters enormously during incident investigation, since IP-to-user mapping in DHCP environments changes constantly. The broader capability this enables is context-aware security: instead of every security tool independently trying to figure out "who is 10.4.12.88 right now," ISE becomes the authoritative source that answers that question for the entire security stack, the same way a directory is the authoritative source for "who is jsmith" across the IAM stack.</p>
+    </div>
+  </details>
+
+  <div class="usecase">
+    <div class="usecase-tag">Use Case</div>
+    <p>A contractor plugs their personal laptop into a conference room ethernet port. With Cisco ISE + 802.1X + NAC deployed: the port is blocked by default (802.1X), the device fails authentication (no valid credential or certificate), ISE's device profiling identifies it as an unmanaged, non-domain-joined Windows laptop, and the authorization policy routes it to a Guest/Quarantine VLAN with no reachability to internal resources — or, if guest self-registration is configured, to a captive portal requiring sponsor approval. Without ISE deployed: in many real enterprises, the honest answer is that the port has no 802.1X configuration at all, DHCP hands out a corporate IP address immediately, and the contractor's laptop lands on the same broadcast domain as every other corporate device — full network reachability granted by the simple act of finding an open ethernet jack.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab</div>
+    <p>If Cisco ISE is deployed in your environment, access Operations → RADIUS Live Logs. Find a recent successful authentication. Identify: which Policy Set matched, which Authentication Policy matched, which Authorization Policy rule matched, which Authorization Profile was returned, and what VLAN was assigned. That trace is the complete ISE decision audit for a single authentication event — and it's the exact troubleshooting workflow you'd use when a real device unexpectedly lands in the wrong VLAN.</p>
+  </div>
+</div>
+<!-- CHUNK:6.9 -->
+<hr class="divider">
+
+<div class="module" id="cheatsheet" data-stack-layers="network,directory,authz,pam,sso,tokens">
+  <div class="module-divider">
+    <h2>📋 Architecture Cheat Sheet</h2>
+  </div>
+  <div class="cheat-grid">
+    <div class="cheat-item"><strong>RADIUS</strong> = network AuthN/AuthZ for user access (VPN, Wi-Fi, 802.1X) — UDP, shared secret, attributes carry both identity and policy.</div>
+    <div class="cheat-item"><strong>TACACS+</strong> = infrastructure device management (routers, switches) — TCP, full encryption, command-level authorization.</div>
+    <div class="cheat-item"><strong>802.1X</strong> = port-based access control before IP assignment. EAP-TLS (certificate) is the gold standard; PEAP is common but password-based.</div>
+    <div class="cheat-item"><strong>NAC</strong> = identity + device health + access policy combined — graduated outcomes: full / limited / quarantine / deny.</div>
+    <div class="cheat-item"><strong>SAML VPN</strong> = bring web SSO MFA policies to VPN access — closes the historically common MFA bypass gap.</div>
+    <div class="cheat-item"><strong>PingID RADIUS Bridge</strong> = network-layer push MFA using the RADIUS Access-Challenge mechanism.</div>
+    <div class="cheat-item"><strong>Cisco ISE</strong> = enterprise NAC platform: RADIUS + TACACS+ + device profiling + posture + pxGrid in one system.</div>
+    <div class="cheat-item"><strong>Fail-closed for RADIUS</strong> is mandatory — HA must be strong enough that an outage never means open access.</div>
+  </div>
+</div>
+
+<div class="module" id="mindmap" data-stack-layers="network,directory,authz,pam,sso,tokens">
+  <div class="module-divider">
+    <h2>🧠 Module 06 — Concept Map</h2>
+  </div>
+  <div class="diagram-box">
+    <svg viewBox="0 0 700 520" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .mm-center { fill: color-mix(in srgb, var(--accent-violet) 18%, var(--surface)); stroke: var(--accent-violet); stroke-width: 2.5; }
+        .mm-node { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+        .mm-text { font-family: 'Inter Tight', sans-serif; font-weight: 700; font-size: 12px; fill: var(--text); }
+        .mm-sub { font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; fill: var(--text-muted); }
+        .mm-line { stroke: var(--accent-violet); stroke-width: 1.3; opacity: 0.6; }
+      </style>
+      <ellipse class="mm-center" cx="350" cy="260" rx="115" ry="44"/>
+      <text x="350" y="255" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="14" fill="var(--accent-violet)">Network &amp; Infrastructure</text>
+      <text x="350" y="273" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="14" fill="var(--accent-violet)">Identity</text>
+
+      <line class="mm-line" x1="280" y1="225" x2="130" y2="80"/>
+      <rect class="mm-node" x="30" y="50" width="200" height="56" rx="9"/>
+      <text class="mm-text" x="130" y="72" text-anchor="middle">RADIUS</text>
+      <text class="mm-sub" x="130" y="90" text-anchor="middle">Packets · Attributes · Proxy · HA</text>
+
+      <line class="mm-line" x1="420" y1="225" x2="570" y2="80"/>
+      <rect class="mm-node" x="470" y="50" width="200" height="56" rx="9"/>
+      <text class="mm-text" x="570" y="72" text-anchor="middle">TACACS+</text>
+      <text class="mm-sub" x="570" y="90" text-anchor="middle">AAA separation · Command authz</text>
+
+      <line class="mm-line" x1="250" y1="245" x2="80" y2="220"/>
+      <rect class="mm-node" x="10" y="192" width="200" height="56" rx="9"/>
+      <text class="mm-text" x="110" y="214" text-anchor="middle">802.1X</text>
+      <text class="mm-sub" x="110" y="232" text-anchor="middle">EAP methods · 3 roles · VLAN</text>
+
+      <line class="mm-line" x1="450" y1="245" x2="620" y2="220"/>
+      <rect class="mm-node" x="490" y="192" width="200" height="56" rx="9"/>
+      <text class="mm-text" x="590" y="214" text-anchor="middle">NAC</text>
+      <text class="mm-sub" x="590" y="232" text-anchor="middle">Posture · Profiling · Outcomes</text>
+
+      <line class="mm-line" x1="250" y1="280" x2="80" y2="330"/>
+      <rect class="mm-node" x="10" y="302" width="200" height="56" rx="9"/>
+      <text class="mm-text" x="110" y="324" text-anchor="middle">VPN Auth</text>
+      <text class="mm-sub" x="110" y="342" text-anchor="middle">RADIUS · SAML · Cert · ZTNA</text>
+
+      <line class="mm-line" x1="450" y1="280" x2="620" y2="330"/>
+      <rect class="mm-node" x="490" y="302" width="200" height="56" rx="9"/>
+      <text class="mm-text" x="590" y="324" text-anchor="middle">PingID + RADIUS</text>
+      <text class="mm-sub" x="590" y="342" text-anchor="middle">Bridge · Challenge flow</text>
+
+      <line class="mm-line" x1="350" y1="304" x2="350" y2="430"/>
+      <rect class="mm-node" x="250" y="432" width="200" height="56" rx="9"/>
+      <text class="mm-text" x="350" y="454" text-anchor="middle">Cisco ISE</text>
+      <text class="mm-sub" x="350" y="472" text-anchor="middle">PAN/PSN/MNT · Policy sets · pxGrid</text>
+    </svg>
+    <div class="diagram-caption">Diagram 21 of 21 — Module 06 concept map: every branch ultimately delegates back to the directory layer from Module 02.</div>
+  </div>
+</div>
+
+<div class="module" id="knowledgecheck" data-stack-layers="network,authz">
+  <div class="module-divider">
+    <h2>✅ Knowledge Check</h2>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Q1</div>
+    <p>Your security team discovers that VPN authentication uses RADIUS with PAP and no MFA, while web SSO uses PingFederate with PingID adaptive MFA. An attacker with stolen credentials can authenticate to VPN without MFA. Design the remediation architecture — what are the options, and what are their trade-offs?</p>
+  </div>
+  <div class="qa-block">
+    <div class="qa-num">Q2</div>
+    <p>A network engineer explains that they use RADIUS for both VPN user access AND for managing network switches. What architectural concern does this raise, and what is the correct protocol for each use case?</p>
+  </div>
+  <div class="qa-block">
+    <div class="qa-num">Q3</div>
+    <p>Explain why EAP-TLS is phishing-resistant for network access while PEAP/MSCHAPv2 is not, using the same cryptographic reasoning applied to FIDO2 in Module 05.</p>
+  </div>
+  <div class="qa-block">
+    <div class="qa-num">Q4</div>
+    <p>A NAC deployment is configured to let devices that fail posture assessment reach the quarantine VLAN, and the quarantine VLAN allows internet access for OS updates. What security risk does this create, and how would you redesign the quarantine VLAN policy?</p>
+  </div>
+  <div class="qa-block">
+    <div class="qa-num">Q5</div>
+    <p>Cisco ISE pxGrid shares live session identity context with a next-generation firewall. When a user authenticates to the network via 802.1X, the firewall knows their username without the user ever logging into the firewall directly. Explain the architecture of how this works, and what security capability it enables.</p>
+  </div>
+</div>
+
+<div class="module" id="architectreview" data-stack-layers="network,authz,pam">
+  <div class="module-divider">
+    <h2>🏗️ Architect Review Questions</h2>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">ARQ1</div>
+    <p>Design the complete network authentication architecture for an enterprise with 30,000 users across 50 offices, a large remote workforce, and significant IoT/OT infrastructure. Specify protocols, products, HA topology, MFA policy, and how the network identity layer integrates with the enterprise IAM stack.</p>
+  </div>
+  <div class="qa-block">
+    <div class="qa-num">ARQ2</div>
+    <p>Your organization is evaluating replacing traditional VPN with ZTNA. Walk through the architectural differences between the two approaches, what identity capabilities ZTNA requires that VPN doesn't, and what the migration architecture looks like.</p>
+  </div>
+  <div class="qa-block">
+    <div class="qa-num">ARQ3</div>
+    <p>A penetration tester finds they can connect a device to a conference room port and receive a corporate IP address with no authentication. Walk through the 802.1X + NAC architecture that prevents this, and the migration path from the current unprotected state.</p>
+  </div>
+</div>
+
+<div class="module" id="scenario" data-stack-layers="network,authz,pam,sso">
+  <div class="module-divider">
+    <h2>🔥 Real-World Scenario: The Network Identity Audit</h2>
+  </div>
+
+  <div class="scenario">
+    <h4>Situation</h4>
+    <p>An enterprise has 8,000 remote users on VPN authenticating with username + AD password and no MFA; 50 offices running unmanaged Wi-Fi secured only by WPA2-PSK with no 802.1X; 200 network devices managed via local accounts with no TACACS+ anywhere; and no NAC, meaning any device receives a corporate IP address the moment it's plugged in. The CISO has just been shown a penetration test report demonstrating credential stuffing against VPN, a rogue device successfully reaching the corporate network, and an unauthorized configuration change made to a core switch.</p>
+
+    <h4>Root Cause Analysis</h4>
+    <p>Every gap traces back to the same underlying pattern: network authentication was never treated as part of the enterprise's identity architecture. Web SSO matured under IAM ownership with MFA, adaptive auth, and governance; the network layer was left to network operations, governed by availability and uptime concerns rather than identity policy. The penetration test findings are three independent symptoms of one root cause — an unmanaged trust boundary at the network layer.</p>
+
+    <h4>30-Day Quick Wins</h4>
+    <p>Enable RADIUS-based MFA on VPN via the PingID RADIUS Bridge (Section 6.8) — closes the credential-stuffing path without requiring a VPN platform change. Rotate every RADIUS and TACACS+ shared secret currently in use, and confirm fail-closed behavior on every RADIUS client. Begin TACACS+ deployment for the highest-criticality core network devices first.</p>
+
+    <h4>90-Day Medium Term</h4>
+    <p>Pilot 802.1X with PEAP (password-based, faster to deploy than EAP-TLS) on a subset of office Wi-Fi and wired ports, with a properly scoped quarantine VLAN. Begin migrating VPN authentication from RADIUS-only to SAML through PingFederate, unifying VPN and web SSO under one MFA policy. Complete TACACS+ rollout across all remaining network devices.</p>
+
+    <h4>Full Architecture Target</h4>
+    <p>Enterprise PKI issuing device and user certificates to support EAP-TLS as the default 802.1X method across all offices. Cisco ISE (or equivalent) deployed as the unified NAC platform, combining RADIUS, TACACS+, profiling, and posture under one policy engine. VPN authentication fully migrated to SAML via PingFederate, with certificate-based machine authentication for Always-On VPN on managed devices. WPA2-PSK retired entirely in favor of 802.1X-secured Wi-Fi.</p>
+
+    <h4>Trade-offs</h4>
+    <p>EAP-TLS and full PKI rollout is the strongest end state but carries real PKI operational overhead and a longer timeline — PEAP is a legitimate interim step, not a failure, as long as it's explicitly treated as interim. Fail-closed RADIUS is the correct security posture but raises availability stakes on RADIUS HA — underinvesting in RADIUS redundancy while moving to fail-closed trades one risk for another. NAC quarantine VLAN scope (Section 6.6) needs deliberate design, not vendor defaults, or the "remediation" segment becomes its own under-governed risk.</p>
+  </div>
+</div>
+
+<div class="module" id="bridge" data-stack-layers="network">
+  <div class="module-divider">
+    <h2>🌉 Bridge to Module 07</h2>
+  </div>
+
+  <div class="bridge-band">
+    <div class="bridge-half" style="background: color-mix(in srgb, var(--accent-violet) 12%, var(--surface)); border-color: var(--accent-violet);">
+      <div class="bridge-label" style="color: var(--accent-violet);">✅ What you built · ⚡ Atlas Circuit · Module 06</div>
+      <div class="bridge-title">The network identity layer is no longer invisible</div>
+      <p>You now have the full architecture of network authentication: RADIUS roles, packets, and enterprise topology; TACACS+ command-level authorization; 802.1X and EAP method strength; NAC posture and graduated enforcement; VPN authentication models from weakest to strongest; the PingID RADIUS Bridge; and Cisco ISE as a unified reference platform tying all of it together.</p>
+    </div>
+    <div class="bridge-half" style="background: color-mix(in srgb, var(--accent-violet) 20%, var(--surface)); border-color: var(--accent-violet);">
+      <div class="bridge-label" style="color: var(--accent-violet);">⏭️ Up next · ⚡ Atlas Circuit · Module 07</div>
+      <div class="bridge-title">Authentication on the server itself</div>
+      <p>Module 06 covered the identity layer that controls access to the network. Module 07 goes one layer deeper: the identity layer that controls access to individual Linux and Unix servers. PAM, SSSD, SSH key management, Kerberos on Linux, FreeIPA, and Active Directory integration for Linux hosts. The same identity principles — but applied to the Linux authentication stack that underlies most enterprise infrastructure. If a server is the target, understanding how it authenticates users is essential for both defense and architecture. ⚡</p>
+    </div>
+  </div>
+
+  <a class="cta-button" href="module07.html">Continue to Module 07: Linux &amp; Unix Authentication → ⚡</a>
+</div>
+<!-- CHUNK:WRAPUP -->
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ───────────── THEME TOGGLE ─────────────
+const themeToggle = document.getElementById('themeToggle');
+const themeLabel = document.getElementById('themeLabel');
+function applyTheme(mode) {
+  document.documentElement.classList.toggle('dark', mode === 'dark');
+  themeLabel.textContent = mode === 'dark' ? 'Dark' : 'Light';
+  themeToggle.firstChild.textContent = mode === 'dark' ? '🌙 ' : '☀️ ';
+}
+let savedTheme = 'light';
+try {
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  savedTheme = prefersDark ? 'dark' : 'light';
+} catch(e) {}
+applyTheme(savedTheme);
+themeToggle.addEventListener('click', () => {
+  const isDark = document.documentElement.classList.contains('dark');
+  applyTheme(isDark ? 'light' : 'dark');
+});
+
+// ───────────── MOBILE MENU ─────────────
+const sidebar = document.getElementById('sidebar');
+const scrim = document.getElementById('sidebarScrim');
+const menuToggle = document.getElementById('menuToggle');
+function openSidebar() { sidebar.classList.add('open'); scrim.classList.add('open'); }
+function closeSidebar() { sidebar.classList.remove('open'); scrim.classList.remove('open'); }
+menuToggle.addEventListener('click', () => {
+  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+scrim.addEventListener('click', closeSidebar);
+document.querySelectorAll('.nav-list a').forEach(a => a.addEventListener('click', closeSidebar));
+
+// ───────────── SCROLL PROGRESS ─────────────
+const progressFill = document.getElementById('progressFill');
+function updateProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  progressFill.style.width = pct + '%';
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+updateProgress();
+
+// ───────────── SCROLLSPY: NAV + STACK RAIL ─────────────
+const navLinks = Array.from(document.querySelectorAll('.nav-list a[data-nav]'));
+const stackLayers = Array.from(document.querySelectorAll('.stack-layer'));
+const sections = navLinks
+  .map(a => document.querySelector(a.getAttribute('href')))
+  .filter(Boolean);
+
+function onScrollSpy() {
+  let current = null;
+  const scrollPos = window.scrollY + 120;
+  for (const sec of sections) {
+    if (sec.offsetTop <= scrollPos) current = sec;
+  }
+  navLinks.forEach(a => {
+    const target = document.querySelector(a.getAttribute('href'));
+    a.classList.toggle('active', target === current);
+  });
+  // Light up stack rail based on data-stack-layers of the active module
+  const activeLayers = current && current.dataset.stackLayers
+    ? current.dataset.stackLayers.split(',').map(s => s.trim())
+    : [];
+  stackLayers.forEach(layerEl => {
+    layerEl.classList.toggle('lit', activeLayers.includes(layerEl.dataset.layer));
+  });
+}
+window.addEventListener('scroll', onScrollSpy, { passive: true });
+window.addEventListener('load', onScrollSpy);
+
+// ───────────── NAV LINK CLICK HANDLING (explicit, host-interception-safe) ─────────────
+// Native #hash anchor navigation can be swallowed by an embedding page's own
+// link-interception logic (e.g. chat UIs that hijack <a> clicks to handle
+// external links). To make in-page navigation reliable regardless of host
+// context, every sidebar nav link is driven explicitly via JS scrolling
+// rather than relying on default browser anchor-jump behavior.
+document.querySelectorAll('.nav-list a[data-nav]').forEach(a => {
+  a.addEventListener('click', function(e) {
+    const href = a.getAttribute('href');
+    if (!href || href.charAt(0) !== '#') return;
+    const target = document.querySelector(href);
+    if (!target) return;
+    e.preventDefault();
+    const topbarOffset = 64; // sticky topbar + progress track height
+    const targetTop = target.getBoundingClientRect().top + window.scrollY - topbarOffset;
+    window.scrollTo({ top: Math.max(targetTop, 0), behavior: 'smooth' });
+    if (history.pushState) {
+      history.pushState(null, '', href);
+    }
+    e.stopPropagation(); // blocks ancestor/host-page interception, but runs LAST
+                          // (bubble phase, registered after closeSidebar) so the
+                          // mobile-menu-close handler on this same element still fires
+  }); // bubble phase (default) — must match closeSidebar's phase so both listeners
+      // on this element fire, in registration order, before propagation is stopped
+});
+
+// ───────────── SIMPLE IN-PAGE SEARCH ─────────────
+const searchBox = document.getElementById('searchBox');
+searchBox.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const term = searchBox.value.trim();
+    if (!term) return;
+    const bodyText = document.body;
+    const found = window.find ? window.find(term) : false;
+    if (!found) {
+      // fallback: scroll to first text match
+      const walker = document.createTreeWalker(document.getElementById('content'), NodeFilter.SHOW_TEXT);
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.textContent.toLowerCase().includes(term.toLowerCase())) {
+          node.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          break;
+        }
+      }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

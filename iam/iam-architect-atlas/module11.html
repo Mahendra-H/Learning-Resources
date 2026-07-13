@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 11 · Machine Identity & Non-Human Identities | IAM Architect Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   RESET / BASE
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ============================================================
+   DESIGN TOKENS — Phase 5 · Atlas Core
+   ============================================================ */
+:root {
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --text: #1A1D24;
+  --text-muted: #6B6F7A;
+  --border: #DEDAD1;
+  --radius: 12px;
+
+  --accent-blue: #5B8FF0;    /* concept callouts */
+  --accent-amber: #E8A33D;   /* cost callouts */
+  --accent-green: #4FB286;   /* engineer's-take tone / Phase 5 primary */
+  --accent-violet: #7B6FE0;  /* security callouts */
+  --accent-red: #D9534F;     /* anti-pattern emphasis */
+  --accent-primary: #4FB286; /* Phase 5 · Atlas Core */
+
+  --font-display: 'Inter Tight', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --sidebar-w: 300px;
+  --topbar-h: 56px;
+  --shadow-sm: 0 1px 2px rgba(26,29,36,0.06);
+  --shadow-md: 0 4px 16px rgba(26,29,36,0.08);
+}
+
+html.dark {
+  --bg: #0B0E14;
+  --surface: #151A24;
+  --text: #E8E6E1;
+  --text-muted: #8A8F9C;
+  --border: #262B38;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.45);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+a { color: var(--accent-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+img, svg { max-width: 100%; display: block; }
+ul, ol { padding-left: 1.3rem; }
+p { margin: 0 0 1rem 0; }
+p:last-child { margin-bottom: 0; }
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  display: inline-block;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.5rem;
+  line-height: 1.15;
+  display: inline-block;
+  border-bottom: 3px solid var(--accent-primary);
+  padding-bottom: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+  margin-bottom: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.12rem;
+  margin: 1.5rem 0 0.75rem 0;
+}
+
+h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 1.25rem 0 0.5rem 0;
+}
+
+.module-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.4rem;
+  color: var(--accent-primary);
+  opacity: 0.3;
+  line-height: 1;
+}
+
+.module-divider {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin: 3rem 0 1.5rem 0;
+}
+.module-divider h2 { flex: 1; border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+
+/* ============================================================
+   PAGE LAYOUT — sidebar + main
+   ============================================================ */
+.page-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.sidebar-phase-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+}
+
+.sidebar-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: -0.5rem;
+}
+
+.sidebar-back {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.sidebar-back:hover { color: var(--accent-primary); }
+
+.sidebar-search {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+.sidebar-search:focus { border-color: var(--accent-primary); }
+
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.nav-list { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.nav-list a {
+  display: block;
+  color: var(--text);
+  font-size: 0.86rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  line-height: 1.35;
+}
+.nav-list a:hover { background: var(--bg); text-decoration: none; }
+.nav-list a.active {
+  background: color-mix(in srgb, var(--accent-primary) 14%, var(--surface));
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+.nav-list[data-hidden-by-search="true"] { display: none; }
+
+.theme-toggle {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.theme-toggle:hover { border-color: var(--accent-primary); }
+
+/* Identity Stack Rail */
+.stack-rail {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.stack-rail-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.stack-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  transition: color 0.25s ease, background 0.25s ease;
+}
+.stack-item .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+  flex-shrink: 0;
+}
+.stack-item.lit {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+}
+.stack-item.lit .dot {
+  background: var(--accent-primary);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-primary) 70%, transparent);
+}
+
+/* Main column */
+.main-col { min-width: 0; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--topbar-h);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+.topbar-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.mobile-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.progress-track {
+  height: 3px;
+  background: var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 19;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-primary);
+  transition: width 0.1s linear;
+}
+
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem 5rem 2rem;
+}
+
+/* ============================================================
+   COMPONENTS — shared across all modules
+   ============================================================ */
+
+/* Callouts (4 variants: concept / cost / architect / security) */
+.callout {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--c-accent, var(--accent-primary));
+  background: color-mix(in srgb, var(--c-accent, var(--accent-primary)) 6%, var(--surface));
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+.callout-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-accent, var(--accent-primary));
+  margin-bottom: 0.5rem;
+  display: block;
+}
+.callout-concept   { --c-accent: var(--accent-blue); }
+.callout-cost       { --c-accent: var(--accent-amber); }
+.callout-architect  { --c-accent: var(--accent-primary); }
+.callout-security   { --c-accent: var(--accent-violet); }
+
+/* Analogy boxes */
+.analogy {
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+  font-style: normal;
+  background: color-mix(in srgb, var(--a-accent, var(--accent-green)) 8%, var(--surface));
+  border: 1px dashed color-mix(in srgb, var(--a-accent, var(--accent-green)) 50%, var(--border));
+}
+.analogy-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--a-accent, var(--accent-green));
+  margin-bottom: 0.5rem;
+  display: block;
+}
+.analogy--green { --a-accent: var(--accent-green); }
+.analogy--amber { --a-accent: var(--accent-amber); }
+
+/* Use case boxes */
+.usecase {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.3rem;
+  margin: 1.5rem 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.usecase-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, var(--surface));
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  margin-bottom: 0.6rem;
+}
+
+/* Deep dives (collapsible) */
+details.deepdive {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1.5rem 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+details.deepdive summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 1rem 1.3rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: color-mix(in srgb, var(--accent-violet) 6%, var(--surface));
+}
+details.deepdive summary::-webkit-details-marker { display: none; }
+details.deepdive summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+details.deepdive[open] summary::after { transform: rotate(45deg); }
+details.deepdive .deepdive-body {
+  padding: 1rem 1.3rem 1.3rem 1.3rem;
+  font-size: 0.93rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Lab boxes */
+.lab {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, var(--border));
+  border-radius: var(--radius);
+  padding: 1.2rem 1.3rem;
+  margin: 1.5rem 0;
+  background: color-mix(in srgb, var(--accent-primary) 5%, var(--surface));
+}
+.lab-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-primary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Diagram boxes */
+.diagram-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.3rem;
+  margin: 1.5rem 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+.diagram-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.9rem;
+}
+.diagram-caption {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.9rem;
+  font-style: italic;
+}
+
+/* Bridge band (wrap-up) */
+.bridge-band {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+.bridge-panel {
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+}
+.bridge-panel.bridge-prev {
+  background: color-mix(in srgb, var(--accent-primary) 10%, var(--surface));
+}
+.bridge-panel.bridge-next {
+  background: color-mix(in srgb, var(--accent-primary) 20%, var(--surface));
+}
+.bridge-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-primary);
+  margin-bottom: 0.6rem;
+  display: block;
+}
+.bridge-panel h3 { margin-top: 0; }
+.bridge-cta {
+  display: inline-block;
+  margin-top: 2rem;
+  background: var(--accent-primary);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.5rem;
+  border-radius: 999px;
+  text-decoration: none;
+}
+.bridge-cta:hover { opacity: 0.9; text-decoration: none; }
+
+/* Cheat sheet grid */
+.cheat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.cheat-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  font-size: 0.88rem;
+  display: flex;
+  gap: 0.7rem;
+}
+.cheat-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  color: var(--accent-primary);
+  opacity: 0.45;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.88rem;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+}
+th {
+  background: var(--bg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Where-am-I progress card (hero) */
+.progress-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.4rem;
+  margin: 1.75rem 0;
+  background: var(--surface);
+}
+.progress-card-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  margin-top: 0.7rem;
+  overflow: hidden;
+}
+.progress-card-bar-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 999px;
+}
+
+/* Knowledge check / architect review numbered question blocks */
+.qa-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1rem 0;
+  background: var(--surface);
+}
+.qa-block-num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent-primary);
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+/* Mind map */
+.mindmap-wrap { overflow-x: auto; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .page-shell { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed;
+    inset: 0 25% 0 0;
+    z-index: 30;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--shadow-md);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .mobile-toggle { display: inline-block; }
+  main { padding: 1.75rem 1.1rem 4rem 1.1rem; }
+  .cheat-grid, .bridge-band { grid-template-columns: 1fr; }
+  h1 { font-size: 1.9rem; }
+}
+
+@media (max-width: 375px) {
+  main { padding: 1.25rem 0.85rem 3.5rem 0.85rem; }
+  h1 { font-size: 1.6rem; }
+  .callout, .analogy, .usecase, .lab, .diagram-box { padding: 0.9rem 1rem; }
+}
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 25;
+}
+.sidebar-overlay.open { display: block; }
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="page-shell">
+
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside class="sidebar" id="sidebar">
+    <div>
+      <div class="sidebar-brand">🔐 IAM Architect Atlas</div>
+      <div class="sidebar-phase-label">MODULE 11 · ATLAS CORE</div>
+      <div class="sidebar-subtitle">Machine Identity &amp; Non-Human Identities</div>
+    </div>
+
+    <a class="sidebar-back" href="index.html">← Back to Index</a>
+
+    <input type="text" class="sidebar-search" id="sidebarSearch" placeholder="🔍 Search this module...">
+
+    <button class="theme-toggle" id="themeToggle" type="button">🌓 Toggle theme</button>
+
+    <nav>
+      <div class="nav-group-label">Machine Identity Architecture</div>
+      <ul class="nav-list" id="navGroupMain">
+        <li><a href="#s11-1">11.1 — 💥 The Non-Human Identity Explosion</a></li>
+        <li><a href="#s11-2">11.2 — 🏢 Service Account Governance</a></li>
+        <li><a href="#s11-3">11.3 — 🔑 Application &amp; API Identities</a></li>
+        <li><a href="#s11-4">11.4 — 📦 Container &amp; Kubernetes Identity</a></li>
+        <li><a href="#s11-5">11.5 — 🔄 Workload Identity Federation</a></li>
+        <li><a href="#s11-6">11.6 — 🤖 RPA Identities — Governance for Bots</a></li>
+        <li><a href="#s11-7">11.7 — 📡 Device Identity Architecture</a></li>
+        <li><a href="#s11-8">11.8 — ♻️ Machine Identity Lifecycle Management</a></li>
+        <li><a href="#s11-9">11.9 — 🏛️ Non-Human Identity Governance Framework</a></li>
+      </ul>
+    </nav>
+
+    <nav>
+      <div class="nav-group-label">Wrap-Up</div>
+      <ul class="nav-list" id="navGroupWrap">
+        <li><a href="#cheatsheet">📋 Architecture Cheat Sheet</a></li>
+        <li><a href="#mindmap">🧠 Mind Map</a></li>
+        <li><a href="#knowledge-check">✅ Knowledge Check</a></li>
+        <li><a href="#architect-review">🏗️ Architect Review</a></li>
+        <li><a href="#scenario">🗂️ Real-World Scenario</a></li>
+        <li><a href="#bridge">🌉 Bridge to Module 12</a></li>
+      </ul>
+    </nav>
+
+    <!-- Identity Stack Rail -->
+    <div class="stack-rail">
+      <div class="stack-rail-label">Identity Stack</div>
+      <div class="stack-item" data-layer="applications"><span class="dot"></span>👤 Applications &amp; Portals</div>
+      <div class="stack-item" data-layer="sso"><span class="dot"></span>🔐 SSO &amp; Federation</div>
+      <div class="stack-item" data-layer="tokens"><span class="dot"></span>🎫 Token &amp; Protocol Layer</div>
+      <div class="stack-item" data-layer="authz"><span class="dot"></span>⚖️ Authorization Engine</div>
+      <div class="stack-item" data-layer="iga"><span class="dot"></span>📋 IGA &amp; Lifecycle</div>
+      <div class="stack-item" data-layer="pam"><span class="dot"></span>🏦 PAM &amp; Privileged</div>
+      <div class="stack-item" data-layer="directory"><span class="dot"></span>📂 Directory &amp; Stores</div>
+      <div class="stack-item" data-layer="network"><span class="dot"></span>🌐 Network &amp; Infra Auth</div>
+      <div class="stack-item" data-layer="cloud"><span class="dot"></span>☁️ Cloud &amp; Machine</div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN COLUMN
+       ============================================================ -->
+  <div class="main-col">
+    <div class="topbar">
+      <button class="mobile-toggle" id="mobileToggle" type="button" aria-label="Toggle navigation">☰</button>
+      <div class="topbar-label">Module 11 of 16 · 🌍 Atlas Core · ~3 hr read</div>
+      <div></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+    <main id="mainContent">
+
+      <!-- ====================================================
+           PHASE 1 CONTENT WILL BE INSERTED HERE:
+           Hero section + Sections 11.1, 11.2, 11.3
+           ==================================================== -->
+      <!-- ============================================================
+     HERO
+     ============================================================ -->
+<div class="module" id="hero">
+  <div class="eyebrow">🌍 MODULE 11 · ATLAS CORE · PHASE 5 · ~3 hr read</div>
+  <h1>Machine Identity &amp; Non-Human Identities: Service Accounts, Workloads &amp; RPA</h1>
+
+  <p>Walk into any enterprise identity program and ask: how many human employees do you have? Someone will know the answer immediately — it's in the HR system, it's the headcount number the CFO reports quarterly. Now ask: how many service accounts, API keys, container identities, and automation bots exist in your environment? Almost no one knows. The honest answer, at most enterprises, is "more than the human count, and growing faster."</p>
+
+  <p>Non-human identities have exploded with cloud adoption, microservices, CI/CD automation, and RPA — and most IAM programs built their entire governance model (Modules 08–10) around humans. This module gives architectural shape to the identity population that's quietly become the larger attack surface: what these identities are, how they're created, how they should be governed, and why the lifecycle problem from Module 01 is far worse here than it ever was for humans. 🌍</p>
+
+  <div class="callout callout-architect">
+    <span class="callout-label">🟢 Architect's Note — Phase 5 Begins: Beyond Human Identity</span>
+    <p>Phases 1–4 covered identity data, authentication, infrastructure auth, authorization, and governance — all built primarily around human identities: employees authenticating, requesting access, being certified. Phase 5 (Modules 11–13) shifts to non-human and cloud identity: machine identities (this module), secrets and cryptographic identity (Module 12), and cloud identity architecture (Module 13). The green color signals this shift — Atlas Core is the most engineering-native phase in the portal, where your Java and platform engineering background becomes the most directly applicable lens you've carried through this entire program.</p>
+  </div>
+
+  <div class="callout callout-concept">
+    <span class="callout-label">🔵 Carrying Forward from Previous Modules</span>
+    <ul>
+      <li><strong>Module 10</strong> — service accounts as privileged identities, with CyberArk AIM/Conjur as the credential delivery mechanism, now expanded into the full non-human identity landscape.</li>
+      <li><strong>Module 07</strong> — SSH keys and Kerberos keytabs as machine credentials, early examples of what this module formalizes into a complete architecture.</li>
+      <li><strong>Module 03</strong> — the OAuth Client Credentials grant, the protocol foundation for machine-to-machine authentication, now applied to workload identity federation.</li>
+      <li><strong>Module 01</strong> — the JML lifecycle. Non-human identities have their own lifecycle, and it's far less governed than the human one.</li>
+    </ul>
+  </div>
+
+  <div class="progress-card">
+    <div><strong>📍 Where am I?</strong> Module 11 / Phase 5 — Machine Identity &amp; Cloud Identity</div>
+    <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.3rem;">Progress: 11 of 16 modules (69% complete)</div>
+    <div class="progress-card-bar"><div class="progress-card-bar-fill" style="width:69%;"></div></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 11.1 — The Non-Human Identity Explosion
+     ============================================================ -->
+<div class="module" data-stack-layers="cloud,iga,pam" id="s11-1">
+  <div class="module-divider">
+    <div class="module-num">11.1</div>
+    <h2>💥 The Non-Human Identity Explosion</h2>
+  </div>
+
+  <h3>The Scale Problem</h3>
+  <p>Across cloud-native enterprises, industry surveys consistently point in one direction: non-human identities now outnumber human identities by a wide margin — commonly cited in the range of 10x to 45x, depending on how aggressively an organization has adopted microservices, cloud infrastructure, and automation. The exact multiple matters less than the trend it represents. A decade ago, a service account was something an engineer requested for a specific batch job, and there were a few hundred of them in even a large enterprise. Today, every microservice, every cloud resource, every CI/CD pipeline run, and every automation bot can mint its own identity — and most of them do.</p>
+
+  <h3>Why the Explosion Happened</h3>
+  <p>No single trend caused this. It's the compounding effect of several architectural shifts your career has already taken you through:</p>
+  <ul>
+    <li><strong>Microservices architecture</strong> — where a monolith needed one application identity, a microservices decomposition of that same application might need fifty, one per service, each calling the others.</li>
+    <li><strong>Cloud adoption</strong> — every cloud resource, from a Lambda function to an S3 bucket policy, typically needs an IAM role or service account of its own.</li>
+    <li><strong>CI/CD automation</strong> — every deployment pipeline needs credentials to push code, pull secrets, and provision infrastructure, often on every single run.</li>
+    <li><strong>Container orchestration</strong> — Kubernetes assigns every pod a service account by default, whether or not anyone asked for one (Section 11.4 covers this in depth).</li>
+    <li><strong>RPA adoption</strong> — every bot automating a business process needs the same application access a human user would have had.</li>
+    <li><strong>API-first architecture</strong> — every internal or external integration needs a client identity to authenticate against the API it's calling.</li>
+  </ul>
+
+  <h3>The Governance Gap</h3>
+  <p>The IGA programs you studied in Modules 08–09 were built around a clean lifecycle trigger: an HR system records a hire, a transfer, a termination, and that event drives provisioning, recertification, and deprovisioning. Non-human identities have no equivalent system of record. There's no "HR feed" for a Kubernetes service account. There's no manager to ask "does this API key still need write access to the customer database?" The governance model that works well for humans simply doesn't extend naturally to machines — and most enterprises haven't built a parallel model that does.</p>
+
+  <h3>Why Non-Human Identities Are Often More Privileged</h3>
+  <p>It's tempting to assume machine identities carry less risk than human ones because no person is "behind" them in the moment of compromise. The opposite is usually true. A service account connecting an application to a database often has broader data access than any single human user would ever be granted — because it was provisioned once, for an application that needs to read and write broadly, and nobody has revisited the scope since. That same service account typically has no MFA (there's no human to prompt), no session timeout (it authenticates once and runs indefinitely), and no behavioral baseline against which anomalous use could be detected.</p>
+
+  <h3>The Attacker's Perspective</h3>
+  <p>From an attacker's point of view, non-human identities are an unusually attractive target: long-lived credentials that rarely rotate, broad permissions granted for convenience rather than necessity, minimal monitoring, and credentials that are frequently hardcoded into source code, configuration files, or CI/CD pipeline definitions where they're easy to find once an attacker has any foothold. A single leaked service account credential or API key can provide more durable, less-detectable access than compromising an individual human user's password ever would.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.1-A · The Identity Population Inversion</div>
+    <div style="display:flex; gap:2.5rem; align-items:flex-end; justify-content:center; flex-wrap:wrap; padding-top:1.5rem;">
+      <div style="text-align:center;">
+        <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted); margin-bottom:1.7rem;">2010</div>
+        <div style="display:flex; align-items:flex-end; gap:0.9rem; height:160px;">
+          <div style="width:54px; height:150px; background:var(--accent-blue); border-radius:6px 6px 0 0; position:relative;">
+            <span style="position:absolute; top:-1.4rem; left:50%; transform:translateX(-50%); font-size:0.68rem; white-space:nowrap; color:var(--text-muted);">Human</span>
+          </div>
+          <div style="width:54px; height:55px; background:var(--accent-primary); border-radius:6px 6px 0 0; position:relative;">
+            <span style="position:absolute; top:-1.4rem; left:50%; transform:translateX(-50%); font-size:0.68rem; white-space:nowrap; color:var(--text-muted);">Non-Human</span>
+          </div>
+        </div>
+        <div style="font-size:0.74rem; color:var(--text-muted); margin-top:0.6rem; max-width:160px;">Roughly 1 human : 0.4 non-human — mostly batch-job service accounts</div>
+      </div>
+      <div style="font-size:1.6rem; color:var(--text-muted); align-self:center; padding-bottom:2.5rem;">→</div>
+      <div style="text-align:center;">
+        <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted); margin-bottom:1.7rem;">2025</div>
+        <div style="display:flex; align-items:flex-end; gap:0.9rem; height:160px;">
+          <div style="width:54px; height:75px; background:var(--accent-blue); border-radius:6px 6px 0 0; position:relative;">
+            <span style="position:absolute; top:-1.4rem; left:50%; transform:translateX(-50%); font-size:0.68rem; white-space:nowrap; color:var(--text-muted);">Human</span>
+          </div>
+          <div style="width:54px; height:160px; border-radius:6px 6px 0 0; position:relative; display:flex; flex-direction:column-reverse; overflow:hidden;">
+            <span style="position:absolute; top:-1.4rem; left:50%; transform:translateX(-50%); font-size:0.68rem; white-space:nowrap; color:var(--text-muted);">Non-Human</span>
+            <div style="height:18px; background:var(--accent-primary);"></div>
+            <div style="height:26px; background:var(--accent-blue);"></div>
+            <div style="height:22px; background:var(--accent-violet);"></div>
+            <div style="height:24px; background:var(--accent-amber);"></div>
+            <div style="height:20px; background:color-mix(in srgb, var(--accent-primary) 60%, var(--surface));"></div>
+            <div style="height:28px; background:color-mix(in srgb, var(--accent-blue) 65%, var(--text));"></div>
+            <div style="height:22px; background:color-mix(in srgb, var(--accent-violet) 55%, var(--surface));"></div>
+          </div>
+        </div>
+        <div style="font-size:0.74rem; color:var(--text-muted); margin-top:0.6rem; max-width:200px;">Roughly 1 human : 10–45 non-human — microservices, cloud, CI/CD, containers, APIs, RPA, IoT</div>
+      </div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:0.6rem 1.2rem; justify-content:center; margin-top:1.4rem; font-size:0.74rem; color:var(--text-muted);">
+      <span><span style="display:inline-block; width:9px; height:9px; background:var(--accent-primary); border-radius:2px; margin-right:0.35rem;"></span>Microservices</span>
+      <span><span style="display:inline-block; width:9px; height:9px; background:var(--accent-blue); border-radius:2px; margin-right:0.35rem;"></span>Cloud IAM roles</span>
+      <span><span style="display:inline-block; width:9px; height:9px; background:var(--accent-violet); border-radius:2px; margin-right:0.35rem;"></span>Container identities</span>
+      <span><span style="display:inline-block; width:9px; height:9px; background:var(--accent-amber); border-radius:2px; margin-right:0.35rem;"></span>CI/CD secrets</span>
+      <span><span style="display:inline-block; width:9px; height:9px; background:color-mix(in srgb, var(--accent-primary) 60%, var(--surface)); border:1px solid var(--border); border-radius:2px; margin-right:0.35rem;"></span>API clients</span>
+      <span><span style="display:inline-block; width:9px; height:9px; background:color-mix(in srgb, var(--accent-blue) 65%, var(--text)); border-radius:2px; margin-right:0.35rem;"></span>RPA bots</span>
+      <span><span style="display:inline-block; width:9px; height:9px; background:color-mix(in srgb, var(--accent-violet) 55%, var(--surface)); border:1px solid var(--border); border-radius:2px; margin-right:0.35rem;"></span>IoT / device identities</span>
+    </div>
+    <div class="diagram-caption">Illustrative, not measured: the precise ratio varies widely by enterprise and source, but the directional shift — from human-dominant to non-human-dominant — is consistent across cloud-native organizations.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.1-B · Non-Human Identity Taxonomy Preview</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:0.9rem;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.95rem;">
+        <div style="font-weight:700; font-family:var(--font-display); font-size:0.92rem;">🏢 Service Accounts</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin:0.45rem 0;">AD/LDAP accounts applications use to authenticate.</div>
+        <a href="#s11-2" style="font-family:var(--font-mono); font-size:0.68rem;">→ Section 11.2</a>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.95rem;">
+        <div style="font-weight:700; font-family:var(--font-display); font-size:0.92rem;">🔑 Application Identities</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin:0.45rem 0;">OAuth clients and API keys an app presents as itself.</div>
+        <a href="#s11-3" style="font-family:var(--font-mono); font-size:0.68rem;">→ Section 11.3</a>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.95rem;">
+        <div style="font-weight:700; font-display:var(--font-display); font-size:0.92rem;">📦 Container / K8s Identities</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin:0.45rem 0;">Pod identities and Kubernetes service accounts.</div>
+        <a href="#s11-4" style="font-family:var(--font-mono); font-size:0.68rem;">→ Section 11.4</a>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.95rem;">
+        <div style="font-weight:700; font-family:var(--font-display); font-size:0.92rem;">🔄 Workload Identities</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin:0.45rem 0;">Cloud-native federated identities, no static secrets.</div>
+        <a href="#s11-5" style="font-family:var(--font-mono); font-size:0.68rem;">→ Section 11.5</a>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.95rem;">
+        <div style="font-weight:700; font-family:var(--font-display); font-size:0.92rem;">🤖 RPA Identities</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin:0.45rem 0;">Automation bot accounts, often human-styled logins.</div>
+        <a href="#s11-6" style="font-family:var(--font-mono); font-size:0.68rem;">→ Section 11.6</a>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.95rem;">
+        <div style="font-weight:700; font-family:var(--font-display); font-size:0.92rem;">📡 Device Identities</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin:0.45rem 0;">IoT, endpoints, and network infrastructure devices.</div>
+        <a href="#s11-7" style="font-family:var(--font-mono); font-size:0.68rem;">→ Section 11.7</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-security">
+    <span class="callout-label">🟣 Security — The Governance Asymmetry</span>
+    <p>The governance asymmetry is the core security problem this module addresses. A human employee's access is reviewed quarterly (Module 09 certification), requires MFA (Module 05), is deprovisioned within 24 hours of termination (Module 09), and is monitored for anomalous behavior (Module 14 preview). A service account created three years ago by an engineer who has since left the company may have none of these controls — no owner, no review, no MFA-equivalent, and no deprovisioning trigger because there's no "termination event" for a service account. This governance asymmetry is why non-human identities are increasingly the entry point in enterprise breaches.</p>
+  </div>
+
+  <div class="analogy analogy--green">
+    <span class="analogy-label">🟢 Analogy — API Sprawl, Revisited</span>
+    <p>The non-human identity explosion is the identity equivalent of the API sprawl problem you've watched unfold over your career. Ten years ago, an enterprise had a manageable number of APIs, each well-documented and owned. Today, microservices architectures produce hundreds or thousands of internal APIs, many undocumented, many with unclear ownership, many running with broader permissions than they need "because it was easier to get it working." Non-human identity sprawl is the same pattern: every new microservice, every new cloud resource, every new automation script creates a new identity, and without deliberate governance, that identity outlives its purpose, its owner moves on, and nobody remembers why it has the access it has.</p>
+  </div>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Estimate Your Ratio</span>
+    <p>Estimate your organization's non-human-to-human identity ratio. Count (or estimate): AD service accounts, cloud IAM roles/service accounts across AWS/Azure/GCP, Kubernetes service accounts, API keys issued for internal/external integrations, and RPA bot accounts. Compare this total to your human employee count. If you don't know these numbers — that unknown is itself the finding. Most enterprises cannot answer this question quickly, and that inability is the starting point for every non-human identity governance program.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 11.2 — Service Account Governance
+     ============================================================ -->
+<div class="module" data-stack-layers="pam,iga,directory" id="s11-2">
+  <div class="module-divider">
+    <div class="module-num">11.2</div>
+    <h2>🏢 Service Account Governance</h2>
+  </div>
+
+  <p>Module 10 introduced service accounts as privileged identities and showed how CyberArk AIM/Conjur can vault and rotate their credentials. This section widens the lens from credential protection to full governance: who creates a service account, who owns it, who reviews it, and — the question that breaks down most often — who decommissions it when the application it served is retired.</p>
+
+  <h3>What a Service Account Is, and Its Common Types</h3>
+  <p>A service account is an identity used by an application, script, or system process to authenticate — not tied to a single human user's session. In practice, you'll encounter a handful of recurring patterns:</p>
+  <ul>
+    <li><strong>AD/LDAP service accounts</strong> — used for application authentication against directory services, often the credential a Windows service or scheduled task runs as.</li>
+    <li><strong>Database service accounts</strong> — used for application-to-database connections, frequently with far broader read/write scope than any individual feature requires.</li>
+    <li><strong>Scheduled task / batch job accounts</strong> — used for unattended automation that runs on a timer rather than in response to a human action.</li>
+    <li><strong>Cross-application integration accounts</strong> — used for system-to-system data exchange, where one platform pulls or pushes data into another on an ongoing basis.</li>
+  </ul>
+
+  <h3>The Ownership Problem</h3>
+  <p>Service accounts frequently have no clear human owner. They're created by an engineer solving an immediate problem, that engineer changes teams or leaves the company within a year or two, and the account is documented nowhere except possibly a long-forgotten ticket. The systems that depend on it keep running — which is precisely why nobody notices the ownership gap until a security review or an incident forces the question.</p>
+
+  <h3>Service Account Governance Architecture</h3>
+  <p>A mature service account program rests on four architectural controls:</p>
+  <ul>
+    <li><strong>Mandatory ownership assignment at creation</strong> — a human owner is recorded even though the account itself isn't human.</li>
+    <li><strong>Naming conventions that encode purpose and owner</strong> — <code>svc-paymentapp-dbconn</code> tells a reviewer something useful; <code>svc1234</code> tells them nothing.</li>
+    <li><strong>Regular certification</strong> — the Module 09 access-review pattern applied to non-human identities: does this service account still need this access?</li>
+    <li><strong>Decommissioning triggers tied to application lifecycle</strong>, not human lifecycle — when the application retires, the account should retire with it.</li>
+  </ul>
+
+  <p>Risk scoring gives this program a way to prioritize: permissions scope, password age, number of systems with access to the credential, and whether any MFA-equivalent control (such as certificate-based authentication) exists all push a given account toward higher or lower risk. Saviynt's service account governance capabilities treat service accounts as a distinct entitlement category with their own certification workflow, separate from — but parallel to — human access reviews. The hardest detection problem in this space is the orphaned service account: one whose creating engineer has left and whose purpose is undocumented, hiding in plain sight as a working credential nobody questions because it still functions.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.2-A · Service Account Governance Lifecycle</div>
+    <div style="display:flex; gap:0.8rem; flex-wrap:wrap; align-items:stretch;">
+      <div style="flex:1; min-width:170px; border:1px solid var(--border); border-radius:10px; padding:0.9rem; background:color-mix(in srgb, var(--accent-blue) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">1 · Creation</div>
+        <div style="font-size:0.76rem; color:var(--text-muted); line-height:1.5;">Requires owner assignment, purpose documentation, naming-convention compliance, initial risk scoring.</div>
+      </div>
+      <div style="align-self:center; color:var(--text-muted);">→</div>
+      <div style="flex:1; min-width:170px; border:1px solid var(--border); border-radius:10px; padding:0.9rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">2 · Active Use</div>
+        <div style="font-size:0.76rem; color:var(--text-muted); line-height:1.5;">Periodic certification (owner confirms still needed), credential rotation via CyberArk CPM, usage monitoring.</div>
+      </div>
+      <div style="align-self:center; color:var(--text-muted);">→</div>
+      <div style="flex:1; min-width:170px; border:1px solid var(--border); border-radius:10px; padding:0.9rem; background:color-mix(in srgb, var(--accent-amber) 8%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">3 · Change</div>
+        <div style="font-size:0.76rem; color:var(--text-muted); line-height:1.5;">Application migration, owner change, or scope change — each triggers re-certification.</div>
+      </div>
+      <div style="align-self:center; color:var(--text-muted);">→</div>
+      <div style="flex:1; min-width:170px; border:1px solid var(--border); border-radius:10px; padding:0.9rem; background:color-mix(in srgb, var(--accent-red) 8%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem;">4 · Decommission</div>
+        <div style="font-size:0.76rem; color:var(--text-muted); line-height:1.5;">Application retired → service account must be deprovisioned. Most often forgotten.</div>
+      </div>
+    </div>
+    <div class="diagram-caption">Service accounts need their own lifecycle — modeled on JML, but triggered by application events rather than HR events.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.2-B · Service Account Risk Scoring Model</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 40%, var(--border)); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-red) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-red); margin-bottom:0.6rem;">🔴 HIGH RISK Indicators</div>
+        <ul style="font-size:0.8rem; color:var(--text-muted); padding-left:1.1rem; line-height:1.6;">
+          <li>No identified owner</li>
+          <li>No password rotation in 365+ days</li>
+          <li>Privileged AD group membership (Domain Admin, etc.)</li>
+          <li>Used by 5+ different systems (broad blast radius)</li>
+          <li>No MFA-equivalent control (e.g. cert-based auth)</li>
+          <li>Created 3+ years ago, never reviewed</li>
+        </ul>
+      </div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-primary) 40%, var(--border)); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-primary); margin-bottom:0.6rem;">🟢 LOW RISK Indicators</div>
+        <ul style="font-size:0.8rem; color:var(--text-muted); padding-left:1.1rem; line-height:1.6;">
+          <li>Clear owner, documented purpose</li>
+          <li>Automatic rotation enabled (CyberArk CPM)</li>
+          <li>Scoped to a single application, least privilege</li>
+          <li>Certificate-based authentication</li>
+          <li>Recently certified in an access review</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-architect">
+    <span class="callout-label">🟢 Architect's Take</span>
+    <p>Mandatory ownership assignment is the single highest-leverage governance control for service accounts. A service account without a human owner cannot be meaningfully certified — there's no one to ask "is this still needed?" The architectural fix: make owner assignment a hard requirement at creation time, enforced by the IGA workflow (Saviynt should refuse to provision a service account without an owner field populated), and build a quarterly process to identify and remediate orphaned accounts — no owner, or an owner who has left the company per the HR feed. This single control transforms service accounts from ungoverned infrastructure into governed entitlements.</p>
+  </div>
+
+  <div class="analogy analogy--green">
+    <span class="analogy-label">🟢 Analogy — CODEOWNERS for Identities</span>
+    <p>Mandatory service account ownership is the identity-governance equivalent of a CODEOWNERS file in a git repository. A CODEOWNERS file assigns a named human reviewer to a directory of code so that every change has someone accountable to approve it — without it, pull requests pile up with no obvious owner to ask. A service account's owner field plays exactly the same role for an identity that nobody else thinks to claim: it gives a certification campaign, an incident responder, or an auditor someone concrete to ask "does this still need this access?" instead of an empty field and a guess.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: What is gMSA, and what are its limitations?</summary>
+    <div class="deepdive-body">
+      <p>A Group Managed Service Account (gMSA) is an Active Directory object designed to eliminate manual service account password management. Instead of a human-set password that a domain admin must remember to rotate, the domain controller generates a 240-byte, cryptographically random password automatically, stores it in the <code>msDS-ManagedPassword</code> attribute, and rotates it on a configurable interval (30 days by default) without any human intervention. Authorized member computers — servers explicitly added to a security group permitted to retrieve the password — fetch the current value transparently through the Windows authentication stack, so a Windows service can run as a gMSA without anyone ever typing or storing its password.</p>
+      <p>The architectural limitations matter as much as the benefit. gMSA password retrieval relies on the KDS Root Key, generated within a single AD forest, which means gMSAs don't natively cross forest trust boundaries without additional configuration, and they offer no benefit at all to non-Windows workloads — a Linux container or a cloud-native service gains nothing from gMSA, since the entire mechanism is built into the Windows authentication stack. For those workloads, the equivalent architectural goal — eliminating static, manually-rotated credentials — is achieved through different mechanisms entirely: CyberArk-managed rotation for traditional service accounts, or workload identity federation (Section 11.5) for cloud-native ones. gMSA solves the Windows-domain slice of the service account credential problem extremely well; it isn't a universal answer.</p>
+    </div>
+  </details>
+
+  <div class="usecase">
+    <span class="usecase-tag">Use Case</span>
+    <p>A quarterly service account audit finds 1,400 AD service accounts. 600 have no documented owner. 200 have passwords older than 1,000 days. 80 are members of Domain Admins. The application teams that created many of these accounts no longer exist — reorganized or outsourced. Design the 6-month remediation architecture: how do you identify which accounts are still in use, assign ownership, and safely decommission the rest without breaking production systems?</p>
+  </div>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Service Account Spot-Check</span>
+    <p>Pull a list of service accounts in your AD environment (accounts with an "svc" prefix, accounts excluded from password expiry policy, or accounts in a designated Service-Accounts OU). For five of them: can you identify the owner? The purpose? The last password rotation date? The systems that use it? Each "I don't know" is a governance gap in your service account program.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 11.3 — Application & API Identities
+     ============================================================ -->
+<div class="module" data-stack-layers="cloud,tokens,applications" id="s11-3">
+  <div class="module-divider">
+    <div class="module-num">11.3</div>
+    <h2>🔑 Application &amp; API Identities</h2>
+  </div>
+
+  <p>Section 11.2 covered identities applications <em>use</em> to reach other systems. This section covers identities applications <em>present</em> when they are the thing being authenticated — the identity an application establishes when it acts as an OAuth client, or when it calls an API as itself rather than on behalf of a service account elsewhere in the stack.</p>
+
+  <h3>OAuth Client Identities</h3>
+  <p>Revisit Module 03's OAuth roles: the application identity established at client registration — a <code>client_id</code> paired with a <code>client_secret</code> or certificate — is the architectural foundation here. Every OAuth client registration is, in effect, an application identity record: who owns this client, what scopes can it request, what's its purpose.</p>
+
+  <h3>API Keys: Simpler, and Architecturally Weaker</h3>
+  <p>API keys differ from OAuth tokens in ways that matter architecturally. They're simpler to issue and simpler to use — a single static string passed in a header or query string — but they typically carry no expiry by default, no scope enforcement without custom application logic, and they're leak-prone precisely because of how casually they're handled. Where an OAuth access token is short-lived by protocol design (Module 03), an API key is often architected as a permanent credential unless the issuing platform deliberately builds in expiry.</p>
+
+  <h3>API Key Sprawl and Lifecycle</h3>
+  <p>API key sprawl mirrors the SSH key sprawl problem from Module 07: keys get issued to partners, internal teams, and third-party integrations, with no central inventory and no consistent rotation policy. Good governance treats an API key the same way Module 09 treats any other entitlement — issuance with a documented purpose and owner, scoping to the minimum required permissions, scheduled rotation, and a clean revocation path when the integration ends.</p>
+
+  <h3>The API Gateway as Enforcement Point</h3>
+  <p>API gateways (Kong, Apigee, AWS API Gateway, or PingFederate acting as an OAuth AS) are where application identity gets operationally enforced: validating the API key or OAuth bearer token presented, identifying which application is calling, enforcing rate limits per application identity, and applying the same PEP pattern from Module 08 to decide what that application identity is allowed to do.</p>
+
+  <h3>mTLS: The Strongest Application Identity Mechanism</h3>
+  <p>Mutual TLS authentication — where both client and server present certificates and verify each other cryptographically — is the strongest application identity mechanism available, because it removes the shared-secret problem entirely. There's no API key or client secret to leak; trust is established through certificate-based cryptographic proof. This connects directly to Module 12's PKI content, where certificate lifecycle management gets its full architectural treatment.</p>
+
+  <h3>Governing Application Identities Like Privileged Identities</h3>
+  <p>The same entitlement discipline from Section 11.2 applies here: an OAuth client with broad scopes, or an API key with unrestricted access, is a privileged identity and deserves the same governance rigor as any service account — an owner, a documented purpose, and a periodic review of whether its current scope is still justified.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.3-A · Application Identity Spectrum</div>
+    <div style="position:relative; height:6px; background:linear-gradient(to right, var(--accent-red), var(--accent-amber), var(--accent-primary)); border-radius:999px; margin:2.2rem 0.5rem 1rem 0.5rem;"></div>
+    <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+      <div style="flex:1; min-width:180px;">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-red);">WEAKEST — Static API Key</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.5;">No expiry by default, header/query-based, leak-prone, no built-in scope enforcement.</div>
+      </div>
+      <div style="flex:1; min-width:180px;">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-amber);">MODERATE — OAuth Client Credentials</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.5;"><code>client_id</code> + secret, short-lived tokens, scoped access by protocol design.</div>
+      </div>
+      <div style="flex:1; min-width:180px;">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-primary);">STRONGEST — mTLS Client Certificate</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem; line-height:1.5;">Cryptographic identity, no shared secret, certificate lifecycle governs trust.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.3-B · API Key Sprawl Problem</div>
+    <div style="display:flex; gap:1.2rem; align-items:flex-end; flex-wrap:wrap; justify-content:center; padding-top:1.4rem;">
+      <div style="text-align:center;">
+        <div style="width:64px; height:90px; background:var(--accent-blue); border-radius:6px 6px 0 0;"></div>
+        <div style="font-size:0.78rem; font-weight:700; margin-top:0.5rem;">200+</div>
+        <div style="font-size:0.72rem; color:var(--text-muted); max-width:110px;">Internal teams (service-to-service)</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:64px; height:35px; background:var(--accent-amber); border-radius:6px 6px 0 0;"></div>
+        <div style="font-size:0.78rem; font-weight:700; margin-top:0.5rem;">50+</div>
+        <div style="font-size:0.72rem; color:var(--text-muted); max-width:110px;">Partner integrations</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:64px; height:55px; background:var(--accent-violet); border-radius:6px 6px 0 0;"></div>
+        <div style="font-size:0.78rem; font-weight:700; margin-top:0.5rem;">80+</div>
+        <div style="font-size:0.72rem; color:var(--text-muted); max-width:110px;">Third-party SaaS (Slack, Salesforce, payment processors)</div>
+      </div>
+      <div style="align-self:center; font-size:1.4rem; color:var(--text-muted); padding:0 0.5rem 1.5rem 0.5rem;">=</div>
+      <div style="text-align:center;">
+        <div style="width:64px; height:140px; background:var(--accent-red); border-radius:6px 6px 0 0; opacity:0.85;"></div>
+        <div style="font-size:0.78rem; font-weight:700; margin-top:0.5rem;">330+</div>
+        <div style="font-size:0.72rem; color:var(--text-muted); max-width:120px;">Total keys — no central inventory, unknown rotation status</div>
+      </div>
+    </div>
+    <div class="diagram-caption">API key sprawl mirrors SSH key sprawl (Module 07) — same governance failure, different credential type.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.3-C · API Gateway as Application Identity PEP</div>
+    <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:480px; margin:0 auto;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; text-align:center; font-size:0.85rem; font-weight:600;">External / Internal Client</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:0.9rem 1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="text-align:center; font-weight:700; font-size:0.88rem; margin-bottom:0.6rem;">API Gateway</div>
+        <ul style="font-size:0.76rem; color:var(--text-muted); padding-left:1.1rem; line-height:1.6;">
+          <li>Validate: API key OR OAuth Bearer token OR mTLS cert</li>
+          <li>Identify: which application identity is calling?</li>
+          <li>Enforce: rate limit per application identity</li>
+          <li>Enforce: scope/permission check (PEP pattern, Module 08)</li>
+        </ul>
+      </div>
+      <div style="text-align:center; color:var(--text-muted);">↓ route</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; text-align:center; font-size:0.85rem; font-weight:600;">Backend Service</div>
+    </div>
+    <div class="diagram-caption">The API gateway is both an authentication checkpoint and a Policy Enforcement Point (Module 08) for application identities.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <span class="callout-label">🟣 Security — Static Keys Recreate the Password Problem</span>
+    <p>Static API keys without expiry are the credential equivalent of a password that's never rotated and never expires — a standing risk that grows every day it exists. Unlike OAuth access tokens, which are inherently short-lived by protocol design (Module 03), API keys are often architected as permanent credentials by default. If your API platform issues keys without an expiry mechanism, you've recreated the static password problem (Module 05) at the application identity layer — except often with broader scope and less monitoring than a human user account would ever have.</p>
+  </div>
+
+  <div class="analogy analogy--green">
+    <span class="analogy-label">🟢 Analogy — Registration Discipline, Applied Everywhere</span>
+    <p>Application identity governance is exactly the OAuth client management discipline you already practice when you register a new client application with PingFederate. You assign a <code>client_id</code>, scope the permissions, set a redirect URI, and — critically — you know who owns that client registration. The gap most enterprises have is applying that same registration discipline to every API key and service identity, not just the ones that go through PingFederate's OAuth AS. Every application identity, regardless of which system issues its credential, deserves the same registration rigor: an owner, a documented purpose, a scope, and a rotation/expiry policy.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: What is OAuth's mTLS-bound access token mechanism (RFC 8705)?</summary>
+    <div class="deepdive-body">
+      <p>A standard OAuth bearer token is, as the name implies, usable by whoever bears it — if an attacker intercepts the token in transit or steals it from storage, they can replay it against the resource server with no further proof required. RFC 8705 closes this gap by cryptographically binding the access token to the client's TLS certificate at issuance time. The authorization server records a hash of the client certificate used during the token request and embeds that hash as a confirmation claim (<code>cnf</code>) inside the issued token.</p>
+      <p>When the token is later presented to a resource server, the resource server doesn't just validate the token's signature and expiry — it also re-establishes the mTLS connection and checks that the certificate presented on <em>this</em> connection matches the certificate hash bound into the token. If an attacker steals the bearer token but doesn't also possess the private key for the bound certificate, the token is useless to them: it will fail certificate-binding validation even though the token itself is perfectly valid and unexpired. This is what distinguishes mTLS-bound tokens from ordinary bearer tokens architecturally — the security property shifts from "anyone who has the token can use it" to "only the entity holding the matching private key can use it," which is exactly the proof-of-possession model that high-assurance financial and government APIs increasingly require.</p>
+    </div>
+  </details>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Application Identity Registry Audit</span>
+    <p>Find your API gateway's client/application registry (Kong, Apigee, AWS API Gateway, or PingFederate OAuth clients). Count the registered applications. For five of them: do they have an expiry policy on their credentials? Are they scoped to only the permissions they need, or do they have broad/wildcard scopes? When was the credential last rotated? This is your application identity governance baseline.</p>
+  </div>
+</div>
+
+
+      <!-- ====================================================
+           PHASE 2 CONTENT WILL BE INSERTED HERE:
+           Sections 11.4, 11.5, 11.6
+           ==================================================== -->
+      <!-- ============================================================
+     SECTION 11.4 — Container & Kubernetes Identity
+     ============================================================ -->
+<div class="module" data-stack-layers="cloud,tokens,applications" id="s11-4">
+  <div class="module-divider">
+    <div class="module-num">11.4</div>
+    <h2>📦 Container &amp; Kubernetes Identity</h2>
+  </div>
+
+  <p>Everything covered so far assumes an identity that lives for months or years. Containers break that assumption. A pod is created and destroyed constantly, runs at a scale traditional identity models never anticipated, and the old pattern — one long-lived credential per long-lived account — simply doesn't fit a workload that might exist for ninety seconds.</p>
+
+  <h3>Kubernetes Service Accounts</h3>
+  <p>A Kubernetes Service Account (KSA) is the built-in Kubernetes identity primitive for pods. It's conceptually similar to an AD or Linux service account — an identity a process runs as, rather than a human logs in as — but it's native to the cluster and scoped by namespace. The default behavior is the part that catches people off guard: every pod gets a service account whether anyone asks for one or not. If a pod spec doesn't specify <code>serviceAccountName</code>, Kubernetes silently assigns the namespace's <code>default</code> service account and mounts its token into the pod's filesystem.</p>
+
+  <h3>Kubernetes RBAC</h3>
+  <p>Kubernetes implements the RBAC model from Module 08 through four object types: Roles and ClusterRoles define permissions (namespace-scoped and cluster-scoped, respectively), while RoleBindings and ClusterRoleBindings attach those permissions to a service account. A service account with no RoleBinding has no permissions beyond authenticating to the API server; a service account bound to an overly broad ClusterRole can read or modify far more of the cluster than the workload running under it was ever meant to touch.</p>
+
+  <h3>Token Architecture: Legacy vs. Bound</h3>
+  <p>Early Kubernetes versions mounted long-lived JWT tokens — stored as a Kubernetes Secret, with no expiry by default and no audience restriction, meaning the token was valid against any service that trusted the cluster's signing key. The TokenRequest API and Bound Service Account Tokens replaced this with short-lived tokens (one hour by default), bound to a specific audience, and automatically rotated by the kubelet without any manual intervention — the same architectural shift Module 03 covered when OAuth moved from long-lived API keys toward short-lived, scoped access tokens.</p>
+
+  <h3>Pod Identity for External Resources</h3>
+  <p>A pod frequently needs to authenticate to something outside the cluster entirely — an S3 bucket, a managed database, an external API. Embedding a static AWS access key or database password in a container image or environment variable is a well-known anti-pattern: the image gets pushed to a registry, the credential gets baked into every layer that ever referenced it, and rotating it means rebuilding and redeploying. Section 11.5 covers the architectural fix in full: workload identity federation, which lets a Kubernetes service account assume a cloud IAM identity without any static credential ever existing.</p>
+
+  <h3>Container Image Identity and Service Mesh Identity</h3>
+  <p>Two related but distinct concepts round this out. Container image signing and provenance attestation establish a form of identity for the image itself — verifying what's running is what was built and approved, separate from the runtime identity of the pod executing it. And service mesh platforms like Istio and Linkerd go a step further than KSA tokens, assigning workloads cryptographic identity through SPIFFE/SPIRE (X.509-based SVIDs) so that every service-to-service call inside the mesh is mutually authenticated via mTLS, independent of the application code having to implement any of it.</p>
+
+  <div class="callout callout-concept">
+    <span class="callout-label">🔵 Concept — Ephemeral Identity</span>
+    <p>Every identity model covered through Module 10 assumes the identity outlives the credential check that uses it — a human account, an AD service account, even a long-lived API key all persist independently of any single authentication event. Container identity inverts that assumption. A pod's identity is often created, used, and destroyed within the same lifetime as the workload itself, sometimes minutes apart. This is "ephemeral identity": the credential and the thing it identifies are born and retired together, which is exactly why bound, short-lived tokens (rather than long-lived Secrets) are the correct default for container-native identity — a long-lived credential attached to a short-lived workload is a mismatch that outlives its own justification.</p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.4-A · Kubernetes Service Account Architecture</div>
+    <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:520px; margin:0 auto;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem;"><strong>Pod Spec:</strong> <code>serviceAccountName: payment-processor-sa</code></div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem;"><strong>Kubernetes:</strong> mounts KSA token into pod (<code>/var/run/secrets/kubernetes.io/serviceaccount/token</code>)</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem;"><strong>Pod process:</strong> uses token to call the Kubernetes API, or (via federation) to call external APIs</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));"><strong>RBAC check:</strong> RoleBinding maps <code>payment-processor-sa</code> to a Role with specific permissions — e.g. read Secrets in the <code>payments</code> namespace only</div>
+    </div>
+    <div class="diagram-caption">Every pod has a Kubernetes identity — by default, often more permissive than intended.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.4-B · Default Service Account Risk</div>
+    <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:560px; margin:0 auto;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem;">Pod created <strong>without</strong> explicit <code>serviceAccountName</code></div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem;">Automatically assigned the <code>default</code> service account, token auto-mounted</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 45%, var(--border)); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem; background:color-mix(in srgb, var(--accent-red) 7%, var(--surface));">If <code>default</code> SA has any RBAC bindings (common misconfiguration): pod inherits that access</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 45%, var(--border)); border-radius:10px; padding:0.8rem 1rem; font-size:0.82rem; background:color-mix(in srgb, var(--accent-red) 7%, var(--surface));">Attacker who compromises <em>any</em> pod in that namespace can potentially access the Kubernetes API with the default SA's permissions</div>
+    </div>
+    <div class="diagram-caption">Mitigation: <code>automountServiceAccountToken: false</code> for pods that don't need K8s API access; least-privilege RBAC for the default SA — ideally none at all.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.4-C · Service Account Token Evolution</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:1rem;">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--text-muted); margin-bottom:0.6rem;">Legacy (pre-1.24)</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.6;">Long-lived JWT tokens, stored as a Kubernetes Secret. Never expires by default. Not audience-bound — usable anywhere.</div>
+      </div>
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-primary); margin-bottom:0.6rem;">Modern (TokenRequest API / Bound Tokens)</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.6;">Short-lived (default 1 hour), audience-bound — only valid for the specified API server/service. Automatically rotated by the kubelet.</div>
+      </div>
+    </div>
+    <div class="diagram-caption">The shift to bound tokens mirrors the shift from static passwords to short-lived OAuth tokens (Module 03) — same architectural principle, applied to container identity.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <span class="callout-label">🟣 Security — Default Auto-Mount Misconfiguration</span>
+    <p>The default service account auto-mount is one of the most common Kubernetes security misconfigurations. By default, every pod gets a token for the Kubernetes API mounted into its filesystem, whether or not the application running in that pod actually needs to call the Kubernetes API. An attacker who achieves remote code execution in any pod can read this token and use it to enumerate — or potentially escalate privileges within — the cluster, depending on what RBAC permissions the default service account has. Architectural remedy: set <code>automountServiceAccountToken: false</code> at the pod or service account level for any workload that doesn't need Kubernetes API access, which is most application workloads.</p>
+  </div>
+
+  <div class="analogy analogy--green">
+    <span class="analogy-label">🟢 Analogy — The Container-Native Keytab</span>
+    <p>Kubernetes Service Accounts are the container-native equivalent of the AD service accounts and Linux keytabs you already understand from Modules 02 and 07. Just as a Linux host has a Kerberos keytab that proves its identity without a password, a pod has a KSA token that proves its identity to the Kubernetes API. Just as you'd never want every Linux host to have local admin rights by default, you don't want every pod to have broad Kubernetes API access by default. The governance discipline transfers directly: least privilege, scoped permissions, short-lived credentials, and explicit assignment rather than implicit defaults.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: What is SPIFFE/SPIRE, and how does it relate to service mesh mTLS identity?</summary>
+    <div class="deepdive-body">
+      <p>SPIFFE (Secure Production Identity Framework For Everyone) is an open specification for a universal workload identity format that works the same way whether a workload runs in Kubernetes, on a VM, or on bare metal — solving the problem that KSA tokens, cloud IAM roles, and on-prem certificates each have their own incompatible identity formats. Every workload gets a SPIFFE ID, a URI-formatted identifier like <code>spiffe://example.org/payments/api</code>, and that identity is expressed cryptographically as an SVID (SPIFFE Verifiable Identity Document) — typically an X.509 certificate, though JWT-based SVIDs also exist for non-mTLS contexts.</p>
+      <p>SPIRE is the reference implementation that issues and rotates these SVIDs. It runs a server plus a node agent on every host, and crucially, it doesn't rely on a static secret to bootstrap trust — it uses node and workload attestation, verifying properties of the runtime environment itself (which Kubernetes node a pod is running on, which AWS instance, which Unix process) to decide which SPIFFE ID a workload is entitled to receive. This is what service meshes like Istio build on: Istio's sidecar proxies fetch SVIDs from a SPIFFE-compatible identity provider and use them to establish mTLS between every service-to-service call automatically, so individual application code never has to implement certificate handling itself. The architectural payoff is portability — the same workload identity model holds whether you're running in EKS, GKE, on-prem VMware, or bare metal, which none of the platform-native mechanisms (KSA tokens, IRSA, Azure managed identities) achieve on their own.</p>
+    </div>
+  </details>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Kubernetes Service Account Audit</span>
+    <p>If you have access to a Kubernetes cluster: run <code>kubectl get serviceaccounts --all-namespaces</code> to see all service accounts. Pick one namespace and check which pods use the <code>default</code> service account versus a custom one. Check whether <code>automountServiceAccountToken</code> is explicitly set. Now check the RBAC bindings for the <code>default</code> service account in that namespace — does it have any permissions? If yes, every pod using the default SA inherits them — that's your finding.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 11.5 — Workload Identity Federation
+     ============================================================ -->
+<div class="module" data-stack-layers="cloud,tokens,sso" id="s11-5">
+  <div class="module-divider">
+    <div class="module-num">11.5</div>
+    <h2>🔄 Workload Identity Federation</h2>
+  </div>
+
+  <p>Section 11.4 ended on a problem: how does a pod, a CI/CD pipeline, or a server authenticate to a cloud provider's IAM without a static, long-lived credential embedded somewhere? Workload identity federation is the architectural answer, and it's arguably the single most consequential shift in non-human identity management of the last several years.</p>
+
+  <h3>The Federation Pattern</h3>
+  <p>The pattern is consistent across every cloud provider, even though the implementation details differ: a workload presents a token from a trusted identity provider — the Kubernetes API server's OIDC issuer, GitHub Actions' built-in OIDC issuer, or your enterprise IdP — to the cloud provider. The cloud provider validates that token against the trusted issuer's public keys, checks the claims against a pre-configured trust policy, and in exchange issues temporary, short-lived cloud credentials. No static cloud credential is ever stored anywhere in this flow.</p>
+
+  <h3>Provider-Specific Implementations</h3>
+  <p>AWS implements this as IAM Roles for Service Accounts (IRSA): an EKS cluster has a cluster-specific OIDC issuer URL, registered in AWS IAM as a trusted OIDC identity provider, and an IAM role's trust policy references a specific Kubernetes service account by name. GCP's Workload Identity does the equivalent for GKE, binding a Kubernetes service account to a GCP service account. Azure Workload Identity follows the same model for AKS using federated credentials registered against Entra ID. And GitHub Actions OIDC extends this exact pattern to CI/CD: instead of storing an AWS access key and secret as a GitHub secret, a workflow requests a short-lived OIDC token scoped to that specific repository, workflow, and branch, then exchanges it for temporary cloud credentials.</p>
+
+  <h3>The Unifying Principle</h3>
+  <p>What ties all of these together is the same Zero Standing Privilege principle from Module 10, applied to machine identity: short-lived, automatically rotated, cryptographically verified credentials issued just-in-time, replacing static long-lived secrets entirely. The trust relationship itself does the heavy lifting — the cloud provider is configured to trust a specific OIDC issuer and validates specific claims (subject, audience, and for CI/CD, often the repository and branch) before ever issuing a credential.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.5-A · Workload Identity Federation — Generic Flow</div>
+    <ol style="font-size:0.84rem; line-height:1.9; padding-left:1.3rem;">
+      <li><strong>Workload</strong> (pod / CI job) has a short-lived identity token from its native platform — a K8s service account token or a GitHub Actions OIDC token.</li>
+      <li><strong>Workload → Cloud Provider STS/Token endpoint:</strong> presents the token plus the requested role/identity.</li>
+      <li><strong>Cloud Provider:</strong> validates the token's signature against the trusted OIDC issuer's public keys.</li>
+      <li><strong>Cloud Provider:</strong> validates the claims — does the subject match the trust policy condition? Is the audience correct?</li>
+      <li><strong>Cloud Provider → Workload:</strong> issues temporary credentials (e.g. an AWS STS <code>AssumeRoleWithWebIdentity</code> response — short-lived access key, secret, and session token).</li>
+      <li><strong>Workload:</strong> uses the temporary credentials for cloud API calls. They expire in roughly an hour — no manual rotation needed.</li>
+    </ol>
+    <div class="diagram-caption">No static long-lived credential exists anywhere in this flow.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.5-B · AWS IRSA Architecture — EKS Detail</div>
+    <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:560px; margin:0 auto; font-size:0.81rem;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><strong>EKS Cluster:</strong> has an OIDC issuer URL, unique per cluster</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><strong>AWS IAM:</strong> OIDC Identity Provider registered, trusting the EKS cluster's OIDC issuer</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><strong>IAM Role trust policy condition:</strong> <code>token.subject == system:serviceaccount:payments:payment-sa</code></div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:0.85rem 1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <strong>Pod</strong> (namespace <code>payments</code>, using <code>payment-sa</code>):
+        <ul style="padding-left:1.1rem; margin-top:0.4rem; line-height:1.7; color:var(--text-muted);">
+          <li>AWS SDK automatically detects the IRSA environment</li>
+          <li>Reads the K8s service account token (mounted, auto-rotated)</li>
+          <li>Calls AWS STS <code>AssumeRoleWithWebIdentity</code></li>
+          <li>Receives temporary AWS credentials</li>
+          <li>SDK calls (S3, DynamoDB, etc.) use the temp credentials</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram-caption">No AWS access key ever exists in the pod, the container image, or any configuration file.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.5-C · GitHub Actions OIDC — CI/CD Federation</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 40%, var(--border)); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-red) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.82rem; color:var(--accent-red); margin-bottom:0.5rem;">BEFORE — Anti-pattern</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.6;">GitHub Secrets: <code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code> — static, long-lived, manually rotated if ever.</div>
+      </div>
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.82rem; color:var(--accent-primary); margin-bottom:0.5rem;">AFTER — Workload Identity Federation</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.6;">
+          GitHub Actions requests an OIDC token (scoped to this repo/workflow/branch) → presents it to AWS STS <code>AssumeRoleWithWebIdentity</code> → AWS validates <code>repo == "company/payment-service" AND branch == "main"</code> → issues temporary credentials valid only for this workflow run.
+        </div>
+      </div>
+    </div>
+    <div class="diagram-caption">Zero static cloud credentials stored in CI/CD secrets — the credential is requested fresh, scoped, and short-lived for every single workflow run.</div>
+  </div>
+
+  <div class="callout callout-architect">
+    <span class="callout-label">🟢 Architect's Take</span>
+    <p>Workload identity federation is the single most important architectural shift in non-human identity management of the last several years, and it directly extends the JIT/Zero Standing Privilege principle from Module 10 to machine identity. The old pattern — generate a long-lived cloud access key, store it as a secret somewhere, hope it never leaks — is being systematically replaced by federation: trust an existing, already-governed identity provider (your Kubernetes cluster, your CI/CD platform) and exchange short-lived proof of that identity for short-lived cloud credentials, scoped to exactly what's needed, for exactly as long as needed. If your CI/CD pipelines still store static AWS/Azure/GCP credentials as secrets, migrating to OIDC-based workload identity federation should be a top priority on your non-human identity roadmap.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: How does the cloud provider validate an OIDC token without a pre-shared secret?</summary>
+    <div class="deepdive-body">
+      <p>This is the same JWKS-based validation flow from Module 03's JWT validation content, applied to an external trust relationship instead of your own IdP. When an OIDC issuer — whether that's a Kubernetes cluster's API server or GitHub's Actions platform — signs a token, it signs it using the private half of an asymmetric key pair. The issuer publishes the public half at a well-known endpoint, typically <code>/.well-known/jwks.json</code>, which any relying party can fetch independently. There's no shared secret to provision or rotate between the issuer and the cloud provider; the cloud provider simply needs to know which issuer URL to trust.</p>
+      <p>When AWS IAM is configured with an OIDC identity provider, it stores the issuer's URL and a thumbprint of the issuer's TLS certificate. At validation time, when a workload presents a JWT to AWS STS, AWS fetches (and caches) the issuer's JWKS, finds the public key matching the token's <code>kid</code> (key ID) header, and verifies the token's signature cryptographically. If the signature checks out and the token hasn't expired, AWS then evaluates the trust policy's conditions against the token's claims — the subject, audience, and any custom claims like repository or branch. Only if every condition matches does STS issue temporary credentials. The entire chain of trust rests on asymmetric cryptography and a one-time configuration step (registering the issuer and its certificate thumbprint) rather than any secret that could leak or need rotation.</p>
+    </div>
+  </details>
+
+  <div class="usecase">
+    <span class="usecase-tag">Use Case</span>
+    <p>Your CI/CD platform (GitHub Actions or GitLab CI) currently stores AWS access keys as pipeline secrets for 40 different repositories, used to deploy to various AWS accounts. A security audit flags this as a critical risk: any of the 40 repos' secrets could leak and grant persistent AWS access. Design the migration to workload identity federation: what AWS IAM trust policies need to be created, how do you scope each repository's access to only its intended AWS account/resources, and what is the rollout sequence across 40 repositories without breaking deployments?</p>
+  </div>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Federation Adoption Check</span>
+    <p>Check whether your organization's CI/CD pipelines use static cloud credentials (stored as secrets) or workload identity federation (OIDC-based). If static credentials are used: find how many pipelines/repos have AWS/Azure/GCP credentials stored as secrets — each one is a candidate for migration to federation. If federation is already used: find the trust policy for one workload — is it scoped tightly (specific repo, specific branch) or broadly (any repo in the org)?</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 11.6 — RPA Identities: Governance for Bots
+     ============================================================ -->
+<div class="module" data-stack-layers="iga,pam,applications" id="s11-6">
+  <div class="module-divider">
+    <div class="module-num">11.6</div>
+    <h2>🤖 RPA Identities — Governance for Bots</h2>
+  </div>
+
+  <p>Robotic Process Automation bots automate tasks the way a human would — logging into applications and operating them through the standard UI or API, but driven by automation software like UiPath, Automation Anywhere, or Blue Prism rather than a person at a keyboard. That single design choice creates a governance blind spot unlike anything else in this module.</p>
+
+  <h3>Why RPA Identity Is Architecturally Distinct</h3>
+  <p>RPA bots typically use credentials that <em>look like</em> human credentials — a named user account in the target application — precisely because the bot is automating what a human used to do. Either the bot reuses the same login a real employee used when the process was manual, or a dedicated "bot user" account gets created in the target application. Either way, IGA systems built around human JML often don't recognize this account as non-human at all. It has a name. It has a license seat. It logs in like a person.</p>
+
+  <h3>RPA at Scale, and Credential Vaulting</h3>
+  <p>Enterprises running hundreds of bots quickly accumulate hundreds of credential sets across multiple applications — the bot that processes invoices might need SAP access, email access, and shared drive access, all at once. The architectural fix mirrors Section 11.3's application identity governance: RPA orchestration platforms like UiPath Orchestrator and Automation Anywhere Control Room should integrate with CyberArk to retrieve bot credentials at runtime, rather than storing them inside the automation workflow itself where they'd be visible to anyone who can open the workflow definition.</p>
+
+  <h3>Unattended vs. Attended Bots</h3>
+  <p>This distinction drives most of the governance risk calculus. Unattended bots run on a schedule or trigger with no human supervision — the highest-risk category, because there's no human in the loop to notice anomalous behavior in the moment. Attended bots run alongside a human user, sharing accountability and visibility with that person, which meaningfully lowers the risk profile even though the underlying credential mechanics are similar.</p>
+
+  <h3>RPA and Separation of Duties</h3>
+  <p>This is the surprising one. If a bot has both "create payment" and "approve payment" access — the exact SoD conflict Module 08/09 taught you to flag for human users — the bot itself becomes an SoD violation. And because it's automated, that conflict isn't a theoretical risk waiting for a malicious human to exploit it; it can be triggered and exploited at machine speed, with no approval delay to catch it.</p>
+
+  <h3>Bringing RPA into the IGA Framework</h3>
+  <p>The fix is the same governance architecture Section 11.2 built for service accounts, applied to bot accounts: ownership, certification, SoD checking, and a lifecycle tied to the automation's business owner rather than to whatever human account the bot happened to inherit.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.6-A · RPA Bot Identity Architecture</div>
+    <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:540px; margin:0 auto; font-size:0.81rem;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><strong>RPA Orchestration Platform</strong> (UiPath Orchestrator): workflow defines "Bot needs SAP login"</div>
+      <div style="text-align:center; color:var(--text-muted);">↓ orchestrator retrieves credential from CyberArk (NOT hardcoded in the workflow)</div>
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:0.75rem 1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));"><strong>CyberArk</strong> → provides the current SAP bot credential</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><strong>Bot</strong> (running on a worker machine): logs into SAP using the retrieved credential, performs the automated task (process invoices), logs out</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><strong>CyberArk:</strong> rotates the SAP bot credential per policy</div>
+    </div>
+    <div class="diagram-caption">RPA credential management should follow the same CyberArk AIM pattern as application credentials (Section 11.3) — never hardcoded in the automation workflow.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.6-B · RPA Identity Blind Spot in IGA</div>
+    <div style="display:flex; flex-direction:column; gap:0.6rem;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; font-size:0.81rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <span><strong>Human employee account:</strong> jsmith</span>
+        <span style="color:var(--accent-primary); font-family:var(--font-mono); font-size:0.74rem;">IGA: tracked, JML lifecycle, quarterly certification ✓</span>
+      </div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem 1rem; font-size:0.81rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <span><strong>Service account:</strong> svc-payment-app</span>
+        <span style="color:var(--accent-primary); font-family:var(--font-mono); font-size:0.74rem;">IGA: tracked (if Section 11.2 governance applied) ✓</span>
+      </div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 45%, var(--border)); border-radius:10px; padding:0.8rem 1rem; font-size:0.81rem; background:color-mix(in srgb, var(--accent-red) 6%, var(--surface));">
+        <div><strong>RPA bot account:</strong> bot-invoice-processor (created in SAP as a "named user" because RPA tools often require a licensed user seat)</div>
+        <div style="color:var(--accent-red); font-family:var(--font-mono); font-size:0.74rem; margin-top:0.4rem;">IGA: ??? — often NOT recognized as a governed identity type, falling into the gap between "looks human" and "no human actually uses it"</div>
+      </div>
+    </div>
+    <div class="diagram-caption">RPA bot accounts often hide in plain sight as ordinary user accounts in target applications.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <span class="callout-label">🟣 Security — Unattended Bots as an Insider-Threat Equivalent</span>
+    <p>Unattended RPA bots with broad application access and no behavioral monitoring are an underappreciated insider-threat-equivalent risk. A compromised unattended bot credential gives an attacker the same access the bot has — often broad, often privileged, often running on a schedule that makes anomalous activity hard to distinguish from normal automated behavior. Unlike a compromised human account, where unusual login times or locations can trigger Module 14's anomaly detection, a bot account's "normal" behavior pattern is already automated and scheduled — making malicious use that mimics the bot's normal pattern very hard to detect without dedicated RPA security monitoring.</p>
+  </div>
+
+  <div class="analogy analogy--amber">
+    <span class="analogy-label">🟡 Analogy — Batch Jobs, With One Critical Difference</span>
+    <p>RPA bots are architecturally similar to the batch job service accounts you've managed for years, but with one critical difference: batch jobs typically use application-specific service accounts — API or database credentials — while RPA bots frequently use named human-style user accounts because the automation literally drives the application's UI the way a person would. This means RPA bot accounts often sit in your HR-disconnected "named user" pool in target applications — invisible to JML-based governance because there's no HR record driving their lifecycle, yet visible (and exploitable) as a standard user account to anyone who obtains the credential.</p>
+  </div>
+
+  <div class="usecase">
+    <span class="usecase-tag">Use Case</span>
+    <p>An enterprise has 230 active RPA bots automating finance, HR, and procurement processes. A security review finds: 40 bots use credentials of former employees whose accounts were never disabled because "the bot needs that login." 15 bots have both create and approve permissions in financial systems (an SoD violation). No bot credentials are in CyberArk — they're stored in the RPA platform's own credential store with weak encryption. Design the remediation architecture: how do you migrate bot credentials to proper governance, eliminate the dependency on former-employee accounts, and resolve the SoD violations without breaking the automated processes the business depends on?</p>
+  </div>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — RPA Credential Audit</span>
+    <p>If RPA is deployed in your organization, find the RPA Orchestrator or Control Room admin console. Count the bots. For five of them: what credential does each bot use to log into target applications? Is that credential a dedicated bot account, or is it (or was it originally) a human employee's account? Is the credential stored in CyberArk, or in the RPA platform's own credential vault? This audit reveals your RPA identity governance maturity.</p>
+  </div>
+</div>
+
+
+      <!-- ====================================================
+           PHASE 3 CONTENT WILL BE INSERTED HERE:
+           Sections 11.7, 11.8, 11.9
+           ==================================================== -->
+      <!-- ============================================================
+     SECTION 11.7 — Device Identity Architecture
+     ============================================================ -->
+<div class="module" data-stack-layers="network,cloud,directory" id="s11-7">
+  <div class="module-divider">
+    <div class="module-num">11.7</div>
+    <h2>📡 Device Identity Architecture</h2>
+  </div>
+
+  <p>Everything so far in this module has covered identities for software — applications, workloads, bots. Device identity covers the hardware underneath: the identity assigned to a physical or virtual device itself, distinct from the identity of whoever happens to be operating it.</p>
+
+  <h3>Device Identity Types</h3>
+  <ul>
+    <li><strong>Managed endpoints</strong> — corporate laptops and desktops, issued device certificates via AD CS auto-enrollment or Intune, used for 802.1X (Module 06) and Conditional Access (Module 04) device-trust signals.</li>
+    <li><strong>Mobile devices</strong> — identity established through MDM enrollment, with ongoing device compliance attestation rather than a single static credential.</li>
+    <li><strong>IoT devices</strong> — sensors, badge readers, building systems — frequently shipped with weak or no cryptographic identity by design.</li>
+    <li><strong>Network infrastructure devices</strong> — routers, switches, firewalls — managed through TACACS+ (Module 06).</li>
+    <li><strong>OT/ICS devices</strong> — industrial control systems running legacy protocols, frequently unable to support modern identity mechanisms at all.</li>
+  </ul>
+
+  <h3>Device Certificates and Conditional Access</h3>
+  <p>Enterprise PKI — previewed here, with full treatment in Module 12 — issues and manages the device certificates that make 802.1X, VPN authentication, and Conditional Access device-trust signals possible. Entra ID Conditional Access (Module 04) consumes the device compliance state Intune reports as one input into its access decisions, meaning device identity feeds directly into how human access policy gets evaluated: the same user credential produces a different access outcome depending on whether it's presented from a managed, compliant device or an unmanaged one.</p>
+
+  <h3>The IoT/OT Identity Gap</h3>
+  <p>Industrial and IoT devices frequently can't support certificate-based identity at all — limited compute, legacy protocols, vendor lock-in, and hardware lifecycles that can span decades all work against retrofitting modern cryptographic identity onto them. The architectural response isn't to force identity onto hardware that structurally can't support it; it's to compensate at the network layer, through segmentation and the NAC-based device profiling Module 06 introduced.</p>
+
+  <h3>Device Lifecycle and the Two-Signal Model</h3>
+  <p>Device identity follows its own three-stage lifecycle — provisioning at enrollment, ongoing attestation that re-verifies trust over time, and decommissioning (certificate revocation) when a device is retired or reported lost. None of this replaces user identity; it complements it. A compromised user credential presented from an unmanaged device is a meaningfully different risk than the same credential presented from a managed, compliant device, which is exactly why strong access architectures evaluate both signals together rather than either one alone.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.7-A · Device Identity Taxonomy</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:1rem;">
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-primary); margin-bottom:0.5rem;">Strong Cryptographic Identity</div>
+        <ul style="font-size:0.78rem; color:var(--text-muted); padding-left:1rem; line-height:1.6;">
+          <li>Managed laptops/desktops (cert via AD CS / Intune)</li>
+          <li>Servers (TLS/Kerberos certs, Modules 02 &amp; 07)</li>
+        </ul>
+      </div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-amber) 45%, var(--border)); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-amber) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-amber); margin-bottom:0.5rem;">Moderate Identity</div>
+        <ul style="font-size:0.78rem; color:var(--text-muted); padding-left:1rem; line-height:1.6;">
+          <li>Mobile devices (MDM enrollment, device attestation)</li>
+          <li>Network infrastructure (TACACS+ managed, Module 06)</li>
+        </ul>
+      </div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 45%, var(--border)); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-red) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.85rem; color:var(--accent-red); margin-bottom:0.5rem;">Weak / No Cryptographic Identity</div>
+        <ul style="font-size:0.78rem; color:var(--text-muted); padding-left:1rem; line-height:1.6;">
+          <li>IoT sensors, badge readers, legacy OT/ICS systems</li>
+          <li>Compensating control: network segmentation + NAC profiling (Module 06), not strong identity</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.7-B · Device + User Identity Combined Decision</div>
+    <table>
+      <thead><tr><th>User Signal</th><th>Device Signal</th><th>Access Decision</th></tr></thead>
+      <tbody>
+        <tr><td>Known user</td><td>Managed / compliant device</td><td style="color:var(--accent-primary); font-weight:600;">Full access</td></tr>
+        <tr><td>Known user</td><td>Unmanaged device</td><td style="color:var(--accent-amber); font-weight:600;">Limited access (Conditional Access)</td></tr>
+        <tr><td>Known user</td><td>Non-compliant device</td><td style="color:var(--accent-red); font-weight:600;">Block / remediate</td></tr>
+        <tr><td>Any user</td><td>Unknown device</td><td style="color:var(--accent-red); font-weight:600;">Block (NAC, Module 06)</td></tr>
+      </tbody>
+    </table>
+    <div class="diagram-caption">Device identity and user identity combine to form a richer access decision than either alone — this is ABAC (Module 08) using device attributes.</div>
+  </div>
+
+  <div class="callout callout-architect">
+    <span class="callout-label">🟢 Architect's Take</span>
+    <p>Treat device identity and user identity as two independent attributes feeding the same access decision, not as a single combined credential. Architecturally, this means your Conditional Access policy engine needs both signals available at evaluation time: the user's authentication result from your IdP, and the device's compliance state from Intune (or equivalent MDM/EMM tooling), evaluated together rather than the device check happening as an afterthought bolted onto a separate system. The payoff is graceful degradation — a stolen password alone isn't enough to gain full access if the device signal doesn't also check out, which is a materially stronger posture than user identity carrying the entire access decision by itself.</p>
+  </div>
+
+  <div class="callout callout-security">
+    <span class="callout-label">🟣 Security — The IoT/OT Structural Gap</span>
+    <p>IoT and OT devices represent a structural identity gap that pure software solutions cannot fully close. Many industrial control systems and IoT devices were designed with 10–20 year hardware lifecycles, predate modern identity standards, and run on constrained hardware that cannot support TLS/certificate operations at all. The architectural response is not "force identity onto these devices," which is often technically infeasible, but "compensate at the network layer" — strict network segmentation isolating OT networks from IT networks, NAC-based device fingerprinting (Module 06) to detect unauthorized devices joining the network, and monitoring for anomalous traffic patterns rather than relying on the device to prove its own identity cryptographically.</p>
+  </div>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Device Certificate Infrastructure Check</span>
+    <p>Check your organization's device certificate infrastructure: how are corporate laptops issued device certificates (AD CS auto-enrollment? Intune?)? How does Conditional Access (Module 04) use device compliance status? Now consider IoT/OT devices in your environment — badge readers, building automation, manufacturing equipment, if applicable — what identity mechanism, if any, do they use? What network segmentation exists to compensate for weak device identity in that population?</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 11.8 — Machine Identity Lifecycle Management
+     ============================================================ -->
+<div class="module" data-stack-layers="iga,cloud,pam" id="s11-8">
+  <div class="module-divider">
+    <div class="module-num">11.8</div>
+    <h2>♻️ Machine Identity Lifecycle Management</h2>
+  </div>
+
+  <p>Module 01's JML lifecycle works because there's a single authoritative trigger system behind it — the HR record. Machine identities have no equivalent. They're created by engineers, deployment pipelines, cloud provisioning tools, and RPA platforms, each operating independently, with no unified system that says "this identity's reason for existing has ended."</p>
+
+  <h3>Lifecycle Stages and Their Real Triggers</h3>
+  <ul>
+    <li><strong>Creation</strong> — triggered by code deployment, infrastructure provisioning (Terraform/CloudFormation), application onboarding, or RPA bot development.</li>
+    <li><strong>Active use</strong> — ongoing authentication and authorization, ideally monitored for usage patterns rather than left silent.</li>
+    <li><strong>Rotation</strong> — credential rotation per policy (CyberArk CPM, Module 10), certificate renewal on its own schedule.</li>
+    <li><strong>Change</strong> — application architecture changes, scope changes, ownership transfer.</li>
+    <li><strong>Decommission</strong> — triggered by application retirement, infrastructure teardown, or project end — and, in practice, the stage most often <em>not</em> triggered reliably.</li>
+  </ul>
+
+  <h3>The "Who Decommissions It" Problem</h3>
+  <p>When an application is decommissioned, its service accounts, API keys, and cloud IAM roles routinely outlive it. No automated process ties identity decommissioning to infrastructure teardown unless someone deliberately built one — the application's servers get powered off, its database gets archived, and its identities just keep existing, valid, unmonitored, waiting for someone to either notice or exploit them.</p>
+
+  <h3>Infrastructure as Code as the Architectural Fix</h3>
+  <p>When identity is defined as part of the same Infrastructure as Code that provisions the resource it serves — an IAM role or Kubernetes service account declared in the same Terraform module as the application it supports — destroying that module destroys the identity with it. This doesn't solve the problem for identities created through manual console actions or ad-hoc scripts, which is exactly why discovery and inventory remain necessary as a compensating control: periodic discovery scans, including cloud IAM access analyzers, AD service account audits, and API gateway client inventories, catch what lifecycle automation missed.</p>
+
+  <h3>Machine Identity Certification</h3>
+  <p>Module 09's access certification model extends here too, with one structural change: certification needs an owner to certify against (Section 11.2's mandatory ownership requirement is what makes this possible at all), and the certification cadence should be tied to risk — a high-privilege, ungoverned service account warrants more frequent review than a tightly-scoped, IaC-managed one.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.8-A · Machine Identity Lifecycle — Trigger Map</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+      <div style="border:1px solid color-mix(in srgb, var(--accent-primary) 40%, var(--border)); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.84rem; color:var(--accent-primary); margin-bottom:0.6rem;">Creation triggers — usually automated</div>
+        <ul style="font-size:0.78rem; color:var(--text-muted); padding-left:1rem; line-height:1.7;">
+          <li><code>terraform apply</code> → cloud IAM role created</li>
+          <li>Application onboarding → service account created</li>
+          <li>Developer self-service → API key issued</li>
+          <li>RPA development → bot account created</li>
+        </ul>
+      </div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 40%, var(--border)); border-radius:10px; padding:1rem; background:color-mix(in srgb, var(--accent-red) 6%, var(--surface));">
+        <div style="font-weight:700; font-size:0.84rem; color:var(--accent-red); margin-bottom:0.6rem;">Decommission triggers — often MISSING</div>
+        <ul style="font-size:0.78rem; color:var(--text-muted); padding-left:1rem; line-height:1.7;">
+          <li><code>terraform destroy</code> → SHOULD remove IAM role (if managed)</li>
+          <li>Application retirement → SHOULD trigger SA removal (often manual, often forgotten)</li>
+          <li>Project end → SHOULD trigger API key revocation (often manual, often forgotten)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram-caption">Creation is usually automated. Decommissioning is usually manual — and manual processes get skipped.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.8-B · IaC-Managed Identity Lifecycle</div>
+    <div style="display:flex; flex-direction:column; gap:0.5rem; max-width:540px; margin:0 auto; font-size:0.81rem;">
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;">Terraform/CloudFormation code defines: <code>resource "aws_iam_role" "payment_service_role" { ... }</code></div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><code>terraform apply</code> → IAM role created, tagged with its source module/repo</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:2px solid var(--accent-primary); border-radius:10px; padding:0.75rem 1rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">Application lifecycle: the role exists exactly as long as the Terraform-managed infrastructure exists</div>
+      <div style="text-align:center; color:var(--text-muted);">↓</div>
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.75rem 1rem;"><code>terraform destroy</code> → IAM role automatically removed</div>
+    </div>
+    <div class="diagram-caption">When identity is defined in the same IaC as the infrastructure it serves, lifecycle is automatically coupled — no separate decommissioning step to forget.</div>
+  </div>
+
+  <div class="callout callout-architect">
+    <span class="callout-label">🟢 Architect's Take</span>
+    <p>The architectural principle that solves the machine identity lifecycle problem most effectively is coupling identity lifecycle to infrastructure lifecycle through Infrastructure as Code. When a cloud IAM role, a Kubernetes service account, or a database credential is defined in the same Terraform module as the resource it serves, destroying that module destroys the identity too — no separate manual decommissioning step exists to be forgotten. This doesn't solve the problem for identities created through manual console actions or ad-hoc scripts, which is why discovery and inventory remain necessary as a compensating control, but it dramatically reduces the orphaned-identity surface for any organization with mature IaC practices.</p>
+  </div>
+
+  <div class="analogy analogy--green">
+    <span class="analogy-label">🟢 Analogy — Try-With-Resources, at Infrastructure Scale</span>
+    <p>IaC-coupled identity lifecycle is the infrastructure-scale equivalent of a Java try-with-resources block. Inside a try-with-resources statement, you don't have to remember to call <code>close()</code> on a file handle or a database connection — the language guarantees cleanup happens when the block's scope ends, regardless of how execution exits it. A Terraform module that declares an IAM role alongside the resource it serves gives you the same guarantee at infrastructure scale: the identity's "scope" is the module's lifecycle, and destroying the module destroys the identity automatically. Identities created outside that scope — through a console click, an ad-hoc script, a one-off CLI command — are the infrastructure equivalent of a raw file handle opened without a try-with-resources wrapper: it works fine until somebody forgets to close it, and now you're debugging a leak months later.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: What is AWS IAM Access Analyzer's "unused access" feature?</summary>
+    <div class="deepdive-body">
+      <p>IAM Access Analyzer's unused access findings address exactly the discovery/compensating-control gap this section describes. Rather than relying on someone to remember to review a role, Access Analyzer continuously evaluates IAM roles, users, and permissions across an AWS account or organization against CloudTrail activity data, and surfaces specific, actionable findings: an IAM role that hasn't been assumed in 90+ days, a permission granted to a role that has never actually been exercised by any API call the role has made, or an access key that exists but shows no recent usage.</p>
+      <p>What makes this more useful than a blunt "delete anything unused" rule is the granularity — it doesn't just flag an entire role as unused, it can flag individual unused permissions within an otherwise active role, which is the more common real-world case: a service account that's genuinely still needed, but was granted broader permissions than it has ever exercised. That distinction matters architecturally because it turns a binary "keep or delete" decision into a least-privilege tightening exercise, which is exactly the kind of finding a non-human identity governance program (Section 11.9) should be routing into a recurring remediation workflow rather than a one-time cleanup project.</p>
+    </div>
+  </details>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Trace a Decommissioned Application</span>
+    <p>Pick one application that was decommissioned or significantly re-architected in the past year. Trace what happened to its non-human identities: were its service accounts disabled? Its API keys revoked? Its cloud IAM roles deleted? Its Kubernetes service accounts removed? If you can't easily answer these questions, or if you find that some identities still exist — that gap is exactly the lifecycle problem this section describes.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 11.9 — Non-Human Identity Governance Framework
+     ============================================================ -->
+<div class="module" data-stack-layers="iga,pam,cloud,authz" id="s11-9">
+  <div class="module-divider">
+    <div class="module-num">11.9</div>
+    <h2>🏛️ Non-Human Identity Governance Framework</h2>
+  </div>
+
+  <p>This closing section synthesizes everything the module has covered — service accounts, application identities, container/K8s identities, workload federation, RPA, and devices — into a single practical governance model.</p>
+
+  <h3>The Five Pillars</h3>
+  <ol>
+    <li><strong>Inventory</strong> — you cannot govern what you cannot see. A continuously updated inventory across every non-human identity type is the foundation everything else depends on.</li>
+    <li><strong>Ownership</strong> — every non-human identity has an accountable human owner, enforced at creation, not retrofitted after the fact.</li>
+    <li><strong>Least Privilege</strong> — scoped permissions, not broad defaults, applying the Module 01/08 principles to machines as rigorously as to humans.</li>
+    <li><strong>Lifecycle</strong> — credential rotation, certificate renewal, and, critically, decommissioning tied to infrastructure or application lifecycle rather than left to memory.</li>
+    <li><strong>Monitoring</strong> — a behavioral baseline and anomaly detection for machine identities, parallel to what Module 14 covers for human identities.</li>
+  </ol>
+
+  <h3>Where IGA Platforms Are Heading</h3>
+  <p>Platforms like Saviynt are evolving to treat non-human identities as first-class governed entities in their own right, not a human-centric workflow with a service-account checkbox bolted on. That shift matters because it changes the default: instead of non-human identity governance being an opt-in add-on a program might get to eventually, it becomes part of the same certification, ownership, and lifecycle machinery already built for humans.</p>
+
+  <h3>Organizational Ownership</h3>
+  <p>Who should own this program — security, the IAM team, or platform engineering? In practice, the strongest programs share ownership with clear accountability boundaries: platform engineering owns the IaC patterns and tooling that make identities easy to create correctly, the IAM/IGA team owns the certification and ownership workflow, and security owns monitoring and incident response. No single team can own all five pillars alone, because the pillars span disciplines that have historically reported to different parts of the organization.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.9-A · Five Pillars of Non-Human Identity Governance</div>
+    <div style="display:flex; gap:0.7rem; flex-wrap:wrap; justify-content:center;">
+      <div style="flex:1; min-width:150px; text-align:center; border:1px solid var(--border); border-radius:10px; padding:0.9rem 0.6rem;">
+        <div style="font-size:1.3rem;">🔍</div>
+        <div style="font-weight:700; font-size:0.8rem; margin-top:0.3rem;">Inventory</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Section 11.1, 11.8</div>
+      </div>
+      <div style="align-self:center; color:var(--text-muted);">→</div>
+      <div style="flex:1; min-width:150px; text-align:center; border:1px solid var(--border); border-radius:10px; padding:0.9rem 0.6rem;">
+        <div style="font-size:1.3rem;">👤</div>
+        <div style="font-weight:700; font-size:0.8rem; margin-top:0.3rem;">Ownership</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Section 11.2</div>
+      </div>
+      <div style="align-self:center; color:var(--text-muted);">→</div>
+      <div style="flex:1; min-width:150px; text-align:center; border:1px solid var(--border); border-radius:10px; padding:0.9rem 0.6rem;">
+        <div style="font-size:1.3rem;">🔒</div>
+        <div style="font-weight:700; font-size:0.8rem; margin-top:0.3rem;">Least Privilege</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Section 11.3, 11.4</div>
+      </div>
+      <div style="align-self:center; color:var(--text-muted);">→</div>
+      <div style="flex:1; min-width:150px; text-align:center; border:1px solid var(--border); border-radius:10px; padding:0.9rem 0.6rem;">
+        <div style="font-size:1.3rem;">🔄</div>
+        <div style="font-weight:700; font-size:0.8rem; margin-top:0.3rem;">Lifecycle</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Section 11.5, 11.8</div>
+      </div>
+      <div style="align-self:center; color:var(--text-muted);">→</div>
+      <div style="flex:1; min-width:150px; text-align:center; border:2px solid var(--accent-primary); border-radius:10px; padding:0.9rem 0.6rem; background:color-mix(in srgb, var(--accent-primary) 6%, var(--surface));">
+        <div style="font-size:1.3rem;">📊</div>
+        <div style="font-weight:700; font-size:0.8rem; margin-top:0.3rem; color:var(--accent-primary);">Monitoring</div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.3rem;">Section 11.6, Module 14</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.9-B · Non-Human Identity Governance Convergence</div>
+    <div style="position:relative; height:260px; max-width:480px; margin:0 auto;">
+      <div style="position:absolute; left:5%; top:15%; width:54%; height:54%; border-radius:50%; background:color-mix(in srgb, var(--accent-blue) 22%, transparent); border:1px solid var(--accent-blue); display:flex; align-items:flex-start; justify-content:center; padding-top:0.8rem; font-size:0.78rem; font-weight:700;">PAM<br><span style="font-weight:400; font-size:0.68rem;">(Module 10)</span></div>
+      <div style="position:absolute; right:5%; top:15%; width:54%; height:54%; border-radius:50%; background:color-mix(in srgb, var(--accent-violet) 22%, transparent); border:1px solid var(--accent-violet); display:flex; align-items:flex-start; justify-content:center; padding-top:0.8rem; font-size:0.78rem; font-weight:700;">Secrets Mgmt<br><span style="font-weight:400; font-size:0.68rem;">(Module 12)</span></div>
+      <div style="position:absolute; left:28%; bottom:0; width:54%; height:54%; border-radius:50%; background:color-mix(in srgb, var(--accent-amber) 22%, transparent); border:1px solid var(--accent-amber); display:flex; align-items:flex-end; justify-content:center; padding-bottom:0.8rem; font-size:0.78rem; font-weight:700;">IGA<br><span style="font-weight:400; font-size:0.68rem;">(Module 09)</span></div>
+      <div style="position:absolute; left:50%; top:48%; transform:translate(-50%,-50%); font-size:0.7rem; font-weight:700; color:var(--accent-primary); text-align:center; background:var(--surface); padding:0.3rem 0.5rem; border-radius:8px; box-shadow:var(--shadow-sm);">Non-Human<br>Identity<br>Governance</div>
+    </div>
+    <div class="diagram-caption">Non-human identity sits at the intersection of three traditionally separate IAM disciplines — which is exactly why it's been historically under-governed.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11.9-C · Non-Human Identity Risk Prioritization Matrix</div>
+    <div style="display:grid; grid-template-columns:auto 1fr 1fr; gap:0.4rem; max-width:520px; margin:0 auto; font-size:0.78rem;">
+      <div></div>
+      <div style="text-align:center; font-weight:700; color:var(--text-muted); padding:0.3rem;">Ungoverned</div>
+      <div style="text-align:center; font-weight:700; color:var(--text-muted); padding:0.3rem;">Governed</div>
+
+      <div style="display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--text-muted); writing-mode:vertical-rl; transform:rotate(180deg);">High Privilege</div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-red) 45%, var(--border)); background:color-mix(in srgb, var(--accent-red) 12%, var(--surface)); border-radius:8px; padding:0.8rem; text-align:center; font-weight:700; color:var(--accent-red);">CRITICAL<br><span style="font-weight:400; font-size:0.7rem; color:var(--text-muted);">remediate first</span></div>
+      <div style="border:1px solid var(--border); background:var(--surface); border-radius:8px; padding:0.8rem; text-align:center; font-weight:700;">Monitor, maintain</div>
+
+      <div style="display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--text-muted); writing-mode:vertical-rl; transform:rotate(180deg);">Low Privilege</div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-amber) 45%, var(--border)); background:color-mix(in srgb, var(--accent-amber) 10%, var(--surface)); border-radius:8px; padding:0.8rem; text-align:center; font-weight:700; color:var(--accent-amber);">Important,<br>lower urgency</div>
+      <div style="border:1px solid color-mix(in srgb, var(--accent-primary) 40%, var(--border)); background:color-mix(in srgb, var(--accent-primary) 10%, var(--surface)); border-radius:8px; padding:0.8rem; text-align:center; font-weight:700; color:var(--accent-primary);">Low risk</div>
+    </div>
+    <div class="diagram-caption">Prioritize remediation by plotting your non-human identity inventory on this matrix.</div>
+  </div>
+
+  <div class="callout callout-concept">
+    <span class="callout-label">🔵 Concept — Why the Boundaries Are Blurring</span>
+    <p>PAM, secrets management, and IGA grew up as separate disciplines because they solved separate problems for humans: PAM vaulted privileged credentials, secrets management handled application configuration, and IGA governed who-has-access-to-what. Non-human identities don't respect those boundaries. A single Kubernetes service account touches all three — it needs a vaulted, rotated credential (PAM), it's retrieved as a runtime secret by the workload (secrets management), and it needs an owner and a certification cycle (IGA). That overlap is precisely why this category has been historically under-governed: each discipline assumed the others were covering the gaps non-human identity actually falls into.</p>
+  </div>
+
+  <div class="callout callout-cost">
+    <span class="callout-label">🟡 Cost — No Single Product Solves This</span>
+    <p>Non-human identity governance cannot be solved with a single product purchase — it requires a framework that spans PAM, secrets management, and IGA simultaneously, applied consistently across service accounts, application identities, container workloads, workload federation, RPA bots, and devices. Enterprises that treat this as "buy CyberArk and we're done" miss the IGA ownership/certification dimension. Enterprises that treat it as "buy a secrets manager and we're done" miss the lifecycle/decommissioning dimension. The architecture requires all five pillars working together, with clear organizational ownership of the cross-cutting program — not just the individual tools.</p>
+  </div>
+
+  <div class="usecase">
+    <span class="usecase-tag">Use Case</span>
+    <p>Your CISO asks you to present a 12-month non-human identity governance roadmap to the board's risk committee. You have: 1,400 AD service accounts (600 unowned), 330 API keys (no central inventory), a growing Kubernetes footprint (200+ namespaces, default RBAC mostly unreviewed), partial workload identity federation adoption (60% of CI/CD pipelines still use static cloud credentials), 230 RPA bots (40 using former-employee credentials), and inconsistent device certificate coverage. Using the five-pillar framework, prioritize the roadmap: what gets addressed in the first 90 days, what in months 4–9, what in months 10–12, and what is the measurable outcome for each phase?</p>
+  </div>
+
+  <div class="lab">
+    <span class="lab-label">🧪 Lab — Build Your One-Page Inventory</span>
+    <p>Using everything from this module's labs, build a one-page non-human identity inventory summary for your organization: total counts by category (service accounts, API keys, K8s service accounts, RPA bots, device certificates), percentage with identified owners, percentage with automated rotation, percentage covered by any certification process. This summary — even if mostly populated with "unknown" — is the starting artifact for any non-human identity governance program.</p>
+  </div>
+</div>
+
+
+      <!-- ====================================================
+           PHASE 4 CONTENT WILL BE INSERTED HERE:
+           Cheat Sheet, Mind Map, Knowledge Check,
+           Architect Review, Real-World Scenario, Bridge
+           ==================================================== -->
+      <!-- ============================================================
+     ARCHITECTURE CHEAT SHEET
+     ============================================================ -->
+<div class="module" id="cheatsheet">
+  <div class="module-divider">
+    <h2 style="border-bottom:1px solid var(--border); flex:1;">📋 Architecture Cheat Sheet</h2>
+  </div>
+  <div class="cheat-grid">
+    <div class="cheat-item"><span class="cheat-num">1</span><span>Non-human identities now outnumber human identities in most enterprises — and are far less governed.</span></div>
+    <div class="cheat-item"><span class="cheat-num">2</span><span>Service accounts need mandatory ownership at creation — ungoverned ownership is the root cause of orphaned risk.</span></div>
+    <div class="cheat-item"><span class="cheat-num">3</span><span>API keys without expiry recreate the static password problem (Module 05) at the application identity layer.</span></div>
+    <div class="cheat-item"><span class="cheat-num">4</span><span>Kubernetes default service accounts auto-mount tokens — disable for workloads that don't need K8s API access.</span></div>
+    <div class="cheat-item"><span class="cheat-num">5</span><span>Workload identity federation (IRSA / Workload Identity / GitHub OIDC) eliminates static cloud credentials — migrate CI/CD off stored secrets.</span></div>
+    <div class="cheat-item"><span class="cheat-num">6</span><span>RPA bots often use human-style accounts — a governance blind spot between "looks human" and "is non-human."</span></div>
+    <div class="cheat-item"><span class="cheat-num">7</span><span>IoT/OT devices often can't support strong cryptographic identity — compensate with network segmentation + NAC.</span></div>
+    <div class="cheat-item"><span class="cheat-num">8</span><span>Five pillars — Inventory, Ownership, Least Privilege, Lifecycle, Monitoring — govern every non-human identity category against all five.</span></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MIND MAP
+     ============================================================ -->
+<div class="module" id="mindmap">
+  <div class="module-divider">
+    <h2 style="border-bottom:1px solid var(--border); flex:1;">🧠 Module 11 — Concept Map</h2>
+  </div>
+  <div class="diagram-box mindmap-wrap">
+    <div class="diagram-title">Diagram 11-Wrap · Non-Human Identity Concept Map</div>
+    <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" style="width:100%; min-width:640px; height:auto; font-family: var(--font-body);">
+      <!-- connecting lines -->
+      <g stroke="var(--border)" stroke-width="1.5">
+        <line x1="400" y1="300" x2="400" y2="108"/>
+        <line x1="400" y1="300" x2="533" y2="166"/>
+        <line x1="400" y1="300" x2="592" y2="300"/>
+        <line x1="400" y1="300" x2="533" y2="433"/>
+        <line x1="400" y1="300" x2="400" y2="492"/>
+        <line x1="400" y1="300" x2="266" y2="433"/>
+        <line x1="400" y1="300" x2="208" y2="300"/>
+        <line x1="400" y1="300" x2="266" y2="166"/>
+      </g>
+
+      <!-- center node -->
+      <circle cx="400" cy="300" r="62" fill="color-mix(in srgb, var(--accent-primary) 14%, var(--surface))" stroke="var(--accent-primary)" stroke-width="2"/>
+      <text x="400" y="296" text-anchor="middle" font-weight="800" font-size="16" fill="var(--text)">Non-Human</text>
+      <text x="400" y="314" text-anchor="middle" font-weight="800" font-size="16" fill="var(--text)">Identity</text>
+
+      <!-- branch 1: top — Service Accounts -->
+      <circle cx="400" cy="100" r="8" fill="var(--accent-blue)"/>
+      <text x="400" y="78" text-anchor="middle" font-weight="700" font-size="13" fill="var(--text)">🏢 Service Accounts</text>
+      <text x="400" y="64" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">Ownership · Risk Scoring · gMSA</text>
+
+      <!-- branch 2: upper-right — Application Identities -->
+      <circle cx="541" cy="159" r="8" fill="var(--accent-violet)"/>
+      <text x="555" y="150" text-anchor="start" font-weight="700" font-size="13" fill="var(--text)">🔑 Application Identities</text>
+      <text x="555" y="166" text-anchor="start" font-size="10.5" fill="var(--text-muted)">API Keys · OAuth Clients · mTLS</text>
+
+      <!-- branch 3: right — Container / K8s -->
+      <circle cx="600" cy="300" r="8" fill="var(--accent-amber)"/>
+      <text x="614" y="296" text-anchor="start" font-weight="700" font-size="13" fill="var(--text)">📦 Container / K8s</text>
+      <text x="614" y="312" text-anchor="start" font-size="10.5" fill="var(--text-muted)">KSA · RBAC · Bound Tokens · SPIFFE</text>
+
+      <!-- branch 4: lower-right — Workload Federation -->
+      <circle cx="541" cy="441" r="8" fill="var(--accent-primary)"/>
+      <text x="555" y="446" text-anchor="start" font-weight="700" font-size="13" fill="var(--text)">🔄 Workload Federation</text>
+      <text x="555" y="462" text-anchor="start" font-size="10.5" fill="var(--text-muted)">IRSA · Workload Identity · GitHub OIDC</text>
+
+      <!-- branch 5: bottom — RPA -->
+      <circle cx="400" cy="500" r="8" fill="var(--accent-blue)"/>
+      <text x="400" y="524" text-anchor="middle" font-weight="700" font-size="13" fill="var(--text)">🤖 RPA</text>
+      <text x="400" y="540" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">Bot Credentials · Unattended Risk · SoD</text>
+
+      <!-- branch 6: lower-left — Device Identity -->
+      <circle cx="259" cy="441" r="8" fill="var(--accent-violet)"/>
+      <text x="245" y="446" text-anchor="end" font-weight="700" font-size="13" fill="var(--text)">📡 Device Identity</text>
+      <text x="245" y="462" text-anchor="end" font-size="10.5" fill="var(--text-muted)">Certificates · Conditional Access · IoT gap</text>
+
+      <!-- branch 7: left — Lifecycle -->
+      <circle cx="200" cy="300" r="8" fill="var(--accent-amber)"/>
+      <text x="186" y="296" text-anchor="end" font-weight="700" font-size="13" fill="var(--text)">♻️ Lifecycle</text>
+      <text x="186" y="312" text-anchor="end" font-size="10.5" fill="var(--text-muted)">Creation/Decommission · IaC · Discovery</text>
+
+      <!-- branch 8: upper-left — Governance Framework -->
+      <circle cx="259" cy="159" r="8" fill="var(--accent-primary)"/>
+      <text x="245" y="150" text-anchor="end" font-weight="700" font-size="13" fill="var(--text)">🏛️ Governance Framework</text>
+      <text x="245" y="166" text-anchor="end" font-size="10.5" fill="var(--text-muted)">Five Pillars · Convergence · Risk Matrix</text>
+    </svg>
+    <div class="diagram-caption">Eight branches, one synthesis: every non-human identity category funnels into the same five-pillar governance model (Section 11.9).</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     KNOWLEDGE CHECK
+     ============================================================ -->
+<div class="module" id="knowledge-check">
+  <div class="module-divider">
+    <h2 style="border-bottom:1px solid var(--border); flex:1;">✅ Knowledge Check</h2>
+  </div>
+  <p style="color:var(--text-muted); font-size:0.9rem;">Architect-level questions — work through these before moving on. There's no single "correct" one-liner; each should produce a short design or analysis you could defend in a review.</p>
+
+  <div class="qa-block">
+    <span class="qa-block-num">Q1</span>
+    <p>A service account was created three years ago by an engineer who has since left the company. It has Domain Admin membership and a password that has never been rotated. Walk through the governance failures that allowed this to persist and the architectural controls that would have prevented it.</p>
+  </div>
+  <div class="qa-block">
+    <span class="qa-block-num">Q2</span>
+    <p>Your CI/CD platform stores AWS access keys as secrets for 40 repositories. Design the migration to workload identity federation, explaining what changes in AWS IAM, what changes in the CI/CD configuration, and how you validate the migration didn't introduce a security gap.</p>
+  </div>
+  <div class="qa-block">
+    <span class="qa-block-num">Q3</span>
+    <p>A Kubernetes namespace has 12 pods all using the <code>default</code> service account, which has a RoleBinding granting read access to all Secrets in the namespace. Explain the attack scenario this enables and the architectural remediation.</p>
+  </div>
+  <div class="qa-block">
+    <span class="qa-block-num">Q4</span>
+    <p>An RPA bot has both "create vendor" and "approve payment" access in your SAP environment because it automates an entire end-to-end process. Is this an SoD violation? Walk through how you'd evaluate and remediate this using concepts from Modules 08 and 09 applied to a non-human identity.</p>
+  </div>
+  <div class="qa-block">
+    <span class="qa-block-num">Q5</span>
+    <p>Design the non-human identity governance framework for an organization that just completed a cloud migration and now has 3x more IAM roles, service accounts, and API keys than it did on-premises. Apply the five-pillar framework to prioritize the first 90 days of the program.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     ARCHITECT REVIEW QUESTIONS
+     ============================================================ -->
+<div class="module" id="architect-review">
+  <div class="module-divider">
+    <h2 style="border-bottom:1px solid var(--border); flex:1;">🏗️ Architect Review Questions</h2>
+  </div>
+  <p style="color:var(--text-muted); font-size:0.9rem;">Deeper, design-oriented prompts — suited for a 1:1 with a mentor, an architecture review board, or your own design-doc practice.</p>
+
+  <div class="qa-block">
+    <span class="qa-block-num">ARQ1</span>
+    <p>Your organization has no central inventory of non-human identities. Design the discovery and inventory architecture across AD service accounts, cloud IAM (AWS/Azure/GCP), Kubernetes service accounts, API gateway clients, and RPA bot accounts. What tools/approaches would you use for each category, and how do you maintain the inventory as identities continuously change?</p>
+  </div>
+  <div class="qa-block">
+    <span class="qa-block-num">ARQ2</span>
+    <p>A security incident traces back to a compromised service account with broad database read access that hadn't been reviewed in 4 years. The CISO asks for a non-human identity certification program design. Build the program: scope, reviewer assignment model (who certifies a service account with no "manager"?), campaign frequency, and integration with Saviynt.</p>
+  </div>
+  <div class="qa-block">
+    <span class="qa-block-num">ARQ3</span>
+    <p>Compare and contrast the governance models needed for: (a) a Kubernetes service account in a microservices architecture, (b) an RPA bot automating a finance process, (c) a workload-identity-federated CI/CD pipeline. What's common across all three, and what requires category-specific controls?</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     REAL-WORLD SCENARIO
+     ============================================================ -->
+<div class="module" id="scenario">
+  <div class="module-divider">
+    <h2 style="border-bottom:1px solid var(--border); flex:1;">🗂️ Real-World Scenario — The Non-Human Identity Discovery Project</h2>
+  </div>
+
+  <h3>Situation</h3>
+  <p>A 15,000-employee enterprise completes its first comprehensive non-human identity discovery. The numbers, once finally assembled, tell their own story:</p>
+  <table>
+    <thead><tr><th>Category</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>AD service accounts (estimated — no prior central count existed)</td><td>2,100</td></tr>
+      <tr><td>Cloud IAM roles/service accounts across AWS, Azure, and GCP</td><td>890</td></tr>
+      <tr><td>Kubernetes service accounts across 15 clusters</td><td>1,200+</td></tr>
+      <tr><td>API keys issued through various platforms (no single registry)</td><td>450</td></tr>
+      <tr><td>RPA bots</td><td>180</td></tr>
+      <tr><td>Human employee count (reference)</td><td>15,000</td></tr>
+    </tbody>
+  </table>
+  <p style="font-weight:600;">Non-human-to-human ratio: approximately 3.2 : 1 — and that's almost certainly an undercount, since several categories were estimated rather than exhaustively enumerated.</p>
+
+  <h3>Discovery Methodology</h3>
+  <p>No category had a clean source of truth. AD service accounts were pulled via LDAP queries cross-referenced against accounts excluded from password-expiry policy and accounts sitting in a designated Service-Accounts OU — three overlapping but imperfect signals that had to be reconciled by hand. Cloud IAM identities were enumerated using each provider's native tooling (AWS IAM Access Analyzer across all member accounts via AWS Organizations, Azure Resource Graph, GCP Asset Inventory) and merged into a single spreadsheet, since no cross-cloud inventory tool was already in place. Kubernetes service accounts were visible per-cluster but had never been aggregated across all 15 clusters until this project forced the question. API keys were the hardest category: there was no central registry at all, and the count came from manually surveying each platform team about what they'd issued. RPA bot counts came directly from the Orchestrator and Control Room consoles. The entire discovery exercise took six to eight weeks — longer than the team expected — precisely because assembling a single inventory meant reconciling five categories that had never been asked to talk to each other.</p>
+
+  <h3>Risk Prioritization</h3>
+  <p>Plotted against the five-pillar risk matrix from Section 11.9, three clusters of risk stood out as Critical — high privilege, ungoverned: the roughly 600 unowned AD service accounts with no certification history, the 40 RPA bots running on former-employee credentials with two confirmed SoD violations in financial systems, and the default RBAC bindings across the Kubernetes footprint, which had never been individually reviewed across 200+ namespaces. Cloud IAM roles split more evenly between governed and ungoverned, since the more recently provisioned ones tended to follow IaC patterns, while older, console-created roles did not.</p>
+
+  <h3>90-Day Quick Wins</h3>
+  <p>The first ninety days focused on stopping further accumulation rather than fully remediating the backlog: mandatory ownership became a hard requirement for any newly created service account, API key, or RPA bot account; <code>automountServiceAccountToken: false</code> was rolled out across Kubernetes namespaces that didn't need API access; the highest-risk RPA bots were migrated off former-employee credentials and onto dedicated, CyberArk-vaulted bot accounts; and the five highest-traffic CI/CD pipelines began migrating from static cloud credentials to OIDC-based workload identity federation.</p>
+
+  <h3>12-Month Target Architecture</h3>
+  <p>By month twelve, the goal was a working five-pillar program rather than a one-time cleanup: a unified non-human identity inventory aggregating all five categories into a single Saviynt-fed system of record, ownership coverage above 90% across AD service accounts and API keys, IaC-coupled lifecycle as the default pattern for all newly created cloud IAM roles, full OIDC federation across CI/CD pipelines with no remaining static credentials in pipeline secrets, RPA bot governance folded into the standard IGA certification cycle, and device certificate coverage extended to the remaining gaps identified during discovery.</p>
+
+  <h3>Ongoing Governance Model</h3>
+  <p>The program settles into a recurring cadence rather than a project with an end date: quarterly certification campaigns spanning every non-human identity category, shared ownership split across platform engineering (IaC patterns and tooling), the IAM/IGA team (certification and ownership workflow), and security (monitoring and incident response), and a monthly risk-register review where newly discovered unused-access findings — the same kind Section 11.8's deep dive covered — get triaged and routed into remediation before they become next year's discovery surprise.</p>
+</div>
+
+<!-- ============================================================
+     BRIDGE TO MODULE 12
+     ============================================================ -->
+<div class="module" id="bridge">
+  <div class="bridge-band">
+    <div class="bridge-panel bridge-prev">
+      <span class="bridge-tag">✅ What you built · 🌍 Atlas Core · Module 11</span>
+      <h3>The machine identity landscape has architectural shape</h3>
+      <p style="font-size:0.9rem;">You now have a complete non-human identity taxonomy: service account governance, application/API identity, container and Kubernetes identity, workload identity federation, RPA governance, device identity, lifecycle management, and the five-pillar governance framework tying it all together.</p>
+    </div>
+    <div class="bridge-panel bridge-next" style="background:color-mix(in srgb, var(--accent-primary) 20%, var(--surface));">
+      <span class="bridge-tag">⏭️ Up next · 🌍 Atlas Core · Module 12</span>
+      <h3>What's actually inside the credential?</h3>
+      <p style="font-size:0.9rem;">Module 11 covered the <strong>identities</strong> — the accounts, workloads, and bots themselves. Module 12 covers the <strong>secrets</strong> those identities use to prove themselves: API keys, certificates, PKI, HashiCorp Vault, CyberArk Conjur, HSMs, and the cryptographic infrastructure underneath every non-human authentication you just learned about. Section 11.3's mTLS mention and Section 11.7's device certificates were previews — Module 12 is where PKI, certificate lifecycle, and dynamic secrets get the full architectural treatment. Still Atlas Core green: same engineering-native territory, one layer deeper. 🌍</p>
+    </div>
+  </div>
+  <div style="text-align:center;">
+    <a class="bridge-cta" href="module12.html">Continue to Module 12: Secrets Management &amp; Cryptographic Identity → 🌍</a>
+  </div>
+</div>
+
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Mobile sidebar toggle ---------- */
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebarOverlay');
+  var mobileToggle = document.getElementById('mobileToggle');
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+  function toggleSidebar() {
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+  }
+  mobileToggle.addEventListener('click', toggleSidebar);
+  overlay.addEventListener('click', closeSidebar);
+  document.querySelectorAll('.nav-list a').forEach(function (a) {
+    a.addEventListener('click', closeSidebar);
+  });
+
+  /* ---------- Theme toggle (in-memory only — no storage APIs) ---------- */
+  var themeToggle = document.getElementById('themeToggle');
+  themeToggle.addEventListener('click', function () {
+    document.documentElement.classList.toggle('dark');
+  });
+
+  /* ---------- Scroll progress bar ---------- */
+  var progressFill = document.getElementById('progressFill');
+  function updateProgress() {
+    var doc = document.documentElement;
+    var scrollTop = doc.scrollTop || document.body.scrollTop;
+    var scrollHeight = (doc.scrollHeight || document.body.scrollHeight) - doc.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressFill.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress);
+
+  /* ---------- Sidebar search filter ---------- */
+  var searchInput = document.getElementById('sidebarSearch');
+  searchInput.addEventListener('input', function () {
+    var q = searchInput.value.trim().toLowerCase();
+    document.querySelectorAll('.nav-list li').forEach(function (li) {
+      var text = li.textContent.toLowerCase();
+      li.style.display = (q === '' || text.indexOf(q) !== -1) ? '' : 'none';
+    });
+  });
+
+  /* ---------- Active nav link highlighting + Identity Stack Rail ---------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-list a'));
+  var stackItems = Array.prototype.slice.call(document.querySelectorAll('.stack-item'));
+
+  function clearStackRail() {
+    stackItems.forEach(function (item) { item.classList.remove('lit'); });
+  }
+  function litStackRail(layersAttr) {
+    clearStackRail();
+    if (!layersAttr) return;
+    var layers = layersAttr.split(',').map(function (s) { return s.trim(); });
+    stackItems.forEach(function (item) {
+      if (layers.indexOf(item.getAttribute('data-layer')) !== -1) {
+        item.classList.add('lit');
+      }
+    });
+  }
+  function clearActiveNav() {
+    navLinks.forEach(function (a) { a.classList.remove('active'); });
+  }
+
+  function initObservers() {
+    var sections = Array.prototype.slice.call(document.querySelectorAll('[data-stack-layers]'));
+    if (sections.length === 0) return;
+
+    var observer = new IntersectionObserver(function (entries) {
+      // Find the entry most visible / nearest top
+      var visible = entries.filter(function (e) { return e.isIntersecting; });
+      if (visible.length === 0) return;
+      visible.sort(function (a, b) { return b.intersectionRatio - a.intersectionRatio; });
+      var top = visible[0].target;
+      litStackRail(top.getAttribute('data-stack-layers'));
+
+      clearActiveNav();
+      var id = top.getAttribute('id');
+      if (id) {
+        var match = document.querySelector('.nav-list a[href="#' + id + '"]');
+        if (match) match.classList.add('active');
+      }
+    }, { rootMargin: '-15% 0px -65% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] });
+
+    sections.forEach(function (s) { observer.observe(s); });
+  }
+
+  // Sections are inserted by later phases — observers init on load,
+  // and re-init is exposed globally in case content is injected dynamically.
+  window.__atlasInitObservers = initObservers;
+  document.addEventListener('DOMContentLoaded', initObservers);
+
+})();
+</script>
+
+</body>
+</html>

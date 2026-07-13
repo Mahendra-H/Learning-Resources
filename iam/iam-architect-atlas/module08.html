@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 08 · Authorization Architecture — IAM Architect Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN SYSTEM — Phase 4 · Atlas Vault
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --text: #1A1D24;
+  --text-muted: #6B6F7A;
+  --border: #DEDAD1;
+  --radius: 12px;
+  --accent-blue: #5B8FF0;
+  --accent-amber: #E8A33D;
+  --accent-green: #4FB286;
+  --accent-violet: #7B6FE0;
+  --accent-red: #D9534F;
+  --accent-primary: #D9534F;
+  --shadow-sm: 0 1px 2px rgba(26,29,36,0.06);
+  --shadow-md: 0 4px 16px rgba(26,29,36,0.08);
+  --font-display: 'Inter Tight', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+html.dark {
+  --bg: #0B0E14;
+  --surface: #151A24;
+  --text: #E8E6E1;
+  --text-muted: #8A8F9C;
+  --border: #262B38;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.45);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+img, svg { max-width: 100%; }
+a { color: var(--accent-primary); }
+
+/* ── Progress bar ── */
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: var(--accent-primary); z-index: 1000;
+  transition: width 0.1s ease-out;
+}
+
+/* ── Top bar ── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 48px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; z-index: 900; font-family: var(--font-mono);
+  font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.02em;
+}
+#topbar .topbar-label { display: flex; align-items: center; gap: 8px; }
+#topbar-controls { display: flex; align-items: center; gap: 10px; }
+.icon-btn {
+  background: none; border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; width: 32px; height: 32px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; transition: border-color 0.15s ease;
+}
+.icon-btn:hover { border-color: var(--accent-primary); }
+#mobile-toggle { display: none; }
+
+/* ── Layout shell ── */
+#shell { display: flex; padding-top: 48px; min-height: 100vh; }
+
+/* ── Sidebar ── */
+#sidebar {
+  width: 290px; flex-shrink: 0; position: fixed; top: 48px; bottom: 0; left: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  overflow-y: auto; padding: 20px 18px 40px;
+  font-size: 0.88rem; z-index: 850;
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+#sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; margin-bottom: 2px; }
+.phase-label {
+  font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+  color: var(--accent-primary); letter-spacing: 0.04em; margin-bottom: 6px;
+}
+.sub-title { color: var(--text-muted); font-size: 0.78rem; margin-bottom: 14px; line-height: 1.4; }
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  color: var(--text-muted); font-size: 0.8rem; margin-bottom: 16px;
+}
+.back-link:hover { color: var(--accent-primary); }
+
+.search-box {
+  width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font-size: 0.8rem; margin-bottom: 18px;
+  font-family: var(--font-body);
+}
+.search-box:focus { outline: none; border-color: var(--accent-primary); }
+
+.nav-group-label {
+  font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+  margin: 18px 0 8px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.nav-group:first-of-type .nav-group-label { border-top: none; padding-top: 0; margin-top: 0; }
+.nav-link {
+  display: block; padding: 6px 8px; border-radius: 7px; text-decoration: none;
+  color: var(--text); font-size: 0.84rem; margin-bottom: 1px; transition: background 0.12s ease;
+  border-left: 2px solid transparent;
+}
+.nav-link:hover { background: var(--bg); }
+.nav-link.active {
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  border-left: 2px solid var(--accent-primary); color: var(--accent-primary); font-weight: 600;
+}
+
+/* ── Identity stack rail ── */
+#stack-rail {
+  margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+.stack-rail-label {
+  font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 10px;
+}
+.stack-layer {
+  display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px;
+  font-size: 0.76rem; color: var(--text-muted); transition: all 0.15s ease;
+}
+.stack-layer .dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--border); flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.stack-layer.lit { color: var(--text); font-weight: 600; }
+.stack-layer.lit .dot { background: var(--accent-primary); box-shadow: 0 0 6px color-mix(in srgb, var(--accent-primary) 70%, transparent); }
+
+/* ── Main content ── */
+#main {
+  margin-left: 290px; flex: 1; min-width: 0;
+  max-width: 920px; padding: 48px 56px 100px;
+}
+
+/* ── Typography ── */
+h1 {
+  font-family: var(--font-display); font-weight: 900; font-size: 2.5rem;
+  display: inline-block; border-bottom: 3px solid var(--accent-primary);
+  padding-bottom: 10px; margin: 14px 0 22px; line-height: 1.15;
+}
+h2 {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.6rem;
+  border-bottom: 1px solid var(--border); padding-bottom: 10px; margin: 0 0 18px;
+}
+h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.12rem; margin: 26px 0 10px; }
+h4 {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.78rem;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 20px 0 8px;
+}
+p { margin: 0 0 14px; }
+ul, ol { margin: 0 0 14px; padding-left: 22px; }
+li { margin-bottom: 6px; }
+strong { font-weight: 700; }
+code {
+  font-family: var(--font-mono); font-size: 0.85em; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-primary);
+  display: block; margin-bottom: 8px;
+}
+.lede { font-size: 1.12rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 26px; }
+
+/* ── Module section divider ── */
+.module-divider { display: flex; align-items: baseline; gap: 16px; margin: 0 0 18px; }
+.module-num { font-family: var(--font-display); font-weight: 900; font-size: 2.4rem; color: var(--accent-primary); opacity: 0.3; line-height: 1; }
+.module-divider h2 { border: none; padding: 0; margin: 0; flex: 1; }
+.module { margin: 56px 0; scroll-margin-top: 64px; }
+
+/* ── Where am I card ── */
+.whereami {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 20px; margin: 26px 0 36px; box-shadow: var(--shadow-sm);
+}
+.whereami .wa-top { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
+.wa-bar-track { height: 6px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.wa-bar-fill { height: 100%; background: var(--accent-primary); border-radius: 4px; }
+
+/* ── Callout boxes ── */
+.callout {
+  border-radius: var(--radius); padding: 16px 20px; margin: 20px 0;
+  border: 1px solid var(--border); border-left: 4px solid var(--accent-blue);
+  background: color-mix(in srgb, var(--accent-blue) 6%, var(--surface));
+  font-size: 0.94rem;
+}
+.callout-title { font-weight: 700; margin-bottom: 6px; display: block; }
+.callout-concept { border-left-color: var(--accent-blue); background: color-mix(in srgb, var(--accent-blue) 6%, var(--surface)); }
+.callout-architect { border-left-color: var(--accent-green); background: color-mix(in srgb, var(--accent-green) 6%, var(--surface)); }
+.callout-security { border-left-color: var(--accent-violet); background: color-mix(in srgb, var(--accent-violet) 6%, var(--surface)); }
+.callout-anti { border-left-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 6%, var(--surface)); }
+
+/* ── Analogy boxes ── */
+.analogy {
+  border-radius: var(--radius); padding: 16px 20px; margin: 20px 0;
+  background: color-mix(in srgb, var(--accent-amber) 8%, var(--surface));
+  border: 1px dashed color-mix(in srgb, var(--accent-amber) 50%, var(--border));
+  font-size: 0.94rem;
+}
+.analogy.green { background: color-mix(in srgb, var(--accent-green) 8%, var(--surface)); border-color: color-mix(in srgb, var(--accent-green) 50%, var(--border)); }
+.analogy-title { font-weight: 700; margin-bottom: 6px; display: block; font-family: var(--font-mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Use case box ── */
+.usecase {
+  border-radius: var(--radius); padding: 18px 22px; margin: 22px 0;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  position: relative;
+}
+.usecase-tag {
+  display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; color: #fff; background: var(--accent-primary);
+  border-radius: 5px; padding: 3px 8px; margin-bottom: 10px;
+}
+
+/* ── Deep dive (collapsible) ── */
+details.deepdive {
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface);
+  margin: 20px 0; overflow: hidden;
+}
+details.deepdive summary {
+  padding: 14px 20px; cursor: pointer; font-weight: 600; font-size: 0.94rem;
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+}
+details.deepdive summary::-webkit-details-marker { display: none; }
+details.deepdive summary::after { content: '+'; font-size: 1.3rem; color: var(--accent-violet); font-weight: 400; }
+details.deepdive[open] summary::after { content: '−'; }
+details.deepdive .dd-body { padding: 0 20px 18px; font-size: 0.92rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 14px; }
+
+/* ── Lab box ── */
+.lab {
+  border-radius: var(--radius); padding: 18px 22px; margin: 22px 0;
+  background: color-mix(in srgb, var(--accent-primary) 5%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 25%, var(--border));
+}
+.lab-title {
+  font-family: var(--font-mono); font-weight: 700; font-size: 0.78rem; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--accent-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.lab p:last-child { margin-bottom: 0; font-size: 0.92rem; }
+
+/* ── Diagram box ── */
+.diagram-box {
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface);
+  padding: 22px; margin: 24px 0; box-shadow: var(--shadow-sm); overflow-x: auto;
+}
+.diagram-caption {
+  font-size: 0.82rem; color: var(--text-muted); text-align: center; margin-top: 12px; font-style: italic;
+}
+.diagram-title {
+  font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--accent-primary); margin-bottom: 16px; text-align: center;
+}
+
+/* ── Tables ── */
+table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.88rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+th {
+  font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted); border-bottom: 2px solid var(--border);
+}
+tr:nth-child(even) td { background: color-mix(in srgb, var(--accent-primary) 4%, transparent); }
+
+/* ── Cheat grid ── */
+.cheat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 22px 0; }
+.cheat-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; font-size: 0.86rem; border-left: 3px solid var(--accent-primary);
+}
+.cheat-num { font-family: var(--font-mono); color: var(--accent-primary); font-weight: 700; margin-right: 6px; }
+
+/* ── Bridge band ── */
+.bridge-band { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: var(--radius); overflow: hidden; margin: 30px 0; border: 1px solid var(--border); }
+.bridge-col { padding: 26px 28px; }
+.bridge-col.left { background: color-mix(in srgb, var(--accent-primary) 8%, var(--surface)); }
+.bridge-col.right { background: color-mix(in srgb, var(--accent-primary) 20%, var(--surface)); }
+.bridge-label { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent-primary); margin-bottom: 8px; }
+.bridge-col h3 { margin-top: 0; }
+.cta-btn {
+  display: inline-block; margin-top: 16px; background: var(--accent-primary); color: #fff;
+  font-weight: 700; text-decoration: none; padding: 12px 22px; border-radius: 9px; font-size: 0.92rem;
+  box-shadow: var(--shadow-sm); transition: opacity 0.15s ease;
+}
+.cta-btn:hover { opacity: 0.88; }
+
+/* ── Knowledge check / scenario blocks ── */
+.qa-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin: 16px 0; }
+.qa-num { font-family: var(--font-mono); color: var(--accent-primary); font-weight: 700; margin-right: 6px; }
+.scenario-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; margin: 20px 0; }
+.scenario-block h4:first-child { margin-top: 0; }
+
+/* ── Mind map ── */
+.mindmap-center {
+  text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem;
+  background: var(--accent-primary); color: #fff; border-radius: 10px; padding: 14px; margin-bottom: 18px;
+}
+.mindmap-branches { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mindmap-branch { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-primary); border-radius: 8px; padding: 10px 14px; font-size: 0.84rem; }
+.mindmap-branch b { color: var(--accent-primary); }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  #sidebar { transform: translateX(-100%); transition: transform 0.2s ease; width: 280px; }
+  #sidebar.open { transform: translateX(0); box-shadow: var(--shadow-md); }
+  #main { margin-left: 0; padding: 32px 20px 80px; }
+  #mobile-toggle { display: flex; }
+  h1 { font-size: 1.9rem; }
+  .cheat-grid, .bridge-band, .mindmap-branches { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<div id="topbar">
+  <div class="topbar-label">
+    <button id="mobile-toggle" class="icon-btn" aria-label="Toggle navigation">☰</button>
+    <span>Module 08 of 16 · 🔒 Atlas Vault · ~3 hr read</span>
+  </div>
+  <div id="topbar-controls">
+    <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+  </div>
+</div>
+
+<div id="shell">
+  <nav id="sidebar">
+    <div class="brand">🔐 IAM Architect Atlas</div>
+    <div class="phase-label">MODULE 08 · ATLAS VAULT</div>
+    <div class="sub-title">Authorization Architecture — RBAC, ABAC, PBAC &amp; ReBAC</div>
+    <a class="back-link" href="index.html">← Back to Index</a>
+    <input type="text" class="search-box" id="search-box" placeholder="🔍 Search this module...">
+
+    <div class="nav-group">
+      <div class="nav-group-label">Authorization Architecture</div>
+      <a class="nav-link" href="#s8-1" data-target="s8-1">8.1 Authentication vs Authorization</a>
+      <a class="nav-link" href="#s8-2" data-target="s8-2">8.2 RBAC — Role-Based Access Control</a>
+      <a class="nav-link" href="#s8-3" data-target="s8-3">8.3 ABAC — Attribute-Based Access Control</a>
+      <a class="nav-link" href="#s8-4" data-target="s8-4">8.4 PBAC — Policy-Based Access Control</a>
+      <a class="nav-link" href="#s8-5" data-target="s8-5">8.5 ReBAC — Relationship-Based Access Control</a>
+      <a class="nav-link" href="#s8-6" data-target="s8-6">8.6 Fine-Grained Authorization</a>
+      <a class="nav-link" href="#s8-7" data-target="s8-7">8.7 PDP &amp; PEP — Policy Engine Architecture</a>
+      <a class="nav-link" href="#s8-8" data-target="s8-8">8.8 Entitlement Architecture</a>
+      <a class="nav-link" href="#s8-9" data-target="s8-9">8.9 Model Selection Framework</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Wrap-Up</div>
+      <a class="nav-link" href="#cheatsheet" data-target="cheatsheet">📋 Architecture Cheat Sheet</a>
+      <a class="nav-link" href="#mindmap" data-target="mindmap">🧠 Mind Map</a>
+      <a class="nav-link" href="#knowledgecheck" data-target="knowledgecheck">✅ Knowledge Check</a>
+      <a class="nav-link" href="#architectreview" data-target="architectreview">🏗️ Architect Review</a>
+      <a class="nav-link" href="#bridge" data-target="bridge">🌉 Bridge to Module 09</a>
+    </div>
+
+    <div id="stack-rail">
+      <div class="stack-rail-label">Identity Stack</div>
+      <div class="stack-layer" data-layer="applications"><span class="dot"></span>👤 Applications &amp; Portals</div>
+      <div class="stack-layer" data-layer="sso"><span class="dot"></span>🔐 SSO &amp; Federation</div>
+      <div class="stack-layer" data-layer="tokens"><span class="dot"></span>🎫 Token &amp; Protocol Layer</div>
+      <div class="stack-layer" data-layer="authz"><span class="dot"></span>⚖️ Authorization Engine</div>
+      <div class="stack-layer" data-layer="iga"><span class="dot"></span>📋 IGA &amp; Lifecycle</div>
+      <div class="stack-layer" data-layer="pam"><span class="dot"></span>🏦 PAM &amp; Privileged</div>
+      <div class="stack-layer" data-layer="directory"><span class="dot"></span>📂 Directory &amp; Stores</div>
+      <div class="stack-layer" data-layer="network"><span class="dot"></span>🌐 Network &amp; Infra Auth</div>
+      <div class="stack-layer" data-layer="cloud"><span class="dot"></span>☁️ Cloud &amp; Machine</div>
+    </div>
+  </nav>
+
+  <main id="main">
+
+    <!-- ═══════════════ HERO ═══════════════ -->
+    <div id="hero">
+      <span class="eyebrow">🔒 MODULE 08 · ATLAS VAULT · PHASE 4 · ~3 HR READ</span>
+      <h1>Authorization Architecture: RBAC, ABAC, PBAC &amp; ReBAC &amp; Policy Engines</h1>
+      <p class="lede">
+        Authentication answers one question: are you who you say you are? Authorization answers a
+        completely different question: given that we know who you are, what are you allowed to do?
+        These two questions are often conflated in enterprise IAM — handled by the same system,
+        governed by the same team, discussed in the same meeting. But they are architecturally
+        separate concerns, and the most expensive IAM mistakes happen when they're treated as the
+        same problem. You've already authenticated millions of times through PingFederate. This
+        module teaches you how enterprise systems decide what those authenticated users are
+        actually allowed to access — and why the answer requires four different architectural
+        models, a policy engine, enforcement points at every layer, and a clear separation of the
+        policy decision from the policy enforcement. Welcome to Phase 4. 🔒
+      </p>
+
+      <div class="callout callout-architect">
+        <span class="callout-title">🟢 Phase 4 begins — authorization, governance, privilege</span>
+        Phases 1–3 covered identity data (directories), the authentication protocol layer (OAuth,
+        SAML, OIDC, Ping), and infrastructure authentication (RADIUS, PAM, SSH). Phase 4 covers
+        what happens after authentication succeeds: authorization (this module), identity
+        governance (Module 09), and privileged access management (Module 10). The red color is
+        deliberate — authorization failures, governance gaps, and privilege abuse are where the
+        most consequential enterprise security incidents originate.
+      </div>
+
+      <div class="callout callout-concept">
+        <span class="callout-title">🔵 Carrying Forward from Previous Modules</span>
+        <strong>Module 01:</strong> AuthN vs AuthZ — foundational distinction, now delivered in
+        full architectural depth. &nbsp;|&nbsp;
+        <strong>Module 02:</strong> AD groups as RBAC primitives — every <code>memberOf</code>
+        attribute you've seen in LDAP is RBAC. &nbsp;|&nbsp;
+        <strong>Module 03:</strong> OAuth scopes as coarse authorization — now see where scopes
+        fit in the full authorization model. &nbsp;|&nbsp;
+        <strong>Module 06:</strong> TACACS+ command authorization — a real ABAC policy engine at
+        the network layer. &nbsp;|&nbsp;
+        <strong>Module 07:</strong> SSSD <code>access_provider</code> — host-level RBAC.
+      </div>
+
+      <div class="whereami">
+        <div class="wa-top">
+          <span><strong>Module 08 / Phase 4</strong> — Authorization, IGA &amp; PAM</span>
+          <span>8 of 16 — 50% complete</span>
+        </div>
+        <div class="wa-bar-track"><div class="wa-bar-fill" style="width:50%"></div></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.1 ═══════════════ -->
+    <div class="module" id="s8-1" data-stack-layers="authz,sso,tokens">
+      <div class="module-divider">
+        <div class="module-num">8.1</div>
+        <h2>🔀 Authentication vs Authorization — The Full Distinction</h2>
+      </div>
+
+      <p>
+        Every enterprise IAM conversation eventually collides with the same confusion: someone
+        calls a permission problem an "authentication issue," or a login failure gets routed to
+        the team that owns role assignments. The confusion is understandable — the same product
+        (PingFederate, Azure AD, Okta) frequently handles both concerns, the same SSO login screen
+        is the entry point for both, and the same identity record drives both decisions. But
+        authentication and authorization are not the same problem wearing different clothes. They
+        solve different problems, they fail in catastrophically different ways, they require
+        different technology, and they scale according to entirely different pressures. Getting
+        this distinction architecturally precise — not just definitionally correct — is the
+        foundation everything else in this module builds on.
+      </p>
+
+      <h3>Authentication: Establishing Identity</h3>
+      <p>
+        Authentication answers exactly one question: <strong>is this principal genuine?</strong>
+        It establishes who is making the request. The products that do this work are the ones
+        you've spent the last seven modules mastering: PingFederate, PingID, Active Directory,
+        FIDO2 authenticators. The evidence authentication produces is transient and protocol-bound
+        — tokens, SAML assertions, Kerberos tickets — proof that a credential was verified at a
+        specific moment in time. When authentication fails, it fails as <strong>impersonation</strong>:
+        someone successfully convinced the system they were someone they are not, typically through
+        credential theft, session hijacking, or a flaw in the federation trust chain.
+      </p>
+
+      <h3>Authorization: Establishing Permission</h3>
+      <p>
+        Authorization answers a structurally different question: <strong>is this action permitted
+        for this principal, in this context?</strong> Note that authorization is not a single
+        yes/no gate evaluated once at login — it is evaluated continuously, for every action,
+        against every resource. The products that do this work are policy engines, IGA platforms,
+        and PAM systems: OPA, AWS IAM, Azure RBAC, Saviynt, TACACS+. The evidence authorization
+        relies on is durable and structural — roles, attributes, policies, entitlements — data
+        that describes what a principal is allowed to do, independent of any single login event.
+        When authorization fails, it fails as <strong>privilege escalation, over-permissioning,
+        access creep, or a Separation of Duties violation</strong> — failures that are often
+        invisible for months because the system is functioning exactly as configured; it's just
+        configured wrong.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 1 — AuthN vs AuthZ: Full Architectural Comparison</div>
+        <table>
+          <tr><th></th><th>Authentication</th><th>Authorization</th></tr>
+          <tr><td><strong>Question</strong></td><td>Who are you?</td><td>What can you do?</td></tr>
+          <tr><td><strong>Timing</strong></td><td>Login / session start</td><td>Every access attempt</td></tr>
+          <tr><td><strong>Evidence</strong></td><td>Credential → token → assertion</td><td>Roles / attributes / policies</td></tr>
+          <tr><td><strong>Failure mode</strong></td><td>Impersonation</td><td>Privilege escalation / over-access</td></tr>
+          <tr><td><strong>Owning layer</strong></td><td>SSO / Federation</td><td>Policy engine / Application</td></tr>
+          <tr><td><strong>Representative products</strong></td><td>PingFederate / AD / FIDO2</td><td>OPA / Cedar / AWS IAM / Saviynt</td></tr>
+        </table>
+        <p class="diagram-caption">Same identity, two architecturally independent decision systems.</p>
+      </div>
+
+      <h3>The Conflation Problem</h3>
+      <p>
+        The confusion compounds because some systems genuinely do both — Active Directory is the
+        clearest case. Kerberos handles authentication (proving you are <code>jsmith</code>), while
+        group membership simultaneously drives authorization (deciding what <code>jsmith</code> can
+        touch). One system, two architecturally distinct functions bundled into a single
+        directory record. The discipline an architect needs here is to mentally separate the
+        layers even when a single product implements both: ask "is this an identity-proving
+        decision or a permission-granting decision?" every time you trace a failure, because the
+        remediation path is completely different depending on the answer. A broken Kerberos trust
+        is fixed by the federation team. A user with the wrong group membership is fixed by access
+        governance. Conflating the two sends incidents to the wrong owner and delays resolution.
+      </p>
+
+      <h3>The Four Authorization Questions</h3>
+      <p>
+        Every authorization decision — regardless of which model implements it — answers four
+        questions. These four questions define the entire authorization decision space, and as
+        you'll see across the rest of this module, each authorization model (RBAC, ABAC, PBAC,
+        ReBAC) is simply a different way of answering them with different degrees of expressiveness.
+      </p>
+      <ul>
+        <li><strong>Q1 — Subject:</strong> What is asking? (the user, service account, or system identity)</li>
+        <li><strong>Q2 — Resource:</strong> What do they want to access? (the application, record, document, API)</li>
+        <li><strong>Q3 — Action:</strong> What do they want to do to it? (read, write, delete, approve, export)</li>
+        <li><strong>Q4 — Context:</strong> Under what conditions? (time, location, device posture, risk level)</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 2 — The Four Authorization Questions</div>
+        <div class="mindmap-branches">
+          <div class="mindmap-branch"><b>SUBJECT</b> — who<br>identity attributes: user, role, group, department, clearance level</div>
+          <div class="mindmap-branch"><b>RESOURCE</b> — what<br>resource attributes: classification, owner, sensitivity, type, location</div>
+          <div class="mindmap-branch"><b>ACTION</b> — how<br>read / write / execute / delete / approve</div>
+          <div class="mindmap-branch"><b>CONTEXT</b> — when/where<br>time, location, device posture, risk score, network segment</div>
+        </div>
+        <p class="diagram-caption">Center: the Authorization Decision — permit, deny, or step-up. Every model in this module answers these four questions with a different level of precision.</p>
+      </div>
+
+      <h3>Authorization at Multiple Layers</h3>
+      <p>
+        A single user action rarely triggers just one authorization decision. It traverses
+        multiple, stacked decisions, each enforced by a different system, at a different layer of
+        the stack — and each one capable of independently denying the request.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 3 — Authorization Layers in a Single User Action</div>
+        <p style="text-align:center; color:var(--text-muted); margin-bottom:14px;">User clicks "Download Report" in a web application</p>
+        <table>
+          <tr><th>Layer</th><th>Question Asked</th><th>Enforcing System</th></tr>
+          <tr><td>1. Network</td><td>Is the device on a trusted corporate VLAN?</td><td>RADIUS / NAC (Module 06)</td></tr>
+          <tr><td>2. VPN / Firewall</td><td>Does traffic reach the app server at all?</td><td>Network ACLs</td></tr>
+          <tr><td>3. Application AuthN</td><td>Is the user authenticated?</td><td>PingFederate / SSO</td></tr>
+          <tr><td>4. Application AuthZ</td><td>Is the user's role allowed to download?</td><td>RBAC in the app</td></tr>
+          <tr><td>5. Data AuthZ</td><td>Is this specific report accessible to this user?</td><td>Fine-grained AuthZ (8.6)</td></tr>
+          <tr><td>6. Audit</td><td>Is this action logged?</td><td>SIEM / audit pipeline</td></tr>
+        </table>
+        <p class="diagram-caption">Any single layer can deny the request — authorization is not one gate, it's a chain of gates.</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-title">🟡 Architect's Bridge</span>
+        Authorization is the access control layer in every Java API you have ever built. When you
+        wrote <code>@PreAuthorize("hasRole('ADMIN')")</code> on a Spring method, you implemented
+        RBAC. When you wrote a custom <code>SecurityEvaluator</code> that checked the caller's
+        department attribute against the resource's classification level, you implemented ABAC.
+        When you configured Spring Security to evaluate a policy expression at runtime, you
+        implemented PBAC. The patterns you already know from API security apply directly to
+        enterprise authorization architecture — the difference is scale, centralization, and the
+        governance layer on top.
+      </div>
+
+      <div class="callout callout-concept">
+        <span class="callout-title">🔵 The Four Questions Define the Four Models</span>
+        RBAC answers: what role does the subject have, and does that role permit this action on
+        this resource? ABAC adds: what attributes does the subject have, what attributes does the
+        resource have, and what does the policy say about this combination? PBAC raises the
+        abstraction level: what policies exist, and does this request satisfy them? ReBAC asks:
+        what is the relationship between the subject and the resource, and does that relationship
+        grant the action? Each model is an answer to the same four questions with different
+        degrees of expressiveness — and that's the lens to hold onto for the rest of this module.
+      </div>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.1</div>
+        <p>
+          Pick one access control decision in a system you work with daily — say, who can merge a
+          pull request in GitHub, or who can approve an access request in Saviynt. Write out the
+          four authorization questions for that decision: subject (who?), resource (what?), action
+          (what operation?), context (under what conditions?). Then identify which authorization
+          model the system uses to answer them. This exercise reveals the authorization model
+          you're already working with, whether you've named it or not.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.2 ═══════════════ -->
+    <div class="module" id="s8-2" data-stack-layers="authz,iga,directory">
+      <div class="module-divider">
+        <div class="module-num">8.2</div>
+        <h2>👥 RBAC — Role-Based Access Control</h2>
+      </div>
+
+      <p>
+        Role-Based Access Control is the model you already use, every day, whether or not anyone
+        on your team calls it that. RBAC's defining architectural rule is simple and absolute:
+        <strong>permissions are never assigned directly to users.</strong> Permissions are assigned
+        to roles, and roles are assigned to users. This single indirection is what makes RBAC
+        manageable at scale — instead of tracking thousands of individual user-permission pairs,
+        an administrator tracks a much smaller set of role-permission pairs, and a separate,
+        simpler set of user-role assignments.
+      </p>
+
+      <h3>The Four RBAC Components</h3>
+      <ul>
+        <li><strong>Users</strong> — the principals who need access (people or service accounts)</li>
+        <li><strong>Roles</strong> — named groupings that represent a business function (Finance-Analyst, DBA, Help-Desk-L1)</li>
+        <li><strong>Permissions</strong> — the actual operations a role grants (read-report, write-report, approve-report)</li>
+        <li><strong>Sessions</strong> — the runtime activation of a subset of a user's assigned roles for a specific working context</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 4 — RBAC Core Model</div>
+        <table>
+          <tr><th>Role</th><th>Permissions Granted</th></tr>
+          <tr><td>Finance-Analyst</td><td>read-report</td></tr>
+          <tr><td>Finance-Manager</td><td>read-report, write-report, approve-report</td></tr>
+          <tr><td>Finance-Admin</td><td>read-report, write-report, approve-report, admin-panel, export-data</td></tr>
+        </table>
+        <table>
+          <tr><th>User</th><th>Assigned Role</th></tr>
+          <tr><td>jsmith</td><td>Finance-Analyst</td></tr>
+          <tr><td>alee</td><td>Finance-Manager</td></tr>
+          <tr><td>bwang</td><td>Finance-Admin</td></tr>
+        </table>
+        <p class="diagram-caption">Users never hold permissions directly — they hold roles, and roles hold permissions.</p>
+      </div>
+
+      <h3>RBAC Maturity Levels</h3>
+      <p>
+        RBAC is not a single model but a family, formalized by NIST into four increasingly capable
+        levels:
+      </p>
+      <ul>
+        <li><strong>RBAC0 — Flat roles:</strong> no hierarchy, no constraints. Every role stands alone with its own permission set.</li>
+        <li><strong>RBAC1 — Hierarchical roles:</strong> roles inherit permissions from roles beneath them. Junior Analyst → Senior Analyst → Manager, where Manager inherits everything below.</li>
+        <li><strong>RBAC2 — Constrained RBAC:</strong> adds Separation of Duties (SoD) constraints that prevent a user from holding two roles that together create a conflict of interest.</li>
+        <li><strong>RBAC3 — Symmetric RBAC:</strong> combines hierarchy (RBAC1) and constraints (RBAC2) into a single unified model — the standard target for mature enterprise IGA implementations.</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 5 — Role Hierarchy (RBAC1)</div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+          <div style="background:var(--accent-primary); color:#fff; padding:10px 22px; border-radius:8px; font-weight:700;">Finance-Admin (inherits all below)</div>
+          <div style="font-size:1.2rem; color:var(--text-muted);">↑</div>
+          <div style="background:color-mix(in srgb, var(--accent-primary) 60%, var(--surface)); color:#fff; padding:10px 22px; border-radius:8px; font-weight:700;">Finance-Manager (inherits analyst)</div>
+          <div style="font-size:1.2rem; color:var(--text-muted);">↑</div>
+          <div style="background:color-mix(in srgb, var(--accent-primary) 25%, var(--surface)); padding:10px 22px; border-radius:8px; font-weight:700; border:1px solid var(--border);">Finance-Analyst (base role)</div>
+        </div>
+        <p class="diagram-caption">Permissions accumulate upward through the hierarchy — a Finance-Admin automatically holds every permission a Finance-Analyst holds.</p>
+      </div>
+
+      <h3>Why RBAC Is the Foundation</h3>
+      <p>
+        Almost every enterprise authorization system is RBAC at its core, even when the vendor
+        calls it something else. AWS managed policies, Salesforce profiles, SAP authorization
+        objects, Workday security groups — strip away the branding and you find users assigned to
+        named groupings that hold permission sets. RBAC's dominance is earned: it maps cleanly to
+        how organizations already think about access ("she's a manager, so she can approve
+        expenses"), it's auditable in plain language, and it's the model every compliance
+        framework (SOX, HIPAA, PCI-DSS) expects to see evidence of.
+      </p>
+
+      <h3>AD Groups as RBAC Implementation</h3>
+      <p>
+        You've been working inside an RBAC system since Module 02. Active Directory security
+        groups <strong>are</strong> RBAC: group = role, group membership = role assignment, and
+        group-based file or application permissions = the permission set attached to that role.
+        When PingFederate authenticates a user and reads their group memberships from
+        PingDirectory, it is reading their RBAC role assignments — and when those memberships flow
+        into a SAML <code>AttributeStatement</code> or an OIDC <code>groups</code> claim, the
+        receiving application is being handed an authorization signal it can map to its own local
+        roles.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 6 — RBAC in the Enterprise Identity Stack</div>
+        <div style="font-family:var(--font-mono); font-size:0.84rem; line-height:2.1;">
+          <div>AD Group: <code>CN=Finance-Analysts,OU=Groups,DC=company,DC=com</code></div>
+          <div style="color:var(--text-muted);">↓ LDAP <code>memberOf</code> attribute</div>
+          <div>PingFederate: reads group membership from PingDirectory</div>
+          <div style="color:var(--text-muted);">↓ SAML AttributeStatement or OIDC <code>groups</code> claim</div>
+          <div>Application: receives <code>groups</code> claim</div>
+          <div style="color:var(--text-muted);">↓ local RBAC mapping</div>
+          <div>Application: <code>Finance-Analyst</code> role → read-only dashboard</div>
+        </div>
+        <p class="diagram-caption">RBAC in enterprise IAM is mostly AD groups flowing as claims through the federation layer.</p>
+      </div>
+
+      <h3>RBAC's Limitations</h3>
+      <ul>
+        <li><strong>Role explosion:</strong> the number of distinct roles grows faster than the organization can govern</li>
+        <li><strong>Context blindness:</strong> the same role grants the same permissions regardless of time, location, or device — RBAC has no concept of "this role, but only during business hours"</li>
+        <li><strong>Granularity ceiling:</strong> RBAC can express "can read reports" but not "can read only their own region's reports" without creating a new role for every region</li>
+        <li><strong>Static assignment:</strong> roles don't adapt to risk signals or changing context — a compromised account retains full role privileges until someone manually intervenes</li>
+      </ul>
+
+      <div class="callout callout-architect">
+        <span class="callout-title">🟢 Architect's Note — Role Explosion</span>
+        Role explosion is the primary failure mode of pure RBAC at enterprise scale. It starts
+        simply: Engineer, Senior-Engineer, Lead-Engineer. Then business units want their own
+        roles: Frontend-Engineer, Backend-Engineer, Platform-Engineer. Then environments:
+        Prod-Engineer, Dev-Engineer, Staging-Engineer. Then exceptions: the engineer who needs
+        Finance-Reader access. Three years later: 3,000 roles, no one understands the model, and
+        the IGA team spends 60% of their time managing role assignments rather than governing
+        access. The architectural remedy: role mining (Module 09) to rationalize the role set,
+        ABAC for the exceptions that drove role explosion, and governance rules that require
+        justification for new role creation.
+      </div>
+
+      <div class="callout callout-security">
+        <span class="callout-title">🟣 Security — SoD in RBAC (RBAC2)</span>
+        Separation of Duties constraints in RBAC prevent a single user from holding two roles
+        that together create a fraud or error risk. Classic example: a user should never hold both
+        "create-payment" and "approve-payment" roles simultaneously — those two roles combined
+        allow them to create and approve their own fraudulent payment. SoD constraints in Saviynt
+        are defined as rule sets: if a user is assigned role-A, they cannot also be assigned
+        role-B. Saviynt evaluates SoD at provisioning time (a preventive control) and again at
+        access certification (a detective control).
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: What is role mining and how do enterprises derive a rationalized role model from observed access patterns?</summary>
+        <div class="dd-body">
+          Role mining is a data-analysis discipline applied to existing access patterns —
+          typically the current set of permission assignments across applications — to derive a
+          rationalized role model rather than relying on roles that accumulated organically over
+          years. The process generally runs bottom-up: cluster users by the permission sets they
+          actually hold, identify common groupings that recur across many users, and propose those
+          groupings as candidate roles. A top-down pass then validates each candidate role against
+          actual job functions, removing clusters that reflect accidental similarity rather than
+          genuine business roles. Saviynt and SailPoint both ship role-mining engines that surface
+          these candidate roles for an IGA team to review, approve, and publish — turning three
+          years of ad-hoc permission sprawl into a defensible, auditable role catalog. Role mining
+          is typically the first remediation step when an access review uncovers role explosion,
+          since it directly attacks the root cause: roles that no longer map cleanly to how the
+          organization actually works.
+        </div>
+      </details>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.2</div>
+        <p>
+          Count the number of AD security groups in your enterprise that are used for application
+          access control (not email distribution lists). Divide by your user count. If the ratio
+          is greater than 1:1 — you may have role explosion. Now find the three most-assigned
+          groups. Do they represent business roles or do they represent technical permissions? If
+          technical permissions: that's a sign of permission-level RBAC rather than role-level
+          RBAC — the root cause of role explosion.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.3 ═══════════════ -->
+    <div class="module" id="s8-3" data-stack-layers="authz,tokens,applications">
+      <div class="module-divider">
+        <div class="module-num">8.3</div>
+        <h2>🏷️ ABAC — Attribute-Based Access Control</h2>
+      </div>
+
+      <p>
+        Attribute-Based Access Control answers the same four authorization questions as RBAC, but
+        with far more expressiveness. Instead of collapsing "who you are" into a single role
+        label, ABAC evaluates the actual attributes of the subject, the resource, the action, and
+        the environment — and makes a decision based on how those attributes relate to one
+        another, at the moment of the request.
+      </p>
+
+      <h3>The ABAC Components</h3>
+      <ul>
+        <li><strong>Subject attributes:</strong> <code>user.department</code>, <code>user.clearance</code>, <code>user.location</code>, <code>user.role</code>, <code>user.employmentType</code></li>
+        <li><strong>Resource attributes:</strong> <code>document.classification</code>, <code>document.owner</code>, <code>record.region</code>, <code>data.sensitivity</code></li>
+        <li><strong>Action attributes:</strong> read, write, delete, approve, export</li>
+        <li><strong>Environment attributes:</strong> time, device posture, network, risk score, geographic location</li>
+      </ul>
+
+      <p>
+        An ABAC policy expresses a rule across these attributes. In natural language: <em>"Allow
+        access if the subject's clearance is at least as high as the resource's classification,
+        AND the subject's department matches the resource's owning department, AND the
+        environment's device posture is compliant."</em> Expressed as policy logic, that becomes:
+      </p>
+      <p style="font-family:var(--font-mono); font-size:0.85rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 18px;">
+        allow IF subject.clearance &gt;= resource.classification<br>
+        &nbsp;&nbsp;AND subject.department == resource.owner_department<br>
+        &nbsp;&nbsp;AND environment.device_posture == 'compliant'
+      </p>
+
+      <h3>How ABAC Eliminates Role Explosion</h3>
+      <p>
+        Instead of creating a new role for every combination of permissions a business scenario
+        requires, ABAC lets attributes describe the subject and the resource, and a single policy
+        expresses the rule across all of them. There's no need for a
+        <code>Finance-Analyst-EMEA-Confidential</code> role when an ABAC policy can simply
+        evaluate <code>region</code> and <code>classification</code> attributes dynamically.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 7 — ABAC Policy Evaluation Model</div>
+        <p style="text-align:center; color:var(--text-muted); margin-bottom:10px;">Request: jsmith wants to READ document-Q3-Finance.pdf</p>
+        <table>
+          <tr><th>Subject Attributes</th><th>Resource Attributes</th><th>Environment</th></tr>
+          <tr>
+            <td>department = Engineering<br>clearance = Confidential<br>location = Office</td>
+            <td>classification = Restricted<br>owner_dept = Finance<br>region = US</td>
+            <td>device.posture = compliant<br>time = 09:00 business hours<br>network = corporate</td>
+          </tr>
+        </table>
+        <p style="font-family:var(--font-mono); font-size:0.82rem; background:var(--bg); border-radius:8px; padding:12px 16px; margin-top:12px;">
+          POLICY: allow IF subject.clearance &gt;= resource.classification AND subject.department == resource.owner_dept<br><br>
+          EVALUATION:<br>
+          &nbsp;&nbsp;Confidential &gt;= Restricted? <strong style="color:var(--accent-green);">YES ✓</strong><br>
+          &nbsp;&nbsp;Engineering == Finance? <strong style="color:var(--accent-red);">NO ✗</strong><br><br>
+          DECISION: <strong style="color:var(--accent-red);">DENY</strong>
+        </p>
+        <p class="diagram-caption">ABAC evaluates every relevant attribute — a single mismatch can be decisive.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 8 — RBAC vs ABAC Decision Comparison</div>
+        <p style="text-align:center; color:var(--text-muted); margin-bottom:10px;">Scenario: contractor accessing GDPR-sensitive EU customer data</p>
+        <table>
+          <tr><th>Model</th><th>Evaluates</th><th>Result</th></tr>
+          <tr><td><strong>RBAC</strong></td><td>"Is user in Data-Access role?" → Yes</td><td style="color:var(--accent-red); font-weight:700;">PERMIT (role doesn't encode contractor status or data sensitivity)</td></tr>
+          <tr><td><strong>ABAC</strong></td><td><code>subject.employmentType == contractor AND resource.dataClassification == GDPR-sensitive</code></td><td style="color:var(--accent-green); font-weight:700;">DENY (attributes encode exactly the relevant context)</td></tr>
+        </table>
+        <p class="diagram-caption">RBAC's role can't capture every access nuance. ABAC's attributes can.</p>
+      </div>
+
+      <h3>ABAC in Production: AWS IAM and Conditional Access</h3>
+      <p>
+        ABAC is not a theoretical model — it's already running every cloud authorization decision
+        you make. <strong>AWS IAM Condition elements</strong> implement ABAC directly: checking
+        request attributes, resource tag conditions, source IP ranges, and date/time windows is
+        exactly the subject/resource/environment attribute evaluation ABAC describes. Similarly,
+        <strong>Microsoft Entra ID Conditional Access</strong> policies implement ABAC at the
+        authentication layer — subject (user identity and group), resource (the target
+        application), and context (device compliance, location, sign-in risk) all feed into a
+        single access decision.
+      </p>
+
+      <h3>ABAC's Limitations</h3>
+      <ul>
+        <li><strong>Policy complexity:</strong> ABAC policies are significantly harder to audit at a glance than a simple role assignment — "what does this user have access to" requires evaluating every applicable policy, not reading a role list</li>
+        <li><strong>Attribute quality dependency:</strong> ABAC is only as accurate as the attribute data feeding it — garbage attributes produce wrong decisions silently</li>
+        <li><strong>Performance:</strong> evaluating attributes at runtime, especially when they require external lookups, is computationally more expensive than a static role check at enterprise scale</li>
+      </ul>
+
+      <div class="analogy">
+        <span class="analogy-title">🟡 Architect's Bridge</span>
+        ABAC is exactly the conditional rule engine you've built in API gateways and Spring
+        Security. When your gateway rule says "allow if <code>request.caller.ipRange</code> is in
+        corporate-cidrs AND <code>request.resource.sensitivity</code> != HIGH AND
+        <code>request.time</code> is within business_hours" — that is ABAC. Subject attributes
+        (caller IP range), resource attributes (sensitivity), environment attributes (time). AWS
+        IAM Condition blocks are ABAC. Spring Security <code>@PreAuthorize</code> expressions are
+        ABAC. OPA policies are ABAC. You've been writing ABAC logic for years. This module gives
+        you the architectural vocabulary to design it at enterprise scale.
+      </div>
+
+      <div class="callout callout-security">
+        <span class="callout-title">🟣 Security — Attribute Quality Is ABAC's Achilles Heel</span>
+        An ABAC policy that evaluates <code>subject.department == resource.owner_dept</code> is
+        only as accurate as the department attribute in your identity store. If users' department
+        attributes are out of date (Mover lifecycle not properly handled in the directory — Module
+        01/02), ABAC makes wrong decisions — and unlike RBAC mistakes (a wrong role assignment is
+        visible in an IGA access review), ABAC mistakes are invisible: the policy runs, the
+        attribute matches, access is granted, and no one notices. Attribute data quality
+        governance is the operational prerequisite for ABAC. Build it before deploying ABAC, not
+        after.
+      </div>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.3</div>
+        <p>
+          Look at an AWS IAM policy in your account. Find a Condition block. Identify what
+          attributes it evaluates: subject attributes (caller identity tags?), resource attributes
+          (resource tags?), environment attributes (<code>aws:RequestedRegion</code>,
+          <code>aws:CurrentTime</code>?). You are reading an ABAC policy. Now write one sentence
+          describing the access control intent of that condition in plain language. If you can't
+          — the policy is probably too complex to audit.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.4 ═══════════════ -->
+    <div class="module" id="s8-4" data-stack-layers="authz,tokens,applications">
+      <div class="module-divider">
+        <div class="module-num">8.4</div>
+        <h2>📜 PBAC — Policy-Based Access Control</h2>
+      </div>
+
+      <p>
+        Policy-Based Access Control takes ABAC's attribute logic and raises it one level of
+        abstraction: instead of attribute-evaluation logic living inside application code or
+        scattered config files, PBAC externalizes it into formal, centrally managed, independently
+        governed policies. PBAC is best understood not as a competitor to ABAC but as ABAC matured
+        into an enterprise governance discipline.
+      </p>
+
+      <h3>How PBAC Differs From ABAC</h3>
+      <p>
+        In plain ABAC, the attribute-matching logic is frequently embedded directly in application
+        code — a condition buried in a service class, evaluated inline. In PBAC, policies are:
+      </p>
+      <ul>
+        <li>Written in a formal policy language (XACML, Rego, Cedar)</li>
+        <li>Stored in a central policy repository, separate from application code</li>
+        <li>Evaluated by a dedicated policy engine — a Policy Decision Point (PDP, covered fully in 8.7)</li>
+        <li>Versioned, audited, and governed independently of the application's release cycle</li>
+      </ul>
+
+      <h3>XACML — The Original Formal Standard</h3>
+      <p>
+        XACML (eXtensible Access Control Markup Language) was the original OASIS standard for
+        formalizing PBAC. It's XML-based — verbose by modern standards, but deliberately so: every
+        request, policy, and decision has a rigorously defined structure, which made it possible
+        for large enterprises to build interoperable policy engines from different vendors years
+        before lighter-weight alternatives existed. XACML adoption in greenfield projects has
+        slowed in favor of OPA and Cedar, but it remains present in many enterprise systems
+        deployed during the 2010s, and its conceptual model (PDP/PEP/PAP/PIP, covered in 8.7;
+        Permit/Deny/NotApplicable/Indeterminate decisions) still underpins how modern engines think
+        about policy evaluation.
+      </p>
+
+      <h3>OPA — The Modern PBAC Engine</h3>
+      <p>
+        Open Policy Agent (OPA) is the dominant modern PBAC engine, particularly in cloud-native
+        environments. Policies are written in <strong>Rego</strong>, a declarative query language
+        purpose-built for expressing authorization logic over structured data. OPA integrates with
+        applications and APIs as a sidecar or a centralized service — the calling service sends a
+        JSON request describing the subject, resource, action, and context, and OPA returns a
+        decision.
+      </p>
+
+      <h3>Cedar — AWS's Purpose-Built Policy Language</h3>
+      <p>
+        Cedar is Amazon's policy language, designed specifically for correctness and performance
+        — it was built with formal verification in mind, so policies can be mathematically proven
+        not to contain certain classes of errors (like unintentionally granting more access than
+        intended). Cedar powers AWS Verified Permissions and is increasingly used as the policy
+        language for purpose-built fine-grained authorization services.
+      </p>
+
+      <h3>Google Zanzibar and OpenFGA — A Preview</h3>
+      <p>
+        One more system deserves a mention here, even though its full treatment is Section 8.5:
+        Google Zanzibar is the relationship-based policy system underlying Google Drive's sharing
+        model. It answers authorization questions through relationship graph traversal rather than
+        attribute matching — a different model entirely, called ReBAC, which the next section
+        covers in depth.
+      </p>
+
+      <h3>PBAC in Enterprise IAM</h3>
+      <ul>
+        <li><strong>Centralized policy management:</strong> change a policy in one place, and the change takes effect everywhere it's enforced — no redeploying a dozen services</li>
+        <li><strong>Policy as code:</strong> policies live in version control, go through CI/CD, and can be automatically tested before deployment, exactly like application code</li>
+        <li><strong>Audit:</strong> every policy decision can be logged together with the exact policy version that produced it — a critical capability for regulatory review</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 9 — PBAC Architecture: Policy Lifecycle</div>
+        <div style="font-family:var(--font-mono); font-size:0.84rem; line-height:2.1;">
+          <div>Policy Author (IAM / Security team)</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div>Policy Repository (Git)</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div>CI/CD Pipeline: lint + test + deploy</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div>Policy Decision Point: OPA / Cedar</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div>Evaluated at runtime, per access request</div>
+        </div>
+        <p class="diagram-caption">In PBAC, policy is code — versioned, tested, and deployed independently of application code. The Policy Repository also feeds audit and compliance reporting.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 10 — OPA Rego Policy Structure (Conceptual)</div>
+        <p style="font-family:var(--font-mono); font-size:0.84rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 18px;">
+          Package: company.document.access<br>
+          Policy: allow_read<br><br>
+          Conditions:<br>
+          &nbsp;&nbsp;user.department == document.owner_dept<br>
+          &nbsp;&nbsp;OR user.role == "document-admin"<br>
+          &nbsp;&nbsp;AND NOT document.classification == "TOP-SECRET"<br>
+          &nbsp;&nbsp;AND time.now within business_hours<br><br>
+          Default: deny
+        </p>
+        <p class="diagram-caption">OPA policies are written in Rego and evaluated against structured data — subject, resource, action, and context, evaluated together.</p>
+      </div>
+
+      <div class="callout callout-architect">
+        <span class="callout-title">🟢 Architect's Note — PBAC With OPA Is Cloud-Native Standard Practice</span>
+        PBAC with OPA is the pattern for modern cloud-native authorization. Every Kubernetes
+        admission controller, every API gateway policy, every service mesh authorization rule is
+        a PBAC decision evaluated by OPA or a similar engine. As a Java platform engineer, the OPA
+        sidecar pattern will be immediately familiar: your service calls the OPA sidecar via HTTP
+        (<code>POST /v1/data/company/access</code>), passes the request context as JSON, and
+        receives a permit/deny decision. No authorization logic in your service code. The policy
+        is owned by the IAM/security team. You build the service. They govern what it allows.
+        That separation of concerns is why PBAC exists.
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: How does XACML formalize PBAC with Request, Response, Policy, and PolicySet constructs?</summary>
+        <div class="dd-body">
+          XACML structures every authorization interaction around a handful of rigorously defined
+          constructs. A <strong>Request</strong> describes the subject, resource, action, and
+          environment attributes for a single access attempt — essentially a formal version of the
+          four authorization questions from Section 8.1. A <strong>Policy</strong> contains one or
+          more <strong>Rules</strong>, each with a target (when does this rule apply?), a condition
+          (what must be true?), and an effect (Permit or Deny). Multiple Policies can be grouped
+          into a <strong>PolicySet</strong>, with a combining algorithm that resolves conflicts
+          when more than one policy applies to the same request — for example, "deny overrides,"
+          where any applicable Deny wins regardless of how many Permits also apply. The
+          <strong>Response</strong> returns one of four decisions: Permit, Deny, NotApplicable (no
+          policy matched this request), or Indeterminate (an error occurred during evaluation,
+          such as a missing attribute). This formal structure — explicit combining algorithms,
+          explicit handling of "no policy matched" versus "evaluation failed" — is what made XACML
+          rigorous enough for regulated industries to build on, even as lighter languages like Rego
+          have replaced it in newer architectures.
+        </div>
+      </details>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.4</div>
+        <p>
+          If OPA is used in your Kubernetes environment, find a Gatekeeper
+          <code>ConstraintTemplate</code> or an OPA policy. Read the Rego. Identify: what subject
+          attributes does it evaluate? What resource attributes? What is the default (allow or
+          deny)? If OPA is not deployed: identify where authorization logic lives in your Java
+          microservices — is it in the service code, or is it externalized to a policy engine?
+          The former is ABAC embedded in code; the latter is PBAC.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.5 ═══════════════ -->
+    <div class="module" id="s8-5" data-stack-layers="authz,applications,cloud">
+      <div class="module-divider">
+        <div class="module-num">8.5</div>
+        <h2>🕸️ ReBAC — Relationship-Based Access Control</h2>
+      </div>
+
+      <p>
+        Relationship-Based Access Control asks a fundamentally different question than the other
+        three models. RBAC asks "what role does this subject hold?" ABAC asks "what attributes
+        does this subject and resource have?" ReBAC asks: <strong>what is the relationship between
+        this specific subject and this specific resource — and does that relationship grant the
+        requested action?</strong>
+      </p>
+
+      <h3>The Google Zanzibar Origin</h3>
+      <p>
+        ReBAC's modern form traces directly to Google's internal authorization system, Zanzibar —
+        built to solve a deceptively simple-sounding question at almost unimaginable scale: "can
+        user U view document D?" for Google Drive. The challenge wasn't the question itself but
+        the scale: billions of documents, billions of sharing relationships, and a requirement
+        that access checks return in milliseconds with strong consistency guarantees. Zanzibar's
+        answer was to model every permission as a relationship tuple and answer access questions
+        through graph traversal rather than role or attribute lookup.
+      </p>
+
+      <h3>The Relationship Model</h3>
+      <p>
+        ReBAC represents permissions as relationship tuples — compact statements of the form
+        <code>resource → relationship → subject</code>:
+      </p>
+      <p style="font-family:var(--font-mono); font-size:0.85rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 18px;">
+        document:D1 → viewer → user:jsmith<br>
+        folder:F1 → editor → group:engineering<br>
+        org:company → admin → user:bwang
+      </p>
+      <p>
+        The power of ReBAC comes from <strong>relationship traversal</strong>: if <code>jsmith</code>
+        is a viewer of <code>folder:F1</code>, and document <code>D1</code> is contained within
+        <code>folder:F1</code>, then <code>jsmith</code> inherits viewer access to <code>D1</code>
+        — without anyone ever creating a direct tuple between <code>jsmith</code> and
+        <code>D1</code>. Access is computed by walking the relationship graph at query time, not
+        by pre-enumerating every permission.
+      </p>
+
+      <h3>OpenFGA</h3>
+      <p>
+        OpenFGA is the leading open-source implementation of the Zanzibar model, donated to the
+        CNCF and increasingly adopted by enterprises building fine-grained, relationship-driven
+        authorization into SaaS products. It provides the relationship-tuple storage, the
+        traversal engine, and an API for both writing relationships and checking access — the
+        building blocks Google built internally, now available as infrastructure any team can
+        deploy.
+      </p>
+
+      <h3>ReBAC vs RBAC: The Critical Distinction</h3>
+      <p>
+        RBAC assigns roles to users <strong>globally</strong> — "jsmith has the Editor role" grants
+        edit access to every resource the Editor role covers. ReBAC expresses relationships between
+        specific users and <strong>specific</strong> resources — "jsmith is editor of
+        <code>document:D1</code>" grants edit access only to that one document. This is the same
+        distinction between a blanket grant and a scoped grant that you intuitively understand from
+        file-sharing tools: a global "Editor" role is a blunt instrument; a per-document
+        relationship is a scalpel.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 11 — ReBAC Relationship Tuple Model</div>
+        <p style="font-family:var(--font-mono); font-size:0.84rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 18px; line-height:1.9;">
+          org:acme → admin → user:bwang<br>
+          team:engineering → member → user:jsmith<br>
+          team:engineering → member → user:alee<br>
+          project:P1 → team → team:engineering<br>
+          document:D1 → parent → project:P1<br>
+          document:D2 → owner → user:jsmith
+        </p>
+        <p style="margin-top:14px;"><strong>Access check:</strong> can <code>jsmith</code> view <code>document:D1</code>?</p>
+        <div style="font-family:var(--font-mono); font-size:0.82rem; line-height:1.9; color:var(--text-muted);">
+          → jsmith is a member of the engineering team<br>
+          → engineering team is the team for project P1<br>
+          → D1 is a child of project P1<br>
+          → engineering team members can view P1's documents<br>
+          → <strong style="color:var(--accent-green);">PERMIT</strong> (via relationship chain traversal)
+        </div>
+        <p class="diagram-caption">No direct tuple between jsmith and D1 exists — access is derived entirely from graph traversal.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 12 — RBAC vs ABAC vs ReBAC: Same Scenario, Three Models</div>
+        <p style="text-align:center; color:var(--text-muted); margin-bottom:10px;">Scenario: Can manager Alice see her team's performance reviews?</p>
+        <table>
+          <tr><th>Model</th><th>Evaluates</th><th>Result</th></tr>
+          <tr><td><strong>RBAC</strong></td><td>Alice has role "Manager" → Manager role can view TeamReviews resource</td><td>ALL managers see ALL team reviews (too broad)</td></tr>
+          <tr><td><strong>ABAC</strong></td><td><code>Alice.department == Review.employee.department</code> → permit if same department</td><td>Better, but still attribute-dependent</td></tr>
+          <tr><td><strong>ReBAC</strong></td><td><code>Review.subject is-direct-report-of Alice</code> → traverses org chart relationship graph</td><td style="color:var(--accent-green); font-weight:700;">Alice sees ONLY her direct reports' reviews — most precise, naturally models business reality</td></tr>
+        </table>
+      </div>
+
+      <h3>ReBAC Use Cases in the Enterprise</h3>
+      <ul>
+        <li><strong>Document/content management</strong> — the Google Drive sharing model itself</li>
+        <li><strong>Project-based access</strong> — GitHub repository permissions, where collaborator relationships are scoped per repo</li>
+        <li><strong>Hierarchical org access</strong> — a manager seeing their direct reports' data, derived from org-chart relationships</li>
+        <li><strong>Fine-grained SaaS multi-tenancy</strong> — tenant-scoped resource sharing within a single application</li>
+      </ul>
+
+      <h3>ReBAC's Limitations</h3>
+      <ul>
+        <li><strong>Complexity:</strong> the relationship graph grows large and intricate as the system matures, making it harder to reason about "what can this user ultimately reach" without running the traversal</li>
+        <li><strong>Performance:</strong> graph traversal at Google scale requires purpose-built, heavily optimized storage — Zanzibar's underlying SpiceDB-style architecture exists specifically to make this fast</li>
+        <li><strong>New paradigm:</strong> developers accustomed to thinking in roles need to learn to think in relationships — a genuine learning curve, not just new syntax</li>
+      </ul>
+
+      <div class="analogy green">
+        <span class="analogy-title">🟢 Architect's Bridge</span>
+        ReBAC is the permission model you've already seen in GitHub. You don't have a global
+        "repository-editor" role that gives you edit access to all repositories. Instead: you are
+        a collaborator on <code>repo:payment-service</code> with role "maintainer" (a relationship
+        tuple). That relationship determines your access to that specific repository. Your access
+        to <code>repo:auth-service</code> is a different relationship tuple — or none, if you were
+        never added. GitHub's permission model is ReBAC. Google Drive's sharing model is ReBAC.
+        Google Docs "share with specific people" is ReBAC. The pattern is everywhere in modern
+        SaaS — you've been using it daily, just without the name.
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: What is Zanzibar's "new enemy problem," and why does it make ReBAC consistency so hard at scale?</summary>
+        <div class="dd-body">
+          ReBAC's relationship-graph model introduces a subtle consistency hazard that Google's
+          Zanzibar paper named the "new enemy problem." Imagine a user removes a collaborator from
+          a sensitive document, then immediately uploads a new sensitive paragraph. If the
+          authorization check for that paragraph runs against a slightly stale replica of the
+          relationship graph — one that hasn't yet caught up with the removal — the removed
+          collaborator could briefly still see content the owner explicitly tried to hide from
+          them, even though the removal "happened" first from the owner's point of view. This is
+          the opposite of the usual eventual-consistency trade-off: most systems tolerate brief
+          staleness because the cost of a slightly outdated read is low, but in authorization, a
+          stale read can mean granting access that was just revoked. Zanzibar's solution is a
+          consistency mechanism called "zookies" — tokens that let a request demand the
+          relationship graph be evaluated at least as fresh as a specific prior write. OpenFGA
+          implements an equivalent concept. The architectural lesson for anyone evaluating ReBAC:
+          relationship-graph authorization isn't just a data-modeling decision, it's also a
+          distributed-systems consistency decision, and the two can't be separated.
+        </div>
+      </details>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.5</div>
+        <p>
+          In GitHub (or a similar system you use), find a repository you collaborate on. Identify
+          your relationship tuple: what is the resource (repository), what is the relationship
+          (owner/maintainer/contributor/viewer), and what is the subject (you). Now add a team to
+          a repository — that team membership plus repository relationship creates a two-hop
+          ReBAC traversal. You are now reading a ReBAC access model in a live system.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.6 ═══════════════ -->
+    <div class="module" id="s8-6" data-stack-layers="authz,applications,tokens">
+      <div class="module-divider">
+        <div class="module-num">8.6</div>
+        <h2>🔬 Fine-Grained Authorization Architecture</h2>
+      </div>
+
+      <p>
+        Every model covered so far — RBAC, ABAC, PBAC, ReBAC — can in principle be applied at any
+        granularity. But most enterprise authorization, in practice, stops at "can this user access
+        this application" or "can this user access this feature." Fine-Grained Authorization (FGA)
+        is the discipline of pushing access control decisions down to the level of individual
+        records, fields, or operations — not just "can this user access this application" but "can
+        this user see <em>this specific row</em> in this table, <em>this specific field</em> in
+        this record."
+      </p>
+
+      <h3>The Granularity Spectrum</h3>
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 13 — Authorization Granularity Spectrum</div>
+        <table>
+          <tr><th>Granularity</th><th>Question</th><th>Typical Enforcement</th></tr>
+          <tr><td><strong>Coarse</strong></td><td>Can user access this application?</td><td>JWT audience claim, SAML ACS URL</td></tr>
+          <tr><td><strong>Medium</strong></td><td>Can user access this module/feature?</td><td>RBAC role check in application</td></tr>
+          <tr><td><strong>Fine-grained</strong></td><td>Can user access this specific record?</td><td>ReBAC relationship check / ABAC policy</td></tr>
+          <tr><td><strong>Field-level</strong></td><td>Can user see this specific field?</td><td>Attribute masking / field-level policy</td></tr>
+          <tr><td><strong>Operation-level</strong></td><td>Can user perform this operation on this record at this time, under this context?</td><td>Full PBAC/ABAC evaluation</td></tr>
+        </table>
+        <p class="diagram-caption">As granularity increases, so does policy complexity and evaluation cost — each step down this spectrum is a deliberate architectural trade-off, not a free upgrade.</p>
+      </div>
+
+      <h3>Why Coarse-Grained Authorization Isn't Enough</h3>
+      <ul>
+        <li><strong>Healthcare:</strong> a nurse can access patient records, but only for the patients assigned to them — not the entire hospital census</li>
+        <li><strong>Finance:</strong> an analyst can view reports, but not reports belonging to other business units</li>
+        <li><strong>HR:</strong> a manager can view salary data for their direct reports only, not the entire company</li>
+      </ul>
+      <p>
+        In every one of these cases, "the user has the Analyst role" or "the user has the Nurse
+        role" is necessary but not sufficient. Coarse RBAC gets the user in the door; fine-grained
+        authorization decides what they see once inside.
+      </p>
+
+      <h3>Data-Level Security Implementation Patterns</h3>
+      <ul>
+        <li><strong>Row-Level Security (RLS):</strong> the database itself enforces filtering — PostgreSQL and Oracle both support native RLS policies that transparently filter query results based on session context, regardless of how the query was written</li>
+        <li><strong>Attribute-level masking:</strong> sensitive fields are masked or nulled based on the requesting subject's attributes — a salary field returns real data to HR but masked data to a peer</li>
+        <li><strong>Query-time filtering:</strong> the application itself builds <code>WHERE</code> clauses based on the authorization context before the query ever reaches the database</li>
+        <li><strong>View-based access:</strong> users query pre-filtered database views rather than base tables, with the filtering logic baked into the view definition</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 14 — Row-Level Security Architecture</div>
+        <div style="font-family:var(--font-mono); font-size:0.84rem; line-height:2;">
+          <div>Application receives request from user jsmith</div>
+          <div style="color:var(--text-muted);">User's identity context: department=Finance, region=US-East</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div>Application builds query:</div>
+          <div style="background:var(--bg); border-radius:6px; padding:10px 14px; margin:6px 0;">
+            SELECT * FROM orders<br>
+            WHERE owner_dept = :user_dept &nbsp;&nbsp;<span style="color:var(--text-muted);">← from subject attribute</span><br>
+            AND region = :user_region &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text-muted);">← from subject attribute</span>
+          </div>
+          <div>Database enforces: users only see their own org's data</div>
+        </div>
+        <p class="diagram-caption">Alternative pattern: database-native RLS enforces the same filter at the DB layer, regardless of how the application wrote the query — a stronger guarantee than query-time filtering alone.</p>
+      </div>
+
+      <h3>The Permission Token Pattern</h3>
+      <p>
+        Some architectures embed fine-grained authorization decisions directly into tokens — a
+        token that asserts not just "this user is authenticated" but "this user may access record
+        IDs 4471, 4472, and 4490." This works for small, stable permission sets but breaks down
+        quickly as the set of accessible records grows or changes frequently; most enterprise FGA
+        architectures instead compute the decision at request time rather than trying to enumerate
+        it in advance.
+      </p>
+
+      <h3>FGA and Performance</h3>
+      <p>
+        Fine-grained authorization adds latency — evaluating a policy per record, or per field, on
+        every request is fundamentally more expensive than a single role check at login. Production
+        FGA architectures manage this cost through caching (short-lived decision caches keyed by
+        subject+resource+action), pre-computation (materializing accessible-record sets on a
+        schedule rather than computing them live), and batched evaluation (asking "which of these
+        50 records can this user see" in one call rather than 50 separate calls).
+      </p>
+
+      <h3>FGA Products</h3>
+      <p>
+        A dedicated product category has emerged around this problem: AWS Verified Permissions
+        (built on Cedar), OpenFGA, Oso, and Permify all provide purpose-built fine-grained
+        authorization engines designed to make record-level and field-level decisions fast enough
+        to sit in the request path of a production application.
+      </p>
+
+      <div class="callout callout-architect">
+        <span class="callout-title">🟢 Architect's Note — Externalize FGA, Don't Reimplement It</span>
+        Fine-grained authorization is where the separation of the authorization decision from the
+        application matters most. If every service implements its own FGA logic — "show only
+        records where <code>owner_dept == user.department</code>" — you get N implementations
+        across N services, each slightly different, each independently vulnerable to mistakes.
+        Externalized FGA (via OPA, Cedar, or OpenFGA) puts that logic in one place, governed by
+        one team, tested by one test suite. When the business rule changes ("also allow
+        cross-department managers to see records"), you change one policy. Not N services.
+      </div>
+
+      <div class="usecase">
+        <span class="usecase-tag">Use Case</span>
+        <p>
+          A multinational bank operates a customer data platform serving 12 internal teams — retail,
+          corporate, investment, compliance, fraud investigation, and audit, among others. Each team
+          should see only customer records relevant to their function: fraud investigators need full
+          account history for flagged accounts only; retail bankers need their own customers only;
+          auditors need read-only access to everything, but with PII masked. Design the
+          fine-grained authorization architecture for this platform: which granularity layer applies
+          where, which enforcement pattern (RLS, query-time filtering, attribute masking) handles
+          each requirement, and where in the stack the enforcement happens.
+        </p>
+      </div>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.6</div>
+        <p>
+          Find a report or data view in a system you use (Saviynt's access request portal, GitHub,
+          Workday, etc.). Ask: is this data filtered based on who I am? Can a different user see
+          the same view with different data? If yes — that system implements fine-grained
+          authorization. Try to identify where the filtering happens: in the UI? in the API? in
+          the database? That layer is the enforcement point.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.7 ═══════════════ -->
+    <div class="module" id="s8-7" data-stack-layers="authz,applications,tokens">
+      <div class="module-divider">
+        <div class="module-num">8.7</div>
+        <h2>⚖️ PDP &amp; PEP — The Policy Engine Architecture</h2>
+      </div>
+
+      <p>
+        Every authorization model covered so far — RBAC, ABAC, PBAC, ReBAC — needs somewhere to
+        actually run. The PDP/PEP architecture is the most important structural pattern in
+        enterprise authorization: it's the reference model that describes where policy decisions
+        get made, where they get enforced, and why those two responsibilities must never live in
+        the same place.
+      </p>
+
+      <h3>The Four Points</h3>
+      <ul>
+        <li><strong>PDP — Policy Decision Point:</strong> the system that evaluates an access request against policies and returns a decision — Permit, Deny, or an obligation (e.g., "permit, but require step-up authentication")</li>
+        <li><strong>PEP — Policy Enforcement Point:</strong> the system that intercepts the access request, calls the PDP, and enforces whatever decision comes back</li>
+        <li><strong>PAP — Policy Administration Point:</strong> where policies are authored, stored, and managed — the governance front-end for the PDP's rule set</li>
+        <li><strong>PIP — Policy Information Point:</strong> where the PDP fetches the attribute data it needs to evaluate a policy — the user's directory record, the resource's metadata, the environment's risk score</li>
+      </ul>
+      <p>
+        This four-point model traces directly to the XACML reference architecture, and while not
+        every modern deployment uses all four names, the responsibilities they describe are
+        present in every serious PBAC implementation.
+      </p>
+
+      <h3>Why PDP/PEP Separation Matters</h3>
+      <ul>
+        <li>The PEP <strong>enforces</strong> — it does not decide</li>
+        <li>The PDP <strong>decides</strong> — it does not enforce</li>
+        <li>This separation allows a single PDP to serve many PEPs across many services, with consistent policy applied everywhere</li>
+        <li>Policy changes happen at the PAP — never inside individual PEPs — so a rule change doesn't require redeploying every service that enforces it</li>
+        <li>The PEP is the "always enforce" point: if the PDP is unreachable, the PEP must <strong>fail closed</strong> — a principle important enough to warrant its own callout below</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 15 — PDP / PEP / PAP / PIP Architecture: Full Model</div>
+        <table>
+          <tr><th>Component</th><th>Role</th></tr>
+          <tr><td><strong>PAP</strong><br>Policy Administration Point</td><td>IAM/Security team authors policies here; policies stored in the policy repository, deployed to the PDP</td></tr>
+          <tr><td><strong>PDP</strong><br>Policy Decision Point</td><td>Receives the access request (subject + resource + action + context); fetches attribute data from the PIP; evaluates policies from the PAP; returns Permit / Deny / NotApplicable / Indeterminate</td></tr>
+          <tr><td><strong>PEP</strong><br>Policy Enforcement Point</td><td>Intercepts the user's access request; sends an authorization request to the PDP; enforces the PDP's decision (allow or block)</td></tr>
+          <tr><td><strong>PIP</strong><br>Policy Information Point</td><td>Supplies subject attributes (from LDAP/directory), resource attributes (from a resource metadata store), and environment attributes (from a context service)</td></tr>
+        </table>
+        <p class="diagram-caption">Flow: PEP → PDP → (PDP queries PIP for attributes, evaluates against policy from PAP) → decision returns to PEP → PEP enforces.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 16 — PEP Placement Patterns</div>
+        <table>
+          <tr><th>PEP Location</th><th>Calls</th><th>Typical Granularity</th></tr>
+          <tr><td>API Gateway</td><td>OPA PDP</td><td>Coarse to medium</td></tr>
+          <tr><td>Service Mesh Sidecar</td><td>OPA PDP</td><td>Service-to-service</td></tr>
+          <tr><td>Application Middleware</td><td>PDP (any)</td><td>Fine-grained</td></tr>
+          <tr><td>Database RLS</td><td>Evaluated at query time</td><td>Record-level</td></tr>
+          <tr><td>Kubernetes Admission Controller</td><td>OPA Gatekeeper</td><td>Workload-level</td></tr>
+        </table>
+        <p class="diagram-caption">PEPs exist at every layer. The PDP is shared. Enforcement is distributed. Decision-making is centralized.</p>
+      </div>
+
+      <div class="callout callout-architect">
+        <span class="callout-title">🟢 Architect's Note — You Already Know This Pattern</span>
+        The PDP/PEP separation is the same separation of concerns you apply in Java service design.
+        The service doesn't make business logic decisions inline — it calls a domain service that
+        holds the business rules. The PEP (service) doesn't make authorization decisions inline —
+        it calls the PDP (authorization service) that holds the policies. The result is the same:
+        the logic is testable, replaceable, and independently governed. If you've ever extracted
+        business logic from a controller into a service layer, you understand the PDP/PEP
+        architecture instinctively. This module just gives it a name and shows you how it scales
+        to enterprise authorization.
+      </div>
+
+      <div class="callout callout-security">
+        <span class="callout-title">🟣 Security — PEP Fail-Closed Is Non-Negotiable</span>
+        If the PEP cannot reach the PDP (network timeout, PDP outage), it must deny access — not
+        permit it. A PEP that fails open ("if I can't reach the policy engine, let the user
+        through") creates a complete authorization bypass whenever the PDP is unavailable.
+        Attackers who can isolate a PEP from its PDP — via network manipulation or by deliberately
+        causing a PDP outage — gain unrestricted access. Design every PEP with fail-closed as the
+        default, and test it: disconnect the PDP, confirm the PEP denies all requests, confirm the
+        error is logged.
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: What does the XACML request/response model define, and what do NotApplicable and Indeterminate actually mean?</summary>
+        <div class="dd-body">
+          XACML defines four possible decision outcomes, and the distinction between the last two
+          is one architects routinely get wrong. <strong>Permit</strong> means a policy explicitly
+          allowed the request. <strong>Deny</strong> means a policy explicitly denied it.
+          <strong>NotApplicable</strong> means no policy in the system addressed this request at
+          all — it fell outside the scope of every policy that was evaluated. That's architecturally
+          very different from <strong>Indeterminate</strong>, which means a policy that should have
+          applied could not be evaluated — a missing attribute, an unreachable PIP, a malformed
+          policy. The reason this distinction matters operationally: a well-designed PDP treats
+          NotApplicable and Indeterminate completely differently from each other in its default
+          behavior. NotApplicable typically falls through to a default-deny policy at the
+          PolicySet level — "nothing said yes, so the answer is no." Indeterminate is a system
+          failure mode and should be treated with the same fail-closed discipline as a PDP outage:
+          if the engine couldn't actually evaluate the request, it must not be allowed to default
+          to Permit just because no Deny was returned.
+        </div>
+      </details>
+
+      <div class="usecase">
+        <span class="usecase-tag">Use Case</span>
+        <p>
+          Your team is building a new internal financial platform. It has 12 microservices, 3
+          external APIs, and data that ranges from public (interest rate tables) to confidential
+          (individual account balances) to restricted (fraud investigation records). Design the
+          PDP/PEP architecture: where do PEPs sit, what PDP do they call, where are policies
+          stored, how are attributes fetched, and how is the PDP made highly available?
+        </p>
+      </div>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.7</div>
+        <p>
+          Find an authorization check in one of your Java microservices. Is the authorization
+          logic inline (<code>if user.hasRole('ADMIN')</code>) or externalized (a call to a policy
+          service)? If inline: that is a PEP without a PDP — the decision is coupled to the
+          enforcement. Sketch what it would look like to extract that logic to an OPA sidecar.
+          What would the PEP call look like in Java? What would the Rego policy look like? This is
+          the migration path from embedded RBAC to PBAC.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.8 ═══════════════ -->
+    <div class="module" id="s8-8" data-stack-layers="authz,iga,applications">
+      <div class="module-divider">
+        <div class="module-num">8.8</div>
+        <h2>🗂️ Entitlement Architecture</h2>
+      </div>
+
+      <p>
+        Every authorization model discussed so far — RBAC, ABAC, PBAC, ReBAC — ultimately resolves
+        to the same atomic unit: the <strong>entitlement</strong>. An entitlement is the specific
+        right to perform a specific action on a specific resource — the finest-grained unit of
+        authorization in an enterprise IAM model, and the layer where identity governance actually
+        does its work.
+      </p>
+
+      <h3>The Entitlement Hierarchy</h3>
+      <p>
+        Entitlements sit at the bottom of a layered structure, with roles and permissions
+        organizing them above:
+      </p>
+      <p style="font-family:var(--font-mono); font-size:0.85rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 18px;">
+        Entitlement (can-approve-PO &gt; $50K in SAP)<br>
+        &nbsp;&nbsp;→ Permission (approve-purchase-order)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;→ Role (Finance-Manager)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ User (jsmith)
+      </p>
+      <p>
+        The distinction between a role and an entitlement is the distinction between a business
+        concept and a technical artifact. A role is a logical grouping of permissions tied to a
+        business function — "Finance-Manager" means something to a manager doing an access review.
+        An entitlement is the actual technical permission on a specific system — a SAP transaction
+        code, a Salesforce permission set, a GitHub repository access level. Roles are how humans
+        think about access. Entitlements are how systems implement it.
+      </p>
+
+      <h3>Application Entitlements</h3>
+      <p>
+        Every application defines its own entitlement model, and they rarely look alike: SAP
+        expresses entitlements as transaction codes and authorization objects; Salesforce combines
+        profiles with permission sets; GitHub expresses entitlements as per-repository access
+        levels; Oracle EBS uses responsibilities. None of these map cleanly onto each other, which
+        is precisely why a centralized entitlement catalog (covered next) is necessary at
+        enterprise scale — without it, no one can answer "what does this person actually have
+        access to across all our systems" without manually querying a dozen different
+        applications, each with its own entitlement vocabulary.
+      </p>
+
+      <h3>The Entitlement Sprawl Problem</h3>
+      <p>
+        Each enterprise application typically exposes hundreds or thousands of entitlements, and
+        every one of them theoretically requires governance — someone needs to know it exists,
+        understand what access it grants, and periodically confirm that the people who hold it
+        still need it. This is the central IGA challenge: the entitlement count across a mid-sized
+        enterprise's application portfolio routinely runs into the tens of thousands, dwarfing the
+        role count by an order of magnitude or more.
+      </p>
+
+      <h3>The Entitlement Catalog</h3>
+      <p>
+        An entitlement catalog is the IGA system's authoritative map of every technical permission
+        across every managed application, paired with a business-readable name and description.
+        Saviynt maintains this catalog as one of its core functions — ingesting raw entitlement
+        data from each connected application and mapping cryptic technical values (a SAP T-code,
+        a Salesforce permission-set API name) to descriptions a business approver can actually
+        understand and certify.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 17 — Entitlement Hierarchy</div>
+        <div style="font-family:var(--font-mono); font-size:0.84rem; line-height:2;">
+          <div>User: jsmith</div>
+          <div style="color:var(--text-muted);">↓ assigned to</div>
+          <div>Role: Finance-Manager (business role in IGA)</div>
+          <div style="color:var(--text-muted);">↓ maps to application roles</div>
+          <div>SAP: FI-Manager profile &nbsp;|&nbsp; Workday: Finance-Supervisor role &nbsp;|&nbsp; Salesforce: Finance-User + Finance-Approver profiles</div>
+          <div style="color:var(--text-muted);">↓ grants entitlements</div>
+          <div>SAP: T-code F-02 (enter G/L account posting)</div>
+          <div>SAP: T-code FBL3N (G/L account line items)</div>
+          <div>Workday: View-Compensation (own dept only)</div>
+          <div>Salesforce: View-All-Opportunities</div>
+        </div>
+        <p class="diagram-caption">One business role fans out into multiple application-specific entitlements — the translation layer the entitlement catalog manages.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 18 — Entitlement Catalog Architecture</div>
+        <table>
+          <tr><th>Application</th><th>Entitlement Type</th><th>Example Entitlements</th></tr>
+          <tr><td rowspan="2">SAP ERP</td><td>SAP Role</td><td>SAP_FI_MANAGER (Finance Manager), SAP_FI_ANALYST (Finance Analyst), SAP_FI_ADMIN (Finance Administrator)</td></tr>
+          <tr><td>SAP T-Code</td><td>F-02 (Post Document), FBL3N (G/L Account Line Items)</td></tr>
+          <tr><td>Salesforce</td><td>Salesforce Profile</td><td>Finance-User, Finance-Approver, Sales-Rep</td></tr>
+        </table>
+        <p class="diagram-caption">The entitlement catalog is the IGA system's map of all technical permissions across all applications, normalized into a consistent governance structure.</p>
+      </div>
+
+      <h3>Entitlements and IGA</h3>
+      <p>
+        Saviynt governs entitlement assignment through the full lifecycle: access requests route
+        through approval workflows, periodic access certification campaigns ask managers to
+        re-confirm that an entitlement assignment is still appropriate, and SoD conflict detection
+        runs continuously against the entitlement catalog to catch toxic combinations before — or
+        shortly after — they're granted.
+      </p>
+
+      <h3>Entitlements in Tokens</h3>
+      <p>
+        OIDC and SAML tokens typically carry only a subset of a user's full entitlement picture —
+        group memberships, coarse roles, a handful of claims. Full entitlement sets rarely fit
+        cleanly into a token: the token-size problem is real (large tokens slow every request and
+        can exceed header-size limits), and entitlement data changes more frequently than a token's
+        lifetime would tolerate. The practical pattern is that applications use the token to
+        establish identity and coarse role, then look up the fuller entitlement set from the IGA
+        platform or directory layer as needed — rather than trying to cram everything into the
+        token itself.
+      </p>
+
+      <h3>Privileged Entitlements</h3>
+      <p>
+        A subset of entitlements represents meaningfully elevated, high-risk access — database
+        admin rights, production deployment permissions, the ability to modify security
+        configurations. These privileged entitlements are typically pulled out of standard IGA
+        governance and managed instead by a dedicated PAM system like CyberArk, which adds
+        session recording, just-in-time elevation, and tighter approval controls than standard
+        entitlement governance provides. Module 10 covers this in full.
+      </p>
+
+      <div class="callout callout-concept">
+        <span class="callout-title">🔵 Entitlements Are the Atomic Unit</span>
+        Entitlements are the atomic unit of enterprise authorization. Every other concept — roles,
+        permissions, policies — is an organizing layer on top of entitlements. When Saviynt runs
+        an access certification campaign, it's asking managers to certify that specific
+        entitlements on specific applications are still appropriate for each user. When a SoD rule
+        fires, it's detecting that two specific entitlements would create a conflict if held
+        simultaneously. When a provisioning workflow runs, it's assigning specific entitlements to
+        a specific user in a specific application. The entitlement — the leaf node of the
+        authorization tree — is where identity governance does its most important work.
+      </div>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.8</div>
+        <p>
+          In Saviynt, navigate to the entitlement catalog for one application you manage. How many
+          entitlements does the application have? Are they named in a way a business user
+          understands? (If they're named "APP_ROLE_12847" — that's an entitlement naming problem.)
+          Find one entitlement and trace it: which users are assigned it? Is any of those
+          assignments orphaned (the user no longer needs it)? That trace is an entitlement
+          governance audit in miniature.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SECTION 8.9 ═══════════════ -->
+    <div class="module" id="s8-9" data-stack-layers="authz,applications,iga">
+      <div class="module-divider">
+        <div class="module-num">8.9</div>
+        <h2>🧭 Authorization Model Selection Framework</h2>
+      </div>
+
+      <p>
+        Eight sections in, you've now seen four distinct authorization models and the
+        infrastructure that runs them. The question every architect eventually faces isn't "which
+        model is best" — it's "which model fits this specific decision." This section gives you
+        the selection framework.
+      </p>
+
+      <h3>When to Use RBAC</h3>
+      <ul>
+        <li>Relatively stable user populations and access patterns</li>
+        <li>Business roles map clearly to permission sets</li>
+        <li>The number of distinct roles is manageable (generally under 500)</li>
+        <li>Compliance frameworks require role-based evidence (SOX, PCI-DSS audits expect role-based access reviews)</li>
+        <li>Applications support role claims natively</li>
+      </ul>
+      <p><strong>Use for:</strong> enterprise SaaS apps, most internal apps, AD group-based authorization.</p>
+
+      <h3>When to Use ABAC</h3>
+      <ul>
+        <li>Context matters — time, location, device, risk level genuinely change the decision</li>
+        <li>Roles would explode trying to handle every edge case</li>
+        <li>Resources carry classification attributes that should drive access directly</li>
+        <li>Data residency or regulatory context varies per-resource</li>
+      </ul>
+      <p><strong>Use for:</strong> cloud IAM (AWS IAM, Azure RBAC), API gateway policies, data classification-driven access.</p>
+
+      <h3>When to Use PBAC</h3>
+      <ul>
+        <li>Authorization logic must be centrally governed, not scattered across services</li>
+        <li>Policies need to be versioned, audited, and tested like code</li>
+        <li>Multiple applications share common authorization logic</li>
+        <li>The authorization decision must be explainable and auditable for regulators</li>
+      </ul>
+      <p><strong>Use for:</strong> Kubernetes authorization, API platforms, regulated industries, multi-application enterprise deployments.</p>
+
+      <h3>When to Use ReBAC</h3>
+      <ul>
+        <li>Access is defined by relationships between users and specific resources, not by global roles</li>
+        <li>Hierarchical resource ownership is central to the business model</li>
+        <li>Resource-specific sharing is a core use case, not an edge case</li>
+      </ul>
+      <p><strong>Use for:</strong> document/content management, project-based tools, multi-tenant SaaS, organizational hierarchies.</p>
+
+      <h3>Hybrid Models — The Reality of Enterprise Architecture</h3>
+      <p>
+        Most mature enterprise architectures use multiple models simultaneously, layered by
+        granularity rather than chosen as a single exclusive approach:
+      </p>
+      <ul>
+        <li>RBAC for coarse-grained application access</li>
+        <li>ABAC for context-sensitive exceptions on top of RBAC</li>
+        <li>PBAC for centralized policy governance across services</li>
+        <li>ReBAC for specific resource-sharing use cases</li>
+        <li>Fine-grained authorization at the data layer for record- and field-level control</li>
+      </ul>
+
+      <h3>The Evolution Path</h3>
+      <p>
+        Most enterprises follow a predictable maturity path: they start with RBAC because it's the
+        simplest model to reason about and the easiest to explain to auditors. They hit RBAC's
+        limits — role explosion, context blindness — and add ABAC to handle the exceptions that
+        were driving role sprawl. As governance and audit requirements grow, they adopt PBAC to
+        centralize and formalize policy logic that had been scattered across application code.
+        Finally, specific product needs — document sharing, project-based collaboration — drive
+        targeted ReBAC adoption for those particular resource types. Few enterprises arrive at
+        ReBAC or PBAC first; the path runs through RBAC.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 19 — Authorization Model Selection Decision Tree</div>
+        <table>
+          <tr><th>Question</th><th>If Yes →</th></tr>
+          <tr><td>Do stable roles map cleanly to permissions?</td><td><strong>RBAC</strong> (start here, always)</td></tr>
+          <tr><td>Does context change the decision (time/location/device)?</td><td>Add <strong>ABAC</strong> on top of RBAC</td></tr>
+          <tr><td>Is policy governance a regulatory requirement?</td><td>Add <strong>PBAC</strong> — externalize decisions to a policy engine</td></tr>
+          <tr><td>Is access to specific resources, not all resources of a type?</td><td>Add <strong>ReBAC</strong> for those resources</td></tr>
+          <tr><td>Is record/field-level access control needed?</td><td>Add <strong>Fine-Grained AuthZ</strong> at the data layer</td></tr>
+        </table>
+        <p class="diagram-caption">Start at the root with RBAC. Add layers only where the simpler model demonstrably falls short.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 20 — Enterprise Authorization Model Stack</div>
+        <div style="font-family:var(--font-mono); font-size:0.84rem; line-height:2.1;">
+          <div><strong>Coarse:</strong> RBAC — can user access the application?</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div><strong>Contextual:</strong> ABAC — should this context be permitted?</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div><strong>Policy:</strong> PBAC — what do our policies say?</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div><strong>Resource-specific:</strong> ReBAC — what's the relationship to this specific resource?</div>
+          <div style="color:var(--text-muted);">↓</div>
+          <div><strong>Data-level:</strong> FGA — can user see this specific record/field?</div>
+        </div>
+        <p class="diagram-caption">Real enterprise authorization is layered — not a single model, but models applied at the right granularity.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 21 — Authorization Model Comparison Matrix</div>
+        <table>
+          <tr><th>Model</th><th>Decision Basis</th><th>Scalability</th><th>Complexity</th><th>Policy Governance</th><th>Best For</th><th>Limitation</th></tr>
+          <tr><td><strong>RBAC</strong></td><td>Role membership</td><td>High (to ~500 roles)</td><td>Low</td><td>Role catalog</td><td>Stable, role-mapped access</td><td>Role explosion at scale</td></tr>
+          <tr><td><strong>ABAC</strong></td><td>Attribute matching</td><td>Medium–High</td><td>Medium</td><td>Policy + attribute governance</td><td>Context-sensitive decisions</td><td>Hard to audit, attribute-quality dependent</td></tr>
+          <tr><td><strong>PBAC</strong></td><td>Centralized policy</td><td>High</td><td>Medium–High</td><td>Policy-as-code, versioned</td><td>Cross-app governed decisions</td><td>Requires dedicated PDP infrastructure</td></tr>
+          <tr><td><strong>ReBAC</strong></td><td>Relationship graph</td><td>Very High (purpose-built storage)</td><td>High</td><td>Relationship tuple governance</td><td>Resource-specific sharing</td><td>New paradigm, graph complexity</td></tr>
+          <tr><td><strong>FGA</strong></td><td>Record/field rules</td><td>Latency-sensitive</td><td>High</td><td>Per-policy, externalized</td><td>Record/field-level privacy</td><td>Performance cost at scale</td></tr>
+        </table>
+        <p class="diagram-caption">No single row wins outright — mature architectures combine rows at different granularity layers.</p>
+      </div>
+
+      <div class="callout callout-architect">
+        <span class="callout-title">🟢 Architect's Note — Don't Solve Every Problem With One Model</span>
+        The most expensive authorization architecture mistake: trying to solve every problem with
+        one model. RBAC for everything leads to role explosion. ABAC for everything leads to
+        unauditable policy complexity. ReBAC for everything leads to relationship graph explosion.
+        The architect's job is to apply the right model at the right granularity layer — coarse
+        RBAC at the application level, ABAC for context-sensitive exceptions, PBAC for governed
+        policy evaluation, ReBAC for resource-specific sharing, FGA for data privacy requirements.
+        These models are not competitors. They are layers in a complete authorization architecture.
+      </div>
+
+      <div class="usecase">
+        <span class="usecase-tag">Use Case</span>
+        <p>
+          A healthcare platform needs to enforce: (a) only doctors can access patient records
+          (role), (b) only during their shift hours (context/time), (c) only for patients assigned
+          to them (relationship), (d) sensitive diagnosis fields masked unless the doctor is the
+          treating physician (field-level), (e) all access decisions logged with the policy
+          version that made them (audit/PBAC). Design the authorization architecture that
+          satisfies all five requirements, naming the model used for each.
+        </p>
+      </div>
+
+      <div class="lab">
+        <div class="lab-title">🧪 Lab 8.9</div>
+        <p>
+          Map the authorization architecture of three systems you use daily. For each: What
+          authorization model does it use? (RBAC/ABAC/ReBAC?) Is the decision centralized (PDP) or
+          embedded in code? At what granularity does it enforce access? Is the authorization
+          governed (reviewed, audited, managed by a policy team) or ad-hoc? This exercise reveals
+          the actual authorization maturity of the systems around you.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CHEAT SHEET ═══════════════ -->
+    <div class="module" id="cheatsheet" data-stack-layers="authz">
+      <div class="module-divider">
+        <div class="module-num" style="font-size:1.6rem;">📋</div>
+        <h2>Architecture Cheat Sheet</h2>
+      </div>
+      <div class="cheat-grid">
+        <div class="cheat-item"><span class="cheat-num">1</span><strong>AuthN = who you are; AuthZ = what you can do.</strong> Separate concerns, separate systems, separate failure modes. Never route a permission incident to the authentication team.</div>
+        <div class="cheat-item"><span class="cheat-num">2</span><strong>RBAC: roles → permissions → users.</strong> Simple, auditable, compliance-friendly. Fails above ~500 distinct roles as role explosion takes hold. Start every authorization architecture here.</div>
+        <div class="cheat-item"><span class="cheat-num">3</span><strong>ABAC: subject + resource + action + environment attributes → policy decision.</strong> Solves RBAC's context blindness. Requires attribute data quality governance — garbage attributes produce silent wrong decisions.</div>
+        <div class="cheat-item"><span class="cheat-num">4</span><strong>PBAC: policies as code, externalized to a PDP, governed independently of applications.</strong> OPA (Rego) and Cedar are the modern engines. Policy is now owned by IAM, not baked into service code.</div>
+        <div class="cheat-item"><span class="cheat-num">5</span><strong>ReBAC: access defined by relationships between subjects and specific resources.</strong> The Google Drive model, implemented openly as OpenFGA. Access is computed by graph traversal, not role lookup.</div>
+        <div class="cheat-item"><span class="cheat-num">6</span><strong>PDP decides, PEP enforces, PAP manages, PIP provides attributes.</strong> PEP must always fail closed — an unreachable PDP is a deny, never a permit.</div>
+        <div class="cheat-item"><span class="cheat-num">7</span><strong>Entitlements are the atomic unit of enterprise authorization.</strong> Roles organize entitlements. IGA governs them through access certification, SoD detection, and provisioning workflows.</div>
+        <div class="cheat-item"><span class="cheat-num">8</span><strong>Use all models, layered by granularity:</strong> RBAC coarse → ABAC contextual → PBAC governed → ReBAC resource-specific → FGA data-level. These models are not alternatives; they are layers.</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ MIND MAP ═══════════════ -->
+    <div class="module" id="mindmap" data-stack-layers="authz">
+      <div class="module-divider">
+        <div class="module-num" style="font-size:1.6rem;">🧠</div>
+        <h2>Module 08 — Concept Map</h2>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 22 — Authorization Architecture Concept Map</div>
+        <div class="mindmap-center">Authorization Architecture</div>
+        <div class="mindmap-branches">
+          <div class="mindmap-branch"><b>AuthN vs AuthZ</b><br>Separation / failure modes / multi-layer chain / four authorization questions</div>
+          <div class="mindmap-branch"><b>RBAC</b><br>Users → Roles → Permissions / RBAC0–3 / AD groups / role explosion / SoD constraints</div>
+          <div class="mindmap-branch"><b>ABAC</b><br>Subject + resource + environment attributes / AWS IAM Conditions / Conditional Access / attribute quality risk</div>
+          <div class="mindmap-branch"><b>PBAC</b><br>OPA / Rego / Cedar / XACML / policy as code / policy lifecycle / PDP teaser</div>
+          <div class="mindmap-branch"><b>ReBAC</b><br>Relationship tuples / Zanzibar / OpenFGA / graph traversal / new enemy problem / GitHub model</div>
+          <div class="mindmap-branch"><b>Fine-Grained AuthZ</b><br>Granularity spectrum / RLS / attribute masking / query-time filtering / FGA products / performance cost</div>
+          <div class="mindmap-branch"><b>PDP / PEP</b><br>Decision vs enforcement / PAP / PIP / fail-closed / PEP placement patterns / XACML decisions</div>
+          <div class="mindmap-branch"><b>Entitlements</b><br>Atomic authorization unit / entitlement catalog / Saviynt / SoD / token size problem / privileged entitlements</div>
+          <div class="mindmap-branch"><b>Selection Framework</b><br>When to use each / hybrid layering / evolution path RBAC → ABAC → PBAC → ReBAC → FGA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ KNOWLEDGE CHECK ═══════════════ -->
+    <div class="module" id="knowledgecheck" data-stack-layers="authz">
+      <div class="module-divider">
+        <div class="module-num" style="font-size:1.6rem;">✅</div>
+        <h2>Knowledge Check</h2>
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">Q1</span> A developer says they've implemented "RBAC" in their microservice by checking if the user's JWT contains a specific claim value. Is this RBAC? If not, what is it? And what architectural problem does this approach have at enterprise scale?</p>
+      </div>
+      <div class="callout callout-concept" style="margin-top:6px;">
+        <span class="callout-title">Architect's Answer</span>
+        Technically, checking a JWT claim for a role value is RBAC — roles are the basis of the
+        decision. But architecturally, this is a PEP without a PDP: the decision logic (which
+        claim values permit which actions) is embedded in the service code, not in a centralized
+        policy engine. At enterprise scale, this means N services each implement their own
+        interpretation of the same role → permission logic, inevitably diverging. When a policy
+        changes, every service must be redeployed. No single place records what the current access
+        rules actually are. The architectural fix is to externalize the decision to a PDP (OPA
+        sidecar, PBAC) while the service remains the PEP that enforces — not decides.
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">Q2</span> Your access review finds that 340 users have the Finance-Manager RBAC role but only 12 actually need to approve purchase orders. The remaining 328 inherited the role for a single read-only report. What authorization architectural problem does this reveal, and what are three approaches to solving it?</p>
+      </div>
+      <div class="callout callout-concept" style="margin-top:6px;">
+        <span class="callout-title">Architect's Answer</span>
+        This is role explosion driven by using a permission-level role (Finance-Manager) to grant
+        a single narrow capability (read-only report access). Three remediation approaches: (1)
+        <strong>Role splitting</strong> — decompose Finance-Manager into Finance-Manager (approvals
+        only) + Finance-Reports-Reader (read-only), and assign the lighter role to the 328 users.
+        (2) <strong>ABAC exception</strong> — remove report access from the role entirely and
+        express it as an ABAC attribute policy: any user with <code>department=Finance</code> can
+        read the report, eliminating the need for the role assignment. (3) <strong>Entitlement
+        governance</strong> — run an access certification campaign that forces managers to
+        re-justify each of the 340 assignments, removing anyone who can't articulate why they need
+        Finance-Manager rather than a read-only access path.
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">Q3</span> Design the PDP/PEP architecture for a financial API platform with 8 microservices that all need to enforce the same access control policy: only users from the requesting user's own business unit can access that unit's financial data, unless they hold the "Finance-Group-Controller" entitlement. Where do PEPs sit? What PDP is called? How are attributes fetched?</p>
+      </div>
+      <div class="callout callout-concept" style="margin-top:6px;">
+        <span class="callout-title">Architect's Answer</span>
+        PEPs sit at the API gateway level (coarse gating) and as middleware in each of the 8
+        microservices (fine-grained). All PEPs call a shared OPA instance (PDP) deployed as a
+        sidecar cluster. The OPA policy expresses the rule: <code>allow IF
+        subject.businessUnit == resource.businessUnit OR subject.entitlements contains
+        "Finance-Group-Controller"</code>. Attributes are fetched from two PIPs: user attributes
+        (businessUnit, entitlements) from PingDirectory/LDAP, injected into the JWT at login and
+        verified by OPA; resource attributes (businessUnit ownership) from a resource metadata
+        service OPA queries at evaluation time. OPA is deployed with redundant replicas. PEPs are
+        configured fail-closed — if OPA is unreachable, all requests deny with a 503.
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">Q4</span> Explain why a healthcare system that implements RBAC alone ("Doctors can access patient records") is insufficient for HIPAA compliance — and which authorization models address each gap.</p>
+      </div>
+      <div class="callout callout-concept" style="margin-top:6px;">
+        <span class="callout-title">Architect's Answer</span>
+        RBAC alone creates three HIPAA compliance gaps. First, <strong>minimum necessary access</strong>:
+        HIPAA requires healthcare workers to access only the PHI required for their current task —
+        a Doctor role granting access to all patient records violates this; ReBAC (treating-physician
+        relationship) scopes access to assigned patients. Second, <strong>context-sensitive access</strong>:
+        HIPAA expects controls on when and from where PHI is accessed — ABAC enforces shift hours,
+        device compliance, and network segment. Third, <strong>audit and accountability</strong>:
+        HIPAA mandates that access decisions be logged with enough context to reconstruct the
+        justification — PBAC with centralized decision logging provides this; inline RBAC checks
+        in application code typically do not.
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">Q5</span> A PDP is unavailable for 3 minutes. The PEP is configured to fail-open (permit all requests if PDP unreachable). An attacker who caused the partition now has 3 minutes of unrestricted access. Walk through the design change that prevents this and the operational implications of fail-closed PEP behavior.</p>
+      </div>
+      <div class="callout callout-concept" style="margin-top:6px;">
+        <span class="callout-title">Architect's Answer</span>
+        The design change is straightforward: the PEP must return a deny (HTTP 403 or equivalent)
+        with a retry-after signal whenever the PDP call times out or returns an error. This is a
+        single configuration change in most PEP implementations — switching from a fallback permit
+        to a fallback deny. The operational implications are real and must be planned for: any
+        PDP outage now affects all requests, not silently. This means (1) the PDP must be treated
+        as a tier-1, high-availability service with redundant replicas across availability zones;
+        (2) runbooks must cover "PDP degraded" scenarios explicitly; (3) short-lived decision
+        caches (30–60 seconds) on the PEP can buffer brief PDP hiccups without failing open — the
+        cache serves recent decisions while the PDP recovers, and a cache miss fails closed, not
+        open. The business conversation is also necessary: stakeholders who today accept "the app
+        was briefly permissive" will need to accept "the app briefly returned errors" as the
+        alternative — a trade-off between security and availability that must be consciously chosen.
+      </div>
+    </div>
+
+    <!-- ═══════════════ ARCHITECT REVIEW ═══════════════ -->
+    <div class="module" id="architectreview" data-stack-layers="authz">
+      <div class="module-divider">
+        <div class="module-num" style="font-size:1.6rem;">🏗️</div>
+        <h2>Architect Review Questions</h2>
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">ARQ1</span> Design the complete authorization architecture for a new enterprise data platform that will serve 15,000 users across 8 business units, hold data classified from Public to Restricted, enforce GDPR data residency requirements, and must produce a complete audit log of every access decision for regulatory review.</p>
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">ARQ2</span> Your company is replacing its monolithic authorization system (a single database table of user-permission pairs) with a modern architecture. Walk through the migration strategy: how do you extract, model, and migrate to RBAC + ABAC + PBAC without breaking existing access controls during the transition?</p>
+      </div>
+
+      <div class="qa-block">
+        <p><span class="qa-num">ARQ3</span> A security team member proposes implementing ReBAC (via OpenFGA) for all enterprise authorization because "it's the most flexible." Present the counter-argument: what does ReBAC do well, where does it over-engineer, and what authorization architecture would you actually recommend for a 20,000-user enterprise with standard SaaS applications and internal Java microservices?</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ REAL-WORLD SCENARIO ═══════════════ -->
+    <div class="module" id="scenario" data-stack-layers="authz,iga">
+      <div class="module-divider">
+        <div class="module-num" style="font-size:1.6rem;">🌍</div>
+        <h2>Real-World Scenario — The Authorization Audit Finding</h2>
+      </div>
+
+      <div class="scenario-block">
+        <h4>Situation</h4>
+        <p>
+          An external security audit of a 15,000-employee enterprise finds: 12,000 RBAC roles in
+          the IGA system (role explosion); 340 users with conflicting SoD entitlements; authorization
+          logic embedded in 47 microservices, each implementing its own rules differently; no
+          central PDP — all authorization decisions are made inline in application code; and access
+          certification last completed 14 months ago.
+        </p>
+
+        <h4>Root Cause Analysis</h4>
+        <p>
+          The 12,000-role count is the clearest indicator: roles were created reactively, one per
+          exception, over many years — no governance gate existed to prevent new role creation. The
+          SoD violations exist because no automated SoD engine evaluated new entitlement assignments
+          at provisioning time — the controls were purely manual and therefore not consistently
+          applied. Authorization logic in 47 services means 47 independent policy implementations,
+          each with its own interpretation of the same business rules — divergence was inevitable
+          and undetectable without an audit. The 14-month certification gap means no one has
+          validated that any of the 12,000 roles are still appropriate for their current holders.
+        </p>
+
+        <h4>Immediate Risk Mitigation (0–30 days)</h4>
+        <ul>
+          <li>Emergency SoD remediation: pull the 340 conflicting entitlement assignments and route them through accelerated manager review. Any not justified within 10 business days are revoked.</li>
+          <li>Freeze new role creation: no new roles without architectural review and IGA team approval.</li>
+          <li>Access certification campaign: launch an emergency certification for the highest-risk applications (finance, HR, infrastructure access) even before the full cert program restarts.</li>
+        </ul>
+
+        <h4>90-Day Architecture</h4>
+        <ul>
+          <li>Role mining: use Saviynt's role mining engine to identify candidate rationalized roles from the observed permission pattern. Target: reduce 12,000 roles to under 2,000 defensible business roles.</li>
+          <li>Centralized PDP: deploy OPA as a shared policy decision point, integrated with the API gateway PEP. Begin migrating the 47 services from inline authorization to PEP → PDP calls, starting with the highest-risk services.</li>
+          <li>SoD automation: configure Saviynt preventive SoD controls for all provisioning workflows — any new entitlement assignment is evaluated against the SoD rulebook at request time, not discovered months later in audit.</li>
+        </ul>
+
+        <h4>12-Month Target State</h4>
+        <p>
+          A layered authorization architecture: RBAC via a rationalized role catalog (~1,500 roles)
+          governs coarse application access. ABAC policies in OPA handle context-sensitive
+          exceptions that previously drove role explosion. ReBAC via OpenFGA manages project- and
+          document-specific sharing in the two platforms where that model fits. All 47 microservices
+          are PEP-only — no embedded authorization logic. Access certification runs quarterly,
+          automated by Saviynt, with certification rates tracked as a governance KPI.
+        </p>
+
+        <h4>Authorization Governance Model</h4>
+        <p>
+          An Authorization Steering Committee meets monthly: IAM engineering (owns PDP, policy
+          repository), Application Security (reviews new policy changes), IGA (owns role catalog
+          and entitlement governance), and Business Risk (certifies that the role model reflects
+          actual business functions). Policy changes go through a PR review and automated test
+          suite before deployment to the PDP — the same discipline applied to application code, now
+          applied to authorization policy.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ BRIDGE TO MODULE 09 ═══════════════ -->
+    <div class="module" id="bridge" data-stack-layers="authz,iga,pam">
+      <div class="bridge-band">
+        <div class="bridge-col left">
+          <div class="bridge-label">✅ What you built · 🔒 Atlas Vault · Module 08</div>
+          <h3>Authorization — from AuthZ theory to policy engines</h3>
+          <p>
+            You now have the complete architecture of enterprise authorization: the precise
+            distinction between authentication and authorization and why conflating them is
+            expensive; the four authorization models (RBAC, ABAC, PBAC, ReBAC) and the
+            four-question decision space each one answers; the PDP/PEP/PAP/PIP reference
+            architecture that separates decision from enforcement; the entitlement as the atomic
+            unit everything else organizes around; and the selection framework for layering models
+            at the right granularity. The authorization layer is no longer a black box.
+          </p>
+        </div>
+        <div class="bridge-col right">
+          <div class="bridge-label">⏭️ Up next · 🔒 Atlas Vault · Module 09</div>
+          <h3>Who should have access — and who's checking?</h3>
+          <p>
+            Module 08 answered "how does authorization work?" Module 09 answers "who governs it?"
+            Identity Governance and Administration — Saviynt as the primary focus, SailPoint for
+            comparison — covers the Joiner-Mover-Leaver lifecycle in depth, access certification
+            campaigns, role engineering, SoD detection, and the IGA architecture that sits above
+            and governs the authorization models you just learned. Authorization without governance
+            is a permission set that nobody reviews. Module 09 is the review mechanism. 🔒
+          </p>
+          <a class="cta-btn" href="module09.html">Continue to Module 09: Identity Governance &amp; Administration → 🔒</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Theme toggle (in-memory only, no localStorage) ──
+const themeBtn = document.getElementById('theme-toggle');
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (prefersDark) { document.documentElement.classList.add('dark'); themeBtn.textContent = '☀️'; }
+themeBtn.addEventListener('click', () => {
+  const isDark = document.documentElement.classList.toggle('dark');
+  themeBtn.textContent = isDark ? '☀️' : '🌙';
+});
+
+// ── Mobile sidebar toggle ──
+const sidebar = document.getElementById('sidebar');
+document.getElementById('mobile-toggle').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+  if (window.innerWidth <= 900 && sidebar.classList.contains('open')) {
+    if (!sidebar.contains(e.target) && e.target.id !== 'mobile-toggle') {
+      sidebar.classList.remove('open');
+    }
+  }
+});
+
+// ── Progress bar ──
+function updateProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+
+// ── Scrollspy + stack-layer highlighting ──
+const sections = Array.from(document.querySelectorAll('.module[id]'));
+const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+const stackLayers = Array.from(document.querySelectorAll('.stack-layer'));
+
+function updateActiveSection() {
+  let current = null;
+  const scrollPos = window.scrollY + 120;
+  for (const sec of sections) {
+    if (sec.offsetTop <= scrollPos) current = sec;
+  }
+  if (!current) return;
+  navLinks.forEach(link => {
+    link.classList.toggle('active', link.dataset.target === current.id);
+  });
+  const layers = (current.dataset.stackLayers || '').split(',').map(s => s.trim()).filter(Boolean);
+  stackLayers.forEach(sl => {
+    sl.classList.toggle('lit', layers.includes(sl.dataset.layer));
+  });
+}
+window.addEventListener('scroll', updateActiveSection, { passive: true });
+window.addEventListener('load', () => { updateProgress(); updateActiveSection(); });
+
+// ── Sidebar search filter ──
+document.getElementById('search-box').addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase();
+  navLinks.forEach(link => {
+    const match = link.textContent.toLowerCase().includes(q);
+    link.style.display = match ? '' : 'none';
+  });
+});
+
+// ── Close mobile sidebar on nav click ──
+navLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 900) sidebar.classList.remove('open');
+  });
+});
+</script>
+
+</body>
+</html>

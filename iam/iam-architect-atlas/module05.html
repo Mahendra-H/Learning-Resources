@@ -1,0 +1,2440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 05 · Modern Authentication — IAM Architect Atlas</title>
+<script>
+// Apply saved theme before first paint, so there's no flash of the wrong theme.
+(function(){
+  try{
+    var saved = localStorage.getItem('atlas-theme');
+    if(saved === 'light'){ document.documentElement.setAttribute('data-theme','light'); }
+  }catch(e){ /* localStorage unavailable (e.g. some file:// contexts) — default theme stands */ }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0E14;
+  --surface:#131720;
+  --surface-2:#1B2030;
+  --surface-3:#222840;
+  --border:#262C3D;
+  --border-soft:#1D2230;
+  --text:#E6E9F0;
+  --text-dim:#9BA3B5;
+  --text-faint:#5E6678;
+
+  --accent-primary:#E8A33D;
+  --accent-primary-dim:#8A6326;
+  --accent-primary-glow:rgba(232,163,61,0.16);
+  --phase3-preview:#7B6FE0;
+
+  --success:#4CAF7D;
+  --success-dim:rgba(76,175,125,0.14);
+  --warning:#E8A33D;
+  --warning-dim:rgba(232,163,61,0.14);
+  --danger:#E5534B;
+  --danger-dim:rgba(229,83,75,0.14);
+  --info:#5B9BD5;
+  --info-dim:rgba(91,155,213,0.14);
+
+  --font-display:'Sora',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+
+  --sidebar-w:308px;
+  --rail-w:64px;
+  --topbar-h:56px;
+  --radius:10px;
+  --radius-sm:6px;
+  --shadow-card:0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -8px rgba(0,0,0,0.5);
+  --topbar-bg:rgba(11,14,20,0.92);
+}
+
+html[data-theme="light"]{
+  --bg:#F7F8FA;
+  --surface:#FFFFFF;
+  --surface-2:#F0F2F6;
+  --surface-3:#E7EAF0;
+  --border:#D8DCE4;
+  --border-soft:#E6E9EF;
+  --text:#1A1D29;
+  --text-dim:#525A6C;
+  --text-faint:#808899;
+
+  --accent-primary:#9C5E18;
+  --accent-primary-dim:#C99348;
+  --accent-primary-glow:rgba(156,94,24,0.12);
+  --phase3-preview:#6C5FD1;
+
+  --success:#1E7A4C;
+  --success-dim:rgba(30,122,76,0.10);
+  --warning:#9C5E18;
+  --warning-dim:rgba(156,94,24,0.10);
+  --danger:#C0392B;
+  --danger-dim:rgba(192,57,43,0.10);
+  --info:#3A6EA5;
+  --info-dim:rgba(58,110,165,0.10);
+
+  --shadow-card:0 1px 2px rgba(20,24,34,0.05), 0 8px 24px -8px rgba(20,24,34,0.12);
+  --topbar-bg:rgba(247,248,250,0.92);
+}
+
+*{box-sizing:border-box; margin:0; padding:0; transition:background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;}
+html{scroll-behavior:smooth;}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;} *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  transition:background-color 0.25s ease, color 0.25s ease;
+}
+
+a{color:inherit;}
+::selection{background:var(--accent-primary-glow); color:var(--text);}
+
+/* ===== TOP BAR ===== */
+.topbar{
+  position:fixed; top:0; left:0; right:0; height:var(--topbar-h);
+  background:var(--topbar-bg); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-soft);
+  z-index:100;
+  display:flex; align-items:center; justify-content:space-between; gap:18px;
+  padding:0 24px 0 calc(var(--sidebar-w) + var(--rail-w) + 24px);
+  transition:background-color 0.25s ease, border-color 0.25s ease;
+}
+.topbar-right{display:flex; align-items:center; gap:16px;}
+.topbar-label{
+  font-family:var(--font-mono); font-size:12.5px; color:var(--text-dim);
+  letter-spacing:0.02em;
+}
+.topbar-label strong{color:var(--accent-primary); font-weight:600;}
+.progress-track{
+  position:absolute; bottom:0; left:0; right:0; height:2px;
+  background:var(--border-soft);
+}
+.progress-fill{
+  height:100%; width:0%;
+  background:linear-gradient(90deg, var(--accent-primary-dim), var(--accent-primary));
+  transition:width 0.1s linear;
+}
+
+.theme-toggle{
+  display:flex; align-items:center; justify-content:center;
+  width:32px; height:32px; border-radius:8px;
+  background:var(--surface-2); border:1px solid var(--border-soft);
+  color:var(--text-dim); cursor:pointer; font-size:15px; line-height:1;
+  transition:background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.theme-toggle:hover{background:var(--surface-3); transform:translateY(-1px);}
+.theme-toggle:focus-visible{outline:2px solid var(--accent-primary); outline-offset:2px;}
+.theme-toggle .icon-moon{display:none;}
+html[data-theme="light"] .theme-toggle .icon-sun{display:none;}
+html[data-theme="light"] .theme-toggle .icon-moon{display:inline;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  position:fixed; top:0; left:0; bottom:0; width:var(--sidebar-w);
+  background:var(--surface); border-right:1px solid var(--border-soft);
+  overflow-y:auto; z-index:90;
+  padding:20px 0 40px 0;
+  scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+  transition:background-color 0.25s ease, border-color 0.25s ease;
+}
+.sidebar::-webkit-scrollbar{width:6px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border); border-radius:3px;}
+
+.brand{
+  display:flex; align-items:center; gap:10px;
+  padding:0 20px 16px 20px; margin-bottom:8px;
+  border-bottom:1px solid var(--border-soft);
+}
+.brand-mark{font-size:20px;}
+.brand-name{font-family:var(--font-display); font-weight:700; font-size:15px; letter-spacing:-0.01em;}
+
+.phase-tag{
+  margin:14px 20px 2px 20px;
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--accent-primary);
+}
+.module-subtitle{
+  padding:0 20px 18px 20px;
+  font-family:var(--font-display); font-size:14.5px; font-weight:600;
+  color:var(--text); line-height:1.4;
+}
+
+.nav-group{margin-top:18px;}
+.nav-group-label{
+  padding:0 20px 8px 20px;
+  font-family:var(--font-mono); font-size:10.5px; font-weight:600;
+  letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint);
+}
+.nav-link{
+  display:flex; align-items:flex-start; gap:8px;
+  padding:8px 20px; font-size:13.5px; color:var(--text-dim);
+  text-decoration:none; border-left:2px solid transparent;
+  transition:background 0.15s, color 0.15s, border-color 0.15s;
+  line-height:1.4;
+}
+.nav-link:hover{background:var(--surface-2); color:var(--text);}
+.nav-link.active{
+  color:var(--accent-primary); border-left-color:var(--accent-primary);
+  background:var(--accent-primary-glow);
+}
+.nav-link .num{font-family:var(--font-mono); font-size:12px; color:var(--text-faint); min-width:28px;}
+.nav-link.active .num{color:var(--accent-primary);}
+
+/* ===== IDENTITY STACK RAIL ===== */
+.stack-rail{
+  position:fixed; top:var(--topbar-h); bottom:0; left:var(--sidebar-w); width:var(--rail-w);
+  background:var(--bg); border-right:1px solid var(--border-soft);
+  display:flex; flex-direction:column; align-items:center;
+  padding:16px 0; gap:4px; z-index:85;
+}
+.rail-label{
+  font-family:var(--font-mono); font-size:8.5px; color:var(--text-faint);
+  letter-spacing:0.08em; writing-mode:vertical-rl; transform:rotate(180deg);
+  margin-bottom:10px; text-transform:uppercase;
+}
+.rail-layer{
+  width:38px; height:38px; border-radius:8px;
+  background:var(--surface); border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; opacity:0.32; position:relative;
+  transition:opacity 0.25s, background 0.25s, border-color 0.25s, transform 0.25s;
+  cursor:default;
+}
+.rail-layer.lit{
+  opacity:1; background:var(--accent-primary-glow); border-color:var(--accent-primary-dim);
+  transform:scale(1.06);
+}
+.rail-layer .tip{
+  position:absolute; left:48px; top:50%; transform:translateY(-50%);
+  background:var(--surface-3); border:1px solid var(--border);
+  padding:5px 9px; border-radius:6px; font-size:11px; white-space:nowrap;
+  font-family:var(--font-mono); opacity:0; pointer-events:none; transition:opacity 0.15s;
+  z-index:200;
+}
+.rail-layer:hover .tip{opacity:1;}
+
+/* ===== MAIN LAYOUT ===== */
+.main{
+  margin-left:calc(var(--sidebar-w) + var(--rail-w));
+  padding-top:var(--topbar-h);
+  max-width:980px;
+}
+.main-inner{padding:48px 56px 80px 56px;}
+
+/* ===== HERO ===== */
+.hero{padding-bottom:40px; border-bottom:1px solid var(--border-soft); margin-bottom:48px;}
+.eyebrow{
+  font-family:var(--font-mono); font-size:13px; font-weight:600;
+  color:var(--accent-primary); letter-spacing:0.04em;
+  margin-bottom:18px; display:flex; align-items:center; gap:8px;
+}
+.hero h1{
+  font-family:var(--font-display); font-weight:800; font-size:40px;
+  line-height:1.15; letter-spacing:-0.02em; margin-bottom:8px;
+  position:relative; display:inline-block; padding-bottom:18px;
+}
+.hero h1::after{
+  content:""; position:absolute; left:0; bottom:0; height:4px; width:84px;
+  background:linear-gradient(90deg, var(--accent-primary), transparent);
+  border-radius:2px;
+}
+.lede{
+  font-size:18px; line-height:1.7; color:var(--text-dim); max-width:760px;
+  margin-top:24px;
+}
+
+/* ===== CALLOUTS ===== */
+.callout{
+  border-radius:var(--radius); padding:20px 22px; margin:28px 0;
+  border:1px solid var(--border-soft); background:var(--surface);
+  box-shadow:var(--shadow-card);
+}
+.callout-head{
+  display:flex; align-items:center; gap:8px; font-family:var(--font-display);
+  font-weight:700; font-size:14px; margin-bottom:10px; letter-spacing:0.01em;
+}
+.callout-body{font-size:15px; line-height:1.7; color:var(--text-dim);}
+.callout-body strong{color:var(--text); font-weight:600;}
+.callout-architect{border-left:3px solid var(--success);}
+.callout-architect .callout-head{color:var(--success);}
+.callout-security{border-left:3px solid var(--danger);}
+.callout-security .callout-head{color:var(--danger);}
+.callout-cost{border-left:3px solid var(--warning);}
+.callout-cost .callout-head{color:var(--warning);}
+.callout-concept{border-left:3px solid var(--info);}
+.callout-concept .callout-head{color:var(--info);}
+
+/* ===== WHERE AM I CARD ===== */
+.whereami{
+  margin-top:28px; padding:16px 20px; border-radius:var(--radius);
+  background:var(--surface); border:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;
+}
+.whereami-text{font-size:13.5px; color:var(--text-dim); font-family:var(--font-mono);}
+.whereami-text strong{color:var(--text);}
+.whereami-bar{width:200px; height:6px; border-radius:3px; background:var(--border-soft); overflow:hidden;}
+.whereami-bar-fill{height:100%; width:31%; background:var(--accent-primary); border-radius:3px;}
+
+/* ===== SECTIONS ===== */
+.section{padding-top:64px; margin-top:-16px; scroll-margin-top:80px;}
+.section-kicker{
+  font-family:var(--font-mono); font-size:12px; color:var(--accent-primary);
+  font-weight:600; letter-spacing:0.05em; margin-bottom:10px;
+}
+.section h2{
+  font-family:var(--font-display); font-weight:700; font-size:28px;
+  letter-spacing:-0.01em; margin-bottom:20px; line-height:1.25;
+}
+.section h3{
+  font-family:var(--font-display); font-weight:600; font-size:18px;
+  margin:32px 0 12px 0; color:var(--text);
+}
+.section p{font-size:15.5px; line-height:1.75; color:var(--text-dim); margin-bottom:16px;}
+.section p strong{color:var(--text); font-weight:600;}
+.section ul,.section ol{margin:0 0 18px 0; padding-left:22px;}
+.section li{font-size:15.5px; line-height:1.75; color:var(--text-dim); margin-bottom:8px;}
+.section li strong{color:var(--text); font-weight:600;}
+.section code{
+  font-family:var(--font-mono); font-size:13.5px; background:var(--surface-2);
+  border:1px solid var(--border-soft); border-radius:4px; padding:1px 6px; color:var(--accent-primary);
+}
+
+/* ===== DIAGRAM BOX ===== */
+.diagram-box{
+  margin:32px 0; border-radius:var(--radius); background:var(--surface);
+  border:1px solid var(--border-soft); overflow:hidden; box-shadow:var(--shadow-card);
+}
+.diagram-title{
+  padding:14px 20px; border-bottom:1px solid var(--border-soft);
+  font-family:var(--font-mono); font-size:12.5px; font-weight:600;
+  color:var(--text-dim); letter-spacing:0.03em; text-transform:uppercase;
+  display:flex; align-items:center; gap:8px;
+}
+.diagram-title::before{content:"◆"; color:var(--accent-primary); font-size:10px;}
+.diagram-body{padding:24px; overflow-x:auto;}
+.diagram-caption{
+  padding:10px 20px 18px 20px; font-size:13px; color:var(--text-faint); font-style:italic;
+}
+
+/* ===== ANALOGY BOX ===== */
+.analogy-box{
+  margin:28px 0; padding:20px 22px; border-radius:var(--radius);
+  background:linear-gradient(135deg, var(--accent-primary-glow), transparent 60%);
+  border:1px solid var(--accent-primary-dim);
+}
+.analogy-box.green{
+  background:linear-gradient(135deg, var(--success-dim), transparent 60%);
+  border-color:rgba(76,175,125,0.4);
+}
+.analogy-head{
+  font-family:var(--font-display); font-weight:700; font-size:13.5px;
+  display:flex; align-items:center; gap:7px; margin-bottom:10px; color:var(--text);
+}
+.analogy-box p{color:var(--text-dim); font-size:15px; margin-bottom:0;}
+
+/* ===== LAB BOX ===== */
+.lab-box{
+  margin:28px 0; padding:18px 22px; border-radius:var(--radius);
+  background:var(--surface-2); border:1px dashed var(--border);
+}
+.lab-head{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:600;
+  color:var(--accent-primary); margin-bottom:8px; letter-spacing:0.02em;
+}
+.lab-box p{color:var(--text-dim); font-size:14.5px; margin-bottom:0; line-height:1.7;}
+
+/* ===== USE CASE BOX ===== */
+.usecase-box{
+  margin:28px 0; padding:20px 22px; border-radius:var(--radius);
+  background:var(--surface); border:1px solid var(--border-soft);
+  border-top:3px solid var(--info);
+}
+.usecase-head{
+  font-family:var(--font-display); font-weight:700; font-size:13.5px;
+  color:var(--info); margin-bottom:10px; letter-spacing:0.02em;
+}
+.usecase-box p{color:var(--text-dim); font-size:14.5px; margin-bottom:0; line-height:1.7;}
+
+/* ===== DEEP DIVE ===== */
+.deepdive{
+  margin:24px 0; padding:16px 20px; border-radius:var(--radius);
+  background:linear-gradient(135deg, rgba(123,111,224,0.10), transparent 60%);
+  border:1px solid rgba(123,111,224,0.35);
+  font-size:14.5px; color:var(--text-dim); line-height:1.7;
+}
+.deepdive strong{color:#A89BF0;}
+
+/* ===== TABLES (factor matrices) ===== */
+.matrix-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+.matrix-table th{
+  text-align:left; padding:10px 12px; background:var(--surface-2);
+  font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim);
+  text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid var(--border);
+}
+.matrix-table td{padding:10px 12px; border-bottom:1px solid var(--border-soft); color:var(--text-dim);}
+.matrix-table tr:last-child td{border-bottom:none;}
+.pill{
+  display:inline-block; padding:2px 9px; border-radius:99px; font-size:11.5px;
+  font-family:var(--font-mono); font-weight:600;
+}
+.pill-good{background:var(--success-dim); color:var(--success);}
+.pill-bad{background:var(--danger-dim); color:var(--danger);}
+.pill-mid{background:var(--warning-dim); color:var(--warning);}
+
+/* ===== SVG helpers ===== */
+.diagram-body svg{display:block; width:100%; height:auto; font-family:var(--font-mono);}
+.svg-label{font-family:var(--font-mono); font-size:12px; fill:var(--text);}
+.svg-label-dim{font-family:var(--font-mono); font-size:11px; fill:var(--text-dim);}
+.svg-label-sm{font-family:var(--font-mono); font-size:10px; fill:var(--text-faint);}
+
+/* ===== WRAP-UP shared ===== */
+.cheat-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:24px 0;}
+@media (max-width:760px){.cheat-grid{grid-template-columns:1fr;}}
+.cheat-item{
+  display:flex; gap:12px; padding:16px 18px; border-radius:var(--radius);
+  background:var(--surface); border:1px solid var(--border-soft);
+}
+.cheat-num{
+  font-family:var(--font-mono); font-weight:700; color:var(--accent-primary);
+  font-size:14px; min-width:22px;
+}
+.cheat-item p{font-size:14px; color:var(--text-dim); margin:0; line-height:1.6;}
+
+.qa-block{
+  margin:18px 0; padding:18px 20px; border-radius:var(--radius);
+  background:var(--surface); border:1px solid var(--border-soft); border-left:3px solid var(--accent-primary);
+}
+.qa-tag{font-family:var(--font-mono); font-size:12px; color:var(--accent-primary); font-weight:700; margin-bottom:8px;}
+.qa-block p{color:var(--text-dim); font-size:14.5px; line-height:1.7; margin:0;}
+
+.bridge-card{
+  display:grid; grid-template-columns:1fr 1fr; border-radius:var(--radius);
+  overflow:hidden; border:1px solid var(--border-soft); margin:32px 0;
+}
+@media (max-width:760px){.bridge-card{grid-template-columns:1fr;}}
+.bridge-left{padding:28px; background:var(--surface);}
+.bridge-right{
+  padding:28px;
+  background:color-mix(in srgb, var(--phase3-preview) 20%, var(--surface));
+}
+.bridge-tag{font-family:var(--font-mono); font-size:12px; font-weight:700; margin-bottom:14px;}
+.bridge-left .bridge-tag{color:var(--accent-primary);}
+.bridge-right .bridge-tag{color:var(--phase3-preview);}
+.bridge-card h4{font-family:var(--font-display); font-size:18px; margin-bottom:10px;}
+.bridge-card p{font-size:14px; color:var(--text-dim); line-height:1.7; margin-bottom:0;}
+.bridge-cta{
+  display:inline-flex; align-items:center; gap:8px; margin-top:18px;
+  padding:11px 20px; border-radius:8px; background:var(--phase3-preview);
+  color:#0B0E14; font-family:var(--font-display); font-weight:700; font-size:14px;
+  text-decoration:none; transition:transform 0.15s, box-shadow 0.15s;
+}
+.bridge-cta:hover{transform:translateY(-1px); box-shadow:0 6px 20px rgba(123,111,224,0.35);}
+
+.scenario-block{
+  margin:24px 0; border-radius:var(--radius); background:var(--surface);
+  border:1px solid var(--border-soft); overflow:hidden;
+}
+.scenario-header{
+  padding:18px 22px; background:linear-gradient(135deg, var(--danger-dim), transparent);
+  border-bottom:1px solid var(--border-soft);
+}
+.scenario-header h3{margin:0; font-family:var(--font-display); font-size:18px;}
+.scenario-stage{padding:18px 22px; border-bottom:1px solid var(--border-soft);}
+.scenario-stage:last-child{border-bottom:none;}
+.scenario-stage-label{
+  font-family:var(--font-mono); font-size:11.5px; font-weight:700; color:var(--accent-primary);
+  text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;
+}
+.scenario-stage p{font-size:14.5px; color:var(--text-dim); line-height:1.7; margin:0;}
+.scenario-stage ul{margin:8px 0 0 18px;}
+.scenario-stage li{font-size:14.5px; color:var(--text-dim); line-height:1.7;}
+
+footer.module-footer{
+  margin-top:64px; padding-top:24px; border-top:1px solid var(--border-soft);
+  font-size:12.5px; color:var(--text-faint); font-family:var(--font-mono);
+}
+
+@media (max-width:1000px){
+  .sidebar,.stack-rail{display:none;}
+  .main{margin-left:0;}
+  .topbar{padding-left:24px;}
+  .main-inner{padding:36px 20px 60px 20px;}
+  .hero h1{font-size:30px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-label">Module 05 of 16 · <strong>🔥 Atlas Ember</strong> · ~2.5 hr read</div>
+  <div class="topbar-right">
+    <div class="topbar-label" id="scrollPct">0%</div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light mode" aria-pressed="false" title="Toggle light / dark mode">
+      <span class="icon-sun">☀️</span><span class="icon-moon">🌙</span>
+    </button>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+
+<nav class="sidebar">
+  <div class="brand">
+    <span class="brand-mark">🔐</span>
+    <span class="brand-name">IAM Architect Atlas</span>
+  </div>
+
+  <div class="phase-tag">🔥 Module 05 · Atlas Ember</div>
+  <div class="module-subtitle">Modern Authentication — MFA, Passwordless &amp; FIDO2</div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Authentication Architecture</div>
+    <a class="nav-link" data-stack="sso,applications,directory" href="#s5-1"><span class="num">5.1</span><span>The Password Problem — An Architectural View</span></a>
+    <a class="nav-link" data-stack="sso,applications,tokens" href="#s5-2"><span class="num">5.2</span><span>MFA Architecture — Factors, Flows &amp; Trade-offs</span></a>
+    <a class="nav-link" data-stack="sso,applications,tokens" href="#s5-3"><span class="num">5.3</span><span>FIDO2 &amp; WebAuthn — The Protocol Architecture</span></a>
+    <a class="nav-link" data-stack="sso,applications,cloud" href="#s5-4"><span class="num">5.4</span><span>Passkeys — Architecture &amp; Enterprise Reality</span></a>
+    <a class="nav-link" data-stack="sso,applications,tokens" href="#s5-5"><span class="num">5.5</span><span>Adaptive Authentication Architecture</span></a>
+    <a class="nav-link" data-stack="iga,directory,applications" href="#s5-6"><span class="num">5.6</span><span>SCIM 2.0 — Provisioning Architecture</span></a>
+    <a class="nav-link" data-stack="sso,applications,iga,directory" href="#s5-7"><span class="num">5.7</span><span>Enterprise Passwordless Rollout Architecture</span></a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Wrap-Up</div>
+    <a class="nav-link" href="#cheat-sheet"><span class="num">📋</span><span>Architecture Cheat Sheet</span></a>
+    <a class="nav-link" href="#mindmap"><span class="num">🧠</span><span>Mind Map</span></a>
+    <a class="nav-link" href="#knowledge-check"><span class="num">✅</span><span>Knowledge Check</span></a>
+    <a class="nav-link" href="#architect-review"><span class="num">🏗️</span><span>Architect Review</span></a>
+    <a class="nav-link" href="#bridge"><span class="num">🌉</span><span>Bridge to Module 06</span></a>
+  </div>
+</nav>
+
+<div class="stack-rail" id="stackRail">
+  <div class="rail-label">IDENTITY STACK</div>
+  <div class="rail-layer" data-layer="network"><span>🌐</span><span class="tip">Network</span></div>
+  <div class="rail-layer" data-layer="directory"><span>🗂️</span><span class="tip">Directory</span></div>
+  <div class="rail-layer" data-layer="pam"><span>🔑</span><span class="tip">PAM</span></div>
+  <div class="rail-layer" data-layer="iga"><span>🧾</span><span class="tip">IGA</span></div>
+  <div class="rail-layer" data-layer="sso"><span>🪪</span><span class="tip">SSO / Federation</span></div>
+  <div class="rail-layer" data-layer="applications"><span>🧩</span><span class="tip">Applications</span></div>
+  <div class="rail-layer" data-layer="tokens"><span>🎫</span><span class="tip">Tokens</span></div>
+  <div class="rail-layer" data-layer="cloud"><span>☁️</span><span class="tip">Cloud</span></div>
+  <div class="rail-layer" data-layer="monitoring"><span>📡</span><span class="tip">Monitoring</span></div>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+
+    <section class="hero">
+      <div class="eyebrow">🔥 MODULE 05 · ATLAS EMBER · PHASE 2 · ~2.5 hr read</div>
+      <h1>Modern Authentication: MFA, Passwordless, FIDO2 &amp; WebAuthn</h1>
+      <p class="lede">
+        Passwords have been the IAM industry's worst-kept secret for decades: they're the
+        leading cause of breaches, the biggest source of support tickets, and architecturally
+        the weakest link in any authentication chain. The industry has known this since the
+        1980s and has been slowly, imperfectly replacing them ever since. This module covers
+        where that replacement stands today — FIDO2, WebAuthn, passkeys, adaptive MFA — with
+        architectural honesty: what these technologies actually do, what problems they solve
+        and don't solve, and what enterprise deployment looks like when your user base is
+        40,000 people with laptops, desktops, mobile phones, shared terminals, call centers,
+        and production server access. 🔑
+      </p>
+
+      <div class="callout callout-architect">
+        <div class="callout-head">🟢 Carrying Forward</div>
+        <div class="callout-body">
+          Module 04 introduced PingID's MFA architecture: risk signals, adaptive policies,
+          device trust. Module 05 goes underneath that: what are the actual authentication
+          mechanisms PingID and other platforms use? How does FIDO2 work cryptographically?
+          What does "passwordless" actually mean architecturally, and what is it replacing?
+          Module 03's OAuth/OIDC flows are the delivery mechanism for authentication results —
+          what Module 05 adds is the depth on what happens at the authentication step itself,
+          <strong>before</strong> any token is issued.
+        </div>
+      </div>
+
+      <div class="whereami">
+        <div class="whereami-text">📍 <strong>Module 05</strong> / Phase 2 — Authentication &amp; Federation</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="whereami-bar"><div class="whereami-bar-fill"></div></div>
+          <div class="whereami-text">5 of 16 (31%)</div>
+        </div>
+      </div>
+    </section>
+<!-- HERO_END -->
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5.1 — THE PASSWORD PROBLEM -->
+    <!-- ============================================================ -->
+    <section class="section" id="s5-1" data-stack-layers="sso,applications,directory">
+      <div class="section-kicker">5.1 · Foundations</div>
+      <h2>The Password Problem — An Architectural View</h2>
+
+      <p>
+        Every authentication scheme has to answer one question: how does the server know the
+        person on the other end of the connection is who they claim to be? The password's answer
+        is the simplest possible one — <strong>both sides know a secret, and presenting the secret
+        is proof of identity.</strong> That simplicity is exactly the architectural flaw. A shared
+        secret model means the secret must exist in at least two places: in the user's memory (or
+        password manager) and in some form on the server. Anywhere the secret exists is a place it
+        can be stolen from, and because it is the <em>same</em> secret used to prove identity every
+        time, stealing it once gives an attacker indefinite reuse — at least until it's rotated.
+      </p>
+
+      <p>
+        This is not a new observation. The shared-secret weakness has been understood since the
+        earliest multi-user computer systems in the 1960s, and the industry has spent the
+        intervening decades building an ever-growing pile of mitigations on top of a fundamentally
+        weak primitive: complexity requirements, rotation policies, breach-database checks,
+        rate limiting, MFA. Each mitigation closes one attack path while leaving the core problem
+        — a static, reusable, human-rememberable secret — fully intact.
+      </p>
+
+      <h3>The attack surface of passwords</h3>
+      <p>
+        A useful way to reason about password risk architecturally is to enumerate where the
+        attack actually happens, because each attack vector implies a different defensive layer:
+      </p>
+      <ul>
+        <li><strong>Phishing</strong> — the user is tricked into typing their password into an
+        attacker-controlled site that looks identical to the real one. This attacks the
+        <em>human</em>, not the cryptography.</li>
+        <li><strong>Credential stuffing</strong> — an attacker takes a breached username/password
+        list from <em>Site A</em> and replays it against <em>Site B</em>, betting on password
+        reuse. This attacks <em>behavior</em> across the user's entire digital footprint, not any
+        single system's security.</li>
+        <li><strong>Password spray</strong> — instead of brute-forcing one account with many
+        passwords (which trips lockouts), the attacker tries one common password (e.g.
+        <code>Summer2026!</code>) against thousands of accounts. This attacks <em>population-scale
+        weak password selection</em>.</li>
+        <li><strong>Brute force / hash cracking</strong> — if a password database is breached, an
+        attacker cracks the hashes offline, unconstrained by rate limits. This attacks
+        <em>storage-side</em> security.</li>
+        <li><strong>Pass-the-hash</strong> — in Windows/NTLM environments, an attacker who obtains
+        a password's hash (not the plaintext) can authenticate as the user without ever knowing
+        the actual password. This attacks the <em>protocol design</em> of legacy Windows auth.</li>
+        <li><strong>Keylogging</strong> — malware on the user's device captures keystrokes as the
+        password is typed. This attacks the <em>endpoint</em>.</li>
+      </ul>
+
+      <p>
+        Notice that these six vectors target six different layers — the human, cross-site behavior,
+        population statistics, server storage, protocol design, and the endpoint. No single
+        mitigation closes all six. That's the architectural case for moving past passwords
+        entirely rather than continuing to patch around them.
+      </p>
+
+      <p>
+        It's worth noting where the industry's own guidance has changed, because it undercuts a
+        lot of legacy password policy still running in production directories today. NIST's
+        current guidance no longer recommends mandatory periodic password rotation or strict
+        complexity rules (forced special characters, mixed case, frequent expiry) — research
+        showed these policies push users toward predictable patterns (incrementing a digit at the
+        end of a reused base password) without meaningfully improving resistance to the attack
+        vectors above, while measurably increasing helpdesk load and user frustration. Modern
+        guidance favors length over complexity, screening new passwords against known-breached
+        password lists at set time, and treating MFA as the real control rather than password
+        policy theater. If your directory still enforces 90-day rotation and complex character
+        rules as its primary password defense, that's a signal worth raising — not because it's
+        actively harmful by itself, but because it represents security effort spent on a control
+        with proven low marginal return, when that same effort could go toward closing the gaps
+        a stronger MFA or FIDO2 rollout actually addresses.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 1 · Authentication Attack Surface Map</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 840 600" xmlns="http://www.w3.org/2000/svg">
+<rect x="330" y="268" width="180" height="64" rx="10" fill="var(--surface-3)" stroke="var(--accent-primary)" stroke-width="1.5"/>
+<text x="420" y="296" text-anchor="middle" class="svg-label" font-weight="600">Password</text>
+<text x="420" y="316" text-anchor="middle" class="svg-label" font-weight="600">Authentication</text>
+<line x1="420.0" y1="262.0" x2="420.0" y2="99.0" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="none" opacity="0.7"/>
+<line x1="481.1" y1="270.9" x2="525.4" y2="146.0" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="none" opacity="0.7"/>
+<line x1="513.6" y1="293.4" x2="581.5" y2="265.1" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="none" opacity="0.7"/>
+<line x1="502.3" y1="319.0" x2="562.0" y2="400.5" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="none" opacity="0.7"/>
+<line x1="452.5" y1="335.7" x2="476.1" y2="488.9" stroke="var(--warning)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+<line x1="387.5" y1="335.7" x2="363.9" y2="488.9" stroke="var(--warning)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+<line x1="337.7" y1="319.0" x2="278.0" y2="400.5" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="none" opacity="0.7"/>
+<line x1="326.4" y1="293.4" x2="258.5" y2="265.1" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="none" opacity="0.7"/>
+<line x1="358.9" y1="270.9" x2="314.6" y2="146.0" stroke="var(--success)" stroke-width="1.5" stroke-dasharray="none" opacity="0.7"/>
+<g><rect x="358.0" y="55.0" width="124" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3"/><text x="420.0" y="85.0" text-anchor="middle" class="svg-label-dim" font-size="11.5">Phishing</text></g>
+<g><rect x="499.4" y="106.5" width="124" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3"/><text x="561.4" y="128.5" text-anchor="middle" class="svg-label-dim" font-size="11.5">Credential</text><text x="561.4" y="144.5" text-anchor="middle" class="svg-label-dim" font-size="11.5">Stuffing</text></g>
+<g><rect x="574.7" y="236.8" width="124" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3"/><text x="636.7" y="258.8" text-anchor="middle" class="svg-label-dim" font-size="11.5">Password</text><text x="636.7" y="274.8" text-anchor="middle" class="svg-label-dim" font-size="11.5">Spray</text></g>
+<g><rect x="548.5" y="385.0" width="124" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3"/><text x="610.5" y="407.0" text-anchor="middle" class="svg-label-dim" font-size="11.5">Brute</text><text x="610.5" y="423.0" text-anchor="middle" class="svg-label-dim" font-size="11.5">Force</text></g>
+<g><rect x="433.2" y="481.7" width="124" height="50" rx="8" fill="var(--warning-dim)" stroke="var(--warning)" stroke-width="1.3"/><text x="495.2" y="503.7" text-anchor="middle" class="svg-label-dim" font-size="11.5">Pass-the-</text><text x="495.2" y="519.7" text-anchor="middle" class="svg-label-dim" font-size="11.5">Hash</text></g>
+<g><rect x="282.8" y="481.7" width="124" height="50" rx="8" fill="var(--warning-dim)" stroke="var(--warning)" stroke-width="1.3"/><text x="344.8" y="511.7" text-anchor="middle" class="svg-label-dim" font-size="11.5">Keylogger</text></g>
+<g><rect x="167.5" y="385.0" width="124" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3"/><text x="229.5" y="407.0" text-anchor="middle" class="svg-label-dim" font-size="11.5">MFA</text><text x="229.5" y="423.0" text-anchor="middle" class="svg-label-dim" font-size="11.5">Fatigue</text></g>
+<g><rect x="141.3" y="236.8" width="124" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3"/><text x="203.3" y="266.8" text-anchor="middle" class="svg-label-dim" font-size="11.5">SIM Swap</text></g>
+<g><rect x="216.6" y="106.5" width="124" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3"/><text x="278.6" y="128.5" text-anchor="middle" class="svg-label-dim" font-size="11.5">Real-time</text><text x="278.6" y="144.5" text-anchor="middle" class="svg-label-dim" font-size="11.5">OTP Phish</text></g>
+<g transform="translate(20,550)">
+<rect x="0" y="0" width="14" height="14" rx="3" fill="var(--success-dim)" stroke="var(--success)"/>
+<text x="20" y="11" class="svg-label-sm">FIDO2 eliminates this vector</text>
+<rect x="240" y="0" width="14" height="14" rx="3" fill="var(--warning-dim)" stroke="var(--warning)"/>
+<text x="260" y="11" class="svg-label-sm">FIDO2 helps, but a separate mitigation is still needed</text>
+</g>
+</svg>
+        </div>
+        <div class="diagram-caption">
+          Nine attack vectors against password-centric authentication. Most collapse entirely once
+          there's no password to steal, spray, or replay. Two — pass-the-hash and keylogging —
+          live partly at a different layer (OS/network protocol, endpoint malware) and need
+          mitigations of their own even after FIDO2 removes the password itself.
+        </div>
+      </div>
+
+      <p>
+        MFA was the industry's first major answer to this problem, and it genuinely helps — but it
+        doesn't fully solve it, because most MFA implementations still keep the password as the
+        first factor and add a second secret-or-signal on top. That second factor opens its own
+        attack surface: <strong>SIM swapping</strong> defeats SMS OTP by porting the victim's phone
+        number to an attacker-controlled SIM. <strong>MFA fatigue attacks</strong> (also called
+        prompt bombing) exploit push-based MFA by sending repeated approval requests until the
+        user taps "approve" out of annoyance or confusion. <strong>Real-time OTP phishing</strong>
+        uses a proxy site that captures the password and OTP simultaneously and relays them to the
+        real site within the OTP's validity window. And <strong>session hijacking</strong> simply
+        waits until <em>after</em> a successful MFA challenge and steals the resulting session
+        token instead of the credential.
+      </p>
+
+      <h3>The authentication assurance spectrum</h3>
+      <p>
+        It's useful to think of authentication strength as a spectrum rather than a binary
+        "has MFA / doesn't have MFA" classification:
+      </p>
+      <ul>
+        <li><strong>Level 1 — Password only.</strong> Phishable, stealable, spray-able. The
+        weakest practical posture for anything internet-facing.</li>
+        <li><strong>Level 2 — Password + OTP/push.</strong> Meaningfully better, but still
+        vulnerable to MFA fatigue, SIM swap, and real-time relay phishing.</li>
+        <li><strong>Level 3 — Password + phishing-resistant factor.</strong> A hardware FIDO2 key
+        used as a second factor alongside a password. The password is still phishable, but an
+        attacker who phishes it alone cannot complete authentication without the physical key.</li>
+        <li><strong>Level 4 — Passwordless + phishing-resistant.</strong> No password exists at
+        all; FIDO2 (hardware key or platform authenticator) is the only factor. There is no
+        shared secret anywhere in the system to phish, spray, stuff, or crack.</li>
+      </ul>
+
+      <p>
+        NIST formalizes a closely related idea in its <strong>Authentication Assurance Level
+        (AAL)</strong> framework, published in NIST SP 800-63B: <strong>AAL1</strong> requires
+        single-factor authentication of any kind, including a password alone. <strong>AAL2</strong>
+        requires two distinct authentication factors, which covers most OTP- and push-based MFA.
+        <strong>AAL3</strong> requires a hardware-based authenticator that provides verifier
+        impersonation resistance — in practice, this means FIDO2/WebAuthn with a hardware-backed
+        key, or a PIV/CAC certificate. AAL3 is the level the U.S. federal government requires for
+        its most sensitive systems, and it is architecturally synonymous with "phishing-resistant."
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 2 · Authentication Assurance Spectrum (L1–L4)</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 840 240" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="40" width="190" height="70" fill="var(--danger-dim)" stroke="var(--danger)" stroke-width="1.3" rx="6"/>
+  <rect x="220" y="40" width="190" height="70" fill="var(--warning-dim)" stroke="var(--warning)" stroke-width="1.3" rx="6"/>
+  <rect x="420" y="40" width="190" height="70" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3" rx="6" opacity="0.75"/>
+  <rect x="620" y="40" width="190" height="70" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.3" rx="6"/>
+
+  <text x="115" y="65" text-anchor="middle" class="svg-label" font-weight="600">L1 — Password Only</text>
+  <text x="115" y="84" text-anchor="middle" class="svg-label-dim" font-size="11">phishable · stealable</text>
+  <text x="115" y="99" text-anchor="middle" class="svg-label-dim" font-size="11">spray-able</text>
+
+  <text x="315" y="65" text-anchor="middle" class="svg-label" font-weight="600">L2 — Pwd + OTP/Push</text>
+  <text x="315" y="84" text-anchor="middle" class="svg-label-dim" font-size="11">MFA fatigue risk</text>
+  <text x="315" y="99" text-anchor="middle" class="svg-label-dim" font-size="11">SIM swap risk</text>
+
+  <text x="515" y="65" text-anchor="middle" class="svg-label" font-weight="600">L3 — Pwd + FIDO2</text>
+  <text x="515" y="84" text-anchor="middle" class="svg-label-dim" font-size="11">phishing-resistant</text>
+  <text x="515" y="99" text-anchor="middle" class="svg-label-dim" font-size="11">password still exists</text>
+
+  <text x="715" y="65" text-anchor="middle" class="svg-label" font-weight="600">L4 — FIDO2 Only</text>
+  <text x="715" y="84" text-anchor="middle" class="svg-label-dim" font-size="11">no shared secret</text>
+  <text x="715" y="99" text-anchor="middle" class="svg-label-dim" font-size="11">strongest practical posture</text>
+
+  <text x="115" y="135" text-anchor="middle" class="svg-label-sm" font-weight="600">NIST AAL1</text>
+  <text x="315" y="135" text-anchor="middle" class="svg-label-sm" font-weight="600">NIST AAL2</text>
+  <text x="515" y="135" text-anchor="middle" class="svg-label-sm" font-weight="600">NIST AAL2 / AAL3*</text>
+  <text x="715" y="135" text-anchor="middle" class="svg-label-sm" font-weight="600">NIST AAL3</text>
+
+  <line x1="20" y1="160" x2="810" y2="160" stroke="var(--border)" stroke-width="1"/>
+  <text x="20" y="180" class="svg-label-sm">weakest</text>
+  <text x="780" y="180" class="svg-label-sm">strongest</text>
+  <text x="20" y="205" class="svg-label-sm" font-style="italic">*AAL3 specifically requires a hardware-backed authenticator with verifier impersonation resistance.</text>
+</svg>
+        </div>
+        <div class="diagram-caption">
+          Assurance increases as the shared secret is progressively removed from the authentication
+          path — first supplemented, then made non-decisive, then eliminated entirely.
+        </div>
+      </div>
+
+      <div class="callout callout-security">
+        <div class="callout-head">🛡️ The MFA Fatigue Attack</div>
+        <div class="callout-body">
+          An attacker with stolen credentials sends dozens of MFA push notifications to the
+          victim's device, hoping the user approves one out of fatigue, confusion, or simply to
+          stop the notifications. This attack has been used in real enterprise breaches.
+          Architectural mitigations: <strong>number matching</strong> (the push notification shows
+          a code the user must independently match in the app, removing the single-tap
+          "approve"), additional context in push notifications (location, application name, IP),
+          rate limiting on MFA requests, and ultimately FIDO2, which eliminates the push
+          notification vector entirely because there's no "approve" button for an attacker to
+          spam — only a physical possession check.
+        </div>
+      </div>
+
+      <div class="analogy-box">
+        <div class="analogy-head">🔗 Connecting to what you know</div>
+        <p>
+          The password problem is architecturally identical to the API shared-secret problem
+          you've dealt with throughout your career: if both sides know the secret, either side can
+          be compromised, and a leak anywhere is a leak everywhere. The solution you already trust
+          for API-to-API auth is public-key cryptography — mTLS, or a JWT signed with RS256: only
+          the private key holder can generate valid proof, and the verifier only ever needs the
+          public key. FIDO2 applies exactly that solution to <em>human</em> authentication: the
+          private key lives on the device and never leaves it. The server stores only the public
+          key. There is no shared secret to steal, because there's no longer a secret that both
+          sides hold.
+        </p>
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-head">🧪 LAB 5.1</div>
+        <p>
+          Check your own credential hygiene using HaveIBeenPwned. Then look at your company's
+          authentication policy: what assurance level does it enforce for privileged access? For
+          regular employee access? For partner/third-party access? Map each to the NIST AAL
+          framework above. Where are the gaps — and which population carries the most risk
+          relative to the access it holds?
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5.2 — MFA ARCHITECTURE -->
+    <!-- ============================================================ -->
+    <section class="section" id="s5-2" data-stack-layers="sso,applications,tokens">
+      <div class="section-kicker">5.2 · Factors &amp; Flows</div>
+      <h2>MFA Architecture — Factors, Flows &amp; Trade-offs</h2>
+
+      <p>
+        Multi-factor authentication rests on combining factors from different categories:
+        <strong>something you know</strong> (password, PIN), <strong>something you have</strong>
+        (phone, hardware key, certificate), and <strong>something you are</strong> (fingerprint,
+        face). The architectural principle is that compromising one factor type shouldn't
+        compromise another — a phished password doesn't hand over a physical key, and a stolen
+        phone doesn't reveal a password. The strength of an MFA implementation depends entirely on
+        how well that independence actually holds in practice, which is where the factor taxonomy
+        below becomes important — not all "second factors" provide the same independence.
+      </p>
+
+      <h3>The MFA factor taxonomy</h3>
+      <ul>
+        <li><strong>TOTP (Time-based One-Time Password).</strong> An authenticator app and the
+        server share a secret seeded at enrollment. Both sides combine that secret with the
+        current Unix time (rounded to a 30-second window) through HMAC-SHA1 to independently
+        derive the same 6-digit code. The 30-second window balances usability against replay
+        risk. Because it's a shared secret, a breach of the server-side seed database compromises
+        every enrolled user, and TOTP codes can be phished in real time.</li>
+        <li><strong>HOTP (HMAC-based One-Time Password).</strong> The counter-based predecessor to
+        TOTP — instead of time, an incrementing counter on both sides drives the code. Less common
+        today because counter desynchronization (the device increments, the server doesn't see the
+        attempt) causes more support friction than time-based windows.</li>
+        <li><strong>Push notification.</strong> The IdP sends an approve/deny prompt to a
+        registered mobile app (this is PingID's primary MFA mechanism). Architecturally simple and
+        user-friendly, but creates the MFA fatigue attack surface covered in 5.1 unless number
+        matching is enabled.</li>
+        <li><strong>SMS OTP.</strong> A code sent via text message. NIST formally deprecated SMS as
+        an acceptable out-of-band authenticator in early drafts of SP 800-63B due to SIM swap risk
+        and SS7 network interception, though it remains widely used because of its near-universal
+        device compatibility and low enrollment friction.</li>
+        <li><strong>Email OTP.</strong> Similar risk profile to SMS — if the email account itself
+        is the weak link (reused or phished password), email OTP doesn't add real independence.</li>
+        <li><strong>Hardware security keys (FIDO2/U2F).</strong> The phishing-resistant factor —
+        covered in architectural depth in Section 5.3.</li>
+        <li><strong>Software/platform FIDO2 authenticators.</strong> TouchID, FaceID, Windows
+        Hello — the same FIDO2 cryptography as a hardware key, but the private key is sealed in
+        the device's secure enclave/TPM rather than a separate physical token.</li>
+        <li><strong>Certificate-based authentication.</strong> A client certificate (often on a
+        smart card or in a TPM) presented during TLS negotiation. When the private key is
+        hardware-bound, this reaches AAL3 — it's architecturally a sibling of FIDO2, both being
+        public-key based and phishing-resistant.</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 3 · MFA Factor Comparison Matrix</div>
+        <div class="diagram-body">
+          <table class="matrix-table">
+            <thead>
+              <tr><th>Factor</th><th>Phishing-resistant?</th><th>Requires device?</th><th>NIST AAL</th><th>Enterprise maturity</th><th>Best suited for</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Password</td><td><span class="pill pill-bad">No</span></td><td>No</td><td>AAL1</td><td>Universal</td><td>Nothing, on its own</td></tr>
+              <tr><td>SMS OTP</td><td><span class="pill pill-bad">No</span></td><td>Phone</td><td>AAL2 (deprecated path)</td><td>High</td><td>Low-friction consumer fallback</td></tr>
+              <tr><td>Email OTP</td><td><span class="pill pill-bad">No</span></td><td>Email access</td><td>AAL2 (weak)</td><td>High</td><td>Account recovery, low-stakes</td></tr>
+              <tr><td>TOTP app</td><td><span class="pill pill-bad">No</span></td><td>Phone/app</td><td>AAL2</td><td>High</td><td>General workforce MFA</td></tr>
+              <tr><td>Push notification</td><td><span class="pill pill-mid">Partial*</span></td><td>Phone/app</td><td>AAL2</td><td>High (PingID)</td><td>General workforce, with number matching</td></tr>
+              <tr><td>Hardware FIDO2 key</td><td><span class="pill pill-good">Yes</span></td><td>Physical key</td><td>AAL2 / AAL3</td><td>Growing</td><td>Privileged users, regulated environments</td></tr>
+              <tr><td>Platform authenticator</td><td><span class="pill pill-good">Yes</span></td><td>Device w/ secure enclave</td><td>AAL2 / AAL3</td><td>Growing</td><td>Knowledge workers on managed devices</td></tr>
+              <tr><td>Client certificate</td><td><span class="pill pill-good">Yes</span></td><td>Smart card / TPM</td><td>AAL3</td><td>Mature (gov/defense)</td><td>Federal, highly regulated, legacy PKI shops</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="diagram-caption">*Push is phishing-resistant against credential-stuffing but not against MFA fatigue/prompt bombing unless number matching is enforced.</div>
+      </div>
+
+      <h3>Step-up authentication and the enrollment lifecycle</h3>
+      <p>
+        Not every resource needs the same authentication strength, and re-challenging users for
+        MFA on every single request would be both unusable and unnecessary. <strong>Step-up
+        authentication</strong> is the architectural pattern that resolves this: a user can hold an
+        existing session with a lower assurance level and be transparently challenged for a
+        stronger factor only when they reach a resource that requires it. In PingFederate, this is
+        implemented through authentication policies that branch based on the requested resource's
+        risk classification, checking the session's existing <strong>AMR (Authentication Methods
+        References)</strong> claim before deciding whether to invoke the PingID adapter again.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 4 · MFA Enrollment Architecture Flow</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg">
+  <!-- vertical sequence -->
+  <g font-family="JetBrains Mono">
+  <line x1="60" y1="40" x2="60" y2="430" stroke="var(--border)" stroke-width="2"/>
+  <!-- step circles + boxes -->
+  <circle cx="60" cy="40" r="18" fill="var(--accent-primary)"/><text x="60" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="#0B0E14">1</text>
+  <rect x="100" y="18" width="620" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="118" y="44" class="svg-label">User logs in with password (primary factor)</text>
+
+  <circle cx="60" cy="105" r="18" fill="var(--accent-primary)"/><text x="60" y="110" text-anchor="middle" font-size="13" font-weight="700" fill="#0B0E14">2</text>
+  <rect x="100" y="83" width="620" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="118" y="109" class="svg-label">System checks the directory: no MFA factor enrolled for this user</text>
+
+  <circle cx="60" cy="170" r="18" fill="var(--accent-primary)"/><text x="60" y="175" text-anchor="middle" font-size="13" font-weight="700" fill="#0B0E14">3</text>
+  <rect x="100" y="148" width="620" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="118" y="174" class="svg-label">PingFederate redirects to the PingID enrollment flow</text>
+
+  <circle cx="60" cy="235" r="18" fill="var(--accent-primary)"/><text x="60" y="240" text-anchor="middle" font-size="13" font-weight="700" fill="#0B0E14">4</text>
+  <rect x="100" y="213" width="620" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="118" y="239" class="svg-label">User registers: TOTP app, OR hardware key, OR platform authenticator</text>
+
+  <circle cx="60" cy="300" r="18" fill="var(--accent-primary)"/><text x="60" y="305" text-anchor="middle" font-size="13" font-weight="700" fill="#0B0E14">5</text>
+  <rect x="100" y="278" width="620" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="118" y="299" class="svg-label">Public key / TOTP secret stored —</text>
+  <text x="118" y="315" class="svg-label-dim" font-size="11">in PingDirectory (LDAP attr), PingOne (cloud MFA store), or AD, depending on platform</text>
+
+  <circle cx="60" cy="365" r="18" fill="var(--accent-primary)"/><text x="60" y="370" text-anchor="middle" font-size="13" font-weight="700" fill="#0B0E14">6</text>
+  <rect x="100" y="343" width="620" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="118" y="369" class="svg-label">System confirms enrollment to the user</text>
+
+  <circle cx="60" cy="430" r="18" fill="var(--success)"/><text x="60" y="435" text-anchor="middle" font-size="13" font-weight="700" fill="#0B0E14">7</text>
+  <rect x="100" y="408" width="620" height="44" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="118" y="434" class="svg-label">On next login: the enrolled factor is required before access is granted</text>
+  </g>
+</svg>
+        </div>
+        <div class="diagram-caption">First-time MFA enrollment, from password-only login to an enforced second factor on the next session.</div>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 5 · Step-up Authentication Flow</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="20" width="120" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="80" y="46" text-anchor="middle" class="svg-label">User</text>
+
+  <line x1="140" y1="42" x2="220" y2="42" stroke="var(--border)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+  <rect x="220" y="20" width="160" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="300" y="40" text-anchor="middle" class="svg-label-dim" font-size="11">App A</text>
+  <text x="300" y="55" text-anchor="middle" class="svg-label-dim" font-size="10">(low sensitivity)</text>
+
+  <line x1="380" y1="42" x2="460" y2="42" stroke="var(--border)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+
+  <rect x="460" y="20" width="180" height="44" rx="8" fill="var(--surface-3)" stroke="var(--accent-primary)"/>
+  <text x="550" y="46" text-anchor="middle" class="svg-label">PingFederate Policy</text>
+
+  <line x1="550" y1="64" x2="550" y2="110" stroke="var(--success)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+  <rect x="440" y="110" width="220" height="44" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="550" y="132" text-anchor="middle" class="svg-label-dim" font-size="11">Policy: password only</text>
+  <text x="550" y="147" text-anchor="middle" class="svg-label-dim" font-size="11">→ pass through, no step-up</text>
+
+  <!-- App B path -->
+  <line x1="80" y1="64" x2="80" y2="200" stroke="var(--border)" stroke-width="1.5"/>
+  <line x1="80" y1="200" x2="220" y2="200" stroke="var(--border)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+  <rect x="220" y="178" width="160" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="300" y="198" text-anchor="middle" class="svg-label-dim" font-size="11">App B</text>
+  <text x="300" y="213" text-anchor="middle" class="svg-label-dim" font-size="10">(high sensitivity)</text>
+
+  <line x1="380" y1="200" x2="460" y2="200" stroke="var(--border)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+  <rect x="460" y="178" width="180" height="44" rx="8" fill="var(--surface-3)" stroke="var(--accent-primary)"/>
+  <text x="550" y="204" text-anchor="middle" class="svg-label">PingFederate Policy</text>
+
+  <line x1="550" y1="222" x2="550" y2="255" stroke="var(--warning)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+  <rect x="430" y="255" width="240" height="44" rx="8" fill="var(--warning-dim)" stroke="var(--warning)"/>
+  <text x="550" y="273" text-anchor="middle" class="svg-label-dim" font-size="11">Policy: requires MFA</text>
+  <text x="550" y="288" text-anchor="middle" class="svg-label-dim" font-size="11">Check AMR claim on existing session</text>
+
+  <line x1="550" y1="299" x2="550" y2="320" stroke="var(--border)" stroke-width="1.5"/>
+  <text x="280" y="335" class="svg-label-dim" font-size="11">AMR already shows MFA? → pass through, no re-challenge</text>
+  <text x="280" y="350" class="svg-label-dim" font-size="11">AMR shows password only? → invoke PingID step-up adapter</text>
+
+  <defs>
+    <marker id="arrow5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--text-dim)"/></marker>
+  </defs>
+</svg>
+        </div>
+        <div class="diagram-caption">A single session can satisfy a low-sensitivity app on password alone, while PingFederate transparently demands a stronger factor the moment the user reaches a high-sensitivity app — without forcing a fresh login.</div>
+      </div>
+
+      <p>
+        MFA's weakest architectural link is often not the factor itself but its <strong>recovery
+        path</strong>. When a user loses their MFA device, some recovery mechanism has to exist —
+        backup codes, a helpdesk-assisted reset, or a fallback factor. Every one of these recovery
+        paths is, by necessity, weaker than the primary factor it's recovering from (otherwise it
+        would just <em>be</em> the primary factor), which makes account recovery a favorite target
+        for social-engineering attacks against helpdesks.
+      </p>
+
+      <p>
+        Recovery codes deserve specific architectural scrutiny because they're the most common
+        fallback and the easiest to get wrong. A set of one-time backup codes generated at
+        enrollment is, functionally, a static shared secret — exactly the thing MFA exists to move
+        away from — except now it's a secret the user is expected to store somewhere durable
+        (printed, in a password manager, in a desk drawer) for an event that might not happen for
+        years. In practice, a meaningful fraction of users never store them at all, which pushes
+        the real recovery burden onto the helpdesk. That, in turn, makes helpdesk identity
+        verification the de facto authentication factor for account recovery, and it's typically
+        the weakest one in the entire chain: a caller who knows an employee's name, manager, and
+        a few personal details can often talk a time-pressured support agent into a reset.
+        Architecturally sound recovery design treats the helpdesk reset flow with the same rigor
+        as the primary authentication path — multi-person approval for privileged accounts,
+        callback verification through a number on file rather than the number the caller provides,
+        and an audit trail that flags reset volume anomalies, since a sudden spike in resets for
+        accounts in the same department is a classic precursor to a targeted social-engineering
+        campaign rather than coincidence.
+      </p>
+
+      <p>
+        Finally, the OIDC <strong>AMR
+        (Authentication Methods References) claim</strong> is the mechanism by which an IdP tells a
+        relying party which authentication methods were actually used in a given session —
+        <code>pwd</code>, <code>otp</code>, <code>hwk</code>, <code>fido</code> — letting
+        downstream applications make their own risk decisions based on real assurance evidence
+        rather than trusting a binary "authenticated: true." An application handling sensitive
+        financial transactions can inspect the AMR claim and require a fresh, FIDO2-backed
+        re-authentication before allowing a high-value transfer, even if the user's broader SSO
+        session was originally established with a weaker factor — the claim makes assurance level
+        a first-class, portable piece of information rather than something locked inside the IdP
+        that downstream applications have to trust blindly.
+      </p>
+
+      <div class="callout callout-security">
+        <div class="callout-head">🛡️ The TOTP Shared Secret Problem</div>
+        <div class="callout-body">
+          TOTP works by both the authenticator app and the server knowing the same base secret,
+          seeded at enrollment. If that server-side secret database is breached, an attacker can
+          generate valid TOTP codes for any enrolled user — indefinitely, without needing the
+          user's device at all. TOTP provides strong protection against password replay and remote
+          brute-force attacks, but it is <strong>not phishing-resistant</strong>: an attacker can
+          phish both the password and the TOTP code in real time through a proxy site and relay
+          them to the legitimate server within the 30-second validity window. FIDO2 is specifically
+          designed to close this exact gap, as Section 5.3 covers in depth.
+        </div>
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-head">🧪 LAB 5.2</div>
+        <p>
+          Look at your PingID or MFA platform configuration. What factors are enabled? Which are
+          required vs. optional, and for which user populations? What is the MFA enrollment rate
+          across your user base? What happens if a user's MFA device is lost — what's the actual
+          recovery procedure, and who is authorized to execute it? These four questions define
+          your real MFA security posture far more accurately than "do we have MFA enabled" does.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5.3 — FIDO2 & WEBAUTHN -->
+    <!-- ============================================================ -->
+    <section class="section" id="s5-3" data-stack-layers="sso,applications,tokens">
+      <div class="section-kicker">5.3 · Core Protocol</div>
+      <h2>FIDO2 &amp; WebAuthn — The Protocol Architecture</h2>
+
+      <p>
+        <strong>FIDO2</strong> is the umbrella specification published jointly by the FIDO
+        Alliance and the W3C, made up of two complementary pieces: <strong>WebAuthn</strong>, the
+        W3C browser API that web applications call to register and verify credentials, and
+        <strong>CTAP2</strong> (Client to Authenticator Protocol), which governs how the browser
+        talks to the actual authenticator — a hardware security key over USB/NFC/Bluetooth, or a
+        platform authenticator like a TPM-backed secure enclave. Together they define every hop in
+        a FIDO2 transaction, end to end.
+      </p>
+
+      <p>
+        Every FIDO2 transaction involves exactly three parties, and keeping their roles distinct is
+        the key to understanding the rest of this section:
+      </p>
+      <ul>
+        <li><strong>Relying Party (RP)</strong> — the web server / application that wants to
+        verify identity. This is your PingFederate instance or the application directly.</li>
+        <li><strong>Client</strong> — the browser, which mediates between the RP and the
+        authenticator and enforces the origin-binding rule described below.</li>
+        <li><strong>Authenticator</strong> — the hardware key or platform biometric that actually
+        holds the private key and performs the cryptographic signing.</li>
+      </ul>
+
+      <h3>Why FIDO2 is phishing-resistant by cryptographic design</h3>
+      <p>
+        FIDO2 replaces the shared-secret model with public-key cryptography. At registration, the
+        authenticator generates a fresh key pair <em>for that specific website</em>. The private
+        key never leaves the authenticator — not during registration, not during authentication,
+        not ever. The server only ever receives and stores the public key plus a credential
+        identifier. Because authentication consists of signing a server-issued challenge with the
+        private key, and verification consists of checking that signature against the stored
+        public key, there is no secret in transit that a phishing site could capture and replay.
+      </p>
+      <p>
+        The phishing-resistance goes one step further than ordinary public-key auth, though: every
+        credential is <strong>cryptographically bound to the origin</strong> it was registered
+        against (the <code>rpId</code>, typically the domain). The browser — not the website, the
+        <em>browser</em> — enforces that a credential registered for <code>company.com</code> can
+        only be used to sign a challenge for <code>company.com</code>. A phishing site at
+        <code>login-company.com</code> is a different origin. The browser will not even let
+        that site request the credential, and even if it somehow did, the authenticator's
+        signature would be computed over the wrong <code>rpId</code> and would fail verification
+        on the real server. This is a hard cryptographic boundary, not a UI cue the user has to
+        notice.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 6 · FIDO2 Registration Flow</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 900 660" xmlns="http://www.w3.org/2000/svg">
+  <!-- lane headers -->
+  <rect x="40" y="14" width="220" height="38" rx="8" fill="var(--surface-3)" stroke="var(--border)"/>
+  <text x="150" y="38" text-anchor="middle" class="svg-label" font-weight="600">Browser (Client)</text>
+  <rect x="340" y="14" width="220" height="38" rx="8" fill="var(--surface-3)" stroke="var(--border)"/>
+  <text x="450" y="38" text-anchor="middle" class="svg-label" font-weight="600">Server (RP)</text>
+  <rect x="640" y="14" width="220" height="38" rx="8" fill="var(--surface-3)" stroke="var(--accent-primary)"/>
+  <text x="750" y="38" text-anchor="middle" class="svg-label" font-weight="600">Authenticator</text>
+
+  <!-- lifelines -->
+  <line x1="150" y1="52" x2="150" y2="600" stroke="var(--border-soft)" stroke-width="1.5" stroke-dasharray="3,4"/>
+  <line x1="450" y1="52" x2="450" y2="600" stroke="var(--border-soft)" stroke-width="1.5" stroke-dasharray="3,4"/>
+  <line x1="750" y1="52" x2="750" y2="600" stroke="var(--border-soft)" stroke-width="1.5" stroke-dasharray="3,4"/>
+
+  <defs><marker id="arrowF" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--accent-primary)"/></marker></defs>
+
+  <!-- step 1 -->
+  <line x1="150" y1="80" x2="445" y2="80" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF)"/>
+  <text x="155" y="74" class="svg-label-dim" font-size="11.5">1. "Register a new key" (user-initiated)</text>
+
+  <!-- step 2 -->
+  <line x1="445" y1="120" x2="155" y2="120" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF)"/>
+  <text x="155" y="114" class="svg-label-dim" font-size="11.5">2. Registration options: challenge, rpId, user info, supported algorithms</text>
+
+  <!-- step 3 -->
+  <line x1="150" y1="170" x2="745" y2="170" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF)"/>
+  <text x="155" y="160" class="svg-label-dim" font-size="11.5">3. CTAP2: create credential (challenge + rpId forwarded)</text>
+
+  <!-- step 4: authenticator internal -->
+  <rect x="600" y="200" width="280" height="120" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="615" y="222" class="svg-label" font-size="11.5" font-weight="600">4. Inside the authenticator:</text>
+  <text x="615" y="242" class="svg-label-dim" font-size="11">• generates a fresh key pair</text>
+  <text x="615" y="259" class="svg-label-dim" font-size="11">• private key stored on device, never leaves</text>
+  <text x="615" y="276" class="svg-label-dim" font-size="11">• public key + credential ID generated</text>
+  <text x="615" y="293" class="svg-label-dim" font-size="11">• signs (challenge + rpId + clientDataHash)</text>
+  <text x="615" y="310" class="svg-label-dim" font-size="11">  with the new private key</text>
+
+  <!-- step 5 -->
+  <line x1="745" y1="340" x2="155" y2="340" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF)"/>
+  <text x="155" y="330" class="svg-label-dim" font-size="11.5">5. Attestation object returned to browser</text>
+
+  <!-- step 6 -->
+  <line x1="150" y1="390" x2="445" y2="390" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF)"/>
+  <text x="155" y="380" class="svg-label-dim" font-size="11.5">6. Public key + credential ID sent to server</text>
+
+  <!-- step 7: server internal -->
+  <rect x="320" y="420" width="260" height="70" rx="8" fill="var(--info-dim)" stroke="var(--info)"/>
+  <text x="335" y="442" class="svg-label" font-size="11.5" font-weight="600">7. Server verifies attestation,</text>
+  <text x="335" y="460" class="svg-label-dim" font-size="11">stores public key + credential ID</text>
+  <text x="335" y="478" class="svg-label-dim" font-size="11">against this user's account</text>
+
+  <!-- after state -->
+  <rect x="40" y="520" width="820" height="110" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="60" y="546" class="svg-label" font-weight="600" font-size="12.5">What lives where after registration:</text>
+  <text x="60" y="572" class="svg-label-dim" font-size="11.5">Authenticator: holds the private key — physically cannot be exported, copied, or transmitted.</text>
+  <text x="60" y="592" class="svg-label-dim" font-size="11.5">Server: holds only the public key + credential ID — useless to an attacker without the private key.</text>
+  <text x="60" y="612" class="svg-label-dim" font-size="11.5">Browser: holds nothing persistent — it only ever mediated the exchange.</text>
+</svg>
+        </div>
+        <div class="diagram-caption">The private key is generated, used, and retained entirely inside the authenticator — it crosses no network boundary at any point in this flow.</div>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 7 · FIDO2 Authentication Flow</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 900 680" xmlns="http://www.w3.org/2000/svg">
+  <rect x="40" y="14" width="220" height="38" rx="8" fill="var(--surface-3)" stroke="var(--border)"/>
+  <text x="150" y="38" text-anchor="middle" class="svg-label" font-weight="600">Browser (Client)</text>
+  <rect x="340" y="14" width="220" height="38" rx="8" fill="var(--surface-3)" stroke="var(--border)"/>
+  <text x="450" y="38" text-anchor="middle" class="svg-label" font-weight="600">Server (RP)</text>
+  <rect x="640" y="14" width="220" height="38" rx="8" fill="var(--surface-3)" stroke="var(--accent-primary)"/>
+  <text x="750" y="38" text-anchor="middle" class="svg-label" font-weight="600">Authenticator</text>
+
+  <line x1="150" y1="52" x2="150" y2="640" stroke="var(--border-soft)" stroke-width="1.5" stroke-dasharray="3,4"/>
+  <line x1="450" y1="52" x2="450" y2="640" stroke="var(--border-soft)" stroke-width="1.5" stroke-dasharray="3,4"/>
+  <line x1="750" y1="52" x2="750" y2="640" stroke="var(--border-soft)" stroke-width="1.5" stroke-dasharray="3,4"/>
+
+  <defs><marker id="arrowF2" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--accent-primary)"/></marker></defs>
+
+  <line x1="150" y1="78" x2="445" y2="78" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF2)"/>
+  <text x="155" y="72" class="svg-label-dim" font-size="11.5">1. "Log me in"</text>
+
+  <line x1="445" y1="118" x2="155" y2="118" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF2)"/>
+  <text x="155" y="112" class="svg-label-dim" font-size="11.5">2. Authentication options: challenge, rpId, allowed credential IDs</text>
+
+  <!-- step 3: phishing prevention point -->
+  <rect x="40" y="140" width="450" height="78" rx="8" fill="var(--danger-dim)" stroke="var(--danger)" stroke-width="1.6"/>
+  <text x="56" y="164" class="svg-label" font-weight="700" font-size="12">3 — 🔒 PHISHING PREVENTION POINT</text>
+  <text x="56" y="184" class="svg-label-dim" font-size="11">Browser verifies the rpId in the request matches</text>
+  <text x="56" y="202" class="svg-label-dim" font-size="11">the page's actual current origin before proceeding.</text>
+
+  <line x1="150" y1="240" x2="745" y2="240" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF2)"/>
+  <text x="155" y="232" class="svg-label-dim" font-size="11.5">4. CTAP2: get assertion (challenge + verified rpId)</text>
+
+  <rect x="580" y="265" width="300" height="105" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="595" y="288" class="svg-label" font-size="11.5" font-weight="600">5. Inside the authenticator:</text>
+  <text x="595" y="308" class="svg-label-dim" font-size="11">• user verification (PIN / biometric)</text>
+  <text x="595" y="326" class="svg-label-dim" font-size="11">• signs (challenge + rpId + authData)</text>
+  <text x="595" y="344" class="svg-label-dim" font-size="11">  with the credential's private key</text>
+  <text x="595" y="362" class="svg-label-dim" font-size="11">• the user's biometric never leaves the device</text>
+
+  <line x1="745" y1="395" x2="155" y2="395" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF2)"/>
+  <text x="155" y="387" class="svg-label-dim" font-size="11.5">6. Signed assertion returned to browser</text>
+
+  <line x1="150" y1="435" x2="445" y2="435" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowF2)"/>
+  <text x="155" y="427" class="svg-label-dim" font-size="11.5">7. Assertion forwarded to server</text>
+
+  <rect x="320" y="460" width="260" height="78" rx="8" fill="var(--info-dim)" stroke="var(--info)"/>
+  <text x="335" y="482" class="svg-label" font-size="11.5" font-weight="600">8. Server verifies the signature</text>
+  <text x="335" y="500" class="svg-label-dim" font-size="11">against the stored public key</text>
+
+  <rect x="270" y="555" width="360" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.6"/>
+  <text x="450" y="585" text-anchor="middle" class="svg-label" font-weight="700">9. ✅ Authentication succeeds</text>
+
+  <text x="40" y="640" class="svg-label-sm" font-style="italic">Step 3 is the architectural reason a phishing relay attack against FIDO2 fails: the browser checks origin before the authenticator is ever invoked.</text>
+</svg>
+        </div>
+        <div class="diagram-caption">The challenge-response exchange, with the browser's origin check as the single point that makes the rest of the protocol phishing-resistant.</div>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 8 · Why FIDO2 Is Phishing-Resistant (Origin Binding)</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg">
+  <!-- Legitimate path -->
+  <rect x="30" y="20" width="380" height="270" rx="10" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.5"/>
+  <text x="220" y="50" text-anchor="middle" class="svg-label" font-weight="700">Legitimate Login</text>
+  <rect x="60" y="75" width="320" height="40" rx="6" fill="var(--surface)" stroke="var(--border-soft)"/>
+  <text x="220" y="100" text-anchor="middle" class="svg-label-dim" font-size="12">user → login.company.com</text>
+  <line x1="220" y1="115" x2="220" y2="150" stroke="var(--success)" stroke-width="1.6" marker-end="url(#arrowF3)"/>
+  <rect x="60" y="150" width="320" height="55" rx="6" fill="var(--surface)" stroke="var(--border-soft)"/>
+  <text x="220" y="172" text-anchor="middle" class="svg-label-dim" font-size="11.5">FIDO2 assertion signed for</text>
+  <text x="220" y="190" text-anchor="middle" class="svg-label-dim" font-size="11.5">rpId = company.com</text>
+  <line x1="220" y1="205" x2="220" y2="235" stroke="var(--success)" stroke-width="1.6" marker-end="url(#arrowF3)"/>
+  <rect x="60" y="235" width="320" height="40" rx="6" fill="var(--success)" stroke="var(--success)"/>
+  <text x="220" y="260" text-anchor="middle" font-weight="700" font-size="13" fill="#0B0E14">✅ Server accepts</text>
+
+  <!-- Phishing path -->
+  <rect x="470" y="20" width="380" height="270" rx="10" fill="var(--danger-dim)" stroke="var(--danger)" stroke-width="1.5"/>
+  <text x="660" y="50" text-anchor="middle" class="svg-label" font-weight="700">Phishing Attempt</text>
+  <rect x="500" y="75" width="320" height="40" rx="6" fill="var(--surface)" stroke="var(--border-soft)"/>
+  <text x="660" y="100" text-anchor="middle" class="svg-label-dim" font-size="12">user → login-company.com (attacker)</text>
+  <line x1="660" y1="115" x2="660" y2="150" stroke="var(--danger)" stroke-width="1.6" marker-end="url(#arrowF3r)"/>
+  <rect x="500" y="150" width="320" height="55" rx="6" fill="var(--surface)" stroke="var(--border-soft)"/>
+  <text x="660" y="172" text-anchor="middle" class="svg-label-dim" font-size="11.5">Assertion would need</text>
+  <text x="660" y="190" text-anchor="middle" class="svg-label-dim" font-size="11.5">rpId = login-company.com</text>
+  <line x1="660" y1="205" x2="660" y2="235" stroke="var(--danger)" stroke-width="1.6" marker-end="url(#arrowF3r)"/>
+  <rect x="500" y="235" width="320" height="40" rx="6" fill="var(--danger)" stroke="var(--danger)"/>
+  <text x="660" y="260" text-anchor="middle" font-weight="700" font-size="13" fill="#0B0E14">❌ Credential cannot sign for this rpId</text>
+
+  <defs>
+    <marker id="arrowF3" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--success)"/></marker>
+    <marker id="arrowF3r" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--danger)"/></marker>
+  </defs>
+</svg>
+        </div>
+        <div class="diagram-caption">The origin binding is cryptographic, not a UI check. The private key physically cannot produce a valid assertion for a different origin — there's nothing for the user to "notice" or get tricked by.</div>
+      </div>
+
+      <h3>Authenticator types and credential storage models</h3>
+      <p>
+        FIDO2 authenticators come in two architecturally distinct flavors. <strong>Roaming
+        authenticators</strong> are physical hardware keys (YubiKey, Google Titan Key) that
+        connect via USB, NFC, or Bluetooth and can move between devices — plug the same key into a
+        laptop, then a phone, and it works identically on both because the private key lives on the
+        key itself. <strong>Platform authenticators</strong> are built into the device — Windows
+        Hello, TouchID, FaceID — and are bound to that specific device's secure enclave or TPM;
+        they can't be moved to another machine, by design.
+      </p>
+      <p>
+        A second, orthogonal distinction matters for enterprise deployments: <strong>resident
+        keys</strong> (discoverable credentials) store the full credential — including which
+        account it belongs to — on the authenticator itself, enabling true passwordless flows
+        where the user doesn't even need to type a username. <strong>Server-side (non-resident)
+        credentials</strong> store only a wrapped key reference on the authenticator and require
+        the server to send back the credential ID at authentication time, meaning the user still
+        types a username first. Resident keys are what make passwordless possible; non-resident
+        credentials are what make a single hardware key scale to an unlimited number of accounts
+        without running out of on-device storage.
+      </p>
+
+      <h3>FIDO2 and enterprise SSO</h3>
+      <p>
+        FIDO2 itself only answers the question "is this the right person at this browser, right
+        now" — it has no concept of sessions, tokens, or federation across applications. That's
+        exactly the gap Module 03's OAuth and OIDC coverage fills. In a typical enterprise
+        deployment, PingFederate acts as the WebAuthn relying party directly: the user's FIDO2
+        ceremony happens against PingFederate, not against each individual downstream
+        application, and the result of that ceremony becomes one input into the OIDC token
+        PingFederate subsequently issues. Concretely, a successful FIDO2 assertion causes
+        PingFederate to populate the token's <strong>AMR claim</strong> with a value like
+        <code>fido</code> or <code>hwk</code>, alongside the existing OAuth scopes and OIDC claims
+        already covered in Module 03. Every downstream application trusting that token inherits
+        the phishing-resistance guarantee without needing to implement WebAuthn itself — they
+        simply check the AMR claim if they care about assurance level, the same pattern used for
+        step-up policy decisions in Section 5.2. This is precisely why centralizing FIDO2 at the
+        federation layer, rather than scattering WebAuthn implementations across every individual
+        application, is the architecturally sound approach: one relying party to harden, register
+        attestation policy for, and monitor, instead of forty.
+      </p>
+
+      <div class="callout callout-security">
+        <div class="callout-head">🛡️ Architectural Honesty on Phishing Resistance</div>
+        <div class="callout-body">
+          FIDO2 eliminates phishing <em>of the credential itself</em>. A phishing site that
+          captures a FIDO2 challenge and tries to relay it to the real site gets back an assertion
+          signed for the wrong origin — which the real server rejects outright. Compare this to
+          TOTP: a phishing proxy can capture both the password and the TOTP code in real time and
+          replay them at the legitimate site before the 30-second window expires. FIDO2's
+          phishing resistance is cryptographic, not behavioral — it doesn't depend on users
+          recognizing a fake login page, which is precisely why it closes a gap that user
+          security-awareness training never fully closes.
+        </div>
+      </div>
+
+      <div class="analogy-box green">
+        <div class="analogy-head">🔗 Connecting to what you know</div>
+        <p>
+          FIDO2 is the mTLS model applied to human authentication. In mutual TLS, the client
+          presents a certificate — a public key plus a CA signature — and the server verifies that
+          signature; the private key never leaves the client. Phishing the TLS handshake is
+          cryptographically impossible because the private key isn't transmitted at any point.
+          FIDO2 uses exactly this model for human authentication: the private key stays on the
+          authenticator, only a cryptographic signature is transmitted, and that signature is
+          bound to the specific origin being authenticated against. Your Java API security
+          experience with mTLS is the right mental model here — FIDO2 isn't a new idea, it's an
+          old, proven idea finally applied to the human login step.
+        </p>
+      </div>
+
+      <div class="deepdive">
+        <strong>🟣 Deep dive:</strong> What is <em>attestation</em> in FIDO2, what does it actually
+        prove, and when does an enterprise need to verify authenticator attestation versus when is
+        it unnecessary overhead? Attestation is a signed statement from the authenticator's
+        manufacturer asserting properties of the device itself — its model, certification level,
+        and whether the private key is hardware-protected — separate from the per-credential key
+        pair used for ongoing authentication. Verifying attestation lets an RP enforce "only
+        FIDO2-certified hardware keys from this approved vendor list may register" — relevant for
+        regulated environments with procurement requirements. For most enterprise workforce
+        deployments, attestation verification is unnecessary overhead: it complicates the
+        registration flow, requires maintaining a metadata service of trusted attestation
+        certificates, and the marginal security benefit is small compared to simply requiring
+        FIDO2 registration at all. Reserve attestation checking for privileged-access tiers where
+        hardware provenance genuinely matters.
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-head">🧪 LAB 5.3</div>
+        <p>
+          If you have a YubiKey or a platform authenticator (TouchID/Windows Hello), register it on
+          webauthn.io — the FIDO Alliance's public test site. Complete a full registration and
+          authentication cycle. Open the browser dev tools and examine the JSON objects exchanged
+          at each step. Identify the challenge, the <code>rpId</code>, the credential ID, and where
+          the response indicates the private key lives — you should see no field anywhere that
+          contains the private key itself.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5.4 — PASSKEYS -->
+    <!-- ============================================================ -->
+    <section class="section" id="s5-4" data-stack-layers="sso,applications,cloud">
+      <div class="section-kicker">5.4 · Passwordless UX</div>
+      <h2>Passkeys — Architecture &amp; Enterprise Reality</h2>
+
+      <p>
+        A <strong>passkey</strong> is a FIDO2 credential — same cryptography, same registration
+        and authentication flows you just walked through in Section 5.3 — with one architectural
+        difference: it's <strong>synced</strong> across a user's devices through a platform
+        credential store, rather than bound to a single piece of hardware. Apple syncs passkeys
+        through iCloud Keychain, Google through Google Password Manager, and Microsoft through
+        Windows Hello for Business in its managed-enterprise form. Register a passkey on your
+        iPhone and it's available on your iPad and Mac within seconds, with no re-enrollment step.
+      </p>
+      <p>
+        This is genuinely the right consumer answer to FIDO2's biggest historical adoption
+        blocker: hardware keys are excellent security but a real usability tax — they cost money,
+        get lost, and don't travel with you automatically across every device you own. Passkeys
+        remove that tax. But the syncing mechanism that makes passkeys convenient is exactly what
+        makes them architecturally different from a hardware key for enterprise purposes: the
+        private key, while still never transmitted in plaintext, now exists inside a cloud-synced
+        keychain that the <em>enterprise does not control</em>.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 9 · Device-Bound FIDO2 vs. Synced Passkey</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="20" width="400" height="320" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="220" y="52" text-anchor="middle" class="svg-label" font-weight="700" font-size="15">Hardware Security Key</text>
+  <text x="220" y="72" text-anchor="middle" class="svg-label-dim" font-size="11">(YubiKey, Titan Key — device-bound)</text>
+
+  <text x="45" y="105" class="svg-label-dim" font-size="12.5">🔑 Private key:</text>
+  <text x="55" y="123" class="svg-label-dim" font-size="11.5">On device only. Never synced. Never leaves.</text>
+
+  <text x="45" y="155" class="svg-label-dim" font-size="12.5">♻️ Recovery:</text>
+  <text x="55" y="173" class="svg-label-dim" font-size="11.5">Lost key = re-enroll via IT helpdesk.</text>
+
+  <text x="45" y="205" class="svg-label-dim" font-size="12.5">🏛️ NIST AAL:</text>
+  <text x="55" y="223" class="svg-label-dim" font-size="11.5">AAL2 / AAL3 (hardware-based, strongest tier).</text>
+
+  <text x="45" y="255" class="svg-label-dim" font-size="12.5">🏢 Enterprise control:</text>
+  <text x="55" y="273" class="svg-label-dim" font-size="11.5">IT controls issuance, revocation, and inventory.</text>
+
+  <rect x="45" y="295" width="350" height="32" rx="6" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="220" y="316" text-anchor="middle" class="svg-label-dim" font-size="11.5" font-weight="600">Strongest assurance, highest friction/cost</text>
+
+  <rect x="440" y="20" width="400" height="320" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="640" y="52" text-anchor="middle" class="svg-label" font-weight="700" font-size="15">Synced Passkey</text>
+  <text x="640" y="72" text-anchor="middle" class="svg-label-dim" font-size="11">(iPhone / Android / Windows — cloud-synced)</text>
+
+  <text x="465" y="105" class="svg-label-dim" font-size="12.5">🔑 Private key:</text>
+  <text x="475" y="123" class="svg-label-dim" font-size="11.5">On device, synced to personal/managed cloud keychain.</text>
+
+  <text x="465" y="155" class="svg-label-dim" font-size="12.5">♻️ Recovery:</text>
+  <text x="475" y="173" class="svg-label-dim" font-size="11.5">New device, sign into the same cloud account.</text>
+
+  <text x="465" y="205" class="svg-label-dim" font-size="12.5">🏛️ NIST AAL:</text>
+  <text x="475" y="223" class="svg-label-dim" font-size="11.5">AAL2 (sync introduces risk vs. pure hardware-bound).</text>
+
+  <text x="465" y="255" class="svg-label-dim" font-size="12.5">🏢 Enterprise control:</text>
+  <text x="475" y="273" class="svg-label-dim" font-size="11.5">MDM policy controls behavior, not full key custody.</text>
+
+  <rect x="465" y="295" width="350" height="32" rx="6" fill="var(--warning-dim)" stroke="var(--warning)"/>
+  <text x="640" y="316" text-anchor="middle" class="svg-label-dim" font-size="11.5" font-weight="600">Best UX, control trade-off enterprises must own</text>
+</svg>
+        </div>
+        <div class="diagram-caption">Both are FIDO2 — the cryptography is identical. What differs is custody of the private key and what that means for an enterprise's actual control over the credential.</div>
+      </div>
+
+      <h3>The enterprise passkey deployment reality</h3>
+      <p>
+        The architectural tension is straightforward to state: synced passkeys are dramatically
+        more user-friendly because they're available on every device a user owns without
+        re-enrollment, but the private key's custody now sits, at least partly, in a personal
+        cloud account rather than under enterprise control. That tension cascades into several
+        concrete deployment questions:
+      </p>
+      <ul>
+        <li><strong>Who controls the credential store?</strong> A passkey synced to a personal
+        Apple ID is outside enterprise control entirely. A passkey synced via Windows Hello for
+        Business on a domain-joined, MDM-managed device is a fundamentally different — and
+        enterprise-controllable — proposition.</li>
+        <li><strong>BYOD implications.</strong> On an employee-owned phone, the enterprise has no
+        way to enforce that the passkey is going into a managed credential store rather than the
+        employee's personal iCloud or Google account.</li>
+        <li><strong>Offboarding risk.</strong> If an employee enrolls a passkey synced to their
+        personal cloud account and then leaves the company, that passkey — and the access it
+        grants until revoked server-side — leaves with them, resident in an account the enterprise
+        never had visibility into.</li>
+        <li><strong>MDM integration requirements.</strong> Enforcing managed passkey behavior
+        generally requires the device to be enrolled in mobile device management, with policy
+        controls that route credential sync into a managed keychain rather than a personal one.</li>
+      </ul>
+
+      <p>
+        <strong>Windows Hello for Business</strong> is the enterprise-grade implementation of this
+        idea: it provisions a passkey-equivalent credential tied to the user's identity in Active
+        Directory or Entra ID, backed by the device's TPM, and managed through enterprise policy
+        rather than a consumer cloud account. It's architecturally closer to a managed hardware
+        key than to a consumer passkey, even though the user experience — unlock with PIN or
+        biometric — feels identical.
+      </p>
+
+      <div class="callout callout-cost">
+        <div class="callout-head">💰 The Enterprise Passkey Dilemma</div>
+        <div class="callout-body">
+          Consumer passkeys stored in iCloud Keychain or Google Password Manager provide excellent
+          user experience and genuine phishing resistance — but the private key sits in the
+          user's personal cloud account, not the enterprise's control. If the user leaves and
+          retains their personal Apple or Google account (which they almost always do — it's
+          personal), they retain the passkey. If that personal cloud account is compromised, the
+          passkey is compromised right along with it, outside the reach of enterprise incident
+          response. Enterprises that want passkey-level convenience without losing credential
+          control need <strong>managed</strong> passkey solutions: Windows Hello for Business on
+          MDM-managed devices, or — where managed sync isn't available or trusted — hardware
+          security keys.
+        </div>
+      </div>
+
+      <div class="usecase-box">
+        <div class="usecase-head">📐 Use case</div>
+        <p>
+          Your security team wants to deploy passkeys for all 40,000 employees. 60% use
+          company-managed Windows laptops, 30% use BYOD iPhones as their primary device, and 10%
+          work in call centers on shared workstations. Design a passkey architecture that covers
+          all three populations. What works for each? What doesn't? What are the security
+          trade-offs you'd present to the security team before they finalize the policy?
+        </p>
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-head">🧪 LAB 5.4</div>
+        <p>
+          On your personal device, create a passkey for a supported website (GitHub, Google, or
+          another FIDO2/passkey-enabled site). Log out and log back in using the passkey. Then
+          think it through: where is the private key actually stored? What cloud account does it
+          sync to? If you left your company tomorrow, what would happen to this passkey from an
+          enterprise security perspective — and would your security team even know it existed?
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5.5 — ADAPTIVE AUTHENTICATION ARCHITECTURE -->
+    <!-- ============================================================ -->
+    <section class="section" id="s5-5" data-stack-layers="sso,applications,tokens">
+      <div class="section-kicker">5.5 · Risk-Based Decisions</div>
+      <h2>Adaptive Authentication Architecture</h2>
+
+      <p>
+        <strong>Adaptive authentication</strong> replaces blanket policies ("always require MFA")
+        with risk-based decisions made at the moment of authentication. Instead of treating every
+        login attempt identically, the system collects signals about the context of the request and
+        only escalates the authentication requirement when those signals suggest elevated risk.
+        This is the architecture underneath PingID's adaptive MFA, Entra ID's Conditional Access,
+        and every major vendor's "risk-based authentication" feature — same concept, different
+        product names.
+      </p>
+
+      <h3>The signal taxonomy</h3>
+      <ul>
+        <li><strong>Device signals.</strong> Is the device enrolled and managed? Does it pass a
+        health/compliance check? Has it been seen before for this user?</li>
+        <li><strong>Network signals.</strong> IP reputation, geolocation, the requesting ISP,
+        known proxy/VPN usage, corporate network vs. unrecognized home/public network.</li>
+        <li><strong>Behavioral signals.</strong> Time of access against the user's typical
+        pattern, access velocity, and impossible-travel detection — a login from two geographies
+        too far apart to have been physically traveled between in the elapsed time.</li>
+        <li><strong>Identity signals.</strong> Account health (recent password reset, recent
+        lockout), whether this is a high-privilege account, an existing "at-risk user" flag from a
+        threat-intelligence feed.</li>
+        <li><strong>Context signals.</strong> The sensitivity classification of the application
+        being accessed, the data classification involved, and the session duration being
+        requested.</li>
+      </ul>
+
+      <p>
+        These signals feed a <strong>risk engine</strong> that combines them into a single risk
+        score — anywhere from simple rule-based scoring ("unrecognized device + impossible travel
+        = high risk") to machine learning models trained on historical authentication patterns
+        that can catch subtler anomalies a rule set would miss. The risk score then drives a
+        <strong>policy decision</strong>: low risk passes through silently, medium risk triggers an
+        MFA step-up, and high risk blocks the attempt outright or routes it to manual review.
+      </p>
+
+      <p>
+        Rule-based and ML-based risk engines aren't an either/or choice in practice — most mature
+        implementations layer both. Rules are explicit, auditable, and fast to reason about: a
+        compliance team can read "block if country is on the sanctions list" and know exactly what
+        the system does, which matters when an auditor asks why a specific login was denied. The
+        limitation is that rules only catch the patterns someone thought to write a rule for.
+        ML-based scoring, typically a model trained on historical login telemetry (successful
+        logins, confirmed-fraudulent logins, user-specific behavioral baselines), can surface
+        combinations of weak signals that individually wouldn't trip any single rule — a device
+        that's technically recognized but is being used at an unusual hour, from a slightly
+        atypical network, immediately after a password reset. The architectural trade-off is
+        explainability: a rule denies access for a reason you can quote back to the user or
+        auditor; a model produces a score that's harder to explain in plain language, which is why
+        most enterprise deployments keep hard, explainable rules for the highest-confidence
+        decisions (sanctioned countries, known-compromised credential lists) and reserve ML
+        scoring for the gray area in between, where a probabilistic judgment is genuinely more
+        useful than a brittle rule could ever be.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 10 · Adaptive Authentication Architecture</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 860 540" xmlns="http://www.w3.org/2000/svg">
+  <rect x="300" y="16" width="260" height="44" rx="8" fill="var(--surface-3)" stroke="var(--border)"/>
+  <text x="430" y="43" text-anchor="middle" class="svg-label" font-weight="600">Authentication Request</text>
+  <line x1="430" y1="60" x2="430" y2="92" stroke="var(--border)" stroke-width="1.6" marker-end="url(#arrowA)"/>
+
+  <text x="430" y="108" text-anchor="middle" class="svg-label-dim" font-size="11.5" font-weight="600">SIGNAL COLLECTION LAYER</text>
+  <rect x="40" y="120" width="155" height="56" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="117" y="152" text-anchor="middle" class="svg-label-dim" font-size="11.5">Device signals</text>
+  <rect x="210" y="120" width="155" height="56" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="287" y="152" text-anchor="middle" class="svg-label-dim" font-size="11.5">Network signals</text>
+  <rect x="380" y="120" width="155" height="56" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="457" y="152" text-anchor="middle" class="svg-label-dim" font-size="11.5">Behavioral signals</text>
+  <rect x="550" y="120" width="155" height="56" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="627" y="152" text-anchor="middle" class="svg-label-dim" font-size="11.5">Identity signals</text>
+  <rect x="380" y="186" width="155" height="56" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="457" y="218" text-anchor="middle" class="svg-label-dim" font-size="11.5">Context signals</text>
+
+  <line x1="430" y1="262" x2="430" y2="294" stroke="var(--border)" stroke-width="1.6" marker-end="url(#arrowA)"/>
+
+  <rect x="230" y="296" width="400" height="64" rx="8" fill="var(--surface-3)" stroke="var(--accent-primary)" stroke-width="1.5"/>
+  <text x="430" y="320" text-anchor="middle" class="svg-label" font-weight="700">Risk Engine</text>
+  <text x="430" y="340" text-anchor="middle" class="svg-label-dim" font-size="11">Rules evaluation + ML model scoring → Risk Score (0–100)</text>
+
+  <line x1="430" y1="360" x2="430" y2="392" stroke="var(--border)" stroke-width="1.6" marker-end="url(#arrowA)"/>
+
+  <rect x="180" y="394" width="500" height="34" rx="6" fill="var(--surface-2)" stroke="var(--border)"/>
+  <text x="430" y="416" text-anchor="middle" class="svg-label" font-weight="600">Policy Decision Engine</text>
+
+  <rect x="60" y="440" width="220" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="170" y="460" text-anchor="middle" class="svg-label-dim" font-size="11.5" font-weight="600">0–30: Low risk</text>
+  <text x="170" y="478" text-anchor="middle" class="svg-label-dim" font-size="11">Allow, no step-up</text>
+
+  <rect x="310" y="440" width="220" height="50" rx="8" fill="var(--warning-dim)" stroke="var(--warning)"/>
+  <text x="420" y="460" text-anchor="middle" class="svg-label-dim" font-size="11.5" font-weight="600">31–70: Medium risk</text>
+  <text x="420" y="478" text-anchor="middle" class="svg-label-dim" font-size="11">Require MFA step-up</text>
+
+  <rect x="560" y="440" width="240" height="50" rx="8" fill="var(--danger-dim)" stroke="var(--danger)"/>
+  <text x="680" y="460" text-anchor="middle" class="svg-label-dim" font-size="11.5" font-weight="600">71–100: High risk</text>
+  <text x="680" y="478" text-anchor="middle" class="svg-label-dim" font-size="11">Block / alert / require strongest factor</text>
+
+  <line x1="430" y1="490" x2="430" y2="510" stroke="var(--border)" stroke-width="1.6"/>
+  <text x="430" y="528" text-anchor="middle" class="svg-label-dim" font-size="11.5">Authentication Result + AMR Claims → OIDC/SAML Token</text>
+
+  <defs><marker id="arrowA" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--text-dim)"/></marker></defs>
+</svg>
+        </div>
+        <div class="diagram-caption">Five signal categories feed a risk engine, whose score drives a three-tier policy decision — the result flows into the token as AMR evidence for downstream relying parties.</div>
+      </div>
+
+      <h3>Point-in-time vs. continuous evaluation</h3>
+      <p>
+        Traditional authentication is <strong>point-in-time</strong>: the user proves identity
+        once, gets a session, and that session remains valid for some fixed duration regardless of
+        what happens afterward. If an employee's device or credentials are compromised five
+        minutes after login, the session keeps working until it naturally expires — potentially
+        hours later. <strong>Continuous Access Evaluation</strong> (Microsoft's CAE, standardized
+        more broadly as the Continuous Access Evaluation Profile, CAEP) closes that gap by
+        continuously re-evaluating risk signals against an active session and revoking it
+        immediately when a high-risk event is detected, rather than waiting for natural
+        expiration.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 11 · Continuous Access Evaluation vs. Point-in-Time Authentication</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 860 280" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="20" width="400" height="240" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="220" y="50" text-anchor="middle" class="svg-label" font-weight="700">Point-in-Time (Traditional)</text>
+  <line x1="50" y1="100" x2="390" y2="100" stroke="var(--border)" stroke-width="2"/>
+  <circle cx="80" cy="100" r="6" fill="var(--success)"/>
+  <text x="80" y="125" text-anchor="middle" class="svg-label-dim" font-size="10.5">9:00 Auth</text>
+  <circle cx="220" cy="100" r="6" fill="var(--danger)"/>
+  <text x="220" y="125" text-anchor="middle" class="svg-label-dim" font-size="10.5">14:00 Compromised</text>
+  <circle cx="390" cy="100" r="6" fill="var(--text-dim)"/>
+  <text x="390" y="125" text-anchor="middle" class="svg-label-dim" font-size="10.5">20:00 Expires</text>
+  <rect x="220" y="150" width="170" height="34" rx="6" fill="var(--danger-dim)" stroke="var(--danger)"/>
+  <text x="305" y="172" text-anchor="middle" class="svg-label-dim" font-size="10.5">6 hrs of undetected risk</text>
+  <text x="220" y="220" class="svg-label-dim" font-size="11.5">Risk change during session goes</text>
+  <text x="220" y="238" class="svg-label-dim" font-size="11.5">undetected until expiration.</text>
+
+  <rect x="440" y="20" width="400" height="240" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="640" y="50" text-anchor="middle" class="svg-label" font-weight="700">Continuous Evaluation (CAE/CAEP)</text>
+  <line x1="470" y1="100" x2="810" y2="100" stroke="var(--border)" stroke-width="2"/>
+  <circle cx="500" cy="100" r="6" fill="var(--success)"/>
+  <text x="500" y="125" text-anchor="middle" class="svg-label-dim" font-size="10.5">9:00 Auth</text>
+  <circle cx="640" cy="100" r="6" fill="var(--danger)"/>
+  <text x="640" y="125" text-anchor="middle" class="svg-label-dim" font-size="10.5">14:00 Compromised</text>
+  <circle cx="655" cy="100" r="6" fill="var(--success)"/>
+  <text x="700" y="143" text-anchor="middle" class="svg-label-dim" font-size="10.5">14:01 Revoked</text>
+  <rect x="640" y="150" width="40" height="34" rx="6" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="660" y="172" text-anchor="middle" class="svg-label-dim" font-size="9">~1 min</text>
+  <text x="470" y="220" class="svg-label-dim" font-size="11.5">Session revoked near-instantly</text>
+  <text x="470" y="238" class="svg-label-dim" font-size="11.5">when a high-risk event fires.</text>
+</svg>
+        </div>
+        <div class="diagram-caption">Same compromise event, two very different exposure windows — six hours of standing access versus roughly one minute.</div>
+      </div>
+
+      <div class="callout callout-security">
+        <div class="callout-head">🛡️ Impossible Travel: Real Signal, Real False Positives</div>
+        <div class="callout-body">
+          If a user authenticates from London at 9am and an authentication request then arrives
+          from Tokyo at 9:30am, that's physically impossible — a strong signal of credential
+          compromise. Adaptive authentication should detect this and trigger immediate step-up or
+          a block. But "impossible travel" carries a real false-positive risk: VPN endpoints, split
+          tunnels, and corporate proxies routinely create geolocation artifacts that look like
+          impossible travel but aren't. Tune thresholds against your actual user population's
+          travel patterns and VPN topology before enabling hard blocks on impossible travel —
+          otherwise you'll generate helpdesk tickets faster than you catch attackers.
+        </div>
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-head">🧪 LAB 5.5</div>
+        <p>
+          In PingID or your adaptive auth platform, find the risk policy configuration. What
+          signals are actually being evaluated? What are the score thresholds for step-up versus
+          block? Test it: sign in from a browser with a different geolocation indicator (VPN to a
+          different country). Does the risk score change? Is a step-up triggered? If not, ask why
+          not — and whether that's a configuration gap or an intentional risk acceptance.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5.6 — SCIM 2.0 -->
+    <!-- ============================================================ -->
+    <section class="section" id="s5-6" data-stack-layers="iga,directory,applications">
+      <div class="section-kicker">5.6 · Provisioning</div>
+      <h2>SCIM 2.0 — Provisioning Architecture</h2>
+
+      <p>
+        <strong>SCIM</strong> — System for Cross-domain Identity Management — is a REST API
+        standard for identity provisioning. Before SCIM existed, every application had its own
+        proprietary mechanism for getting users into it: a CSV import, an LDAP sync job, a SOAP
+        API, a custom REST endpoint nobody else used. Each integration was bespoke, which meant
+        every new application onboarded to an enterprise IAM program was its own multi-week
+        integration project. SCIM standardizes the basic operations every provisioning workflow
+        needs — create a user, update a user, deactivate a user, sync group membership — behind one
+        predictable REST interface that any SCIM-compliant IGA platform can call against any
+        SCIM-compliant target application.
+      </p>
+
+      <h3>Resources, operations, and where SCIM fits</h3>
+      <p>
+        SCIM 2.0 defines two core resource types: <strong>Users</strong> and <strong>Groups</strong>.
+        Each carries a core schema (name, emails, phone numbers, active status) plus an
+        <strong>enterprise extension</strong> schema for attributes that matter to corporate
+        directories specifically — employee number, organization, division, department, manager —
+        and most implementations layer a further custom extension on top for company-specific
+        attributes that don't fit either standard schema. The protocol exposes these resources
+        through standard REST semantics: <code>GET</code> to read, <code>POST</code> to create,
+        <code>PUT</code> to fully replace, <code>PATCH</code> to partially update, and
+        <code>DELETE</code> to remove — though in practice, most enterprise deployments
+        soft-delete via a <code>PATCH</code> setting <code>active: false</code> rather than a hard
+        <code>DELETE</code>, preserving the audit trail.
+      </p>
+
+      <p>
+        SCIM is the mechanism that connects the JML (Joiner-Mover-Leaver) lifecycle you covered
+        conceptually in Module 01 to an actual provisioning action against a real system. When
+        Saviynt processes a joiner event, it doesn't manipulate the target application directly
+        through whatever interface that application happens to expose — it calls a standard SCIM
+        <code>POST /Users</code> endpoint, and the target application (or an adapter in front of
+        it) handles translating that into whatever its native user store requires. PingDirectory
+        can itself act as a SCIM server, exposing its LDAP-backed identity store through a SCIM
+        REST interface so that IGA platforms never need to speak raw LDAP.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 12 · SCIM Provisioning Architecture</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="120" width="150" height="60" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="95" y="145" text-anchor="middle" class="svg-label-dim" font-size="11.5">HR System</text>
+  <text x="95" y="163" text-anchor="middle" class="svg-label-dim" font-size="11">(Workday)</text>
+
+  <line x1="170" y1="150" x2="225" y2="150" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowS)"/>
+  <text x="175" y="140" class="svg-label-sm">hire event</text>
+
+  <rect x="225" y="120" width="150" height="60" rx="8" fill="var(--surface-3)" stroke="var(--accent-primary)"/>
+  <text x="300" y="145" text-anchor="middle" class="svg-label" font-size="11.5" font-weight="600">Saviynt (IGA)</text>
+  <text x="300" y="163" text-anchor="middle" class="svg-label-dim" font-size="10.5">JML event processing</text>
+
+  <line x1="375" y1="150" x2="430" y2="150" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowS)"/>
+  <text x="378" y="140" class="svg-label-sm">SCIM POST /Users</text>
+
+  <line x1="450" y1="60" x2="450" y2="270" stroke="var(--border-soft)" stroke-width="1.5" stroke-dasharray="3,4"/>
+
+  <rect x="470" y="20" width="220" height="44" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="580" y="46" text-anchor="middle" class="svg-label-dim" font-size="11.5">PingDirectory (primary store)</text>
+
+  <rect x="470" y="80" width="220" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="580" y="106" text-anchor="middle" class="svg-label-dim" font-size="11.5">Salesforce (SaaS app)</text>
+
+  <rect x="470" y="140" width="220" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="580" y="166" text-anchor="middle" class="svg-label-dim" font-size="11.5">GitHub (developer tools)</text>
+
+  <rect x="470" y="200" width="220" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="580" y="226" text-anchor="middle" class="svg-label-dim" font-size="11.5">AWS IAM Identity Center</text>
+
+  <line x1="430" y1="42" x2="465" y2="42" stroke="var(--accent-primary)" stroke-width="1.4" marker-end="url(#arrowS)"/>
+  <line x1="430" y1="102" x2="465" y2="102" stroke="var(--accent-primary)" stroke-width="1.4" marker-end="url(#arrowS)"/>
+  <line x1="430" y1="162" x2="465" y2="162" stroke="var(--accent-primary)" stroke-width="1.4" marker-end="url(#arrowS)"/>
+  <line x1="430" y1="222" x2="465" y2="222" stroke="var(--accent-primary)" stroke-width="1.4" marker-end="url(#arrowS)"/>
+
+  <rect x="20" y="260" width="670" height="44" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="40" y="286" class="svg-label-dim" font-size="11">Each arrow: a SCIM operation (POST / PATCH / DELETE), bearer-token authenticated over TLS, carrying the SCIM User JSON payload.</text>
+
+  <defs><marker id="arrowS" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--accent-primary)"/></marker></defs>
+</svg>
+        </div>
+        <div class="diagram-caption">One JML event from the HR system fans out through Saviynt to every downstream target system via the same standardized SCIM operations.</div>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 13 · SCIM User Resource Schema</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 860 280" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="20" width="380" height="240" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="210" y="48" text-anchor="middle" class="svg-label" font-weight="700">Core SCIM Attributes</text>
+  <text x="45" y="78" class="svg-label-dim" font-size="12.5" font-family="monospace">id</text>
+  <text x="45" y="100" class="svg-label-dim" font-size="12.5" font-family="monospace">userName</text>
+  <text x="45" y="122" class="svg-label-dim" font-size="12.5" font-family="monospace">name { givenName, familyName }</text>
+  <text x="45" y="144" class="svg-label-dim" font-size="12.5" font-family="monospace">emails [ { value, type } ]</text>
+  <text x="45" y="166" class="svg-label-dim" font-size="12.5" font-family="monospace">phoneNumbers [ ... ]</text>
+  <text x="45" y="188" class="svg-label-dim" font-size="12.5" font-family="monospace">active: true | false</text>
+  <text x="45" y="222" class="svg-label-sm" font-style="italic">Maps directly to PingDirectory LDAP</text>
+  <text x="45" y="238" class="svg-label-sm" font-style="italic">attributes: cn, mail, telephoneNumber...</text>
+
+  <rect x="450" y="20" width="390" height="240" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="645" y="48" text-anchor="middle" class="svg-label" font-weight="700">Enterprise Extension</text>
+  <text x="475" y="78" class="svg-label-dim" font-size="12.5" font-family="monospace">employeeNumber</text>
+  <text x="475" y="100" class="svg-label-dim" font-size="12.5" font-family="monospace">organization</text>
+  <text x="475" y="122" class="svg-label-dim" font-size="12.5" font-family="monospace">division</text>
+  <text x="475" y="144" class="svg-label-dim" font-size="12.5" font-family="monospace">department</text>
+  <text x="475" y="166" class="svg-label-dim" font-size="12.5" font-family="monospace">manager { value, $ref }</text>
+  <text x="475" y="198" class="svg-label-dim" font-size="11.5" font-weight="600">+ Custom enterprise extension:</text>
+  <text x="475" y="218" class="svg-label-dim" font-size="11.5" font-family="monospace">costCenter, clearanceLevel, ...</text>
+  <text x="475" y="240" class="svg-label-sm" font-style="italic">(company-specific, namespaced URN)</text>
+</svg>
+        </div>
+        <div class="diagram-caption">Core schema covers the universal identity attributes; the enterprise and custom extensions carry the organization-specific data your IGA platform actually needs to reconcile.</div>
+      </div>
+
+      <h3>Provisioning patterns and security</h3>
+      <p>
+        SCIM provisioning is implemented in three common patterns. <strong>Push-based</strong>
+        provisioning has the IGA platform actively call SCIM endpoints whenever a change occurs —
+        this is what Saviynt does in the JML flow above. <strong>Pull-based</strong> provisioning
+        inverts that: the target system periodically polls the identity source for changes, useful
+        when a target system can't accept inbound connections. <strong>Event-driven</strong>
+        provisioning combines SCIM's resource model with a separate event notification channel
+        (webhooks, message queues) so that changes propagate near-instantly rather than waiting
+        for the next poll cycle. SCIM endpoints are secured with bearer token authentication over
+        TLS in essentially all enterprise deployments — an exposed, unauthenticated SCIM endpoint
+        is an unauthenticated user-creation API, which is exactly as dangerous as it sounds.
+      </p>
+
+      <div class="callout callout-concept">
+        <div class="callout-head">💡 SCIM Is Provisioning, Not Authentication</div>
+        <div class="callout-body">
+          SCIM is a provisioning protocol, not an authentication protocol — and that distinction
+          matters architecturally. SCIM creates and manages identity <em>records</em> (writes to
+          directories and application user stores). OAuth/OIDC/SAML <em>authenticates</em> those
+          identities — proves who is who at login time. A complete IAM architecture needs both:
+          SCIM for lifecycle management, OAuth/OIDC/SAML for authentication. Confusing the two
+          layers leads to architectures that can authenticate users who were never properly
+          provisioned, or that provision users into a target system who then can't actually
+          authenticate because the federation side was never configured. They're complementary
+          halves of the same identity lifecycle, not substitutes for each other.
+        </div>
+      </div>
+
+      <div class="analogy-box green">
+        <div class="analogy-head">🔗 Connecting to what you know</div>
+        <p>
+          SCIM is the REST API equivalent of the LDAP provisioning scripts you've probably written
+          more than once. Instead of LDAP Add/Modify operations to create a user directly in
+          PingDirectory, SCIM gives you a standardized HTTP <code>POST /Users</code> endpoint with
+          a defined JSON schema. It's the same underlying operation — create a user, set
+          attributes, assign group membership — but delivered through a standard protocol that any
+          OIDC-aware IGA platform can call without a custom integration. Your Java API development
+          background means SCIM should feel immediately comfortable: it's just a REST API with a
+          well-defined resource model, applied to identity instead of business data.
+        </p>
+      </div>
+
+      <div class="deepdive">
+        <strong>🟣 Deep dive:</strong> What is SCIM filtering, and how do IGA systems use it to
+        reconcile their identity records against a target system without doing a full export every
+        time? SCIM defines a query language for the <code>GET /Users</code> endpoint —
+        <code>filter=userName eq "jdoe"</code> or <code>filter=meta.lastModified gt "2026-06-01T00:00:00Z"</code>
+        — that lets a calling system request only the records it actually needs rather than
+        pulling the entire user population on every reconciliation cycle. An IGA platform doing
+        nightly reconciliation against a SaaS application with 50,000 users doesn't want to
+        download all 50,000 records to find the dozen that changed; it filters on a
+        <code>lastModified</code> timestamp and pulls only the delta, which is both faster and
+        dramatically less load on the target system's API.
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-head">🧪 LAB 5.6</div>
+        <p>
+          Find the SCIM configuration in your Saviynt deployment. What target systems does it
+          provision via SCIM? What bearer token is used for SCIM authentication, and how is it
+          rotated? What SCIM operations does Saviynt use for the Joiner flow
+          (<code>POST /Users</code>) versus the Leaver flow
+          (<code>PATCH /Users</code> with <code>active: false</code>)? Trace one real joiner event
+          through Saviynt's logs all the way to the resulting SCIM call against PingDirectory.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5.7 — ENTERPRISE PASSWORDLESS ROLLOUT -->
+    <!-- ============================================================ -->
+    <section class="section" id="s5-7" data-stack-layers="sso,applications,iga,directory">
+      <div class="section-kicker">5.7 · Program Architecture</div>
+      <h2>Enterprise Passwordless Rollout Architecture</h2>
+
+      <p>
+        Everything in this module so far has covered individual technologies. This section covers
+        the much harder problem: what does it actually take to roll FIDO2/passwordless
+        authentication out across a 40,000-person enterprise, with 180 applications of wildly
+        varying age, 3,000 shared call-center workstations, and a board that just heard the phrase
+        "passwordless" in a vendor pitch and wants it done by end of year? The honest architectural
+        answer is that "going passwordless" is a phased program, not a single project, and most
+        enterprises stabilize somewhere in the middle of that phasing rather than completing it.
+      </p>
+
+      <h3>The three-phase reality</h3>
+      <ul>
+        <li><strong>Phase 1 — Password + phishing-resistant MFA.</strong> The password still
+        exists and is still the first factor presented to the user, but a FIDO2 hardware key or
+        platform authenticator is layered on top as a required second factor. This is the easiest
+        phase to reach and delivers most of the phishing-resistance benefit immediately.</li>
+        <li><strong>Phase 2 — Password hidden from the user.</strong> The user's day-to-day
+        experience is passwordless — FIDO2 is the only factor they interact with — but a password
+        still exists in the directory as a fallback/recovery mechanism, invisible in normal use.
+        This is where most mature enterprise programs land as a stable end state.</li>
+        <li><strong>Phase 3 — Password eliminated.</strong> True passwordless: the password
+        attribute itself is removed or permanently randomized in the directory, and FIDO2 or a
+        hardware-backed certificate is the only authentication mechanism that can possibly work.
+        Few enterprises reach this for their full population.</li>
+      </ul>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 14 · Passwordless Rollout Phases</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 880 260" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="30" width="260" height="200" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="150" y="58" text-anchor="middle" class="svg-label" font-weight="700">Phase 1</text>
+  <text x="150" y="76" text-anchor="middle" class="svg-label-dim" font-size="11">Password + FIDO2 MFA</text>
+  <text x="40" y="105" class="svg-label-dim" font-size="11">User sees: password, then key tap</text>
+  <text x="40" y="125" class="svg-label-dim" font-size="11">Changed: 2nd factor is phishing-resistant</text>
+  <text x="40" y="145" class="svg-label-dim" font-size="11">Unchanged: password still primary</text>
+  <text x="40" y="170" class="svg-label-dim" font-size="11" font-weight="600">Remaining risk:</text>
+  <text x="40" y="190" class="svg-label-dim" font-size="11">password still phishable alone</text>
+  <text x="40" y="208" class="svg-label-dim" font-size="11">(but useless without 2nd factor)</text>
+
+  <line x1="280" y1="130" x2="320" y2="130" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowP)"/>
+
+  <rect x="320" y="30" width="260" height="200" rx="10" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="450" y="58" text-anchor="middle" class="svg-label" font-weight="700">Phase 2</text>
+  <text x="450" y="76" text-anchor="middle" class="svg-label-dim" font-size="11">Password hidden</text>
+  <text x="340" y="105" class="svg-label-dim" font-size="11">User sees: just the key/biometric</text>
+  <text x="340" y="125" class="svg-label-dim" font-size="11">Changed: daily experience is passwordless</text>
+  <text x="340" y="145" class="svg-label-dim" font-size="11">Unchanged: password exists as fallback</text>
+  <text x="340" y="170" class="svg-label-dim" font-size="11" font-weight="600">Remaining risk:</text>
+  <text x="340" y="190" class="svg-label-dim" font-size="11">fallback path is still a password —</text>
+  <text x="340" y="208" class="svg-label-dim" font-size="11">helpdesk reset flows must be hardened</text>
+
+  <line x1="580" y1="130" x2="620" y2="130" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowP)"/>
+
+  <rect x="620" y="30" width="240" height="200" rx="10" fill="var(--success-dim)" stroke="var(--success)" stroke-width="1.5"/>
+  <text x="740" y="58" text-anchor="middle" class="svg-label" font-weight="700">Phase 3</text>
+  <text x="740" y="76" text-anchor="middle" class="svg-label-dim" font-size="11">Password eliminated</text>
+  <text x="640" y="105" class="svg-label-dim" font-size="11">User sees: key/biometric, period</text>
+  <text x="640" y="125" class="svg-label-dim" font-size="11">Changed: no password attribute exists</text>
+  <text x="640" y="145" class="svg-label-dim" font-size="11">Unchanged: break-glass still needed</text>
+  <text x="640" y="170" class="svg-label-dim" font-size="11" font-weight="600">Remaining risk:</text>
+  <text x="640" y="190" class="svg-label-dim" font-size="11">break-glass procedure becomes the</text>
+  <text x="640" y="208" class="svg-label-dim" font-size="11">single highest-value target</text>
+
+  <defs><marker id="arrowP" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--accent-primary)"/></marker></defs>
+</svg>
+        </div>
+        <div class="diagram-caption">Each phase removes risk without removing it entirely — the residual risk just moves to a different part of the architecture, most often the recovery path.</div>
+      </div>
+
+      <h3>Why most enterprises stall at Phase 1–2</h3>
+      <p>
+        Three blockers show up in nearly every enterprise passwordless program, regardless of
+        industry: <strong>legacy applications</strong> that only support password authentication
+        and can't be modified without a code change or a fronting proxy; <strong>shared
+        workstations</strong> in call centers and similar environments where device-bound FIDO2
+        doesn't map cleanly onto a "many users, one machine" usage pattern; and
+        <strong>break-glass procedures</strong> for emergency access that, almost by necessity,
+        fall back to some form of password or recovery code — meaning a true Phase 3 environment
+        still has exactly one password-shaped attack surface left, just a much smaller one.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 15 · User Population Segmentation Matrix</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg">
+  <text x="40" y="30" class="svg-label-dim" font-size="11" font-weight="600">Risk level ↓ / Work context →</text>
+  <text x="220" y="30" text-anchor="middle" class="svg-label-dim" font-size="11" font-weight="600">Office / Laptop</text>
+  <text x="460" y="30" text-anchor="middle" class="svg-label-dim" font-size="11" font-weight="600">Mobile</text>
+  <text x="700" y="30" text-anchor="middle" class="svg-label-dim" font-size="11" font-weight="600">Shared Terminal</text>
+
+  <text x="40" y="100" class="svg-label-dim" font-size="11" font-weight="600">Standard</text>
+  <rect x="120" y="65" width="200" height="65" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="220" y="92" text-anchor="middle" class="svg-label-dim" font-size="10.5">Platform authenticator</text>
+  <text x="220" y="108" text-anchor="middle" class="svg-label-dim" font-size="10.5">(Windows Hello/TouchID)</text>
+  <rect x="360" y="65" width="200" height="65" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="460" y="92" text-anchor="middle" class="svg-label-dim" font-size="10.5">Synced passkey, MDM-managed</text>
+  <text x="460" y="108" text-anchor="middle" class="svg-label-dim" font-size="10.5">where device is enrolled</text>
+  <rect x="600" y="65" width="200" height="65" rx="8" fill="var(--warning-dim)" stroke="var(--warning)"/>
+  <text x="700" y="92" text-anchor="middle" class="svg-label-dim" font-size="10.5">In progress —</text>
+  <text x="700" y="108" text-anchor="middle" class="svg-label-dim" font-size="10.5">badge-tap or session-broker pilot</text>
+
+  <text x="40" y="190" class="svg-label-dim" font-size="11" font-weight="600">Elevated</text>
+  <rect x="120" y="155" width="200" height="65" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="220" y="182" text-anchor="middle" class="svg-label-dim" font-size="10.5">Hardware FIDO2 key</text>
+  <text x="220" y="198" text-anchor="middle" class="svg-label-dim" font-size="10.5">required, not optional</text>
+  <rect x="360" y="155" width="200" height="65" rx="8" fill="var(--warning-dim)" stroke="var(--warning)"/>
+  <text x="460" y="182" text-anchor="middle" class="svg-label-dim" font-size="10.5">Managed passkey only —</text>
+  <text x="460" y="198" text-anchor="middle" class="svg-label-dim" font-size="10.5">personal cloud sync blocked</text>
+  <rect x="600" y="155" width="200" height="65" rx="8" fill="var(--danger-dim)" stroke="var(--danger)"/>
+  <text x="700" y="182" text-anchor="middle" class="svg-label-dim" font-size="10.5">Requires additional work —</text>
+  <text x="700" y="198" text-anchor="middle" class="svg-label-dim" font-size="10.5">not yet a supported pattern</text>
+
+  <text x="40" y="280" class="svg-label-dim" font-size="11" font-weight="600">Privileged</text>
+  <rect x="120" y="245" width="200" height="65" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="220" y="272" text-anchor="middle" class="svg-label-dim" font-size="10.5">Hardware FIDO2, attestation</text>
+  <text x="220" y="288" text-anchor="middle" class="svg-label-dim" font-size="10.5">verified, IT-issued only</text>
+  <rect x="360" y="245" width="200" height="65" rx="8" fill="var(--danger-dim)" stroke="var(--danger)"/>
+  <text x="460" y="272" text-anchor="middle" class="svg-label-dim" font-size="10.5">Generally disallowed —</text>
+  <text x="460" y="288" text-anchor="middle" class="svg-label-dim" font-size="10.5">privileged access not mobile-first</text>
+  <rect x="600" y="245" width="200" height="65" rx="8" fill="var(--danger-dim)" stroke="var(--danger)"/>
+  <text x="700" y="272" text-anchor="middle" class="svg-label-dim" font-size="10.5">Not applicable —</text>
+  <text x="700" y="288" text-anchor="middle" class="svg-label-dim" font-size="10.5">privileged access ≠ shared terminal</text>
+</svg>
+        </div>
+        <div class="diagram-caption">The same technology — FIDO2 — gets a different deployment answer in every cell, because risk level and work context change what "good" looks like.</div>
+      </div>
+
+      <p>
+        Where a legacy application genuinely cannot be modified to support FIDO2/OIDC directly, the
+        <strong>credential broker / reverse proxy pattern</strong> provides a transitional bridge:
+        the user authenticates passwordlessly against PingFederate, and a broker component
+        exchanges that token for an application-specific password credential that gets injected
+        into the legacy app's native login flow — invisibly, from the user's perspective. The user
+        experience is passwordless even though the legacy application, unmodified, still thinks
+        it's receiving a username and password.
+      </p>
+
+      <h3>Helpdesk impact and rollout sequencing</h3>
+      <p>
+        A passwordless rollout changes the helpdesk's job more than almost any other part of the
+        organization, and that change is frequently under-planned. When the password was the
+        authentication mechanism, "I forgot my password" was the dominant ticket type and the
+        resolution was simple and low-risk: verify identity, reset, done. Once a hardware key or
+        platform authenticator <em>is</em> the authentication mechanism, "I lost my key" or "I got
+        a new phone and lost my passkey" becomes the dominant ticket type — and the resolution is
+        no longer low-risk, because re-issuing access without a strong factor in hand is exactly
+        the social-engineering target described in Section 5.2. Helpdesk staff need new tooling
+        (the ability to view enrolled factors and revoke/re-enroll them, not just reset a
+        password), new training (recognizing pretexting attempts aimed at exactly this flow), and
+        a clear escalation path for privileged accounts that shouldn't be resettable by a
+        first-tier agent at all. Budgeting for this operational shift is as much a part of the
+        program's architecture as the FIDO2 deployment itself.
+      </p>
+      <p>
+        Sequencing matters as much as the technology choice. The instinct to start with the
+        easiest population — knowledge workers on managed laptops — is usually right, but it
+        should be sequenced specifically to build operational muscle before tackling harder
+        populations: enrollment workflows, helpdesk procedures, and break-glass processes should
+        all be proven against a forgiving population of a few thousand users before they're
+        relied upon for a call center population of shared workstations or a privileged-access
+        population where a process gap is a genuinely dangerous outcome rather than an inconvenience.
+        Privileged and high-risk accounts are the exception to "start easy" — they carry enough
+        risk that they often justify going first even though they're operationally harder, simply
+        because the cost of leaving them on password-based MFA the longest is the highest. Success
+        metrics should track more than enrollment percentage: phishing simulation click-through
+        rates, MFA fatigue-style approval anomalies, and helpdesk reset volume are all better
+        signals of real risk reduction than a simple "percentage of users enrolled" dashboard,
+        which can look complete while leaving the riskiest populations and the weakest recovery
+        paths essentially untouched.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 16 · Legacy App Passwordless Architecture (Credential Broker)</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 880 220" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="70" width="140" height="60" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/>
+  <text x="90" y="105" text-anchor="middle" class="svg-label-dim" font-size="11.5">User</text>
+
+  <line x1="160" y1="100" x2="225" y2="100" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowB)"/>
+  <text x="165" y="90" class="svg-label-sm">FIDO2 / OIDC</text>
+
+  <rect x="225" y="70" width="170" height="60" rx="8" fill="var(--success-dim)" stroke="var(--success)"/>
+  <text x="310" y="95" text-anchor="middle" class="svg-label-dim" font-size="11.5">PingFederate</text>
+  <text x="310" y="113" text-anchor="middle" class="svg-label-dim" font-size="10.5">issues OIDC token</text>
+
+  <line x1="395" y1="100" x2="460" y2="100" stroke="var(--accent-primary)" stroke-width="1.6" marker-end="url(#arrowB)"/>
+  <text x="398" y="90" class="svg-label-sm">token</text>
+
+  <rect x="460" y="70" width="190" height="60" rx="8" fill="var(--surface-3)" stroke="var(--accent-primary)"/>
+  <text x="555" y="92" text-anchor="middle" class="svg-label" font-size="11.5" font-weight="600">Credential Broker</text>
+  <text x="555" y="110" text-anchor="middle" class="svg-label-dim" font-size="10">exchanges token for stored</text>
+  <text x="555" y="122" text-anchor="middle" class="svg-label-dim" font-size="10">app-specific password</text>
+
+  <line x1="650" y1="100" x2="715" y2="100" stroke="var(--warning)" stroke-width="1.6" marker-end="url(#arrowB)"/>
+  <text x="653" y="90" class="svg-label-sm">username+password</text>
+  <text x="653" y="142" class="svg-label-sm" font-style="italic">(injected, never shown to user)</text>
+
+  <rect x="715" y="70" width="145" height="60" rx="8" fill="var(--warning-dim)" stroke="var(--warning)"/>
+  <text x="787" y="95" text-anchor="middle" class="svg-label-dim" font-size="11.5">Legacy App</text>
+  <text x="787" y="113" text-anchor="middle" class="svg-label-dim" font-size="10">unmodified</text>
+
+  <text x="20" y="180" class="svg-label-dim" font-size="11.5">User experience: passwordless end to end. Legacy app: receives exactly what it always expected.</text>
+  <text x="20" y="200" class="svg-label-sm" font-style="italic">This is a transitional bridge pattern, not a target-state architecture — the password still exists, just hidden behind the broker.</text>
+
+  <defs><marker id="arrowB" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--accent-primary)"/></marker></defs>
+</svg>
+        </div>
+        <div class="diagram-caption">A pragmatic bridge for apps you can't modify — but be clear with stakeholders that this masks the password rather than eliminating it.</div>
+      </div>
+
+      <div class="callout callout-cost">
+        <div class="callout-head">💰 The "100% Passwordless in 6 Months" Promise</div>
+        <div class="callout-body">
+          Be cautious of this promise — most enterprises that attempt rapid passwordless deployment
+          hit the same three blockers: legacy applications that require password auth and need
+          either code changes or proxy patterns, shared workstations where FIDO2 device-binding
+          doesn't fit the use case, and break-glass procedures that inevitably fall back to a
+          password. A realistic enterprise passwordless program takes <strong>2–4 years</strong> to
+          reach Phase 3 for the majority of its user population — and most enterprises
+          realistically target <strong>Phase 2</strong> as a stable, acceptable end state rather
+          than chasing full elimination everywhere.
+        </div>
+      </div>
+
+      <div class="usecase-box">
+        <div class="usecase-head">📐 Use case</div>
+        <p>
+          Your company has committed to "passwordless by end of year." You have 35,000 employees,
+          180 applications (40 of which are legacy on-prem apps that only support LDAP password
+          auth), 3,000 shared workstations in call centers, and 500 privileged admin accounts.
+          Design the realistic 12-month architecture: what you'll actually achieve, what you won't,
+          and what you'll tell leadership about the timeline for the remaining 20%.
+        </p>
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-head">🧪 LAB 5.7</div>
+        <p>
+          Audit your current authentication inventory: how many applications support FIDO2/WebAuthn
+          directly? How many support OIDC (which can carry a FIDO2 authentication result as an AMR
+          claim)? How many require legacy password authentication with no federation path at all?
+          That third number is your passwordless blockers list. Map it, prioritize it — the
+          applications with the most users and the highest risk profile are your first
+          modernization targets, not necessarily the easiest ones.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- WRAP-UP -->
+    <!-- ============================================================ -->
+    <section class="section" id="cheat-sheet">
+      <div class="section-kicker">📋 Wrap-Up</div>
+      <h2>Architecture Cheat Sheet</h2>
+      <div class="cheat-grid">
+        <div class="cheat-item"><span class="cheat-num">1</span><p>FIDO2 = phishing-resistant by cryptographic design — origin binding prevents a credential from being used on a phishing site, full stop.</p></div>
+        <div class="cheat-item"><span class="cheat-num">2</span><p>Passkeys = synced FIDO2 credentials. Hardware keys = device-bound FIDO2. Same cryptography, different security/custody profile.</p></div>
+        <div class="cheat-item"><span class="cheat-num">3</span><p>TOTP is not phishing-resistant — real-time OTP relay attacks against it are practical, not theoretical.</p></div>
+        <div class="cheat-item"><span class="cheat-num">4</span><p>Adaptive authentication = risk-score-gated step-up, not blanket MFA on every single login.</p></div>
+        <div class="cheat-item"><span class="cheat-num">5</span><p>SCIM = REST standard for identity provisioning, not authentication — don't confuse the two layers.</p></div>
+        <div class="cheat-item"><span class="cheat-num">6</span><p>The AMR claim is how the IdP tells the relying party which authentication methods were actually used.</p></div>
+        <div class="cheat-item"><span class="cheat-num">7</span><p>Continuous Access Evaluation = real-time session risk revocation, versus point-in-time auth that only checks once.</p></div>
+        <div class="cheat-item"><span class="cheat-num">8</span><p>Passwordless rollout is a realistic 2–4 year program, not a 6-month project — plan and communicate accordingly.</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="mindmap">
+      <div class="section-kicker">🧠 Wrap-Up</div>
+      <h2>Module 05 Concept Mind Map</h2>
+      <div class="diagram-box">
+        <div class="diagram-title">Diagram 17 · Module 05 Concept Mind Map</div>
+        <div class="diagram-body">
+<svg viewBox="0 0 860 600" xmlns="http://www.w3.org/2000/svg">
+  <rect x="335" y="268" width="190" height="64" rx="10" fill="var(--surface-3)" stroke="var(--accent-primary)" stroke-width="1.6"/>
+  <text x="430" y="296" text-anchor="middle" class="svg-label" font-weight="700">Module 05</text>
+  <text x="430" y="316" text-anchor="middle" class="svg-label-dim" font-size="11">Modern Authentication</text>
+
+  <line x1="430" y1="262" x2="430" y2="115" stroke="var(--border)" stroke-width="1.4"/>
+  <line x1="488" y1="280" x2="595" y2="180" stroke="var(--border)" stroke-width="1.4"/>
+  <line x1="513" y1="318" x2="635" y2="365" stroke="var(--border)" stroke-width="1.4"/>
+  <line x1="478" y1="332" x2="525" y2="475" stroke="var(--border)" stroke-width="1.4"/>
+  <line x1="382" y1="332" x2="335" y2="475" stroke="var(--border)" stroke-width="1.4"/>
+  <line x1="347" y1="318" x2="225" y2="365" stroke="var(--border)" stroke-width="1.4"/>
+  <line x1="372" y1="280" x2="265" y2="180" stroke="var(--border)" stroke-width="1.4"/>
+
+  <g><rect x="350" y="50" width="160" height="50" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/><text x="430" y="70" text-anchor="middle" class="svg-label-dim" font-size="11">5.1 Password</text><text x="430" y="86" text-anchor="middle" class="svg-label-dim" font-size="11">Problem</text></g>
+  <g><rect x="530" y="132" width="160" height="50" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/><text x="610" y="152" text-anchor="middle" class="svg-label-dim" font-size="11">5.2 MFA</text><text x="610" y="168" text-anchor="middle" class="svg-label-dim" font-size="11">Factors</text></g>
+  <g><rect x="574" y="326" width="160" height="50" rx="8" fill="var(--success-dim)" stroke="var(--success)"/><text x="654" y="346" text-anchor="middle" class="svg-label-dim" font-size="11">5.3 FIDO2 &amp;</text><text x="654" y="362" text-anchor="middle" class="svg-label-dim" font-size="11">WebAuthn</text></g>
+  <g><rect x="450" y="482" width="160" height="50" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/><text x="530" y="502" text-anchor="middle" class="svg-label-dim" font-size="11">5.4</text><text x="530" y="518" text-anchor="middle" class="svg-label-dim" font-size="11">Passkeys</text></g>
+  <g><rect x="250" y="482" width="160" height="50" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/><text x="330" y="502" text-anchor="middle" class="svg-label-dim" font-size="11">5.5 Adaptive</text><text x="330" y="518" text-anchor="middle" class="svg-label-dim" font-size="11">Auth</text></g>
+  <g><rect x="126" y="326" width="160" height="50" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/><text x="206" y="346" text-anchor="middle" class="svg-label-dim" font-size="11">5.6</text><text x="206" y="362" text-anchor="middle" class="svg-label-dim" font-size="11">SCIM 2.0</text></g>
+  <g><rect x="170" y="132" width="160" height="50" rx="8" fill="var(--surface-2)" stroke="var(--border-soft)"/><text x="250" y="152" text-anchor="middle" class="svg-label-dim" font-size="11">5.7 Passwordless</text><text x="250" y="168" text-anchor="middle" class="svg-label-dim" font-size="11">Rollout</text></g>
+
+  <text x="430" y="565" text-anchor="middle" class="svg-label-sm" font-style="italic">5.3 (FIDO2) is highlighted as the cryptographic core every other section in this module builds on or around.</text>
+</svg>
+        </div>
+        <div class="diagram-caption">The seven sections of Module 05, radiating out from the core authentication architecture problem — with FIDO2 as the structural center the others reference.</div>
+      </div>
+    </section>
+
+    <section class="section" id="knowledge-check">
+      <div class="section-kicker">✅ Wrap-Up</div>
+      <h2>Knowledge Check</h2>
+
+      <div class="qa-block">
+        <div class="qa-tag">Q1</div>
+        <p>Explain why a real-time phishing attack can steal TOTP codes but cannot steal FIDO2 credentials — using the cryptographic architecture of each.</p>
+      </div>
+      <div class="qa-block">
+        <div class="qa-tag">Q2</div>
+        <p>A user's PingID push notification is being bombarded by an attacker who has their password. What is this attack called, what are the architectural mitigations, and what is the ultimate architectural solution?</p>
+      </div>
+      <div class="qa-block">
+        <div class="qa-tag">Q3</div>
+        <p>Your CISO wants all users to use passkeys. The CISO of a regulated financial firm in the same conversation is skeptical. What architectural differences between synced passkeys and hardware security keys explain the financial firm's concern?</p>
+      </div>
+      <div class="qa-block">
+        <div class="qa-tag">Q4</div>
+        <p>A new application is being integrated into your PingFederate deployment. The app team says they need the user's email, department, and the MFA method used at login. How does SCIM, OIDC, and the AMR claim combine to deliver this?</p>
+      </div>
+      <div class="qa-block">
+        <div class="qa-tag">Q5</div>
+        <p>Design the break-glass authentication architecture for a company that has deployed hardware security keys as the primary authentication factor for all privileged accounts. What happens when a key is lost?</p>
+      </div>
+    </section>
+
+    <section class="section" id="architect-review">
+      <div class="section-kicker">🏗️ Wrap-Up</div>
+      <h2>Architect Review Questions</h2>
+
+      <div class="qa-block">
+        <div class="qa-tag">ARQ1</div>
+        <p>Your board has approved a "zero-password enterprise" initiative. You have 18 months, 45,000 users, and 200 applications of varying age and protocol support. Present your phased architecture and your definition of "done" for each phase.</p>
+      </div>
+      <div class="qa-block">
+        <div class="qa-tag">ARQ2</div>
+        <p>Compare the security and operational architecture of three MFA approaches for a high-security environment: TOTP, hardware FIDO2 keys, and platform authenticators (Windows Hello for Business). Recommend one and justify the trade-offs.</p>
+      </div>
+      <div class="qa-block">
+        <div class="qa-tag">ARQ3</div>
+        <p>Design the SCIM provisioning architecture for an enterprise IGA deployment where Saviynt is the orchestrator, PingDirectory is the primary user store, and 40 SaaS applications need to be kept in sync with the canonical identity in Saviynt. What are the failure modes and how do you handle sync conflicts?</p>
+      </div>
+    </section>
+
+    <section class="section" id="scenario">
+      <div class="section-kicker">📖 Wrap-Up</div>
+      <h2>Real-World Scenario</h2>
+
+      <div class="scenario-block">
+        <div class="scenario-header"><h3>"The Phishing-Resistant Enterprise"</h3></div>
+
+        <div class="scenario-stage">
+          <div class="scenario-stage-label">Situation</div>
+          <p>
+            A financial services firm with 22,000 employees suffered a targeted phishing campaign.
+            12 employee credentials were compromised after a convincing email led users to a
+            look-alike login page. MFA was already in place — push notification via the firm's MFA
+            platform — but 3 of the 12 compromised accounts were successfully accessed anyway.
+          </p>
+        </div>
+
+        <div class="scenario-stage">
+          <div class="scenario-stage-label">Root Cause Analysis</div>
+          <p>
+            Investigation showed two distinct attack paths against the 12 victims. Nine accounts
+            were stopped at the MFA layer — the attacker had the password but couldn't complete
+            the push challenge. The remaining three were compromised through <strong>MFA
+            fatigue</strong>: the attacker, holding valid passwords for those accounts, sent
+            repeated push notifications late at night until each user approved one out of
+            confusion or annoyance. None of the three step-up notifications included number
+            matching or contextual detail about the request.
+          </p>
+        </div>
+
+        <div class="scenario-stage">
+          <div class="scenario-stage-label">Architectural Remediation</div>
+          <ul>
+            <li>Enable number matching on all push-based MFA immediately — closes the specific
+            gap that allowed the three account compromises, with no user re-enrollment required.</li>
+            <li>Add geographic and application context to every push notification so a 2am
+            approval request from an unrecognized location is visibly suspicious to the user.</li>
+            <li>Begin a phased FIDO2 hardware key rollout for all privileged and finance-adjacent
+            accounts — the population with the highest blast radius if compromised — to remove
+            the push-notification attack surface for that population entirely.</li>
+            <li>Layer in adaptive authentication so that login attempts from unrecognized
+            devices or anomalous locations require step-up regardless of whether the push is
+            eventually approved, rather than relying on push approval as the sole gate.</li>
+          </ul>
+        </div>
+
+        <div class="scenario-stage">
+          <div class="scenario-stage-label">Phased Implementation</div>
+          <p>
+            <strong>Week 1:</strong> number matching and contextual push notifications enabled
+            firm-wide — a configuration change, not a deployment project.
+            <strong>Month 1–3:</strong> FIDO2 hardware key rollout to the 500-person
+            privileged/finance population, with attestation verification required given the
+            regulatory environment.
+            <strong>Month 3–9:</strong> adaptive authentication risk engine tuned against the
+            firm's actual travel and device patterns, then enabled in enforcing (not just
+            alerting) mode.
+            <strong>Month 9–18:</strong> FIDO2/passkey rollout extended to the general workforce,
+            targeting a stable Phase 2 (password hidden) end state rather than full elimination.
+          </p>
+        </div>
+
+        <div class="scenario-stage">
+          <div class="scenario-stage-label">Metrics for Success</div>
+          <ul>
+            <li>MFA fatigue-style approvals: tracked via "approved without number match
+            entry" events — target: zero after week 1.</li>
+            <li>Percentage of privileged accounts on hardware FIDO2 keys — target: 100% by
+            month 3.</li>
+            <li>Adaptive authentication step-up trigger rate vs. false-positive helpdesk
+            ticket rate — tuned iteratively rather than set once.</li>
+            <li>Phishing simulation click-through-to-compromise rate — the metric that actually
+            matters, tracked quarterly against the pre-incident baseline.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="bridge">
+      <div class="section-kicker">🌉 Wrap-Up</div>
+      <h2>Bridge to Module 06</h2>
+
+      <div class="bridge-card">
+        <div class="bridge-left">
+          <div class="bridge-tag">✅ What you built · 🔥 Atlas Ember · Module 05</div>
+          <h4>The authentication layer — from passwords to phishing-resistant</h4>
+          <p>
+            You now have the architectural depth underneath Module 04's PingID adaptive MFA
+            coverage: the FIDO2/WebAuthn protocol itself, the real difference between hardware
+            keys and synced passkeys, how adaptive risk engines make step-up decisions, how SCIM
+            connects the JML lifecycle to real provisioning actions, and what an honest, phased
+            enterprise passwordless rollout actually looks like over a multi-year timeline.
+          </p>
+        </div>
+        <div class="bridge-right">
+          <div class="bridge-tag">⏭️ Up next · ⚡ Atlas Circuit · Module 06</div>
+          <h4>Authentication goes below the web</h4>
+          <p>
+            Phase 2 covered the web authentication stack — OAuth, OIDC, SAML, FIDO2 — all designed
+            for browser-based and API-based access. Module 06 drops below the web layer into
+            network and infrastructure authentication: RADIUS, TACACS+, 802.1X, EAP, NAC. The VPN
+            your users connected to before they ever saw PingFederate's login page? That's the
+            layer we're going to next. The protocols are different, the failure modes are
+            different — but the identity principles are exactly the same. ⚡
+          </p>
+          <a href="#" class="bridge-cta">Continue to Module 06: Network Authentication → ⚡</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="module-footer">
+      IAM Architect Atlas · Module 05 of 16 · 🔥 Atlas Ember · Modern Authentication: MFA, Passwordless, FIDO2 &amp; WebAuthn
+    </footer>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  // Progress bar + scroll percentage
+  var fill = document.getElementById('progressFill');
+  var pct = document.getElementById('scrollPct');
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrollTop = h.scrollTop || document.body.scrollTop;
+    var scrollHeight = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+    var p = scrollHeight > 0 ? Math.min(100, Math.max(0, (scrollTop/scrollHeight)*100)) : 0;
+    fill.style.width = p + '%';
+    pct.textContent = Math.round(p) + '%';
+  }
+  document.addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  // Scrollspy: active nav link + stack rail highlighting
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.section[id]'));
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
+  var railLayers = Array.prototype.slice.call(document.querySelectorAll('.rail-layer'));
+
+  function setActive(id){
+    navLinks.forEach(function(l){
+      l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+    });
+    var active = navLinks.filter(function(l){ return l.getAttribute('href') === '#' + id; })[0];
+    var layers = active && active.dataset.stack ? active.dataset.stack.split(',') : [];
+    railLayers.forEach(function(rl){
+      rl.classList.toggle('lit', layers.indexOf(rl.dataset.layer) !== -1);
+    });
+  }
+
+  var observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        setActive(entry.target.id);
+      }
+    });
+  }, {rootMargin:'-20% 0px -70% 0px', threshold:0});
+
+  sections.forEach(function(s){ observer.observe(s); });
+
+  // Light/dark theme toggle
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('themeToggle');
+  function currentTheme(){
+    return root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  }
+  function reflectThemeState(){
+    var isLight = currentTheme() === 'light';
+    themeBtn.setAttribute('aria-pressed', String(isLight));
+    themeBtn.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
+  }
+  reflectThemeState(); // head script already applied any saved theme before paint
+  themeBtn.addEventListener('click', function(){
+    var next = currentTheme() === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    try{ localStorage.setItem('atlas-theme', next); }
+    catch(e){ /* storage unavailable — toggle still works for this session */ }
+    reflectThemeState();
+  });
+})();
+</script>
+</body>
+</html>

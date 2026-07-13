@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 12 — Secrets Management & Cryptographic Identity | IAM Architect Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   IAM ARCHITECT ATLAS — MODULE 12 — DESIGN SYSTEM
+   Phase 5 · Atlas Core · Accent: #4FB286 (green)
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+:root {
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --text: #1A1D24;
+  --text-muted: #6B6F7A;
+  --border: #DEDAD1;
+  --radius: 12px;
+  --accent-blue: #5B8FF0;
+  --accent-amber: #E8A33D;
+  --accent-green: #4FB286;
+  --accent-violet: #7B6FE0;
+  --accent-red: #D9534F;
+  --accent-primary: #4FB286;
+  --shadow: 0 1px 2px rgba(26,29,36,0.04), 0 4px 16px rgba(26,29,36,0.04);
+  --font-display: 'Inter Tight', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+}
+
+html.dark {
+  --bg: #0B0E14;
+  --surface: #151A24;
+  --text: #E8E6E1;
+  --text-muted: #8A8F9C;
+  --border: #262B38;
+  --shadow: 0 1px 2px rgba(0,0,0,0.2), 0 4px 20px rgba(0,0,0,0.3);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+img, svg { max-width: 100%; }
+
+/* ---------- Typography ---------- */
+h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.5rem;
+  line-height: 1.15;
+  display: inline-block;
+  border-bottom: 3px solid var(--accent-primary);
+  padding-bottom: 0.4rem;
+  margin: 0 0 1.25rem 0;
+  letter-spacing: -0.01em;
+}
+h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+  margin: 0 0 1.25rem 0;
+  letter-spacing: -0.005em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.12rem;
+  margin: 1.8rem 0 0.75rem 0;
+}
+h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 1.4rem 0 0.6rem 0;
+}
+p { margin: 0 0 1rem 0; color: var(--text); }
+.text-muted { color: var(--text-muted); }
+a { color: var(--accent-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+ul, ol { padding-left: 1.4rem; margin: 0 0 1rem 0; }
+li { margin-bottom: 0.45rem; }
+strong { font-weight: 700; }
+code {
+  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--accent-green) 10%, var(--surface));
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.88em;
+  color: var(--text);
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-primary);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.9rem;
+}
+.module-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.4rem;
+  color: var(--accent-primary);
+  opacity: 0.3;
+  line-height: 1;
+}
+
+/* ---------- Layout shell ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+/* ---------- Progress bar ---------- */
+#progressBar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: 0%;
+  background: var(--accent-primary);
+  z-index: 200;
+  transition: width 0.08s linear;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 1.5rem 1.25rem 2rem;
+  scrollbar-width: thin;
+}
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-bottom: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.phase-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--accent-primary);
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+.sub-title {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1.1rem;
+  line-height: 1.4;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1.1rem;
+  font-family: var(--font-mono);
+}
+.back-link:hover { color: var(--accent-primary); text-decoration: none; }
+
+.search-wrap { margin-bottom: 1.3rem; }
+#moduleSearch {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  outline: none;
+}
+#moduleSearch:focus { border-color: var(--accent-primary); }
+
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 1.25rem 0 0.5rem 0;
+  font-weight: 600;
+}
+.nav-group { display: flex; flex-direction: column; gap: 0.1rem; }
+.nav-link {
+  font-size: 0.85rem;
+  color: var(--text);
+  padding: 0.42rem 0.55rem;
+  border-radius: 7px;
+  display: block;
+  line-height: 1.35;
+  border-left: 2px solid transparent;
+}
+.nav-link:hover { background: color-mix(in srgb, var(--accent-green) 8%, transparent); text-decoration: none; }
+.nav-link.active {
+  background: color-mix(in srgb, var(--accent-green) 14%, transparent);
+  border-left: 2px solid var(--accent-primary);
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+.nav-link.hidden { display: none; }
+
+.stack-rail {
+  margin-top: 1.6rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+}
+.stack-rail-label {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
+}
+.stack-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  padding: 0.32rem 0.5rem;
+  border-radius: 6px;
+  color: var(--text-muted);
+  opacity: 0.55;
+  transition: all 0.25s ease;
+}
+.stack-item.active {
+  opacity: 1;
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-green) 10%, transparent);
+  font-weight: 600;
+}
+
+/* ---------- Main content ---------- */
+.main-content { min-width: 0; }
+.topbar {
+  position: sticky;
+  top: 3px;
+  z-index: 100;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 3rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topbar-controls { display: flex; gap: 0.5rem; align-items: center; }
+.icon-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.icon-btn:hover { border-color: var(--accent-primary); }
+.mobile-toggle { display: none; }
+
+.content-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2.5rem 3rem 5rem;
+}
+
+/* ---------- Hero ---------- */
+.hero { margin-bottom: 2.5rem; }
+.hero .lede { font-size: 1.08rem; color: var(--text); max-width: 760px; }
+.where-am-i {
+  margin-top: 1.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  font-size: 0.86rem;
+}
+.where-am-i .wai-title { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.5rem; }
+.progress-track { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin-top: 0.6rem; border: 1px solid var(--border); }
+.progress-fill { height: 100%; background: var(--accent-primary); border-radius: 4px; }
+
+/* ---------- Module section dividers ---------- */
+.module { margin-top: 3.5rem; scroll-margin-top: 70px; }
+.module-divider { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem; }
+.module-divider h2 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; }
+
+/* ---------- Callouts ---------- */
+.callout {
+  border-left: 4px solid var(--c, var(--accent-blue));
+  background: color-mix(in srgb, var(--c, var(--accent-blue)) 8%, var(--surface));
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.3rem;
+  margin: 1.4rem 0;
+  font-size: 0.93rem;
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout-title { font-family: var(--font-mono); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; color: var(--c, var(--accent-blue)); }
+.callout-concept { --c: var(--accent-blue); }
+.callout-architect { --c: var(--accent-green); }
+.callout-security { --c: var(--accent-red); }
+.callout-cost { --c: var(--accent-amber); }
+
+/* ---------- Analogy boxes ---------- */
+.analogy {
+  border: 1px dashed var(--c, var(--accent-green));
+  border-radius: var(--radius);
+  padding: 1rem 1.3rem;
+  margin: 1.4rem 0;
+  background: color-mix(in srgb, var(--c, var(--accent-green)) 5%, var(--surface));
+  font-size: 0.93rem;
+}
+.analogy-title { font-family: var(--font-mono); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; color: var(--c, var(--accent-green)); display: flex; align-items: center; gap: 0.4rem; }
+.analogy-green { --c: var(--accent-green); }
+.analogy-violet { --c: var(--accent-violet); }
+
+/* ---------- Use case boxes ---------- */
+.usecase {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent-primary);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.4rem;
+  margin: 1.4rem 0;
+  box-shadow: var(--shadow);
+}
+.usecase-title { font-family: var(--font-mono); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.6rem; }
+
+/* ---------- Deep dives ---------- */
+details.deepdive {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1.4rem 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+details.deepdive summary {
+  cursor: pointer;
+  padding: 0.95rem 1.3rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--accent-violet);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+details.deepdive summary::-webkit-details-marker { display: none; }
+details.deepdive summary::after { content: '+'; font-size: 1.3rem; color: var(--text-muted); font-weight: 400; }
+details.deepdive[open] summary::after { content: '–'; }
+details.deepdive .deepdive-body { padding: 0 1.3rem 1.2rem; font-size: 0.92rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+
+/* ---------- Lab boxes ---------- */
+.lab {
+  background: color-mix(in srgb, var(--accent-green) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent-green) 35%, var(--border));
+  border-radius: var(--radius);
+  padding: 1.1rem 1.3rem;
+  margin: 1.6rem 0;
+  font-size: 0.9rem;
+}
+.lab-title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-green);
+  margin-bottom: 0.55rem;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.lab p { font-family: var(--font-mono); font-size: 0.84rem; line-height: 1.6; color: var(--text); margin: 0; }
+
+/* ---------- Diagram boxes ---------- */
+.diagram-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1.6rem 0;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+.diagram-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent-primary);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+.diagram-caption {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--border);
+  font-style: italic;
+}
+
+/* generic diagram-internal building blocks */
+.dflow { display: flex; flex-direction: column; gap: 0; }
+.dflow-row { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.dnode {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.65rem 0.95rem;
+  font-size: 0.83rem;
+  flex: 1;
+  min-width: 140px;
+}
+.dnode-accent { border-color: var(--accent-primary); background: color-mix(in srgb, var(--accent-green) 8%, var(--surface)); }
+.dnode-warn { border-color: var(--accent-amber); background: color-mix(in srgb, var(--accent-amber) 8%, var(--surface)); }
+.dnode-danger { border-color: var(--accent-red); background: color-mix(in srgb, var(--accent-red) 8%, var(--surface)); }
+.dnode-title { font-weight: 700; font-size: 0.82rem; margin-bottom: 0.2rem; }
+.dnode-sub { color: var(--text-muted); font-size: 0.76rem; }
+.darrow { text-align: center; color: var(--text-muted); font-size: 1.1rem; padding: 0.15rem 0; }
+.darrow-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); text-align: center; padding: 0.1rem; }
+.dcols { display: grid; gap: 1rem; }
+.dcols-2 { grid-template-columns: 1fr 1fr; }
+.dcols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.dcard { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+.dcard h5 { font-family: var(--font-display); font-size: 0.88rem; margin: 0 0 0.6rem 0; font-weight: 700; }
+.dcard ul { padding-left: 1.1rem; margin: 0; font-size: 0.82rem; }
+.dcard li { margin-bottom: 0.3rem; }
+.dpill { display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; padding: 0.15rem 0.55rem; border-radius: 99px; background: color-mix(in srgb, var(--accent-primary) 16%, transparent); color: var(--accent-primary); font-weight: 600; margin-bottom: 0.5rem; }
+
+/* ---------- Bridge band ---------- */
+.bridge-band { display: grid; grid-template-columns: 1fr 1fr; gap: 1.3rem; margin: 1.5rem 0 2.5rem; }
+.bridge-card { border-radius: var(--radius); padding: 1.4rem; }
+.bridge-card.prev { background: color-mix(in srgb, var(--accent-green) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent-green) 30%, var(--border)); }
+.bridge-card.next { background: color-mix(in srgb, var(--accent-green) 20%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent-green) 40%, var(--border)); }
+.bridge-label { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem; }
+.bridge-card h3 { margin-top: 0; }
+.bridge-cta { display: inline-block; margin-top: 1rem; background: var(--accent-primary); color: #fff; font-weight: 700; padding: 0.7rem 1.3rem; border-radius: 9px; font-size: 0.9rem; }
+.bridge-cta:hover { text-decoration: none; opacity: 0.9; }
+
+/* ---------- Cheat grid ---------- */
+.cheat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+.cheat-item { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-primary); border-radius: 0 10px 10px 0; padding: 0.9rem 1.1rem; font-size: 0.86rem; }
+.cheat-num { font-family: var(--font-mono); color: var(--accent-primary); font-weight: 700; margin-right: 0.4rem; }
+
+/* ---------- Knowledge check / Architect review ---------- */
+.qa-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem 1.4rem; margin: 1.2rem 0; }
+.qa-num { font-family: var(--font-mono); color: var(--accent-primary); font-weight: 700; font-size: 0.85rem; margin-bottom: 0.4rem; display: block; }
+
+/* ---------- Scenario ---------- */
+.scenario-stage { border-left: 3px solid var(--accent-primary); padding: 0.2rem 0 0.2rem 1rem; margin: 1.1rem 0; }
+.scenario-stage h4 { margin-top: 0; }
+
+/* ---------- Tables ---------- */
+table { width: 100%; border-collapse: collapse; margin: 1.2rem 0; font-size: 0.86rem; }
+th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
+th { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 150;
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 0 0 30px rgba(0,0,0,0.3); }
+  .mobile-toggle { display: flex; }
+  .topbar { padding: 0.7rem 1.2rem; }
+  .content-inner { padding: 1.8rem 1.2rem 4rem; }
+  .dcols-2, .dcols-3 { grid-template-columns: 1fr; }
+  .cheat-grid { grid-template-columns: 1fr; }
+  .bridge-band { grid-template-columns: 1fr; }
+  h1 { font-size: 1.9rem; }
+}
+@media (min-width: 375px) and (max-width: 900px) {
+  .dflow-row { flex-direction: column; align-items: stretch; }
+}
+
+.sidebar-overlay { display: none; }
+@media (max-width: 900px) {
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 140;
+  }
+  .sidebar-overlay.show { display: block; }
+}
+</style>
+</head>
+<body>
+
+<div id="progressBar"></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">🔐 IAM Architect Atlas</div>
+    <div class="phase-label">MODULE 12 · ATLAS CORE</div>
+    <div class="sub-title">Secrets Management &amp; Cryptographic Identity</div>
+    <a class="back-link" href="index.html">← Back to Index</a>
+    <div class="search-wrap">
+      <input type="text" id="moduleSearch" placeholder="🔍 Search this module...">
+    </div>
+
+    <div class="nav-group-label">Secrets &amp; Cryptographic Identity</div>
+    <div class="nav-group">
+      <a class="nav-link" href="#s12-1">12.1 Why Secrets Management Is Its Own Discipline</a>
+      <a class="nav-link" href="#s12-2">12.2 PKI Architecture — CAs &amp; Trust Chains</a>
+      <a class="nav-link" href="#s12-3">12.3 Certificate Lifecycle Management</a>
+      <a class="nav-link" href="#s12-4">12.4 Key Rotation Architecture</a>
+      <a class="nav-link" href="#s12-5">12.5 HSM Concepts</a>
+      <a class="nav-link" href="#s12-6">12.6 OCSP &amp; CRL — Revocation Architecture</a>
+      <a class="nav-link" href="#s12-7">12.7 HashiCorp Vault — Dynamic Secrets</a>
+      <a class="nav-link" href="#s12-8">12.8 CyberArk Conjur — Secrets for DevOps</a>
+      <a class="nav-link" href="#s12-9">12.9 Selection &amp; Integration Framework</a>
+    </div>
+
+    <div class="nav-group-label">Wrap-Up</div>
+    <div class="nav-group">
+      <a class="nav-link" href="#cheatsheet">📋 Architecture Cheat Sheet</a>
+      <a class="nav-link" href="#mindmap">🧠 Mind Map</a>
+      <a class="nav-link" href="#knowledge-check">✅ Knowledge Check</a>
+      <a class="nav-link" href="#architect-review">🏗️ Architect Review</a>
+      <a class="nav-link" href="#bridge">🌉 Bridge to Module 13</a>
+    </div>
+
+    <div class="stack-rail">
+      <div class="stack-rail-label">Identity Stack — Active Layers</div>
+      <div class="stack-item" data-layer="applications">👤 Applications &amp; Portals</div>
+      <div class="stack-item" data-layer="sso">🔐 SSO &amp; Federation</div>
+      <div class="stack-item" data-layer="tokens">🎫 Token &amp; Protocol Layer</div>
+      <div class="stack-item" data-layer="authz">⚖️ Authorization Engine</div>
+      <div class="stack-item" data-layer="iga">📋 IGA &amp; Lifecycle</div>
+      <div class="stack-item" data-layer="pam">🏦 PAM &amp; Privileged</div>
+      <div class="stack-item" data-layer="directory">📂 Directory &amp; Stores</div>
+      <div class="stack-item" data-layer="network">🌐 Network &amp; Infra Auth</div>
+      <div class="stack-item" data-layer="cloud">☁️ Cloud &amp; Machine</div>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content">
+    <div class="topbar">
+      <span>Module 12 of 16 · 🌍 Atlas Core · ~3 hr read</span>
+      <div class="topbar-controls">
+        <button class="icon-btn mobile-toggle" id="mobileToggle">☰</button>
+        <button class="icon-btn" id="themeToggle">🌙</button>
+      </div>
+    </div>
+
+    <div class="content-inner">
+
+<section class="hero">
+  <span class="eyebrow">🌍 Module 12 · Atlas Core · Phase 5 · ~3 hr read</span>
+  <h1>Secrets Management &amp; Cryptographic Identity: PKI, Certificates, HSMs &amp; Dynamic Secrets</h1>
+  <p class="lede">Every identity in this portal — human or machine — ultimately proves itself with something cryptographic. A JWT is signed with a private key (Module 03). A Kerberos ticket is encrypted with a key derived from a password (Module 02). An SSH certificate is signed by a CA (Module 07). A Kubernetes pod authenticates to AWS using a federated token validated against a JWKS endpoint (Module 11). Underneath every one of these mechanisms sits the same architectural substrate: public-key cryptography, certificate authorities, trust chains, and the infrastructure that protects the private keys those chains depend on. This module makes that substrate explicit. You've seen pieces of it throughout this portal — this is where the pieces become one coherent picture, and where you'll learn the platforms (HashiCorp Vault, CyberArk Conjur) that manage this cryptographic material at enterprise scale. 🌍</p>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 This module connects the dots from earlier modules</div>
+    <p>You've already met fragments of this module's content without the full picture: Module 03's JWT signing and JWKS endpoints, Module 02's Kerberos keytabs, Module 07's SSH Certificate Authority, Module 10's CyberArk Vault key hierarchy and AIM credential retrieval, and Module 11's mTLS and device certificate mentions. This module deliberately revisits each of these — not as repetition for its own sake, but because seeing the same cryptographic pattern (asymmetric keys → certificate authority → trust chain → revocation) recur across six completely different protocols and platforms is exactly how an architect builds durable intuition. By the end of this module, you'll recognize this pattern instantly, anywhere it appears.</p>
+  </div>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 Carrying forward from previous modules</div>
+    <p>Module 03: JWT RS256 signing and JWKS — now the full PKI that issues those keys. | Module 07: SSH Certificate Authority — now generalized to enterprise CA architecture. | Module 10: CyberArk Vault key hierarchy and AIM — now extended with Conjur's developer-facing secrets model. | Module 11: mTLS client certs and device certificates — now fully explained from issuance to revocation.</p>
+  </div>
+
+  <div class="where-am-i">
+    <div class="wai-title">Where Am I?</div>
+    <p style="margin-bottom:0.3rem;"><strong>Module 12 / Phase 5</strong> — Machine Identity &amp; Cloud Identity</p>
+    <p style="margin-bottom:0;">Progress: 12 of 16 (75% complete)</p>
+    <div class="progress-track"><div class="progress-fill" style="width:75%;"></div></div>
+  </div>
+</section>
+
+<div class="module" data-stack-layers="pam,cloud,tokens" id="s12-1">
+  <div class="module-divider">
+    <div class="module-num">12.1</div>
+    <h2>🗝️ Why Secrets Management Is Its Own Discipline</h2>
+  </div>
+
+  <p>In the architectural sense, a <strong>secret</strong> is any piece of data whose confidentiality is the basis of a security guarantee. Passwords are secrets. API keys are secrets. Private keys are secrets. Certificates are technically public, but the private key bound to them is a secret. Database connection strings, symmetric encryption keys, and bearer tokens are all secrets. What unifies the category isn't the data format — it's the fact that if the value leaks, the security guarantee built on top of it collapses immediately and silently, often with no obvious signal that anything has gone wrong.</p>
+
+  <p>It's worth being precise about why secrets management is a distinct discipline from the two adjacent disciplines this portal has already covered in depth. <strong>PAM (Module 10)</strong> governs human and service account access to systems through workflow, approval, and session control — it answers "who is allowed to use this credential, and under what process." <strong>IGA (Module 09)</strong> governs entitlement lifecycle and periodic certification — it answers "should this identity still have this access." <strong>Secrets management</strong> answers a third, more fundamental question: where does the actual cryptographic material live, how is it delivered to the application or service that needs it, and how does it get rotated without anyone needing to touch it by hand. PAM and IGA both assume a credential already exists somewhere and govern its use; secrets management is the runtime infrastructure that makes sure that assumption holds safely.</p>
+
+  <p>This is also a useful moment to revisit the secrets sprawl problem from Module 11 with a sharper lens. Every non-human identity category covered there — service accounts, API keys, container workloads, RPA bots, devices — ultimately reduces to a secret somewhere: a password, a private key, or a certificate. Module 11 named the sprawl problem at the identity level ("too many machine identities, poorly governed"). This module names it at the cryptographic level: every one of those identities is backed by something that needs to be stored, delivered, and rotated safely, and the platforms in this module are how that actually happens at scale.</p>
+
+  <h3>The hardcoded secret anti-pattern</h3>
+  <p>Before covering the platforms that solve this properly, it's worth naming the failure mode they exist to eliminate. Secrets end up hardcoded in source code, baked into configuration files, stuffed into environment variables, stored as CI/CD pipeline variables, or embedded directly in container images — and each of these locations represents a governance and security failure waiting to surface. Source code commits a secret to permanent history, recoverable from git log long after anyone "removes" it. Configuration files get copied between environments and backed up indefinitely. Environment variables in a CI/CD pipeline are visible to anyone who can read the pipeline definition or, in many platforms, anyone who can trigger a build and dump the environment. Container images bake credentials into a layer that's trivially extractable by anyone who can pull the image. None of these locations support rotation, fine-grained access control, or a usable audit trail — they're convenient exactly because they skip the controls that make a credential safe to use at scale.</p>
+
+  <h3>Three categories this module is organized around</h3>
+  <p>To keep nine sections of material navigable, this module organizes the entire secrets management landscape into three categories, and the rest of the module is structured around them in order:</p>
+  <ol>
+    <li><strong>Asymmetric key material and certificates</strong> (Sections 12.2–12.6) — the PKI substrate behind TLS, mTLS, code signing, device identity, and SSH certificates.</li>
+    <li><strong>Dynamic and ephemeral secrets</strong> (Sections 12.7–12.8) — database credentials, cloud credentials, and API tokens generated on demand and designed to be short-lived from the start.</li>
+    <li><strong>Static secrets that must still exist</strong> — encryption keys for data at rest, legacy system passwords that can't yet be eliminated — minimized wherever possible, and vaulted properly wherever they can't be.</li>
+  </ol>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram — Where Secrets Hide: The Sprawl Map</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>📁 Source Code Repositories</h5>
+        <ul>
+          <li><strong>Why it's used:</strong> fastest path to "make it work" during development</li>
+          <li><strong>Why it's risky:</strong> persists in git history forever, even after a later commit "removes" it; discoverable by anyone with repo read access or a leaked clone</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <h5>⚙️ Configuration Files</h5>
+        <ul>
+          <li><strong>Why it's used:</strong> application.yml / .env feels like the natural place for connection details</li>
+          <li><strong>Why it's risky:</strong> no rotation, copied across environments and backups, often readable by any process on the host</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <h5>🔧 Environment Variables / CI-CD Pipelines</h5>
+        <ul>
+          <li><strong>Why it's used:</strong> the standard 12-factor pattern for injecting config at runtime</li>
+          <li><strong>Why it's risky:</strong> visible to anyone who can read pipeline definitions, trigger a build, or dump the runtime environment</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <h5>📦 Container Images</h5>
+        <ul>
+          <li><strong>Why it's used:</strong> "bake it into the image" simplifies deployment</li>
+          <li><strong>Why it's risky:</strong> extractable from any image layer by anyone who can pull or inspect the image</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <h5>📝 Shared Documents &amp; Wikis</h5>
+        <ul>
+          <li><strong>Why it's used:</strong> the team needs a fast way to share a credential during an incident</li>
+          <li><strong>Why it's risky:</strong> the "team password doc" — no access control, no rotation, no audit trail, indexed by internal search</li>
+        </ul>
+      </div>
+      <div class="dcard dnode-accent" style="border-style:solid;">
+        <h5>✅ Where they should live instead</h5>
+        <ul>
+          <li>PKI / Certificate Authority for asymmetric material (12.2–12.6)</li>
+          <li>Dynamic secrets engine for database/cloud credentials (12.7–12.8)</li>
+          <li>HSM-backed vault for the static secrets that remain</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram-caption">Every location on the left shares the same root cause: convenience without rotation, access control, or audit trail. The platforms covered in this module exist specifically to remove the temptation.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram — Three Secret Categories Framework</div>
+    <div class="dcols dcols-3">
+      <div class="dcard">
+        <span class="dpill">Sections 12.2–12.6</span>
+        <h5>1. Asymmetric Keys &amp; Certificates</h5>
+        <p class="text-muted" style="font-size:0.8rem;">PKI, Certificate Authorities, trust chains, HSMs, OCSP/CRL</p>
+        <ul>
+          <li>TLS &amp; mTLS</li>
+          <li>SSH certificates</li>
+          <li>Device identity</li>
+          <li>JWT signing</li>
+          <li>Code signing</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <span class="dpill">Sections 12.7–12.8</span>
+        <h5>2. Dynamic / Ephemeral Secrets</h5>
+        <p class="text-muted" style="font-size:0.8rem;">HashiCorp Vault, CyberArk Conjur</p>
+        <ul>
+          <li>Database credentials</li>
+          <li>Cloud API credentials</li>
+          <li>Short-lived API tokens</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <span class="dpill">Minimize &amp; Vault</span>
+        <h5>3. Static Secrets That Remain</h5>
+        <p class="text-muted" style="font-size:0.8rem;">Encryption-at-rest keys, legacy system passwords</p>
+        <ul>
+          <li>Systems that cannot support dynamic patterns</li>
+          <li>Vaulted, not eliminated</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram-caption">Sections 12.2 through 12.9 walk this framework left to right: first the cryptographic foundation, then the platforms that make secrets dynamic, then how to choose between them.</div>
+  </div>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 Secrets management underneath every prior module</div>
+    <p>Secrets management sits underneath nearly every module in this portal, even where it wasn't named explicitly. PingFederate's signing certificate (Module 04) is a secret. The Kerberos keytab (Module 07) is a secret. The RADIUS shared secret (Module 06) is, quite literally, named "secret." CyberArk's rotated service account passwords (Module 10) are secrets. Every JWT in this portal (Module 03) was signed with a secret. This module doesn't introduce a new corner of IAM — it names and systematizes the cryptographic substrate that every prior module has been quietly relying on.</p>
+  </div>
+
+  <div class="analogy analogy-green">
+    <div class="analogy-title">🟩 Analogy</div>
+    <p>Secrets management is the credential equivalent of a configuration management system, but for the data that must never appear in a config file in the first place. You already separate configuration (environment-specific, fine to version control) from secrets (sensitive, never in version control) in any well-built Java application. The discipline you apply intuitively at the application level — externalize config, inject secrets at runtime rather than bake them in — is exactly what secrets management platforms formalize at the enterprise level, across every application and every non-human identity in your environment.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.1</div>
+    <p>Search your organization's source code repositories for common secret patterns: <code>password=</code>, <code>api_key=</code>, <code>BEGIN PRIVATE KEY</code>, AWS access key patterns (<code>AKIA...</code>). Many organizations run automated secret scanning (GitHub secret scanning, TruffleHog, GitGuardian) — check if this is enabled for your repos. If you find even one hardcoded secret in an active repository, that's your starting evidence for why this module's content matters operationally, not just theoretically.</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="tokens,network,directory" id="s12-2">
+  <div class="module-divider">
+    <div class="module-num">12.2</div>
+    <h2>🏛️ PKI Architecture — Certificate Authorities &amp; Trust Chains</h2>
+  </div>
+
+  <p><strong>Public Key Infrastructure (PKI)</strong> is the complete system of policies, roles, hardware, and software needed to create, manage, distribute, use, store, and revoke digital certificates. It's a big definition because PKI is genuinely a full system — not a single product, but a set of coordinated processes and trust relationships that, together, let two parties who have never met establish cryptographic trust in each other.</p>
+
+  <h3>The asymmetric cryptography foundation</h3>
+  <p>This isn't a cryptography course, so this is an architectural refresher rather than a derivation: asymmetric cryptography uses a mathematically related <strong>key pair</strong> — a private key that's never shared, and a public key that can be distributed freely. Anything encrypted with the public key can only be decrypted with the matching private key, and anything signed with the private key can be verified by anyone holding the public key. This is the exact primitive Module 05 used to explain FIDO2 (a private key on a security key signs a challenge, the relying party verifies it with the registered public key) and Module 03 used to explain JWT RS256 signing (the IdP signs with a private key, resource servers verify with the public key published at the JWKS endpoint). PKI is what makes that public key trustworthy in the first place — it answers "whose public key is this, actually?"</p>
+
+  <h3>What a digital certificate is</h3>
+  <p>A <strong>digital certificate</strong> is a public key bound to an identity — a domain name, a device, a user, a service — by a trusted third party's digital signature. The certificate itself is not secret; it's the signed, distributable proof that "this public key belongs to this identity, according to an authority you've agreed to trust." The corresponding private key is what stays secret, held only by the entity the certificate identifies.</p>
+
+  <h3>Certificate Authority architecture</h3>
+  <p>A <strong>Certificate Authority (CA)</strong> is the trusted third party that issues certificates. In any production-grade PKI, the CA isn't a single flat entity — it's structured as a hierarchy, almost always at least two tiers:</p>
+  <ul>
+    <li><strong>Root CA</strong> — the trust anchor of the entire hierarchy. It's self-signed (there's no higher authority to sign it), and it's kept offline and heavily protected — often physically air-gapped, brought online only for the rare, ceremonial act of signing an Intermediate CA's certificate. The Root CA does not issue end-entity certificates directly.</li>
+    <li><strong>Intermediate CA (Subordinate CA)</strong> — does the day-to-day work of issuing certificates. Its own certificate is signed by the Root CA, which is what makes it trusted in turn. Because it's online and issuing constantly, it carries more operational exposure than the Root — which is exactly why the hierarchy exists.</li>
+  </ul>
+  <p>The reason for this two-tier (or sometimes three-tier) structure is blast radius containment. If the Root CA's private key is ever compromised, every certificate ever issued under that hierarchy — at any tier, for any purpose — becomes untrustworthy, because an attacker holding the Root key could forge a signature for anything. Keeping the Root offline and delegating actual issuance to an Intermediate means that if the Intermediate is compromised instead, the damage is limited to the certificates it issued, and the Root can revoke the Intermediate's certificate and stand up a new one without invalidating the entire trust hierarchy from scratch.</p>
+
+  <h3>The certificate chain of trust</h3>
+  <p>A relying party verifying a certificate doesn't just check the certificate in isolation — it walks the <strong>chain of trust</strong> from the leaf (end-entity) certificate up through any Intermediate CA certificates to a Root CA that it already trusts. This is structurally identical to the AD forest trust traversal from Module 02: just as a domain controller walks a chain of configured trust relationships from one domain up through tree and forest trusts to determine whether two domains trust each other, a certificate validator walks a chain of cryptographic signatures from a leaf certificate up through Intermediates to a Root, verifying a signature at each hop instead of checking a configured trust relationship. The shape of the problem — and the shape of the solution — is the same; only the mechanism (administrative configuration versus cryptographic proof) differs.</p>
+
+  <h3>Public CAs vs private/enterprise CAs</h3>
+  <p>Not every certificate needs to come from the same kind of CA. A <strong>public CA</strong> — DigiCert, Let's Encrypt, Sectigo, and similar — issues certificates that are trusted by default in every major OS and browser, which makes them the right choice for internet-facing TLS, like your organization's public website. A <strong>private or enterprise CA</strong> — Active Directory Certificate Services, or HashiCorp Vault's PKI engine (Section 12.7) — issues certificates trusted only within your own environment, because you control which trust stores carry its Root certificate. Enterprise CAs are the right choice for internal mTLS, device certificates (the 802.1X and Conditional Access certificates from Module 06 and Module 11), SSH certificates (Module 07), and code signing, where there's no need — and real downside — to paying a public CA or exposing internal naming to the public certificate transparency logs that public CAs publish to.</p>
+
+  <h3>Certificate Signing Requests and X.509 structure</h3>
+  <p>A certificate is requested, not just generated by the CA out of nowhere. The requesting entity generates its own key pair locally, then sends the public key along with identity information to the CA as a <strong>Certificate Signing Request (CSR)</strong>. The CA validates the request — confirming the requester actually controls the identity being claimed — and signs it, producing the certificate. The private key never has to leave the requesting entity at any point in this process.</p>
+  <p>Conceptually, an <strong>X.509 certificate</strong> (the standard format virtually all TLS and enterprise certificates use) carries: the <strong>subject</strong> (who the certificate identifies), the <strong>issuer</strong> (which CA signed it), a <strong>validity period</strong> (not-before / not-after dates), the <strong>public key</strong> itself, and a set of <strong>extensions</strong> — most importantly Subject Alternative Name (SAN, the actual list of domains or identities the certificate covers), Key Usage (what cryptographic operations the key is permitted for), and Extended Key Usage (more specific purposes like server authentication or client authentication).</p>
+
+  <h3>Certificate trust stores</h3>
+  <p>For a chain to validate successfully, the Root CA at the top of it has to already be present in the relying party's <strong>trust store</strong> — the OS trust store, the browser's trust store, or, in Java environments, the JVM's <code>cacerts</code> truststore. Public CA roots ship pre-installed in all of these by the OS and browser vendors. An enterprise CA's Root certificate has no such head start — it has to be explicitly distributed, usually via Group Policy or MDM, to every device and trust store that needs to validate certificates issued under it. Skipping this distribution step is one of the most common causes of "certificate not trusted" errors for internal applications.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 3 — PKI Hierarchy: Root, Intermediate, Leaf</div>
+    <div class="dflow">
+      <div class="dflow-row">
+        <div class="dnode dnode-danger" style="flex-basis:100%;"><div class="dnode-title">Root CA</div><div class="dnode-sub">Offline · air-gapped · heavily protected · signs only Intermediate CAs</div></div>
+      </div>
+      <div class="darrow">↓ signs</div>
+      <div class="dflow-row">
+        <div class="dnode dnode-warn" style="flex-basis:100%;"><div class="dnode-title">Intermediate CA</div><div class="dnode-sub">Online · issues certificates daily</div></div>
+      </div>
+      <div class="darrow">↓ signs</div>
+      <div class="dflow-row">
+        <div class="dnode"><div class="dnode-title">server.company.com</div><div class="dnode-sub">TLS</div></div>
+        <div class="dnode"><div class="dnode-title">user.jsmith@company.com</div><div class="dnode-sub">Client auth</div></div>
+        <div class="dnode"><div class="dnode-title">host/linux-server-01</div><div class="dnode-sub">SSH (Module 07 callback)</div></div>
+        <div class="dnode"><div class="dnode-title">device-laptop-A1B2C3</div><div class="dnode-sub">Device identity (Module 11)</div></div>
+      </div>
+    </div>
+    <div class="diagram-caption">Compromise of a leaf certificate's key affects one entity. Compromise of the Root CA affects every certificate ever issued — which is why it's kept offline.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 4 — Certificate Chain Validation Flow</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode">1. Server presents: Leaf cert + Intermediate cert(s) — Root is <em>not</em> sent, it's already in the trust store</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">2. Validator extracts Leaf cert's issuer → matches Intermediate CA's subject? Continue.</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">3. Validator verifies Leaf cert's signature using the Intermediate CA's public key</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">4. Validator extracts Intermediate cert's issuer → matches Root CA's subject? Continue.</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">5. Validator verifies Intermediate cert's signature using the Root CA's public key</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent">6. Is the Root CA in my trust store? <strong>Yes</strong> → chain verified, trust established</div></div>
+    </div>
+    <div class="diagram-caption">This is the same chain-walking logic as Module 02's AD trust traversal, applied to certificates instead of domains.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 5 — Public CA vs Enterprise/Private CA</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>Public CA</h5>
+        <p class="text-muted" style="font-size:0.8rem;">DigiCert, Let's Encrypt, Sectigo</p>
+        <ul>
+          <li><strong>Trust:</strong> built into every OS/browser by default</li>
+          <li><strong>Use case:</strong> internet-facing TLS (public website)</li>
+          <li><strong>Validation:</strong> domain ownership, organization validation</li>
+          <li><strong>Cost:</strong> varies; Let's Encrypt is free</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <h5>Enterprise / Private CA</h5>
+        <p class="text-muted" style="font-size:0.8rem;">AD CS, HashiCorp Vault PKI engine</p>
+        <ul>
+          <li><strong>Trust:</strong> must be explicitly distributed to managed devices/servers (Module 06/07 callback)</li>
+          <li><strong>Use case:</strong> internal mTLS, device certs (802.1X), SSH certs, code signing</li>
+          <li><strong>Validation:</strong> your own enterprise policy</li>
+          <li><strong>Cost:</strong> operational — you run and secure the CA</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Architect's note</div>
+    <p>Recognizing the recurring trust-chain pattern is the single highest-value insight in this section. Module 02 taught you that AD forest trust verification walks a chain from a domain up through tree and forest trust relationships to establish whether two domains trust each other. Certificate chain validation does the exact same thing structurally: walk from a leaf certificate up through Intermediate CAs to a trusted Root, verifying a cryptographic signature at each hop instead of a configured trust relationship. Once you see PKI trust chains as "the same shape as AD trust chains, but cryptographically enforced instead of administratively configured," every certificate validation failure becomes much easier to reason about.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: Certificate pinning — what it is and why rotation makes it dangerous</summary>
+    <div class="deepdive-body">
+      <p>Certificate pinning is when an application hardcodes trust in a specific certificate or CA, rather than trusting anything that validates against the full system trust store. An application might pin a public key, a leaf certificate, or an Intermediate CA, and refuse to connect if the server presents anything else — even something that would otherwise validate as a fully trustworthy chain. The motivation is real: it defeats an attacker who has somehow gotten a fraudulently-issued certificate from a different, legitimately-trusted CA (a scenario that has happened in the wild with compromised public CAs), and it defeats interception by a malicious or compromised intermediary that has its own CA certificate installed in the system trust store.</p>
+      <p>The operational risk is the mirror image of the security benefit: pinning creates a hard dependency on a specific certificate or key that the application's own developers don't fully control the lifecycle of. When that certificate rotates — which Section 12.3 will show is happening on increasingly short cycles — every application that pinned the old certificate breaks unless its pin set was updated and redeployed in advance. Pinning trades a security improvement for an operational coupling between certificate rotation and application release cycles, which is exactly why many architectures use it sparingly, often only for the highest-risk client-to-server relationships, with a deliberate process to update pins ahead of every planned rotation.</p>
+    </div>
+  </details>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.2</div>
+    <p>Open a browser, navigate to an internal company application secured with your enterprise CA. View the certificate details (click the padlock icon). Trace the chain: what is the Leaf certificate's subject? What Intermediate CA signed it? What Root CA signed the Intermediate? Is that Root CA in your OS trust store? Now do the same for a public website (e.g., your bank) and compare the chain depth and the issuing CA.</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="tokens,network,pam" id="s12-3">
+  <div class="module-divider">
+    <div class="module-num">12.3</div>
+    <h2>♻️ Certificate Lifecycle Management</h2>
+  </div>
+
+  <p>A certificate isn't a one-time artifact — it moves through a full lifecycle: <strong>request → issuance → deployment → monitoring → renewal → revocation or expiry</strong>. Each stage has its own failure modes, and most certificate-related production incidents trace back to a gap in this lifecycle rather than a cryptographic flaw.</p>
+
+  <h3>Certificate enrollment methods</h3>
+  <p>How a certificate gets requested and issued varies a great deal by context:</p>
+  <ul>
+    <li><strong>Manual CSR generation and submission</strong> — the legacy approach: an engineer generates a key pair and CSR by hand, submits it to the CA, and installs the resulting certificate manually. It works, but it's slow, error-prone, and doesn't scale past a small number of certificates.</li>
+    <li><strong>SCEP (Simple Certificate Enrollment Protocol)</strong> — lets devices auto-enroll for certificates over the network, the protocol referenced but not explained in Module 06's 802.1X content. It's explained fully later in this section.</li>
+    <li><strong>ACME (Automatic Certificate Management Environment)</strong> — the protocol behind Let's Encrypt's fully automated issuance, increasingly adopted for internal automation as well, not just public certificates.</li>
+    <li><strong>AD CS auto-enrollment via Group Policy</strong> — domain-joined Windows devices and users automatically receive and renew certificates without any user action, the prerequisite that made Module 06's EAP-TLS deployment operationally feasible.</li>
+    <li><strong>HashiCorp Vault PKI engine API-driven issuance</strong> — programmatic, on-demand certificate issuance designed for short-lived certificates, covered fully in Section 12.7.</li>
+  </ul>
+
+  <h3>The shrinking validity period</h3>
+  <p>There's a clear architectural trend toward shorter certificate validity periods — 90 days is now common, and some modern patterns issue certificates valid for only hours. This is a sharp departure from the older norm of one-to-three-year certificates. Shorter validity is more secure for a straightforward reason: it bounds the compromise window. If a private key is stolen and nobody notices, a 90-day certificate limits how long that key remains useful to an attacker, where a 3-year certificate would leave the door open for years. But shorter validity has a real architectural requirement attached to it: you cannot manually renew thousands of 90-day certificates on any reasonable operational budget. Automation stops being a nice-to-have and becomes mandatory the moment validity periods drop below what a human team can track by hand.</p>
+
+  <h3>The certificate expiry incident pattern</h3>
+  <p>Module 04 already showed you a concrete example of this risk: PingFederate's signing certificate expiring and breaking federation. That wasn't a one-off — it's a universal PKI operational risk that recurs anywhere certificate lifecycle isn't actively managed. Expired certificates cause silent, cascading authentication failures across TLS, mTLS, code signing, and federation, and because the failure presents as a generic handshake or trust error, it often takes longer to diagnose than the actual fix takes to apply.</p>
+
+  <h3>Inventory, monitoring, and renewal strategy</h3>
+  <p>The foundational operational question in PKI — "what certificates exist, where are they deployed, and when do they expire" — is one that most enterprises answer poorly. Certificates get issued by individual engineers for individual projects with no central record, and nobody finds out a given certificate exists until it expires and something breaks. This is the case for centralized Certificate Lifecycle Management (CLM) tooling: a system of record for every certificate in the environment, with proactive expiry alerting, regardless of who issued it or for what.</p>
+  <p>On renewal mechanics specifically, there's a security trade-off between <strong>in-place renewal</strong> (same key pair, new validity period — operationally simpler, but doesn't help if the original key was ever exposed) and <strong>re-key on renewal</strong> (a new key pair generated alongside the new certificate — slightly more operational overhead, but closes any undetected key exposure on every renewal cycle). And on certificate scope, <strong>wildcard certificates</strong> (covering <code>*.company.com</code>) trade operational simplicity for concentrated risk — a single compromised wildcard certificate affects every subdomain — against <strong>SAN certificates</strong> (each covering a specific, enumerated list of names), which are more granular but multiply the number of certificates an organization has to track.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 6 — Certificate Lifecycle: Full Stages</div>
+    <div class="dflow-row" style="flex-wrap:wrap;">
+      <div class="dnode"><div class="dnode-title">Request</div><div class="dnode-sub">CSR generated by the requesting entity</div></div>
+      <div class="darrow">→</div>
+      <div class="dnode"><div class="dnode-title">Issuance</div><div class="dnode-sub">CA validates &amp; signs</div></div>
+      <div class="darrow">→</div>
+      <div class="dnode"><div class="dnode-title">Deployment</div><div class="dnode-sub">Installed on server/device/app</div></div>
+      <div class="darrow">→</div>
+      <div class="dnode"><div class="dnode-title">Monitoring</div><div class="dnode-sub">Expiry tracking, active alerting</div></div>
+      <div class="darrow">→</div>
+      <div class="dnode dnode-accent"><div class="dnode-title">Renewal</div><div class="dnode-sub">Before expiry</div></div>
+      <div class="darrow">or</div>
+      <div class="dnode dnode-danger"><div class="dnode-title">Revocation</div><div class="dnode-sub">If compromised — see Section 12.6</div></div>
+    </div>
+    <div class="diagram-caption">Most expiry incidents are a monitoring-stage failure, not an issuance-stage failure — the certificate was valid when deployed, but nothing tracked it afterward.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 7 — Certificate Validity Period Trend</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>2010s Norm: 1–3 Year Certificates</h5>
+        <ul>
+          <li>Manual renewal feasible at small scale</li>
+          <li>Long compromise window if a key is stolen</li>
+        </ul>
+      </div>
+      <div class="dcard dnode-accent" style="border-style:solid;">
+        <h5>Modern Trend: 90 Days → Hours</h5>
+        <ul>
+          <li>Let's Encrypt normalized 90-day; Vault PKI supports hours-long</li>
+          <li>Manual renewal impossible at any real scale — automation becomes mandatory</li>
+          <li>Compromise window dramatically reduced</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram-caption">Shorter certificate lifetimes are a direct application of the JIT/Zero Standing Privilege principle (Module 10) to cryptographic material.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 8 — SCEP Auto-Enrollment Flow</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode">1. Device: Group Policy triggers auto-enrollment</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">2. Device generates a key pair locally — the private key never leaves the device</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">3. Device → AD CS (via SCEP/NDES): CSR with the public key</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">4. AD CS validates device identity — domain-joined? matches template requirements?</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent">5. AD CS issues the certificate; device installs it automatically</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">6. Group Policy monitors expiry and re-enrolls automatically before it lapses</div></div>
+    </div>
+    <div class="diagram-caption">This is the certificate issuance process that makes Module 06's EAP-TLS 802.1X deployment operationally feasible at scale.</div>
+  </div>
+
+  <div class="callout callout-cost">
+    <div class="callout-title">🟡 Cost &amp; risk note</div>
+    <p>Certificate expiry incidents are among the most preventable yet recurring outages in enterprise IT — and Module 04 already showed you one example with PingFederate's signing certificate. The pattern repeats everywhere PKI is used without proper lifecycle management: an internal API's TLS certificate expires at 2am, every service calling it starts failing with cryptic TLS handshake errors, and the on-call engineer spends an hour debugging "the network" before realizing it's a certificate. The architectural fix is the same every time: maintain a complete certificate inventory, alert at 90/60/30/7 days before expiry, and move toward short-lived, automatically-renewed certificates wherever the platform supports it (Section 12.7's Vault PKI is the modern answer).</p>
+  </div>
+
+  <div class="usecase">
+    <div class="usecase-title">Use Case</div>
+    <p>Your enterprise has approximately 4,000 TLS certificates across internal services, none centrally tracked. A recent outage was caused by an expired certificate on an internal payment API that nobody knew existed. Design the certificate lifecycle management architecture: how do you discover existing certificates, how do you centralize tracking, what alerting thresholds do you set, and what's your strategy for migrating high-churn internal services to short-lived, automatically-issued certificates via Vault PKI or similar?</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.3</div>
+    <p>Find one TLS certificate your team manages (an internal service, a load balancer, an API gateway). Check its expiry date. Is it being monitored/alerted on? Is its renewal automated or manual? Now ask a colleague on a different team the same question about a service they own. The variance in answers across your organization reveals your actual certificate lifecycle management maturity.</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="pam,tokens,cloud" id="s12-4">
+  <div class="module-divider">
+    <div class="module-num">12.4</div>
+    <h2>🔄 Key Rotation Architecture</h2>
+  </div>
+
+  <p>Certificate renewal, covered in Section 12.3, extends a validity period. <strong>Key rotation</strong> is a related but distinct discipline: replacing the underlying cryptographic key material itself, not just extending how long a given key is trusted. The distinction matters because renewal alone doesn't help against an undetected compromise — if a private key was quietly stolen six months ago, renewing the certificate that points at the same key just extends the attacker's access right along with it. True rotation generates an entirely new key pair, which limits the impact of any compromise that hasn't yet been detected.</p>
+
+  <h3>Rotation across different secret categories</h3>
+  <p>Key rotation isn't a single mechanism — it looks different depending on what kind of key is being rotated:</p>
+  <ul>
+    <li><strong>TLS/mTLS certificate key rotation</strong> — extends directly from Section 12.3's renewal discussion, with the added step of generating a new key pair rather than reusing the old one.</li>
+    <li><strong>JWT signing key rotation</strong> — a direct Module 03 callback. An OIDC provider like PingFederate rotates its signing key, publishes the new public key via JWKS <em>before</em> switching to signing with it, and only then begins using the new key — a careful sequencing covered in detail below.</li>
+    <li><strong>Symmetric encryption key rotation (data at rest)</strong> — either re-encrypting the entire dataset with a new key, or using envelope encryption so only a small data-encryption-key needs rotation, not the entire underlying dataset.</li>
+    <li><strong>API key / service account credential rotation</strong> — the explicit Module 10 callback to CyberArk's CPM (Central Policy Manager), which automates exactly this rotation for privileged accounts and service credentials.</li>
+  </ul>
+
+  <h3>The JWKS rollover pattern, in detail</h3>
+  <p>This is worth walking through carefully, because it's the detail most homegrown JWT implementations get wrong. JWT validators should never cache and trust only a single signing key. Instead, they should fetch and cache <em>all</em> currently valid signing keys from the JWKS endpoint, distinguishing between them by the <code>kid</code> (key ID) claim that Module 03 introduced. During a rotation window, the IdP publishes both the outgoing key and the incoming key simultaneously in JWKS, continues signing new tokens with the outgoing key for a period, then switches to signing with the new key — all while validators keep trusting both keys until every token signed with the old one has naturally expired. This overlap window is what prevents rotation from causing an outage.</p>
+
+  <h3>Choosing a rotation frequency</h3>
+  <p>How often a key should rotate is a balance between operational overhead and security benefit, not a single universal answer. The sensitivity of what the key protects, the blast radius if it's compromised, and the maturity of the automation available to rotate it all factor in — a Root CA key might rotate on a multi-year cycle precisely because rotating it is a major ceremony, while a database credential generated by Vault might rotate every hour because the automation makes that essentially free. What matters architecturally isn't picking one "correct" frequency — it's making the decision deliberately rather than by default.</p>
+
+  <h3>Automated rotation is not optional at scale</h3>
+  <p>Manual rotation inevitably degrades over time. The "we'll rotate it next quarter" credential has a way of quietly becoming the credential that's three years old and nobody remembers the last time it changed — directly paralleling Module 11's orphaned service account problem, where an account nobody owns simply persists indefinitely because nothing forces a decision about it. Rotation has to be automated to be reliable; a manual process that depends on someone remembering to do it is, in practice, a process that doesn't happen consistently.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 9 — Certificate Renewal vs Key Rotation</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>Certificate Renewal (Same Key)</h5>
+        <ul>
+          <li>Same key pair, new validity period, new signature</li>
+          <li><strong>Risk:</strong> if the old key was ever compromised undetected, renewal doesn't fix it</li>
+        </ul>
+      </div>
+      <div class="dcard dnode-accent" style="border-style:solid;">
+        <h5>Key Rotation (New Key)</h5>
+        <ul>
+          <li>New key pair generated, new certificate issued, old key retired</li>
+          <li><strong>Benefit:</strong> limits exposure window even from undetected compromise — "assume breach" (Module 01) applied to cryptographic material</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 10 — JWKS Key Rollover: The Overlap Window</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode"><strong>T=0:</strong> Signing key A active, published in JWKS as <code>kid=A</code>; validators cache and trust A</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode"><strong>T+1:</strong> New signing key B generated</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent"><strong>T+1:</strong> JWKS updated to publish <em>both</em> <code>kid=A</code> and <code>kid=B</code> — B not yet used for signing</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode"><strong>T+2:</strong> Validators refresh their JWKS cache, now trust both A and B</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode"><strong>T+3:</strong> IdP switches to signing new tokens with key B; tokens still in flight signed with A remain valid because <code>kid=A</code> is still published</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-warn"><strong>T+4</strong> (after max token lifetime): key A safely removed from JWKS — only <code>kid=B</code> remains</div></div>
+    </div>
+    <div class="diagram-caption">The overlap window prevents an outage where in-flight tokens suddenly fail validation mid-rotation.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 11 — Envelope Encryption: Rotation at Scale</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode dnode-danger" style="flex-basis:100%;"><div class="dnode-title">Master Key</div><div class="dnode-sub">Held in HSM, rotated rarely</div></div></div>
+      <div class="darrow">↓ encrypts</div>
+      <div class="dflow-row"><div class="dnode dnode-accent" style="flex-basis:100%;"><div class="dnode-title">Data Encryption Keys (DEKs)</div><div class="dnode-sub">One per dataset/object</div></div></div>
+      <div class="darrow">↓ encrypt</div>
+      <div class="dflow-row"><div class="dnode" style="flex-basis:100%;"><div class="dnode-title">Actual Data</div></div></div>
+    </div>
+    <p style="margin-top:1rem; font-size:0.86rem;"><strong>Rotation:</strong> rotate the Master Key → only re-encrypt the (small) DEKs with the new Master Key. The (large) underlying dataset never needs to be touched.</p>
+    <div class="diagram-caption">This is how cloud KMS services (AWS KMS, Azure Key Vault) make key rotation operationally feasible even for petabyte-scale encrypted data.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 Security note</div>
+    <p>Graceful key rollover is the detail most homegrown JWT implementations get wrong, and it's worth being explicit about why this connects directly to Module 03. If a validator only ever caches a single signing key and an IdP rotates abruptly — publishing only the new key and removing the old one immediately — every token signed with the old key, even ones that haven't expired yet, instantly fails validation across every resource server. This looks identical to an outage. The fix is the overlap window shown above: always publish the previous key alongside the new one in JWKS until you're certain every token signed with the old key has naturally expired.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.4</div>
+    <p>Fetch the JWKS endpoint from your PingFederate OIDC provider (you did this in Module 03's lab). Count how many keys are currently published. If more than one — you're observing an active or recent rotation overlap window. Check the <code>kid</code> values and see if you can correlate them with a known rotation event. If only one key is published, ask your PAM/PKI team: what is the signing key rotation schedule, and is an overlap window built into the rotation process?</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="pam,tokens,directory" id="s12-5">
+  <div class="module-divider">
+    <div class="module-num">12.5</div>
+    <h2>🔒 HSM Concepts — Protecting the Keys That Protect Everything</h2>
+  </div>
+
+  <p>An <strong>HSM (Hardware Security Module)</strong> is a dedicated, tamper-resistant hardware device designed to generate, store, and use cryptographic keys without the private key material ever leaving the device in plaintext. It exists to solve a problem every section so far has implicitly raised: a software-based key — a key file sitting on a server's disk — is only as protected as that server's OS-level access controls. Anyone who gains administrative access to that server can, in principle, copy the key file and walk away with it. An HSM removes that possibility by physically and cryptographically isolating the key: cryptographic operations like signing or decrypting happen <em>inside</em> the device itself, rather than exposing the key to the calling application.</p>
+
+  <h3>The "keys never leave the HSM" principle</h3>
+  <p>The operating model is request/response, not key handoff. An application sends a request — "sign this data with key X" — to the HSM, and receives a result, the signature, in return. The private key itself is never extracted from the device, not by the calling application, and not even by the HSM's own administrators. This is exactly the pattern Module 10 described for CyberArk's Vault Server Key, the most protected key in the entire CyberArk key hierarchy, which encrypts the Safe Keys that in turn encrypt every Object Key and credential underneath it. An HSM is how that "most protected key" is often physically secured in serious enterprise deployments — Module 10 told you the key existed and was critical; this section tells you where it actually lives.</p>
+
+  <h3>HSM use cases across this portal</h3>
+  <p>Once you know to look for it, the HSM shows up underneath nearly every "most critical key" mentioned earlier in this portal: the Root CA private key from Section 12.2 (the single most catastrophic key to lose), the PingFederate/IdP signing key from Module 03/04, the CyberArk Vault server key from Module 10, database and application encryption keys protecting data at rest, and code signing keys used to assert the authenticity of released software.</p>
+
+  <h3>Tamper resistance and tamper evidence</h3>
+  <p>HSMs are engineered not just to resist extraction under normal operation, but to actively detect physical tampering attempts — drilling, probing, unusual temperature or voltage changes — and respond by zeroizing (destroying) the keys stored inside, rather than allowing extraction under duress. This is a meaningfully different security posture than a software keystore, which has no equivalent physical response to an attacker gaining hands-on access to the hardware it runs on.</p>
+
+  <h3>HSM deployment models</h3>
+  <p>Organizations don't have to choose between "no HSM" and "build your own HSM infrastructure" — there's a spectrum:</p>
+  <ul>
+    <li><strong>On-premises physical HSM appliances</strong> (Thales, Entrust nShield) — full control and the highest assurance, at the highest cost and operational complexity; you're responsible for your own HA/DR.</li>
+    <li><strong>Cloud HSM services</strong> (AWS CloudHSM, Azure Dedicated HSM) — dedicated, single-tenant hardware physically located in the cloud provider's datacenter; you control the keys, the provider manages the physical infrastructure underneath.</li>
+    <li><strong>Cloud KMS with HSM-backed keys</strong> (AWS KMS, Azure Key Vault, GCP Cloud KMS) — the simplest to adopt; keys are backed by HSMs, but the service itself is shared, multi-tenant infrastructure with less granular control than a dedicated HSM.</li>
+  </ul>
+
+  <h3>FIPS validation and the cost/complexity trade-off</h3>
+  <p><strong>FIPS 140-2/140-3 validation</strong> is a formal certification of an HSM's cryptographic module against a defined US government security standard, and regulated industries (financial services, government, healthcare) often require it explicitly when selecting HSM vendors or cloud KMS tiers. But HSMs — particularly dedicated, on-premises ones — are genuinely expensive and operationally complex, and the security benefit isn't free. The architectural judgment call is whether that benefit is worth it for a given key, versus a well-secured software key store or a multi-tenant cloud KMS being sufficient. In practice, this usually comes down to how catastrophic the consequences would be if that specific key were ever extracted — the Root CA key warrants an HSM in almost every serious deployment; a low-sensitivity internal service's TLS key often does not.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 12 — HSM Architecture: Keys Never Leave</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode">Application: "Sign this JWT payload" <span class="text-muted">(sends DATA, not the key)</span></div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-danger" style="flex-basis:100%;"><div class="dnode-title">HSM — Tamper-Resistant Hardware Boundary</div><div class="dnode-sub">Private key stored inside, never extracted. Signing operation performed INSIDE the HSM.</div></div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">Application receives the signed result <span class="text-muted">(returns SIGNATURE, not the key)</span></div></div>
+    </div>
+    <div class="diagram-caption">Compare to a software keystore, where the private key file itself could theoretically be copied by anyone with disk access — the HSM makes that extraction physically and cryptographically infeasible.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 13 — HSM Use Cases Across the Portal</div>
+    <div class="dcols dcols-2">
+      <div class="dcard"><h5>Root CA private key</h5><p class="text-muted" style="font-size:0.8rem;">Section 12.2 → HSM-protected</p></div>
+      <div class="dcard"><h5>PingFederate signing key</h5><p class="text-muted" style="font-size:0.8rem;">Module 03/04 → HSM-protected in mature deployments</p></div>
+      <div class="dcard"><h5>CyberArk Vault server key</h5><p class="text-muted" style="font-size:0.8rem;">Module 10 → HSM-protected in mature deployments</p></div>
+      <div class="dcard"><h5>Database TDE encryption keys</h5><p class="text-muted" style="font-size:0.8rem;">HSM/KMS-protected</p></div>
+    </div>
+    <div class="diagram-caption">Every "most important key" mentioned earlier in this portal is a candidate for HSM protection — this is the unifying infrastructure underneath them all.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 14 — HSM Deployment Models Comparison</div>
+    <div class="dcols dcols-3">
+      <div class="dcard">
+        <h5>On-Prem Physical HSM</h5>
+        <ul><li>Full control</li><li>Highest assurance</li><li>Highest cost/complexity</li><li>You manage HA/DR</li></ul>
+      </div>
+      <div class="dcard">
+        <h5>Cloud HSM (Single-Tenant)</h5>
+        <ul><li>AWS CloudHSM / Azure Dedicated HSM</li><li>Dedicated hardware in cloud datacenter</li><li>You control the keys; provider manages physical infra</li></ul>
+      </div>
+      <div class="dcard">
+        <h5>Cloud KMS (HSM-Backed, Multi-Tenant)</h5>
+        <ul><li>AWS KMS / Azure Key Vault / GCP Cloud KMS</li><li>Simplest to adopt</li><li>Shared infrastructure, less granular control</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Architect's note</div>
+    <p>The HSM is the answer to a question this portal has raised repeatedly without naming it: "okay, but how is THAT key actually protected?" Module 10 told you CyberArk's Server Key encrypts the Safe Keys which encrypt the Object Keys which encrypt your credentials — but where does the Server Key itself live securely? Often: an HSM. Module 03/04 told you PingFederate signs assertions with a private key — where should that key live in a mature deployment? Often: an HSM. The HSM isn't a separate, unrelated technology — it's the foundation layer that the most security-critical keys in every other system in this portal ultimately rest on.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: PKCS#11 and why it prevents HSM vendor lock-in</summary>
+    <div class="deepdive-body">
+      <p>PKCS#11 is a standard, vendor-neutral API that applications use to talk to HSMs and other cryptographic tokens, regardless of which manufacturer built the underlying hardware. Without a standard like this, an application like PingFederate or a Certificate Authority would have to be written and tested against each individual HSM vendor's proprietary API — meaning a decision to switch HSM vendors, or to add a second vendor for redundancy, would require code changes in every dependent application.</p>
+      <p>Because PKCS#11 defines a common interface — a set of functions for operations like generating keys, signing data, and managing sessions — an application written against PKCS#11 can talk to a Thales HSM, an Entrust HSM, or a cloud HSM service that exposes a PKCS#11 interface, without needing vendor-specific integration code for each one. This is what allows organizations to treat HSM vendor selection as primarily a procurement and operational decision rather than an application architecture decision, and it's a meaningful part of why HSM-dependent systems like enterprise CAs and federation signing infrastructure can be migrated between HSM vendors without a full application rewrite.</p>
+    </div>
+  </details>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.5</div>
+    <p>Find out whether your organization's Root CA private key, PingFederate signing key, or CyberArk Vault server key is HSM-protected or software-protected. (This is often documented in your PKI policy or security architecture documentation, or known by your PKI/PAM team.) If any of these critical keys are software-protected rather than HSM-protected, that's a material finding worth raising in an architecture review.</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="tokens,network,sso" id="s12-6">
+  <div class="module-divider">
+    <div class="module-num">12.6</div>
+    <h2>🚫 OCSP &amp; CRL — Certificate Revocation Architecture</h2>
+  </div>
+
+  <p>A certificate's validity period makes a forward-looking promise: "trust this until this date." But that promise has an obvious gap — what happens if the private key is compromised <em>today</em>, long before that stated expiry? <strong>Revocation</strong> is how a CA retracts trust early, declaring "this certificate is no longer trustworthy, regardless of what its expiry date says."</p>
+
+  <h3>CRL: the original mechanism</h3>
+  <p>A <strong>Certificate Revocation List (CRL)</strong> is the original answer to this problem: the CA periodically publishes a signed list of every revoked certificate's serial number, and validators download that list and check the certificate they're validating against it. CRLs have real limitations, though. The list grows continuously over time and has to be downloaded in full (or via CRL Distribution Points and delta updates to soften that cost), and there's an inherent staleness window between when a certificate is actually revoked and when the next CRL publication reflects that — during which a revoked certificate might still pass validation.</p>
+
+  <h3>OCSP: the real-time alternative</h3>
+  <p>The <strong>Online Certificate Status Protocol (OCSP)</strong> takes a different approach: instead of downloading an entire list, a validator queries an OCSP responder with a specific certificate's serial number and gets back a direct answer — good, revoked, or unknown — in real time. This avoids the staleness and list-size problems of CRLs, but introduces its own trade-offs.</p>
+
+  <h3>OCSP stapling</h3>
+  <p>Querying an OCSP responder on every single TLS connection creates two problems: it adds a network round-trip's worth of latency to every handshake, and it creates a privacy concern, because the OCSP responder ends up seeing every site a given client connects to. <strong>OCSP stapling</strong> solves both: instead of the client querying the responder directly, the server itself periodically fetches a signed OCSP response for its own certificate and "staples" that response to the TLS handshake it presents to clients. The client validates the stapled response's signature and trusts it without ever contacting the OCSP responder directly — the query happens periodically from the server, not per-connection from every client.</p>
+
+  <h3>Soft-fail vs hard-fail revocation checking</h3>
+  <p>What should happen when a revocation check itself fails — the OCSP responder is unreachable, or the CRL can't be downloaded? Most browsers and clients <strong>soft-fail</strong>: proceed with the connection anyway, on the theory that hard-failing would make the CA's or responder's availability a single point of failure for enormous swaths of the internet. The practical consequence is that revocation checking is, in real-world deployments, often bypassable by an attacker capable of blocking the revocation check itself — a known, accepted gap rather than an oversight.</p>
+
+  <h3>Short-lived certificates as a revocation alternative</h3>
+  <p>This connects directly back to Section 12.3's discussion of shrinking validity periods. If a certificate is only valid for hours or days, the architectural need for revocation infrastructure to work correctly diminishes substantially, because compromise exposure is already bounded by how soon the certificate naturally expires anyway. This is a meaningful part of why the industry has been moving toward very short-lived certificates: it reduces how much weight the system has to place on revocation infrastructure functioning correctly in real time.</p>
+
+  <h3>Revocation in contexts already covered in this portal</h3>
+  <p>Revocation looks different depending on the certificate type. SSH certificates (Module 07) are typically revoked by simply being short-lived rather than through CRL/OCSP infrastructure at all. Device certificates (Module 06/11) are revoked when a device is decommissioned or fails compliance. TLS server certificates use the CRL/OCSP mechanisms described above, sitting alongside the validity-period trend from Section 12.3 as a second, complementary line of defense.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 15 — CRL vs OCSP Architecture Comparison</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>CRL</h5>
+        <ul>
+          <li>CA publishes a signed list of ALL revoked cert serials</li>
+          <li>Validator downloads the full list (or delta), checks locally</li>
+          <li><strong>Pros:</strong> works offline once downloaded, no per-check query</li>
+          <li><strong>Cons:</strong> list grows large; staleness window between updates</li>
+        </ul>
+      </div>
+      <div class="dcard">
+        <h5>OCSP</h5>
+        <ul>
+          <li>Validator queries an OCSP responder for ONE specific cert</li>
+          <li>Responder returns good/revoked/unknown in real time</li>
+          <li><strong>Pros:</strong> real-time, no large list to manage</li>
+          <li><strong>Cons:</strong> network round-trip per check; privacy concern; responder becomes a dependency/SPOF</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 16 — OCSP Stapling Flow</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>Without Stapling</h5>
+        <ul>
+          <li>Client ↔ Server: TLS handshake, server presents cert</li>
+          <li>Client → OCSP Responder: "is this cert revoked?" <span class="text-muted">(separate round-trip, latency, privacy leak)</span></li>
+          <li>OCSP Responder → Client: "good"</li>
+          <li>Client proceeds with the connection</li>
+        </ul>
+      </div>
+      <div class="dcard dnode-accent" style="border-style:solid;">
+        <h5>With Stapling</h5>
+        <ul>
+          <li>Server → OCSP Responder (periodically, e.g. hourly): "is my own cert revoked?" → caches signed response</li>
+          <li>Client ↔ Server: TLS handshake</li>
+          <li>Server → Client: cert + stapled signed OCSP response <span class="text-muted">(no extra round-trip)</span></li>
+          <li>Client validates the stapled response's signature, trusts it directly</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram-caption">Stapling moves the OCSP query from every client to the server, performed periodically instead of per-connection.</div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 Security note</div>
+    <p>Soft-fail revocation checking is a known, accepted gap in most TLS implementations, and it's important to understand why it exists rather than treat it as obviously broken. If your browser hard-failed — refused to connect — every time it couldn't reach an OCSP responder or download a CRL, then a network outage, a CA's infrastructure issue, or an attacker simply blocking traffic to the OCSP endpoint would break HTTPS connectivity broadly — an availability risk considered worse, in practice, than the residual risk of occasionally trusting a revoked certificate. This is a real architectural trade-off, not an oversight — and it's part of why the industry trend toward very short-lived certificates (Section 12.3) is gaining traction: it reduces reliance on revocation infrastructure working correctly in the first place.</p>
+  </div>
+
+  <div class="analogy analogy-violet">
+    <div class="analogy-title">🟪 Analogy</div>
+    <p>Revocation checking is architecturally similar to the RADIUS Access-Challenge fail-open/fail-closed decision from Module 06. Just as a NAS must decide what happens when its RADIUS server is unreachable, a TLS client must decide what happens when its revocation check is unreachable. Both decisions trade security (fail-closed: safer, but an availability risk if the checking service is down) against availability (fail-open/soft-fail: more resilient, but a determined attacker can exploit the gap). The fact that the security industry has largely converged on soft-fail for revocation checking, while insisting on fail-closed for RADIUS network access, tells you something about how risk is weighed differently depending on what's actually being protected.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.6</div>
+    <p>Using your browser's developer tools or a TLS testing tool (like SSL Labs' SSL Test), inspect a TLS connection to an internal or external service. Does the server support OCSP stapling? Can you find the OCSP responder URL in the certificate's Authority Information Access extension? This tells you whether the site you're testing has implemented the more efficient, privacy-preserving revocation checking mechanism.</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="pam,cloud,applications" id="s12-7">
+  <div class="module-divider">
+    <div class="module-num">12.7</div>
+    <h2>🔓 HashiCorp Vault — Dynamic Secrets Architecture</h2>
+  </div>
+
+  <p><strong>HashiCorp Vault</strong> is a developer-centric secrets management platform built around API-first access and, most distinctively, the concept of <strong>dynamic secrets</strong> — credentials generated on demand and designed to be ephemeral from the moment they're created, rather than static, long-lived values that simply get rotated periodically.</p>
+
+  <h3>The dynamic secrets model</h3>
+  <p>The architectural shift is significant. Instead of storing a static database password and rotating it on a schedule — the CyberArk CPM model from Module 10 — Vault generates a brand-new, unique database credential at the exact moment an application requests one, attaches a short TTL (time-to-live) to it, and automatically revokes that specific credential when the TTL expires. There is no long-lived password sitting in a vault waiting to be rotated; the credential's entire lifespan is the lease.</p>
+
+  <p>Why is this architecturally stronger than rotating a static secret? It's the same Zero Standing Privilege principle from Module 10, and the same workload identity federation logic from Module 11, applied to credentials instead of sessions or tokens. A credential that exists only for the duration of a single application's lease, used by exactly one consumer, eliminates entire categories of risk that rotation alone never fully closes: shared credentials that multiple services unknowingly depend on, stale credentials that quietly outlive the application that originally requested them, and lateral movement using a static credential an attacker happened to find lying around. Dynamic secrets don't make rotation faster — they remove the concept of a long-lived credential to rotate in the first place.</p>
+
+  <h3>Vault's secrets engines</h3>
+  <p>Vault's pluggable <strong>secrets engines</strong> are what generate different types of dynamic secrets:</p>
+  <ul>
+    <li><strong>Database secrets engine</strong> — generates per-request database credentials with automatic expiry.</li>
+    <li><strong>AWS/Azure/GCP secrets engines</strong> — generate short-lived cloud IAM credentials on demand, a capability that complements, and in some architectures overlaps with, Module 11's workload identity federation.</li>
+    <li><strong>PKI secrets engine</strong> — Vault can act as a Certificate Authority in its own right, issuing short-lived certificates on demand via API, directly extending Section 12.3's validity-period discussion into a fully automated implementation.</li>
+    <li><strong>SSH secrets engine</strong> — Vault can sign SSH certificates on demand, a direct extension of Module 07's SSH Certificate Authority content into Vault's API-driven model.</li>
+    <li><strong>Transit secrets engine</strong> — encryption-as-a-service: applications send data to Vault to encrypt or decrypt without ever handling the encryption key directly, the same "keys never leave" principle Section 12.5 described for HSMs, implemented in software (and, in HSM-backed Vault deployments, ultimately enforced by an actual HSM underneath).</li>
+  </ul>
+
+  <h3>How applications authenticate to Vault</h3>
+  <p>Before an application can request a secret, it has to authenticate to Vault in the first place. Vault supports a range of <strong>authentication methods</strong> for this — AppRole (a role-and-secret-ID pattern designed for machine-to-machine use), the Kubernetes auth method, and the AWS IAM auth method among others — and the cloud-native identity methods connect directly back to Module 11's workload identity content: a workload presents its already-established platform identity (a Kubernetes service account token, an AWS instance role) to Vault, and Vault validates that identity before issuing any secret.</p>
+
+  <h3>Vault architecture: storage, sealing, and policy</h3>
+  <p>Vault separates the storage backend (where encrypted data physically lives) from the Vault server process itself, and introduces an operational concept unique among the platforms in this module: the <strong>unseal process</strong>. When Vault starts or restarts, it begins in a "sealed" state — its storage is encrypted and Vault cannot read it — until it's unsealed using <strong>Shamir's Secret Sharing</strong>, a cryptographic scheme that splits the master key into multiple shares, requiring a threshold number of them (commonly three of five) to reconstruct the key and unseal Vault. This is explained fully below; the operational point is that sealing is a real consideration any time Vault restarts, whether planned or not.</p>
+  <p>Finally, <strong>Vault policies</strong> govern which identities can access which secrets paths — an explicit application of the PBAC pattern from Module 08, expressed as policy rather than embedded in application logic, and applied here specifically to secrets access rather than general authorization decisions.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 17 — Static Rotation vs Dynamic Secrets</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>Static Secret + Rotation (CyberArk CPM, Module 10)</h5>
+        <ul>
+          <li>One credential exists, used by potentially many consumers</li>
+          <li>Rotated on a schedule (e.g., every 30 days)</li>
+          <li><strong>Risk window:</strong> up to 30 days if compromised undetected</li>
+        </ul>
+      </div>
+      <div class="dcard dnode-accent" style="border-style:solid;">
+        <h5>Dynamic Secrets (Vault Model)</h5>
+        <ul>
+          <li>New unique credential generated PER REQUEST</li>
+          <li>Used by exactly ONE consumer for ONE short-lived lease</li>
+          <li>Automatically revoked when the lease expires (e.g., 1 hour)</li>
+          <li><strong>Risk window:</strong> minutes to hours, and traceable to exactly one request</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 18 — Vault Dynamic Database Credential Flow</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode">1. Application → Vault: authenticate (e.g., Kubernetes auth method, presenting its bound K8s service account token — Module 11 callback)</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">2. Vault validates the application's identity</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">3. Application → Vault: "give me database credentials for the 'payments-db-readonly' role"</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">4. Vault → Database: CREATE USER with a generated random username/password, scoped permissions, TTL</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent">5. Vault → Application: returns the new credential + lease ID + TTL (e.g., valid for 1 hour)</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">6. Application uses the credential to connect to the database</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-danger">7. At TTL expiry: Vault → Database: DROP/REVOKE that specific generated user automatically</div></div>
+    </div>
+    <div class="diagram-caption">No static database password exists anywhere in this flow — not in the application config, not as a long-lived stored secret.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 19 — Vault Unseal Architecture: Shamir's Secret Sharing</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode" style="flex-basis:100%;"><div class="dnode-title">Vault Master Key</div><div class="dnode-sub">Split into N key shares (e.g., 5 shares, "Shamir's Secret Sharing")</div></div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent" style="flex-basis:100%;"><div class="dnode-title">Unseal requires a threshold of shares</div><div class="dnode-sub">e.g., 3 of 5, presented by different trusted individuals</div></div></div>
+    </div>
+    <p style="margin-top:1rem; font-size:0.86rem;"><strong>Why:</strong> no single person can unseal Vault alone — distributes trust, similar in spirit to dual-control break-glass procedures (Module 10 callback). <strong>Modern alternative:</strong> cloud auto-unseal, using a cloud KMS to automatically unseal — trading the manual multi-person ceremony for cloud KMS-backed automation.</p>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Architect's note</div>
+    <p>HashiCorp Vault's dynamic secrets model is the architectural completion of a pattern this portal has built toward since Module 10's JIT access content and Module 11's workload identity federation. Standing privilege — whether it's a permanently-active Domain Admin account (Module 10), a long-lived AWS access key (Module 11), or a static database password rotated every 30 days (the traditional model) — is always a larger attack surface than access that exists only for the duration it's actually needed. Vault generalizes this principle to essentially any secret type: database credentials, cloud credentials, certificates, even raw encryption operations. When you're designing a new system's secrets architecture, the default question should be "can this be a dynamic, short-lived secret instead of a static one?" — and increasingly, the answer is yes.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: How Vault's Kubernetes auth method establishes trust without a shared secret</summary>
+    <div class="deepdive-body">
+      <p>When a pod authenticates to Vault using the Kubernetes auth method, it presents its bound service account token — the same token type Module 11 introduced as the modern, audience-scoped replacement for the older, unbounded default service account token. Vault doesn't simply trust that token at face value; it validates it by calling back to the Kubernetes API server's TokenReview API, asking the cluster itself to confirm that the token is genuine, unexpired, and bound to the service account it claims to represent.</p>
+      <p>This callback validation is what lets Vault and the Kubernetes cluster establish trust without ever needing to share a pre-configured secret between them. Vault is configured with the Kubernetes API server's address and a way to verify its TLS certificate (often the cluster's own CA certificate, tying directly back to Section 12.2's PKI trust chain content), and from that point on, trust flows from the live validation call rather than from any static credential Vault and Kubernetes would otherwise need to keep in sync. If a pod's service account is deleted or its token is revoked, the very next validation call fails — there's no stale shared secret anywhere to clean up.</p>
+    </div>
+  </details>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.7</div>
+    <p>If HashiCorp Vault is deployed in your environment, find one secrets engine configuration (database, AWS, or PKI). What is the default TTL for credentials it issues? Find an application that authenticates to Vault — what auth method does it use (AppRole, Kubernetes, AWS IAM)? If Vault is not deployed, identify one database credential or cloud credential in your environment that is currently static and long-lived, and sketch what it would look like as a Vault dynamic secret instead — what TTL would be appropriate, and what would need to change in the application's connection-handling code to request a fresh credential per lease instead of using one fixed value forever?</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="pam,cloud,applications" id="s12-8">
+  <div class="module-divider">
+    <div class="module-num">12.8</div>
+    <h2>🤖 CyberArk Conjur — Secrets Management for DevOps</h2>
+  </div>
+
+  <p>Module 10 closed Section 10.8 with a preview of CyberArk Conjur; this section gives it the full architectural treatment it was deferred from. <strong>CyberArk Conjur</strong> is CyberArk's secrets management platform purpose-built for DevOps, CI/CD, and cloud-native workloads — architecturally distinct from the EPV/Vault product covered throughout Module 10, which is workflow-driven and human-PSM-centric.</p>
+
+  <h3>Why CyberArk built a separate product</h3>
+  <p>This goes back to Module 10's closing insight: humans and machines consume credentials in fundamentally different ways, and a single product optimized for one consumption pattern tends to be a poor fit for the other. Humans need workflow, approval, and session recording — that's EPV's strength, built around the PVWA portal and PSM session proxying. Machines need fast, programmatic, API-native credential delivery with no human in the loop and no session to record — that's Conjur's strength. Same vendor, same underlying security philosophy, but two architecturally different products because the thing being optimized for is different in each case.</p>
+
+  <h3>Conjur's core architecture</h3>
+  <p>At its core, Conjur is a secrets store exposed through a REST API, governed by <strong>policy-as-code</strong> access control — Conjur policies define, in a declarative format, exactly who or what is permitted to retrieve which secrets. It ships with native integrations for Kubernetes, the major CI/CD platforms, and container orchestration generally, reflecting its purpose-built focus on the machine and pipeline consumers it was designed for.</p>
+
+  <h3>Conjur and CyberArk EPV integration</h3>
+  <p>Conjur and EPV aren't necessarily either/or — in many enterprise deployments, Conjur acts as a secrets proxy and cache sitting in front of EPV-managed credentials. Conjur handles the high-volume, low-latency requests that machine workloads generate, while EPV remains the system of record for human-facing privileged accounts, with rotation still governed centrally through EPV's existing CPM policies. This lets an organization extend its existing CyberArk investment to cover machine consumers without duplicating the rotation and governance logic it already has in place for human accounts.</p>
+
+  <h3>Conjur policy-as-code</h3>
+  <p>Conjur access policies are defined in YAML and version-controlled — a direct callback to Module 08's PBAC content, where policy is externalized from application code and governed independently, applied here specifically to secrets access. A Conjur policy declares which workload identity ("Host" in Conjur's terminology) can retrieve which specific secret, and because the policy lives in version control, every change to who can access what is auditable through normal Git history rather than buried in an application's configuration.</p>
+
+  <h3>Conjur authentication methods for workloads</h3>
+  <p>Just as Vault authenticates workloads through methods like AppRole and the Kubernetes auth method, Conjur has its own set of authenticators that let a Kubernetes pod, a Jenkins pipeline, or an AWS Lambda function authenticate to Conjur to retrieve a secret — paralleling Section 12.7's Vault auth methods and Module 11's workload identity federation patterns directly. The platforms differ in implementation detail, but the underlying architectural shape — a workload presents an already-established platform identity, the secrets platform validates it, a secret is returned — is identical.</p>
+
+  <h3>Conjur for CI/CD pipelines</h3>
+  <p>One of Conjur's most direct, practical use cases is eliminating the "secret stored as a CI/CD pipeline variable" anti-pattern called out explicitly in Module 11 Section 11.5's GitHub Actions OIDC example. Rather than a pipeline holding a static, long-lived secret as a stored variable, the pipeline authenticates to Conjur at runtime — using exactly the kind of short-lived, federated identity Module 11 described — and retrieves the secret it needs fresh, for that run only.</p>
+
+  <h3>Conjur for Kubernetes</h3>
+  <p>The Conjur Kubernetes Authenticator and the Secrets Provider for Kubernetes solve a specific, often-underestimated gap: native Kubernetes Secret objects are only base64-encoded by default, not encrypted, which makes them trivial to decode for anyone with read access to that namespace's secrets — including, per Module 11's default service account risk discussion, a compromised pod with broader-than-intended RBAC permissions. Conjur's Kubernetes integration injects the actual secret value directly into a running pod at startup, retrieved fresh from Conjur's encrypted store, rather than relying on a native Kubernetes Secret object as the storage mechanism at all.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 20 — CyberArk EPV vs Conjur: Architectural Comparison</div>
+    <div class="dcols dcols-2">
+      <div class="dcard">
+        <h5>CyberArk EPV (Module 10)</h5>
+        <ul>
+          <li><strong>Consumer:</strong> humans (via PVWA, PSM)</li>
+          <li><strong>Pattern:</strong> workflow, approval, session recording</li>
+          <li><strong>Access:</strong> check out a session, work interactively</li>
+          <li><strong>Best for:</strong> Domain Admin access, database admin sessions, server RDP/SSH access</li>
+        </ul>
+      </div>
+      <div class="dcard dnode-accent" style="border-style:solid;">
+        <h5>CyberArk Conjur</h5>
+        <ul>
+          <li><strong>Consumer:</strong> machines (applications, pipelines, containers)</li>
+          <li><strong>Pattern:</strong> API call, immediate programmatic response</li>
+          <li><strong>Access:</strong> retrieve a secret value, use it, no session</li>
+          <li><strong>Best for:</strong> database connection strings, API keys, CI/CD pipeline secrets, Kubernetes secrets</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram-caption">Same vendor, same underlying security philosophy, two different products because humans and machines consume secrets in fundamentally different ways.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 21 — Conjur Kubernetes Secrets Injection</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode">1. Pod starts, with the Conjur Kubernetes Authenticator sidecar/init container configured</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">2. Init container → Kubernetes API: presents its bound service account token (Module 11 callback)</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">3. Init container → Conjur: authenticate using the K8s service account token</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">4. Conjur validates the token against the K8s API, checks Conjur policy — does this pod's identity have permission to retrieve this secret?</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent">5. Conjur → Init container: returns the requested secret (e.g., database password)</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode">6. Init container writes the secret to a shared volume or environment; the application container reads it</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-warn">7. The secret is never stored as a Kubernetes Secret object — avoiding the base64-only-encoded-by-default gap</div></div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 22 — Conjur Policy-as-Code Example (Conceptual)</div>
+    <div class="dcard" style="font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.7;">
+      <div><strong>Policy:</strong> payments-service-secrets</div>
+      <div style="margin-left:1rem; margin-top:0.5rem;">Defines:</div>
+      <div style="margin-left:2rem;">Host: payments-service <span class="text-muted">(the workload identity)</span></div>
+      <div style="margin-left:2rem;">Secret: db-password <span class="text-muted">(the protected value)</span></div>
+      <div style="margin-left:2rem;">Permission: payments-service CAN retrieve db-password</div>
+      <div style="margin-left:2rem;">Permission: payments-service CANNOT retrieve other-service's secrets</div>
+      <div style="margin-top:0.5rem; margin-left:1rem;" class="text-muted">Version controlled in Git, deployed via CI/CD</div>
+    </div>
+    <div class="diagram-caption">This is PBAC (Module 08) applied directly to secrets access — policy as code, externalized from application logic, auditable in version control history.</div>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Architect's note</div>
+    <p>Conjur's Kubernetes Secrets Provider closes a gap that surprises many engineers who assume Kubernetes Secrets are inherently secure: by default, a Kubernetes Secret object is only base64-encoded, not encrypted — anyone with read access to that namespace's Secrets (including, per Module 11's default service account risk, potentially a compromised pod with broad RBAC) can trivially decode it. Conjur (and similarly, Vault's Kubernetes integration) addresses this by injecting the actual secret value directly into the running pod's memory/filesystem at startup, retrieved fresh from Conjur's encrypted store, rather than relying on Kubernetes' native Secret object as the storage mechanism.</p>
+  </div>
+
+  <div class="usecase">
+    <div class="usecase-title">Use Case</div>
+    <p>Your platform engineering team is migrating 80 microservices from storing database credentials as Kubernetes Secrets (base64-encoded, no rotation) to a proper secrets management architecture. You have CyberArk EPV already deployed for human privileged access. Design the architecture decision: do you deploy Conjur, adopt HashiCorp Vault, or use a cloud-native secrets manager (AWS Secrets Manager/Azure Key Vault)? Walk through the trade-offs given your existing CyberArk investment, your Kubernetes-heavy environment, and your need for database credential rotation integrated with the existing CPM rotation policies.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.8</div>
+    <p>Check whether your Kubernetes environment stores database credentials, API keys, or other secrets as native Kubernetes Secret objects. Run <code>kubectl get secret [name] -o yaml</code> and observe that the values are only base64-encoded (try decoding one with <code>base64 -d</code> — note how trivial this is). Now check whether Conjur, Vault, or a cloud secrets manager is used instead for any workloads, and compare the access control and audit trail available for each approach.</p>
+  </div>
+</div>
+
+<div class="module" data-stack-layers="pam,cloud,tokens,applications" id="s12-9">
+  <div class="module-divider">
+    <div class="module-num">12.9</div>
+    <h2>🧭 Secrets Management Selection &amp; Integration Framework</h2>
+  </div>
+
+  <p>Sections 12.2 through 12.8 covered seven distinct technologies — PKI/CAs, certificate lifecycle tooling, HSMs, OCSP/CRL infrastructure, HashiCorp Vault, and CyberArk Conjur — and a working architect rarely gets to deploy all of them greenfield. The real job is choosing the right combination for a given environment, and integrating it cleanly with everything else this portal has already covered. This section is that decision framework.</p>
+
+  <h3>Selection dimension 1: who or what is consuming the secret</h3>
+  <p>This is the same human-vs-machine distinction Section 12.8 used to explain why CyberArk built two separate products. Human-consumed credentials — interactive admin sessions, break-glass access — favor PAM platforms with workflow and session recording (CyberArk EPV, Module 10). Machine-consumed credentials — application database connections, CI/CD pipeline secrets, container workloads — favor API-native, programmatic platforms (Vault, Conjur). Getting this dimension wrong early is the single most common cause of secrets management projects that stall: forcing a human-workflow-centric tool onto a high-volume machine use case (or vice versa) creates friction that eventually gets bypassed.</p>
+
+  <h3>Selection dimension 2: what type of secret</h3>
+  <p>Different secret types favor different platforms even within the "machine consumer" bucket. Database and cloud credentials are the strongest fit for dynamic secrets engines (Vault, Conjur with appropriate integrations). Certificates are the domain of PKI infrastructure (Sections 12.2–12.3, or Vault's PKI secrets engine for short-lived, API-issued certs specifically). Encryption keys protecting data at rest belong with HSMs or cloud KMS (Section 12.5), not in a general-purpose secrets store. Static legacy secrets that can't yet be eliminated — an old mainframe application's hardcoded service account, for example — still belong in a vault with strict access control, even if dynamic generation isn't achievable for that particular system yet.</p>
+
+  <h3>Selection dimension 3: existing platform investment</h3>
+  <p>An organization with substantial existing investment in CyberArk for human PAM has a meaningfully lower-friction path extending into Conjur for machine secrets than standing up Vault as an entirely separate platform with its own operational team, policy model, and integration surface — not because Vault is worse, but because the integration and operational overlap with the existing CyberArk deployment (shared rotation policies via CPM, a single vendor relationship, overlapping skill sets on the team) reduces total cost and risk. Conversely, an organization with no existing CyberArk footprint and a strongly Kubernetes/cloud-native engineering culture often finds Vault's open-source roots, Terraform-ecosystem integration, and broad community tooling a better starting point. Neither answer is universally correct — the existing investment is a real architectural input, not just a procurement consideration.</p>
+
+  <h3>Selection dimension 4: regulatory and compliance requirements</h3>
+  <p>Regulated industries often have explicit requirements that constrain the decision space directly — a FIPS 140-2/140-3 validation requirement (Section 12.5) for any HSM or KMS in scope, specific key-rotation-frequency mandates for certain secret types, or audit trail requirements that favor a platform with mature, exportable logging over one that's earlier in its compliance certification journey. These requirements should be gathered before the technology selection, not retrofitted afterward.</p>
+
+  <h3>Bringing it together: the full-circle integration</h3>
+  <p>Every platform and pattern in this module connects back to specific content from Modules 02 through 11, and seeing that full map is the point of placing this section last. PKI underlies the JWT signing in Module 03, the SSH Certificate Authority in Module 07, the mTLS and device certificates in Module 06 and Module 11. HSMs protect the most sensitive keys named throughout Modules 03, 04, and 10. Vault and Conjur both directly extend the Zero Standing Privilege and workload identity federation principles established in Module 10 and Module 11, applied specifically to the credential layer underneath those higher-level identity mechanisms. None of this module's content stands alone — it's the cryptographic foundation that every other module has been quietly resting on.</p>
+
+  <h3>A maturity roadmap, not a single decision</h3>
+  <p>Most organizations don't arrive at a mature secrets management architecture in one project. The realistic path runs through stages: first, eliminate hardcoded secrets from source code and config files (Section 12.1's anti-pattern) by moving everything into at least a basic vault, even a static one. Second, automate certificate lifecycle management to eliminate expiry-driven outages (Section 12.3). Third, introduce dynamic secrets for the highest-value, highest-risk credentials — typically production database access and cloud IAM credentials — before attempting a wholesale migration of every secret in the environment. Fourth, extend HSM protection to the most catastrophic keys (Root CA, signing keys) if not already in place. Treating this as a staged roadmap, prioritized by risk, is consistently more successful than treating it as a single "buy the platform" decision.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 23 — Secrets Platform Selection Decision Tree</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode" style="flex-basis:100%;">Who/what consumes this secret?</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row">
+        <div class="dnode"><div class="dnode-title">Human, interactive</div><div class="dnode-sub">→ CyberArk EPV (Module 10)</div></div>
+        <div class="dnode"><div class="dnode-title">Machine, programmatic</div><div class="dnode-sub">→ continue below</div></div>
+      </div>
+      <div class="darrow">↓ (machine path)</div>
+      <div class="dflow-row"><div class="dnode" style="flex-basis:100%;">What type of secret?</div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row">
+        <div class="dnode"><div class="dnode-title">Database/cloud credential</div><div class="dnode-sub">→ Vault or Conjur dynamic secrets engine</div></div>
+        <div class="dnode"><div class="dnode-title">Certificate</div><div class="dnode-sub">→ Enterprise CA / Vault PKI engine</div></div>
+        <div class="dnode"><div class="dnode-title">Encryption key</div><div class="dnode-sub">→ HSM / Cloud KMS</div></div>
+      </div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent" style="flex-basis:100%;">Existing CyberArk investment? → favors Conjur. Cloud-native/Kubernetes-heavy, no existing PAM platform? → favors Vault.</div></div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 24 — Full-Circle Architecture: Cross-Module Map</div>
+    <div class="dcols dcols-2">
+      <div class="dcard"><h5>Module 02 — Kerberos</h5><p class="text-muted" style="font-size:0.8rem;">Keytabs are secrets (12.1); trust chain logic parallels PKI chains (12.2)</p></div>
+      <div class="dcard"><h5>Module 03 — JWT/OIDC</h5><p class="text-muted" style="font-size:0.8rem;">JWKS signing keys, key rollover (12.4), HSM-protected signing keys (12.5)</p></div>
+      <div class="dcard"><h5>Module 04 — PingFederate</h5><p class="text-muted" style="font-size:0.8rem;">Signing certificate lifecycle (12.3), expiry incident pattern</p></div>
+      <div class="dcard"><h5>Module 06 — RADIUS/802.1X</h5><p class="text-muted" style="font-size:0.8rem;">SCEP enrollment (12.3), fail-open/closed parallel (12.6)</p></div>
+      <div class="dcard"><h5>Module 07 — SSH</h5><p class="text-muted" style="font-size:0.8rem;">SSH CA generalized to enterprise PKI (12.2), Vault SSH engine (12.7)</p></div>
+      <div class="dcard"><h5>Module 08 — PBAC</h5><p class="text-muted" style="font-size:0.8rem;">Vault policies, Conjur policy-as-code (12.7, 12.8)</p></div>
+      <div class="dcard"><h5>Module 10 — CyberArk EPV/PAM</h5><p class="text-muted" style="font-size:0.8rem;">Vault server key/HSM (12.5), Conjur as machine-facing counterpart (12.8)</p></div>
+      <div class="dcard"><h5>Module 11 — Machine Identity</h5><p class="text-muted" style="font-size:0.8rem;">Workload auth federation (12.7, 12.8), dynamic secrets as ZSP applied to credentials</p></div>
+    </div>
+    <div class="diagram-caption">Every module in this portal touches secrets management somewhere — this module makes that substrate explicit.</div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 25 — Secrets Management Maturity Roadmap</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode dnode-danger" style="flex-basis:100%;"><div class="dnode-title">Stage 1: Eliminate Hardcoded Secrets</div><div class="dnode-sub">Move source code/config secrets into at least a basic vault</div></div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-warn" style="flex-basis:100%;"><div class="dnode-title">Stage 2: Automate Certificate Lifecycle</div><div class="dnode-sub">Eliminate expiry-driven outages (12.3)</div></div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode" style="flex-basis:100%;"><div class="dnode-title">Stage 3: Dynamic Secrets for High-Risk Credentials</div><div class="dnode-sub">Production databases, cloud IAM (12.7, 12.8)</div></div></div>
+      <div class="darrow">↓</div>
+      <div class="dflow-row"><div class="dnode dnode-accent" style="flex-basis:100%;"><div class="dnode-title">Stage 4: HSM Protection for Critical Keys</div><div class="dnode-sub">Root CA, signing keys (12.5)</div></div></div>
+    </div>
+    <div class="diagram-caption">A staged roadmap prioritized by risk consistently outperforms a single "buy the platform" decision.</div>
+  </div>
+
+  <div class="callout callout-cost">
+    <div class="callout-title">🟡 Cost &amp; risk note</div>
+    <p>The most expensive secrets management mistake isn't choosing the "wrong" platform between two reasonable options — it's spending a multi-year, multi-million-dollar program attempting a single big-bang migration of every secret in the enterprise at once, instead of following a staged, risk-prioritized roadmap. Organizations that start with Stage 1 (eliminate hardcoded secrets) and Stage 2 (automate certificate lifecycle) see measurable risk reduction within months, using comparatively modest tooling investment, well before any decision about Vault versus Conjur versus a cloud-native secrets manager needs to be finalized.</p>
+  </div>
+
+  <div class="lab">
+    <div class="lab-title">🧪 Lab — 12.9</div>
+    <p>Using the four selection dimensions from this section (consumer type, secret type, existing investment, regulatory requirements), evaluate your own organization's secrets management posture. Where are you on the maturity roadmap in Diagram 25 — Stage 1, 2, 3, or 4? What's the single highest-risk gap you'd prioritize closing first, and which platform or pattern from this module would you propose to close it?</p>
+  </div>
+</div>
+
+<div class="module" data-wrapup-anchor="true" id="cheatsheet">
+  <div class="module-divider">
+    <div class="module-num">📋</div>
+    <h2>Architecture Cheat Sheet</h2>
+  </div>
+  <p>Eight load-bearing ideas from this module, condensed for quick reference. If you remember nothing else from Module 12, remember these.</p>
+
+  <div class="analogy analogy-violet">
+    <div class="analogy-title">🟪 Analogy</div>
+    <p>Think of this cheat sheet the way you'd think of a pilot's pre-flight checklist: not a substitute for understanding the aircraft, but a fast, reliable check that the load-bearing items haven't been silently forgotten under deadline pressure. Each item below corresponds to one section of this module — if any one of them sounds unfamiliar, that's a signal to revisit that section before relying on it in a design review.</p>
+  </div>
+
+  <div class="cheat-grid">
+    <div class="cheat-item"><span class="cheat-num">1</span>A secret is anything whose confidentiality IS the security guarantee — never hardcode in source, config, env vars, or images (12.1).</div>
+    <div class="cheat-item"><span class="cheat-num">2</span>PKI trust chains walk leaf → Intermediate → Root the same way AD trust walks domain → tree → forest — cryptographic, not administrative (12.2).</div>
+    <div class="cheat-item"><span class="cheat-num">3</span>Shrinking certificate validity (90 days → hours) makes lifecycle automation mandatory, not optional (12.3).</div>
+    <div class="cheat-item"><span class="cheat-num">4</span>Key rotation requires an overlap window — publish old and new keys together until every in-flight token using the old key expires (12.4).</div>
+    <div class="cheat-item"><span class="cheat-num">5</span>HSMs protect the single highest-value key in nearly every system this portal has covered — Root CA, IdP signing key, Vault server key (12.5).</div>
+    <div class="cheat-item"><span class="cheat-num">6</span>Revocation checking soft-fails by design in most clients — short-lived certificates reduce how much weight that gap carries (12.6).</div>
+    <div class="cheat-item"><span class="cheat-num">7</span>Dynamic secrets (Vault) don't rotate a standing credential faster — they eliminate the standing credential entirely (12.7).</div>
+    <div class="cheat-item"><span class="cheat-num">8</span>EPV and Conjur are the same vendor's answer to two different consumers: humans need workflow, machines need an API (12.8).</div>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Architect's note</div>
+    <p>Notice that none of these eight items are about a specific vendor's product features — they're about architectural patterns that recur regardless of which CA, which HSM vendor, or which secrets platform you end up choosing. That's deliberate. Tools change every few years; the underlying patterns (trust chains, overlap windows, dynamic versus static credentials) are durable enough to outlast any individual product decision you make based on Section 12.9's selection framework.</p>
+  </div>
+</div>
+
+<div class="module" data-wrapup-anchor="true" id="mindmap">
+  <div class="module-divider">
+    <div class="module-num">🧠</div>
+    <h2>Mind Map</h2>
+  </div>
+  <p>One way to hold this entire module in your head at once: a single hub, eight branches, each branch a section you've just worked through.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-label">Diagram 26 — Module 12 Mind Map</div>
+    <div class="dflow">
+      <div class="dflow-row"><div class="dnode dnode-accent" style="flex-basis:100%; text-align:center; padding:1.1rem;"><div class="dnode-title" style="font-size:1rem;">🔐 Secrets Management &amp; Cryptographic Identity</div></div></div>
+      <div class="darrow">↙ ↓ ↘</div>
+      <div class="dcols dcols-3" style="margin-top:0.5rem;">
+        <div class="dcard"><h5>12.1 Discipline</h5><p style="font-size:0.8rem;" class="text-muted">Why secrets ≠ PAM ≠ IGA</p></div>
+        <div class="dcard"><h5>12.2 PKI</h5><p style="font-size:0.8rem;" class="text-muted">CAs, trust chains, X.509</p></div>
+        <div class="dcard"><h5>12.3 Lifecycle</h5><p style="font-size:0.8rem;" class="text-muted">Enrollment, renewal, shrinking validity</p></div>
+        <div class="dcard"><h5>12.4 Rotation</h5><p style="font-size:0.8rem;" class="text-muted">JWKS overlap window, envelope encryption</p></div>
+        <div class="dcard"><h5>12.5 HSM</h5><p style="font-size:0.8rem;" class="text-muted">Keys never leave, PKCS#11</p></div>
+        <div class="dcard"><h5>12.6 Revocation</h5><p style="font-size:0.8rem;" class="text-muted">CRL, OCSP, stapling, soft-fail</p></div>
+        <div class="dcard"><h5>12.7 Vault</h5><p style="font-size:0.8rem;" class="text-muted">Dynamic secrets, unseal, Shamir</p></div>
+        <div class="dcard"><h5>12.8 Conjur</h5><p style="font-size:0.8rem;" class="text-muted">DevOps secrets, policy-as-code</p></div>
+      </div>
+    </div>
+    <div class="diagram-caption">Section 12.9 isn't a ninth branch — it's the framework for choosing and combining all eight, which is why it sits at the center alongside the hub conceptually.</div>
+  </div>
+</div>
+
+<div class="module" data-wrapup-anchor="true" id="knowledge-check">
+  <div class="module-divider">
+    <div class="module-num">✅</div>
+    <h2>Knowledge Check</h2>
+  </div>
+  <p>Five questions to test recall before moving on. Click each question to reveal the answer.</p>
+
+  <div class="qa-block">
+    <span class="qa-num">Q1</span>
+    <details>
+      <summary style="cursor:pointer; font-weight:600;">Why is secrets management considered a distinct discipline from PAM and IGA, rather than a subset of either?</summary>
+      <p style="margin-top:0.7rem;">PAM governs workflow and access to existing credentials (who can use it, under what process); IGA governs entitlement lifecycle and certification (should this identity still have this access). Secrets management answers a different question entirely: where does the actual cryptographic material live, how is it delivered, and how is it rotated. PAM and IGA both assume a credential already exists and govern its use — secrets management is the runtime infrastructure that creates and protects the credential itself.</p>
+    </details>
+  </div>
+
+  <div class="qa-block">
+    <span class="qa-num">Q2</span>
+    <details>
+      <summary style="cursor:pointer; font-weight:600;">Why is the Root CA kept offline while the Intermediate CA does the day-to-day certificate issuance?</summary>
+      <p style="margin-top:0.7rem;">Blast radius containment. If the Root CA's private key is compromised, every certificate ever issued under the entire hierarchy becomes untrustworthy. Keeping the Root offline and delegating issuance to an Intermediate means a compromise of the Intermediate only affects the certificates it issued — the Root can revoke and replace it without invalidating the whole hierarchy.</p>
+    </details>
+  </div>
+
+  <div class="qa-block">
+    <span class="qa-num">Q3</span>
+    <details>
+      <summary style="cursor:pointer; font-weight:600;">What problem does the JWKS overlap window solve during key rotation?</summary>
+      <p style="margin-top:0.7rem;">It prevents an outage. If an IdP rotated signing keys abruptly — publishing only the new key and immediately removing the old one — every token already signed with the old key would instantly fail validation. The overlap window keeps both the old and new keys published in JWKS until every token signed with the old key has naturally expired, so rotation never breaks in-flight tokens.</p>
+    </details>
+  </div>
+
+  <div class="qa-block">
+    <span class="qa-num">Q4</span>
+    <details>
+      <summary style="cursor:pointer; font-weight:600;">Why does HashiCorp Vault's dynamic secrets model represent a stronger security posture than rotating a static secret on a schedule?</summary>
+      <p style="margin-top:0.7rem;">A static secret, even when rotated regularly, exists continuously and may be shared across multiple consumers — creating a standing attack surface for up to the entire rotation interval. A dynamic secret is generated uniquely per request, used by exactly one consumer, and automatically revoked at lease expiry — eliminating shared credentials, stale credentials, and most of the window an attacker could exploit, rather than just shrinking it.</p>
+    </details>
+  </div>
+
+  <div class="qa-block">
+    <span class="qa-num">Q5</span>
+    <details>
+      <summary style="cursor:pointer; font-weight:600;">Why does CyberArk offer both EPV and Conjur instead of one unified product?</summary>
+      <p style="margin-top:0.7rem;">Humans and machines consume credentials in fundamentally different ways. Humans need workflow, approval, and session recording — EPV's strength, built around PVWA and PSM. Machines need fast, programmatic, API-native delivery with no human in the loop — Conjur's strength. Optimizing one product for both consumption patterns would compromise its fit for each.</p>
+    </details>
+  </div>
+</div>
+
+<div class="module" data-wrapup-anchor="true" id="architect-review">
+  <div class="module-divider">
+    <div class="module-num">🏗️</div>
+    <h2>Architect Review Questions</h2>
+  </div>
+  <p>Three open-ended questions, the kind a staff or principal-level architect should be able to reason through out loud in a design review — not single-answer recall, but judgment under trade-offs.</p>
+
+  <div class="analogy analogy-green">
+    <div class="analogy-title">🟩 Analogy</div>
+    <p>Treat these the way a structural engineer treats a load-path question on an unfamiliar building: there's rarely one "correct" answer in isolation, but there is a correct way to reason about it — name the forces at play, trace where the load actually goes, and justify the trade-off you're accepting. That's what these three questions are testing.</p>
+  </div>
+
+  <div class="qa-block">
+    <span class="qa-num">ARQ 1</span>
+    <p><strong>Your organization is moving from 1-year TLS certificates to 90-day certificates enterprise-wide. What architectural changes does this force, beyond "renew more often"?</strong> Consider: certificate inventory and discovery, automation tooling (ACME/SCEP/Vault PKI), monitoring and alerting thresholds, the operational maturity required to support automated renewal without human approval gates, and what happens to teams or systems that can't yet support automation.</p>
+  </div>
+
+  <div class="qa-block">
+    <span class="qa-num">ARQ 2</span>
+    <p><strong>A security team proposes hard-fail revocation checking (refuse to connect if OCSP/CRL is unreachable) for all internal mTLS traffic. What's your recommendation, and why?</strong> Consider: the availability risk of making the OCSP responder a single point of failure, whether short-lived certificates reduce the need for hard-fail in the first place, and whether the answer should differ for the highest-sensitivity internal services versus general internal traffic.</p>
+  </div>
+
+  <div class="qa-block">
+    <span class="qa-num">ARQ 3</span>
+    <p><strong>Your organization has CyberArk EPV deployed for human PAM and no existing machine secrets platform. Engineering wants Vault for its Kubernetes-native tooling; your CyberArk team wants Conjur to extend the existing investment. How do you resolve this, and what would change your answer?</strong> Consider: total cost of running two secrets platforms versus one, the skill overlap (or lack of it) between the teams involved, whether the decision should be made once enterprise-wide or per-domain, and what a six-month pilot to de-risk the decision might look like.</p>
+  </div>
+</div>
+
+<div class="module" data-wrapup-anchor="true" id="scenario">
+  <div class="module-divider">
+    <div class="module-num">📖</div>
+    <h2>Real-World Scenario — The Certificate Outage Post-Mortem</h2>
+  </div>
+
+  <div class="scenario-stage">
+    <h4>Situation</h4>
+    <p>At 2:14am, every service calling the internal payments-authorization API begins failing with TLS handshake errors. On-call is paged. Customer-facing checkout starts failing within eleven minutes. The on-call engineer spends the first forty minutes ruling out network and load balancer issues before someone thinks to check the certificate — and finds it expired three hours earlier.</p>
+  </div>
+
+  <div class="scenario-stage">
+    <h4>Root Cause</h4>
+    <p>The certificate was issued two years prior by an engineer who has since left the company, manually requested from the enterprise CA, manually installed, and never entered into any central certificate inventory. No monitoring existed because no system knew the certificate existed in the first place. This is precisely Section 12.3's expiry incident pattern — not a cryptographic failure, a lifecycle management failure.</p>
+  </div>
+
+  <div class="analogy analogy-violet">
+    <div class="analogy-title">🟪 Analogy</div>
+    <p>An untracked certificate is architecturally identical to an orphaned service account from Module 11 — a credential with no clear owner, invisible to governance until the moment it causes a failure. The fix in both cases is the same shape: you cannot govern what you haven't inventoried, and inventory has to be the foundation any lifecycle or rotation program is built on top of, not an afterthought added once something breaks.</p>
+  </div>
+
+  <div class="scenario-stage">
+    <h4>Immediate Remediation</h4>
+    <p>The on-call team manually issues an emergency replacement certificate, restarts the affected service, and restores checkout within fifty-eight minutes of the initial page. A full incident review is scheduled for the next business day.</p>
+  </div>
+
+  <div class="usecase">
+    <div class="usecase-title">Use Case — Apply This to Your Own Environment</div>
+    <p>Before reading further, pause and ask: could this exact incident happen in your environment today? Do you have a complete, centrally-maintained inventory of every TLS certificate in production, regardless of who issued it? If you're not confident in the answer, that uncertainty is itself the finding — and it's the same gap this post-mortem is about to walk through closing.</p>
+  </div>
+
+  <div class="scenario-stage">
+    <h4>90-Day Architecture</h4>
+    <p>The team stands up a centralized Certificate Lifecycle Management (CLM) tool that discovers every certificate in the environment via network scanning and CA log review, alerts at 90/60/30/7 days before any expiry, and assigns an owning team to every discovered certificate — even ones with no clear original owner, defaulting to the platform team until reassigned. This closes the immediate visibility gap without yet changing how certificates are issued or renewed.</p>
+  </div>
+
+  <details class="deepdive">
+    <summary>🟣 Deep dive: Why certificate discovery is harder than it sounds</summary>
+    <div class="deepdive-body">
+      <p>"Just scan the network for certificates" sounds simple but runs into real architectural friction. Network-based scanning only finds certificates actively presented on a listening port — it misses certificates sitting unused on disk, certificates embedded in client applications rather than servers, and certificates protected behind network segmentation the scanner can't reach. CA-log-based discovery (reviewing every certificate a given CA has ever issued) is more complete for certificates from CAs you control, but says nothing about certificates obtained from a public CA outside your direct oversight, or certificates issued by a forgotten, unmanaged internal CA instance someone stood up years ago.</p>
+      <p>A mature discovery program typically combines both approaches — active network scanning for what's currently in use, plus CA log review for what's been issued — and accepts that even this combination won't reach 100% completeness on day one. The realistic goal isn't a perfect inventory immediately; it's a steadily improving one, with every newly discovered "unknown" certificate treated as a data point about where the next gap in the discovery process is, not just a one-off cleanup item.</p>
+    </div>
+  </details>
+
+  <div class="scenario-stage">
+    <h4>12-Month Target State</h4>
+    <p>The organization migrates its highest-churn internal services to short-lived certificates issued automatically via Vault's PKI engine (Section 12.7), eliminating manual renewal — and the entire category of "someone forgot to renew it" risk — for the services where automation is feasible. Lower-churn legacy systems that can't yet support automated issuance remain on the CLM tool's monitoring and alerting, with a long-term goal of migrating them as the underlying platforms allow.</p>
+  </div>
+
+  <div class="scenario-stage">
+    <h4>Lessons</h4>
+    <p>Certificate expiry incidents are entirely preventable, and they keep happening anyway because inventory and monitoring are treated as optional until an outage makes them mandatory. The architectural fix this post-mortem converged on — inventory first, automation second — is the same staged maturity roadmap Section 12.9 described in the abstract: don't attempt to automate what you haven't yet discovered and inventoried.</p>
+  </div>
+
+  <div class="analogy analogy-green">
+    <div class="analogy-title">🟩 Analogy</div>
+    <p>This incident, and its resolution, is a small-scale rehearsal of the exact maturity roadmap from Section 12.9: you can't skip straight to Stage 3's dynamic secrets when you haven't yet completed Stage 1 and Stage 2's foundational visibility and lifecycle automation. Every organization that's been burned by a certificate outage has, in effect, been forced to learn this staging the hard way — the value of Section 12.9's framework is learning it in advance instead.</p>
+  </div>
+</div>
+
+<div class="module" data-wrapup-anchor="true" id="bridge">
+  <div class="module-divider">
+    <div class="module-num">🌉</div>
+    <h2>Bridge to Module 13</h2>
+  </div>
+  <p>Module 12 gave you the cryptographic substrate underneath every identity mechanism in this portal: PKI, certificates, HSMs, and the platforms that manage secrets dynamically. Module 13 moves up a layer, into how identity itself is architected when the infrastructure it runs on is no longer a server you can walk up to.</p>
+
+  <div class="bridge-band">
+    <div class="bridge-card prev">
+      <div class="bridge-label">← Where you've been</div>
+      <h3>Module 12: Secrets Management &amp; Cryptographic Identity</h3>
+      <p>PKI and trust chains, certificate lifecycle, key rotation, HSMs, revocation, HashiCorp Vault, and CyberArk Conjur — the cryptographic foundation underneath every other module in this portal.</p>
+    </div>
+    <div class="bridge-card next">
+      <div class="bridge-label">Where you're headed →</div>
+      <h3>Module 13: Cloud Identity Architecture</h3>
+      <p>How identity, access, and the secrets infrastructure from this module operate when your environment is AWS, Azure, or GCP instead of an on-premises datacenter — and what changes, and what stays architecturally identical, when the infrastructure itself becomes someone else's responsibility.</p>
+      <a class="bridge-cta" href="module13.html">Continue to Module 13: Cloud Identity Architecture →</a>
+    </div>
+  </div>
+</div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ---------- Theme toggle (in-memory only, no storage APIs) ----------
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', () => {
+  document.documentElement.classList.toggle('dark');
+  themeToggle.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+});
+
+// ---------- Mobile sidebar toggle ----------
+const sidebar = document.getElementById('sidebar');
+const mobileToggle = document.getElementById('mobileToggle');
+const overlay = document.getElementById('sidebarOverlay');
+function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+mobileToggle.addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+});
+overlay.addEventListener('click', closeSidebar);
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    const href = link.getAttribute('href');
+    if (href && href.charAt(0) === '#') {
+      const targetId = href.slice(1);
+      const target = document.getElementById(targetId);
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try { if (history.pushState) { history.pushState(null, '', href); } } catch (err) { /* sandboxed preview, ignore */ }
+      }
+    }
+    if (window.innerWidth <= 900) closeSidebar();
+  });
+});
+
+// ---------- Progress bar ----------
+const progressBar = document.getElementById('progressBar');
+function updateProgress() {
+  const h = document.documentElement;
+  const scrollTop = h.scrollTop || document.body.scrollTop;
+  const scrollHeight = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+  const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+  progressBar.style.width = pct + '%';
+}
+window.addEventListener('scroll', updateProgress);
+updateProgress();
+
+// ---------- Scroll spy: active nav link + stack rail highlighting ----------
+const sections = document.querySelectorAll('.module, [data-wrapup-anchor]');
+const navLinks = document.querySelectorAll('.nav-link');
+const stackItems = document.querySelectorAll('.stack-item');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.getAttribute('id');
+      navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+
+      const layers = (entry.target.getAttribute('data-stack-layers') || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (layers.length) {
+        stackItems.forEach(item => {
+          item.classList.toggle('active', layers.includes(item.getAttribute('data-layer')));
+        });
+      }
+    }
+  });
+}, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+sections.forEach(s => observer.observe(s));
+
+// ---------- Sidebar search filter ----------
+const searchInput = document.getElementById('moduleSearch');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  navLinks.forEach(link => {
+    const match = link.textContent.toLowerCase().includes(q);
+    link.classList.toggle('hidden', q.length > 0 && !match);
+  });
+});
+</script>
+</body>
+</html>

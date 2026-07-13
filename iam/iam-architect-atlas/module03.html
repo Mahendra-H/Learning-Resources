@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 03 — Protocols Deep Dive | IAM Architect Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   IAM ARCHITECT ATLAS — DESIGN SYSTEM
+   Phase 2 · Atlas Ember · Module 03
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* Surfaces */
+  --bg-page: #0B0D12;
+  --bg-page-rgb: 11,13,18;
+  --bg-sidebar: #0E1016;
+  --bg-card: #151822;
+  --bg-card-raised: #1A1E2A;
+  --bg-inset: #10131B;
+  --border-subtle: #232838;
+  --border-strong: #2E3548;
+
+  /* Text */
+  --text-primary: #E9ECF3;
+  --text-secondary: #A7AFC2;
+  --text-tertiary: #6E7690;
+  --text-on-accent: #16110A;
+
+  /* Phase 2 — Atlas Ember */
+  --accent-primary: #E8A33D;
+  --accent-primary-dim: #E8A33D26;
+  --accent-primary-glow: #E8A33D40;
+
+  /* Meaning-coded callout accents (constant across phases) */
+  --accent-blue: #5B8FF0;
+  --accent-blue-dim: #5B8FF01F;
+  --accent-green: #45C088;
+  --accent-green-dim: #45C0881F;
+  --accent-violet: #A87FE8;
+  --accent-violet-dim: #A87FE81F;
+  --accent-red: #E8615D;
+  --accent-red-dim: #E8615D1F;
+
+  /* "Ink" variants — used wherever an accent appears as TEXT rather than a
+     solid fill/border. Identical to their base color in dark mode; in light
+     mode these get redefined to deeper, higher-contrast shades so small
+     mono labels stay readable (≥4.5:1) against a white page. */
+  --accent-ink: var(--accent-primary);
+  --accent-blue-ink: var(--accent-blue);
+  --accent-green-ink: var(--accent-green);
+  --accent-violet-ink: var(--accent-violet);
+  --accent-red-ink: var(--accent-red);
+
+  /* Type */
+  --font-display: 'Inter Tight', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+
+  /* Layout */
+  --sidebar-width: 296px;
+  --topbar-height: 52px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* ───────────────────────── Light theme override ─────────────────────────
+   Toggled via [data-theme="light"] on <html>. Surfaces, text, and borders
+   are fully redefined for a warm-paper light palette. --accent-primary
+   itself stays the same amber in both themes (it's used for solid fills —
+   buttons, progress bar, dots — which read fine on either background).
+   The --*-ink variants below are the ones that change, since those carry
+   small mono text that needs real contrast against white. */
+html[data-theme="light"] {
+  --bg-page: #F7F7F4;
+  --bg-page-rgb: 247,247,244;
+  --bg-sidebar: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-raised: #F1F0EA;
+  --bg-inset: #F4F3EE;
+  --border-subtle: #E5E2D9;
+  --border-strong: #D2CDBF;
+
+  --text-primary: #1C1D22;
+  --text-secondary: #4C4E58;
+  --text-tertiary: #6A6B73;
+  --text-on-accent: #16110A;
+
+  --accent-primary-dim: #E8A33D29;
+  --accent-primary-glow: #E8A33D33;
+  --accent-blue-dim: #5B8FF029;
+  --accent-green-dim: #45C08829;
+  --accent-violet-dim: #A87FE829;
+  --accent-red-dim: #E8615D29;
+
+  --accent-ink: #B45309;
+  --accent-blue-ink: #2E5FC4;
+  --accent-green-ink: #167A4F;
+  --accent-violet-ink: #6B3FC0;
+  --accent-red-ink: #B8302C;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+::selection { background: var(--accent-primary-glow); color: var(--text-primary); }
+
+a { color: inherit; text-decoration: none; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-page); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ───────────────────────── Top progress bar ───────────────────────── */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-primary), #F4C77A);
+  z-index: 1000;
+  transition: width 80ms linear;
+}
+
+/* ───────────────────────── Top bar ───────────────────────── */
+#top-bar {
+  position: fixed;
+  top: 3px; left: 0; right: 0;
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px 0 calc(var(--sidebar-width) + 22px);
+  background: rgba(var(--bg-page-rgb), 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 900;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+#top-bar .tb-label strong { color: var(--accent-ink); font-weight: 600; }
+.tb-right { display: flex; align-items: center; gap: 14px; }
+#theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms, transform 150ms;
+}
+#theme-toggle:hover { border-color: var(--accent-primary); transform: rotate(15deg); }
+#menu-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ───────────────────────── Sidebar ───────────────────────── */
+#sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  padding: 20px 16px 40px;
+  z-index: 950;
+}
+#sidebar::-webkit-scrollbar { width: 6px; }
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16.5px;
+  color: var(--text-primary);
+  padding: 4px 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 14px;
+}
+.phase-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent-ink);
+  padding: 0 8px;
+  margin-bottom: 4px;
+}
+.sub-title {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  padding: 0 8px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  transition: background 120ms, color 120ms;
+}
+.back-link:hover { background: var(--bg-card); color: var(--text-primary); }
+
+.search-box {
+  width: 100%;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  outline: none;
+}
+.search-box:focus { border-color: var(--accent-primary); }
+.search-box::placeholder { color: var(--text-tertiary); }
+
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 14px 8px 6px;
+}
+.nav-item {
+  display: block;
+  font-size: 13.2px;
+  color: var(--text-secondary);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  margin: 1px 0;
+  border-left: 2px solid transparent;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.nav-item:hover { background: var(--bg-card); color: var(--text-primary); }
+.nav-item.active {
+  background: var(--accent-primary-dim);
+  color: var(--accent-ink);
+  border-left-color: var(--accent-primary);
+  font-weight: 500;
+}
+
+/* Identity stack rail */
+.stack-rail {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.stack-rail-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: 0 8px 10px;
+}
+.stack-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 200ms, color 200ms;
+}
+.stack-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  flex-shrink: 0;
+  transition: background 200ms, box-shadow 200ms;
+}
+.stack-item.lit {
+  background: var(--accent-primary-dim);
+  color: var(--text-primary);
+}
+.stack-item.lit .stack-dot {
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-primary-glow);
+}
+
+/* ───────────────────────── Main content ───────────────────────── */
+#main {
+  margin-left: var(--sidebar-width);
+  padding-top: calc(var(--topbar-height) + 3px);
+  max-width: 880px;
+  margin-right: auto;
+  padding-left: 56px;
+  padding-right: 56px;
+}
+
+.section { padding: 56px 0; border-bottom: 1px solid var(--border-subtle); scroll-margin-top: 76px; }
+.section:last-of-type { border-bottom: none; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: var(--accent-ink);
+  margin-bottom: 14px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.18;
+  margin: 0 0 18px;
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--accent-primary);
+  display: inline-block;
+}
+h2 {
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 700;
+  margin: 0 0 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.module-num {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  opacity: 0.55;
+}
+h3 {
+  font-family: var(--font-display);
+  font-size: 18.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 28px 0 10px;
+}
+p.lede {
+  font-size: 18.5px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 720px;
+}
+p { color: var(--text-secondary); margin: 0 0 16px; }
+strong { color: var(--text-primary); font-weight: 600; }
+code {
+  font-family: var(--font-mono);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  color: var(--accent-ink);
+}
+ul, ol { color: var(--text-secondary); padding-left: 22px; }
+li { margin-bottom: 8px; }
+li::marker { color: var(--accent-ink); }
+
+/* ───────────────────────── Where-am-I card ───────────────────────── */
+.whereami {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-top: 26px;
+  flex-wrap: wrap;
+}
+.whereami .wa-label { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-tertiary); letter-spacing: 0.04em; }
+.whereami .wa-main { font-size: 14.5px; color: var(--text-primary); font-weight: 600; margin-top: 3px; }
+.wa-progress-track {
+  width: 220px; height: 6px;
+  background: var(--bg-inset);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+.wa-progress-fill {
+  height: 100%;
+  width: 18%;
+  background: linear-gradient(90deg, var(--accent-primary), #F4C77A);
+  border-radius: 4px;
+}
+.wa-pct { font-family: var(--font-mono); font-size: 12px; color: var(--accent-ink); margin-top: 6px; text-align: right; }
+
+/* ───────────────────────── Callout boxes ───────────────────────── */
+.callout {
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin: 22px 0;
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--border-strong);
+}
+.callout-title { font-family: var(--font-display); font-weight: 600; font-size: 14.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout p { font-size: 14.8px; }
+
+.callout-architect { background: var(--accent-green-dim); border-left-color: var(--accent-green); }
+.callout-architect .callout-title { color: var(--accent-green-ink); }
+
+.callout-concept { background: var(--accent-blue-dim); border-left-color: var(--accent-blue); }
+.callout-concept .callout-title { color: var(--accent-blue-ink); }
+
+.callout-security { background: var(--accent-red-dim); border-left-color: var(--accent-red); }
+.callout-security .callout-title { color: var(--accent-red-ink); }
+
+.callout-cost { background: var(--accent-primary-dim); border-left-color: var(--accent-primary); }
+.callout-cost .callout-title { color: var(--accent-ink); }
+
+/* ───────────────────────── Analogy / Use-case / Lab / Deep-dive ───────────────────────── */
+.analogy-box {
+  border-radius: var(--radius-md);
+  padding: 19px 22px;
+  margin: 22px 0;
+  background: linear-gradient(135deg, var(--bg-card-raised), var(--bg-card));
+  border: 1px solid var(--border-strong);
+  position: relative;
+}
+.analogy-box::before {
+  content: "ANALOGY";
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  position: absolute;
+  top: 14px; right: 18px;
+  opacity: 0.5;
+}
+.analogy-amber { border-left: 3px solid var(--accent-primary); }
+.analogy-green { border-left: 3px solid var(--accent-green); }
+.analogy-blue { border-left: 3px solid var(--accent-blue); }
+.analogy-box p { font-size: 14.8px; color: var(--text-secondary); margin-bottom: 0; padding-right: 70px; }
+.analogy-box p:first-child { padding-right: 90px; }
+
+.usecase-box {
+  border-radius: var(--radius-md);
+  padding: 19px 22px;
+  margin: 22px 0;
+  background: var(--bg-inset);
+  border: 1px dashed var(--border-strong);
+}
+.usecase-box .uc-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  padding: 2px 9px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.usecase-box p { font-size: 14.8px; margin-bottom: 0; }
+
+.deepdive-box {
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin: 22px 0;
+  background: var(--accent-violet-dim);
+  border: 1px solid var(--accent-violet);
+  border-style: solid;
+}
+.deepdive-box .dd-title { font-family: var(--font-display); font-weight: 600; font-size: 14.5px; color: var(--accent-violet-ink); margin-bottom: 6px; }
+.deepdive-box p { font-size: 14.8px; margin-bottom: 0; }
+
+.lab-box {
+  border-radius: var(--radius-md);
+  padding: 19px 22px;
+  margin: 22px 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--accent-primary);
+}
+.lab-box .lab-title { font-family: var(--font-mono); font-weight: 600; font-size: 12.5px; letter-spacing: 0.05em; color: var(--accent-ink); margin-bottom: 9px; text-transform: uppercase; }
+.lab-box p { font-size: 14.5px; font-style: italic; color: var(--text-secondary); margin-bottom: 0; }
+
+/* ───────────────────────── Diagram box ───────────────────────── */
+.diagram-box {
+  border-radius: var(--radius-lg);
+  padding: 24px 26px 22px;
+  margin: 26px 0;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+}
+.diagram-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+.diagram-caption {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 14px;
+  margin-bottom: 0;
+  font-style: italic;
+}
+
+/* generic flow/sequence helpers reused across diagrams */
+.flow-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.flow-node {
+  background: var(--bg-card-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.flow-node.accent { border-color: var(--accent-primary); color: var(--accent-ink); }
+.flow-arrow { color: var(--text-tertiary); font-size: 15px; }
+
+.seq-step {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+.seq-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent-primary-dim);
+  color: var(--accent-ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.seq-text { font-size: 13.8px; color: var(--text-secondary); padding-top: 2px; }
+.seq-text strong { color: var(--text-primary); }
+.seq-text .seq-meta { display: block; font-family: var(--font-mono); font-size: 11.8px; color: var(--text-tertiary); margin-top: 3px; }
+
+/* ───────────────────────── Tables ───────────────────────── */
+.table-wrap { overflow-x: auto; margin: 22px 0; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+table { width: 100%; border-collapse: collapse; font-size: 13.3px; }
+thead th {
+  background: var(--bg-card-raised);
+  color: var(--accent-ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); vertical-align: top; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--bg-card); }
+tbody td:first-child { color: var(--text-primary); font-weight: 500; }
+
+/* ───────────────────────── Cheat grid ───────────────────────── */
+.cheat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 22px;
+}
+.cheat-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  font-size: 13.8px;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 12px;
+}
+.cheat-num { font-family: var(--font-mono); color: var(--accent-ink); font-weight: 600; flex-shrink: 0; }
+
+/* ───────────────────────── Bridge band ───────────────────────── */
+.bridge-band {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 26px;
+}
+.bridge-col {
+  border-radius: var(--radius-lg);
+  padding: 24px 26px;
+  border: 1px solid var(--border-subtle);
+}
+.bridge-col.done { background: var(--accent-green-dim); border-color: var(--accent-green); }
+.bridge-col.next { background: var(--accent-primary-dim); border-color: var(--accent-primary); }
+.bridge-tag { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 10px; }
+.bridge-col.done .bridge-tag { color: var(--accent-green-ink); }
+.bridge-col.next .bridge-tag { color: var(--accent-ink); }
+.bridge-col h3 { margin-top: 0; margin-bottom: 10px; font-size: 17px; }
+.bridge-col p { font-size: 13.8px; margin-bottom: 0; }
+.cta-button {
+  display: inline-block;
+  margin-top: 22px;
+  background: var(--accent-primary);
+  color: var(--text-on-accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 13px 24px;
+  border-radius: var(--radius-md);
+  transition: transform 120ms, box-shadow 120ms;
+}
+.cta-button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-primary-glow); }
+
+/* ───────────────────────── Knowledge check / ARQ ───────────────────────── */
+.qa-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 17px 20px;
+  margin-bottom: 12px;
+}
+.qa-tag { font-family: var(--font-mono); font-size: 11.5px; color: var(--accent-ink); font-weight: 600; margin-bottom: 6px; }
+.qa-item p { font-size: 14.3px; margin-bottom: 0; color: var(--text-secondary); }
+
+/* ───────────────────────── Responsive ───────────────────────── */
+@media (max-width: 980px) {
+  #sidebar { transform: translateX(-100%); transition: transform 200ms ease; }
+  #sidebar.open { transform: translateX(0); }
+  #main { margin-left: 0; padding-left: 24px; padding-right: 24px; }
+  #top-bar { padding-left: 64px; }
+  #menu-toggle { display: inline-block; }
+  .cheat-grid { grid-template-columns: 1fr; }
+  .bridge-band { grid-template-columns: 1fr; }
+  h1 { font-size: 30px; }
+}
+@media (max-width: 480px) {
+  #main { padding-left: 16px; padding-right: 16px; }
+  .seq-step { grid-template-columns: 22px 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<div id="top-bar">
+  <button id="menu-toggle" aria-label="Toggle navigation">☰</button>
+  <div class="tb-label">Module 03 of 16 · <strong>🔥 Atlas Ember</strong> · ~4 hr read</div>
+  <div class="tb-right">
+    <div class="tb-label" id="tb-section-indicator"></div>
+    <button id="theme-toggle" aria-label="Toggle light/dark theme" title="Switch to light theme">☀️</button>
+  </div>
+</div>
+
+<nav id="sidebar">
+  <div class="brand">🔐 IAM Architect Atlas</div>
+  <div class="phase-label">MODULE 03 · ATLAS EMBER</div>
+  <div class="sub-title">Protocols Deep Dive — OAuth, OIDC, SAML &amp; JWT</div>
+  <a class="back-link" href="index.html">← Back to Index</a>
+  <input class="search-box" type="text" placeholder="🔍 Search this module...">
+
+  <div class="nav-group-label">Protocol Architecture</div>
+  <a class="nav-item" href="#s3-1">3.1 Why Protocols Exist</a>
+  <a class="nav-item" href="#s3-2">3.2 OAuth 2.0 — The Authorization Framework</a>
+  <a class="nav-item" href="#s3-3">3.3 OAuth 2.0 Grant Types</a>
+  <a class="nav-item" href="#s3-4">3.4 OpenID Connect (OIDC)</a>
+  <a class="nav-item" href="#s3-5">3.5 SAML 2.0 — The Federation Standard</a>
+  <a class="nav-item" href="#s3-6">3.6 JWT — Structure, Claims &amp; Validation</a>
+  <a class="nav-item" href="#s3-7">3.7 Protocol Selection Framework</a>
+  <a class="nav-item" href="#s3-8">3.8 Federation Patterns &amp; Topologies</a>
+
+  <div class="nav-group-label">Wrap-Up</div>
+  <a class="nav-item" href="#cheatsheet">📋 Architecture Cheat Sheet</a>
+  <a class="nav-item" href="#mindmap">🧠 Mind Map</a>
+  <a class="nav-item" href="#knowledge-check">✅ Knowledge Check</a>
+  <a class="nav-item" href="#architect-review">🏗️ Architect Review</a>
+  <a class="nav-item" href="#bridge">🌉 Bridge to Module 04</a>
+
+  <div class="stack-rail">
+    <div class="stack-rail-label">Identity Stack</div>
+    <div class="stack-item" data-layer="applications"><span class="stack-dot"></span>Applications &amp; Portals</div>
+    <div class="stack-item" data-layer="sso"><span class="stack-dot"></span>SSO &amp; Federation</div>
+    <div class="stack-item" data-layer="tokens"><span class="stack-dot"></span>Token &amp; Protocol Layer</div>
+    <div class="stack-item" data-layer="authz"><span class="stack-dot"></span>Authorization Engine</div>
+    <div class="stack-item" data-layer="iga"><span class="stack-dot"></span>IGA &amp; Lifecycle</div>
+    <div class="stack-item" data-layer="pam"><span class="stack-dot"></span>PAM &amp; Privileged</div>
+    <div class="stack-item" data-layer="directory"><span class="stack-dot"></span>Directory &amp; Stores</div>
+    <div class="stack-item" data-layer="network"><span class="stack-dot"></span>Network &amp; Infra Auth</div>
+    <div class="stack-item" data-layer="cloud"><span class="stack-dot"></span>Cloud &amp; Machine</div>
+  </div>
+</nav>
+
+<main id="main">
+
+<section class="section" id="hero" style="padding-top:36px;">
+  <div class="eyebrow">🔥 MODULE 03 · ATLAS EMBER · PHASE 2 · ~4 hr read</div>
+  <h1>Protocols Deep Dive: OAuth 2.0, OIDC, SAML &amp; JWT</h1>
+  <p class="lede">You've used these protocols for years. You've configured OAuth clients in PingFederate, debugged SAML assertions in browser dev tools, decoded JWTs on jwt.io. But there's a difference between knowing how to configure a protocol and understanding why it was designed that way — why OAuth 2.0 uses redirect URIs instead of server-to-server callbacks, why SAML uses XML instead of JSON, why OIDC adds an ID token when OAuth already has an access token, why the Authorization Code flow exists when the Implicit flow is simpler. This module answers those questions. When you finish it, you won't just configure these protocols — you'll make architecture decisions with them.</p>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Phase 2 begins here — what changes</div>
+    <p>Phase 1 (Modules 01–02) built the architectural mental model and the directory infrastructure. Phase 2 (Modules 03–05) covers the protocol and authentication layer that sits above the directory. The amber color shift is intentional — you're moving from foundations to the systems those foundations support. Every protocol in this module depends on the directory infrastructure from Module 02 and the trust model concepts from Module 01.</p>
+  </div>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 Carrying Forward from Modules 01–02</div>
+    <p><strong>Trust models (Module 01):</strong> OAuth and SAML both implement the trust triangle (IdP ↔ SP ↔ User) with different mechanisms.<br><strong>Directory (Module 02):</strong> PingFederate reads user attributes from PingDirectory/AD to build tokens and assertions.<br><strong>Hybrid sync (Module 02):</strong> token freshness depends on how recently the directory was synced.</p>
+  </div>
+
+  <div class="whereami">
+    <div>
+      <div class="wa-label">WHERE AM I?</div>
+      <div class="wa-main">Module 03 / Phase 2 — Authentication &amp; Federation</div>
+    </div>
+    <div>
+      <div class="wa-progress-track"><div class="wa-progress-fill"></div></div>
+      <div class="wa-pct">3 of 16 (18% complete)</div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="s3-1" data-nav-label="3.1 Why Protocols Exist" data-stack-layers="sso,tokens,applications">
+  <h2><span class="module-num">3.1</span> Why Protocols Exist: The Problem Space</h2>
+
+  <p>Before identity protocols existed, every application owned its own authentication. Each app had its own username/password store, its own login page, its own session model. There was no way to tell App B "this user already proved who they are at App A" — so users re-authenticated everywhere, password stores proliferated across every system in the enterprise, and credential management became unmanageable. SSO, in any real sense, was not possible.</p>
+
+  <p>The fundamental challenge identity protocols solve is this: <strong>how do you let Application B trust a user who authenticated at Application A, without Application B ever seeing the user's credentials?</strong> That single question is the seed of every protocol in this module — and every design decision inside OAuth, OIDC, and SAML traces back to answering it a little more rigorously than the last attempt did.</p>
+
+  <p>It's worth being precise about why LDAP doesn't solve this. LDAP is a <strong>directory protocol</strong> — it's how an application reads identity data and verifies a bind against a password. It has no concept of issuing a portable proof of authentication that one application can hand to another. Module 02 covered LDAP as the back-end identity store. This module covers the layer above it: the protocols that let identity travel between applications.</p>
+
+  <p>Before any standard existed for this, enterprises that wanted something resembling SSO built proprietary, point-to-point integrations: a custom cookie shared across a narrow domain, a shared session database two applications both happened to read, or — worse — literal credential replication, where App B stored a copy of the password App A validated. None of these approaches scaled past a handful of tightly coupled applications, none of them worked across organizational boundaries, and every one of them multiplied the attack surface every time a password was copied somewhere new. The protocols this module covers exist specifically to replace that pattern with something that scales, that crosses organizational trust boundaries safely, and that never requires a second application to see a password at all.</p>
+
+  <p>That problem was solved in stages, not all at once — and the order matters architecturally:</p>
+  <ul>
+    <li><strong>SAML 2.0 (2005)</strong> — the first widely adopted enterprise federation standard. XML-based, browser-redirect-driven, built for an era when SOAP and enterprise XML tooling were the default stack.</li>
+    <li><strong>OAuth 2.0 (2012)</strong> — not built to replace SAML, but to solve a different problem: letting a third-party application access a resource on a user's behalf, without ever handling the user's password. This is <em>authorization delegation</em>, not authentication.</li>
+    <li><strong>OIDC (2014)</strong> — added an authentication layer on top of OAuth 2.0, because the industry kept misusing OAuth access tokens as proof of identity. OIDC formalized "who is this user" as a first-class concept on the OAuth foundation.</li>
+  </ul>
+
+  <p>The resulting layered model is one every IAM architect needs internalized: <strong>OAuth handles authorization delegation, OIDC adds authentication on top of OAuth, and SAML handles both — but is older, XML-based, and purpose-built for enterprise browser SSO.</strong> None of the three protocols replaced the others; each occupies a distinct architectural niche, which is why a mature enterprise runs all three simultaneously (Section 3.8 covers this in depth). Recognizing which niche a given integration falls into — before you've opened PingFederate's admin console — is most of what separates a smooth protocol integration from a multi-week back-and-forth with a vendor's support team.</p>
+
+  <p>One more vocabulary note before going further, since architects use these words precisely: a <strong>protocol</strong> defines the rules of interaction between parties (the message flow). A <strong>standard</strong> or <strong>specification</strong> (RFC, OASIS standard) is the formal document that defines a protocol so multiple vendors can implement it interoperably. PingFederate doesn't invent OAuth — it <em>implements</em> the OAuth 2.0 specification (RFC 6749).</p>
+
+  <p>This distinction has a practical payoff later in your career: when a vendor claims something is "OAuth-compliant," the honest follow-up question is which specific RFCs and extensions they implement, since OAuth 2.0 itself is a framework with multiple optional extensions (PKCE, token introspection, device authorization) layered on top of the core spec. Two vendors can both be technically "OAuth-compliant" while supporting meaningfully different sets of capabilities — which is exactly the kind of gap an architect needs to catch during vendor evaluation, not during a production integration six months later.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 1 — The Protocol Evolution Timeline</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch; gap:14px;">
+      <div class="seq-step">
+        <div class="seq-num">·</div>
+        <div class="seq-text"><strong>Pre-2005</strong> — Proprietary SSO, shared passwords, no standard.<span class="seq-meta">Every app solved authentication independently. No portability.</span></div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">05</div>
+        <div class="seq-text"><strong>SAML 2.0</strong> — Enterprise federation standard.<span class="seq-meta">Solved: browser-based SSO across enterprise apps via signed XML assertions. Left unsolved: mobile-friendly, lightweight, JSON-based flows.</span></div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">06</div>
+        <div class="seq-text"><strong>OpenID 1.0</strong> — Consumer identity, later succeeded by OIDC.<span class="seq-meta">Solved: consumer-facing federated login. Left unsolved: enterprise-grade security and a unified authorization model.</span></div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">12</div>
+        <div class="seq-text"><strong>OAuth 2.0</strong> — Authorization delegation framework.<span class="seq-meta">Solved: letting an app act on a user's behalf without seeing the password. Left unsolved: a standardized way to know <em>who</em> the user is.</span></div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">14</div>
+        <div class="seq-text"><strong>OIDC 1.0</strong> — Authentication layer on OAuth 2.0.<span class="seq-meta">Solved: standardized identity assertions (ID tokens) on top of OAuth's authorization model.</span></div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num">19+</div>
+        <div class="seq-text"><strong>FIDO2 / WebAuthn</strong> — Passwordless authentication.<span class="seq-meta">Covered in full in Module 05. Solves credential phishing at the authentication ceremony itself.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analogy-box analogy-amber">
+    <p>The protocol problem is exactly the microservices authentication problem you've solved as a Java engineer. How does Service B trust a JWT from Service A without Service A's private key? You solved it with a shared signing key or a public key infrastructure — and you standardized on JWT. Identity protocols solve the same problem at human scale: how does Application B trust that Application A really authenticated this user? The answer is the same shape: cryptographic tokens issued by a trusted authority, validated against published keys. The difference is which trusted authority, which token format, and which protocol governs the flow.</p>
+  </div>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 The three questions every identity protocol must answer</div>
+    <p>1. How does the user prove who they are? <em>(Authentication)</em><br>
+    2. How does that proof get communicated to the application? <em>(Token / assertion transport)</em><br>
+    3. How does the application verify the proof without contacting the IdP on every request? <em>(Token validation)</em><br>
+    OAuth, OIDC, and SAML answer these three questions differently. Understanding those differences is the foundation of protocol selection.</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Before reading further: without looking anything up, write down what you think the difference is between an OAuth access token and a SAML assertion. Then continue reading. At the end of this module, revisit your answer. The delta is what this module teaches.</p>
+  </div>
+</section>
+
+
+<section class="section" id="s3-2" data-nav-label="3.2 OAuth 2.0 — The Authorization Framework" data-stack-layers="tokens,authz,applications">
+  <h2><span class="module-num">3.2</span> OAuth 2.0: The Authorization Framework</h2>
+
+  <p>Here is the single most important distinction in modern IAM, and the one most engineers get wrong: <strong>OAuth 2.0 is an authorization framework, not an authentication protocol.</strong> It was designed to answer "is this client allowed to do this thing on the user's behalf?" — not "who is this user?" Every misuse of OAuth in production traces back to forgetting this distinction.</p>
+
+  <h3>The four roles</h3>
+  <p>OAuth defines four roles, and every enterprise deployment maps real systems onto them:</p>
+  <ul>
+    <li><strong>Resource Owner</strong> — the human user who owns the data or resource being accessed.</li>
+    <li><strong>Client</strong> — the application requesting access (a web app, mobile app, or service).</li>
+    <li><strong>Authorization Server</strong> — issues tokens after authenticating the resource owner and obtaining consent. PingFederate or Entra ID typically plays this role.</li>
+    <li><strong>Resource Server</strong> — the API that holds the protected resource and validates the access token on each request.</li>
+  </ul>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 2 — OAuth 2.0 Four Roles Architecture</div>
+    <div class="flow-row"><div class="flow-node">Resource Owner</div><div class="flow-arrow">— authorizes →</div><div class="flow-node">Client</div></div>
+    <div class="flow-row"><div class="flow-node">Client</div><div class="flow-arrow">— requests token from →</div><div class="flow-node accent">Authorization Server (PingFederate)</div></div>
+    <div class="flow-row"><div class="flow-node">Client</div><div class="flow-arrow">— calls with access_token →</div><div class="flow-node">Resource Server (API)</div></div>
+    <div class="flow-row"><div class="flow-node">Resource Server</div><div class="flow-arrow">— validates token, serves →</div><div class="flow-node">Response</div></div>
+    <p class="diagram-caption">Each arrow carries a distinct artifact: consent, then a token, then an authorized request, then a validated response.</p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 3 — OAuth 2.0 Token Endpoint Architecture</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch;">
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text"><code>/authorize</code><span class="seq-meta">Issues authorization codes after the user authenticates and consents.</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text"><code>/token</code><span class="seq-meta">Exchanges a code (or client credentials) for access/refresh tokens.</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text"><code>/introspect</code><span class="seq-meta">Lets a Resource Server validate an opaque (non-JWT) access token.</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text"><code>/revoke</code><span class="seq-meta">Invalidates a token before its natural expiry.</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text"><code>/.well-known/oauth-authorization-server</code><span class="seq-meta">Discovery document listing all supported endpoints and capabilities.</span></div></div>
+    </div>
+  </div>
+
+  <h3>Tokens, scopes, and clients</h3>
+  <p>The <strong>authorization code</strong> is deliberately separated from the token itself. It's short-lived, single-use, and travels through the browser. The actual token exchange happens server-to-server at the <code>/token</code> endpoint, away from the browser entirely — this is a security design decision, not an accident, and Section 3.3 walks through exactly why.</p>
+
+  <p><strong>Access tokens</strong> are what the client presents to the Resource Server. They have a lifetime, an audience, and — critically — they say nothing about identity by design. <strong>Refresh tokens</strong> exist so the client doesn't need to send the user through a full re-authentication every time an access token expires; they're long-lived, sensitive, and architects design rotation policies around them carefully.</p>
+
+  <p><strong>Scopes</strong> give OAuth coarse-grained authorization — <code>read:orders</code>, <code>write:profile</code> — but scopes are not enough for fine-grained authorization (who can approve a $50K invoice vs. a $500 one). That's a policy-engine problem, covered in Module 08.</p>
+
+  <p>How a confidential client actually proves its identity to the token endpoint is its own design decision. The simplest method, <code>client_secret_post</code>, sends the secret as a form parameter in the token request body. <code>client_secret_basic</code> sends it via HTTP Basic Auth instead. Neither is wrong, but both depend entirely on the secret never leaking — which is why higher-assurance deployments move to <code>private_key_jwt</code>, where the client signs a short-lived JWT assertion with its own private key instead of transmitting a shared secret at all. PingFederate supports all three, and which one an integration uses is a real architecture decision, not just a dropdown setting.</p>
+
+  <p>The <code>/introspect</code> endpoint deserves its own mention here, separate from the validation depth covered in Section 3.6: it exists specifically for opaque access tokens — tokens that aren't JWTs and carry no inspectable claims of their own. A Resource Server holding an opaque token has no way to check its validity locally; it must call back to the Authorization Server on every request. This is the architectural trade-off that makes JWT-based access tokens so attractive in API-heavy environments — they let the Resource Server skip that round-trip entirely.</p>
+
+  <p>Consent is worth a closer look too, because it's easy to treat as a UI screen rather than an architectural control. The first time a client requests a given set of scopes for a given user, the Authorization Server typically presents a consent prompt — "App X wants to read your profile and write to your calendar" — and records that decision. On subsequent requests for the same scopes, PingFederate can skip the prompt entirely, which is the right behavior for a trusted internal application but a real privacy control for third-party or partner-facing integrations, where re-prompting on scope expansion (a client suddenly requesting a new, broader scope) is what keeps a user from silently granting more access than they intended. The <code>/revoke</code> endpoint is the corresponding architectural safety valve: a user (or an administrator) can invalidate a previously issued token or refresh token immediately, without waiting for natural expiry — the operational equivalent of disabling an account mid-session rather than waiting for the next password rotation cycle.</p>
+
+  <p>OAuth also distinguishes <strong>confidential clients</strong> (server-side apps that can securely store a <code>client_secret</code>) from <strong>public clients</strong> (SPAs, mobile apps, which cannot). This distinction drives which grant types and protections (like PKCE) are mandatory. The <code>redirect_uri</code> must be pre-registered with the Authorization Server precisely because an attacker who can redirect the authorization response to their own URI can steal the code — this is the open redirect attack class.</p>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 Why OAuth is not an authentication protocol</div>
+    <p>OAuth access tokens tell you that a client is authorized to access a resource on behalf of a user — they don't tell you who the user is. An application that uses an OAuth access token to identify a user is misusing the protocol. This is why OIDC exists: it adds the ID token (which IS about the user's identity) on top of OAuth's authorization flow. Architecturally, using OAuth for authentication is like using a car park ticket to prove you own the car — it's evidence of authorization, not identity.</p>
+  </div>
+
+  <div class="analogy-box analogy-amber">
+    <p>OAuth 2.0 is the valet key pattern. When you give a valet your car key, you give them limited authorization to move the car — not the title, not access to your house, not your identity. An OAuth access token is a valet key: it grants limited, scoped access to a resource (your API) on behalf of a resource owner (the user) without exposing the owner's credentials. The application never needs to know or store your password — just that you authorized it to act on your behalf. This is why OAuth is the right pattern for "let this third-party app read my calendar" but the wrong pattern for "log in with Google" — for the latter, you need OIDC.</p>
+  </div>
+
+  <div class="deepdive-box">
+    <div class="dd-title">🟣 Deep dive: What is the PKCE extension, and when is it required?</div>
+    <p>PKCE (Proof Key for Code Exchange, RFC 7636) was invented because public clients — mobile apps and SPAs — can't keep a <code>client_secret</code> confidential, which means anyone who intercepts the authorization code could exchange it for a token. PKCE fixes this without a secret: the client generates a random <code>code_verifier</code>, sends its hashed form (<code>code_challenge</code>) with the initial <code>/authorize</code> request, then sends the original <code>code_verifier</code> at the <code>/token</code> exchange. The Authorization Server hashes it and confirms it matches — proving the entity exchanging the code is the same one that started the flow, even with no secret involved. PKCE is mandatory for all public clients and is now recommended for confidential clients too, since it closes the authorization-code-interception attack regardless of client type.</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>In PingFederate, find an OAuth client configuration. Identify: Is it a confidential or public client? What scopes is it allowed to request? What redirect URIs are registered? What grant types are enabled? For each setting, ask: what breaks if this is misconfigured?</p>
+  </div>
+</section>
+
+
+<section class="section" id="s3-3" data-nav-label="3.3 OAuth 2.0 Grant Types" data-stack-layers="tokens,authz,applications">
+  <h2><span class="module-num">3.3</span> OAuth 2.0 Grant Types: Choosing the Right Flow</h2>
+
+  <p>A "grant type" is simply a defined recipe for how a client obtains a token. Picking the right one is one of the most consequential decisions in an OAuth integration — get it wrong and you either break the user experience or open a security hole.</p>
+
+  <h3>Grant type 1 — Authorization Code</h3>
+  <p>Used for web apps, mobile apps, and any user-facing application with a back channel. The flow has two distinct steps: the browser receives a short-lived, single-use authorization <em>code</em> via redirect, and then — separately, server-to-server — that code is exchanged for tokens at the <code>/token</code> endpoint. The two-step design exists because the code, even if intercepted in the browser, is useless on its own without the client credentials (or PKCE verifier) needed to redeem it at the token endpoint, which never touches the browser. For public clients (SPAs, mobile apps), PKCE is mandatory alongside this flow.</p>
+
+  <h3>Grant type 2 — Client Credentials</h3>
+  <p>Used for machine-to-machine and service-to-service calls where no human user is involved. The client authenticates directly to the <code>/token</code> endpoint with its own credentials — no redirect, no browser. In IAM terms: a microservice calling an internal API, a batch job pulling from a data store, or a CyberArk credential rotator calling a management API. Because there's no user in the loop, the entire security posture rests on protecting the <code>client_secret</code> — which makes secret rotation an IAM architecture problem in its own right (this connects directly to PAM patterns in Module 12).</p>
+
+  <h3>Grant type 3 — Device Authorization (Device Code)</h3>
+  <p>Built for devices with limited input — smart TVs, IoT controllers, CLI tools. The device displays a short code and a URL; the user enters that code on a second device (phone, laptop) that has a proper browser and keyboard, while the original device polls the token endpoint until authorization completes. This pattern shows up again when Module 11 covers IoT and network device identity.</p>
+
+  <p>The polling behavior is worth understanding precisely, because it's easy to implement carelessly: the device calls the token endpoint repeatedly at a server-specified interval (commonly every 5 seconds) until the user completes the authorization step on their second device, at which point the next poll returns real tokens instead of a "pending" status. Authorization Servers enforce that interval deliberately — a device that polls faster than instructed risks being throttled or rejected entirely, since aggressive polling against an Authorization Server at scale starts to look like a denial-of-service pattern rather than a legitimate device waiting for a user. A CLI tool authenticating an engineer against PingFederate to pull credentials from an internal API is a realistic enterprise example of this flow in action — no browser on the workstation running the CLI tool is required at all.</p>
+
+  <h3>Refresh tokens — not a standalone grant</h3>
+  <p>A refresh token isn't requested on its own; it's issued alongside an access token (typically only to confidential clients) and later exchanged for a fresh access token without re-prompting the user. The architecture decisions that matter here are absolute timeout (how long can a session live, full stop) vs. idle timeout (how long can it live without activity) — and whether refresh tokens rotate on each use, which limits the blast radius if one is stolen.</p>
+
+  <p><strong>Refresh token rotation</strong> is the practice of issuing a brand-new refresh token every time the old one is used, and invalidating the old one immediately. This turns a stolen refresh token into a much smaller problem: if an attacker uses a stolen refresh token before the legitimate client does, the legitimate client's next refresh attempt fails — which is a detectable signal that something is wrong, rather than a silent, indefinite compromise. Without rotation, a single leaked refresh token can mint new access tokens for as long as its (often very long) lifetime allows, with no way to tell legitimate use from attacker use. Designing the absolute and idle timeouts is ultimately a balance between session convenience and blast-radius containment — a banking application and an internal wiki should not share the same refresh token lifetime policy, even if both run through the same PingFederate environment.</p>
+
+  <h3>Deprecated patterns — know them, and know why they died</h3>
+  <ul>
+    <li><strong>Implicit Grant</strong> — designed for browser-only apps before PKCE existed, it returned the access token directly in the URL fragment. Deprecated because URL fragments leak into browser history, referrer headers, and proxy logs. Replaced by Authorization Code + PKCE.</li>
+    <li><strong>Resource Owner Password Credentials (ROPC)</strong> — the client collects the user's username and password directly and trades them for a token. This defeats the entire purpose of OAuth (never expose credentials to the client) and should be eliminated wherever possible; it survives mainly as a stopgap during legacy migrations.</li>
+  </ul>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 4 — Authorization Code Flow: Full Sequence</div>
+    <div class="seq-step"><div class="seq-num">1</div><div class="seq-text">User → Client: initiate login<span class="seq-meta">User clicks "Sign in" in the application.</span></div></div>
+    <div class="seq-step"><div class="seq-num">2</div><div class="seq-text">Client → Browser: redirect to <code>/authorize</code><span class="seq-meta">Includes client_id, redirect_uri, scope, state, and code_challenge (PKCE).</span></div></div>
+    <div class="seq-step"><div class="seq-num">3</div><div class="seq-text">Browser → Authorization Server: <code>GET /authorize</code><span class="seq-meta">Request lands at PingFederate.</span></div></div>
+    <div class="seq-step"><div class="seq-num">4</div><div class="seq-text">Authorization Server → Browser: login page<span class="seq-meta">User is prompted to authenticate (LDAP bind to PingDirectory).</span></div></div>
+    <div class="seq-step"><div class="seq-num">5</div><div class="seq-text">User → Authorization Server: authenticate + consent<span class="seq-meta">Credentials validated; consent screen shown if first-time authorization.</span></div></div>
+    <div class="seq-step"><div class="seq-num">6</div><div class="seq-text">Authorization Server → Browser: redirect with <code>code</code><span class="seq-meta">Short-lived, single-use authorization code attached to redirect_uri.</span></div></div>
+    <div class="seq-step"><div class="seq-num">7</div><div class="seq-text">Browser → Client: deliver code<span class="seq-meta">Code lands at the client's registered callback endpoint.</span></div></div>
+    <div class="seq-step"><div class="seq-num">8</div><div class="seq-text">Client → Authorization Server: <code>POST /token</code><span class="seq-meta">Code + client_secret (or PKCE code_verifier) — server-to-server, no browser involved.</span></div></div>
+    <div class="seq-step"><div class="seq-num">9</div><div class="seq-text">Authorization Server → Client: access_token + refresh_token (+ id_token if OIDC)<span class="seq-meta">Tokens never touch the browser at any point in this exchange.</span></div></div>
+    <div class="seq-step"><div class="seq-num">10</div><div class="seq-text">Client → Resource Server: request with access_token<span class="seq-meta">Typically as a Bearer token in the Authorization header.</span></div></div>
+    <div class="seq-step"><div class="seq-num">11</div><div class="seq-text">Resource Server: validate token, return resource<span class="seq-meta">Signature, expiry, audience all checked (Section 3.6 covers this fully).</span></div></div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 5 — Client Credentials Flow: Sequence</div>
+    <div class="seq-step"><div class="seq-num">1</div><div class="seq-text">Service → Authorization Server: <code>POST /token</code><span class="seq-meta">client_id + client_secret + grant_type=client_credentials</span></div></div>
+    <div class="seq-step"><div class="seq-num">2</div><div class="seq-text">Authorization Server: validate client, issue token<span class="seq-meta">No user, no consent screen, no redirect.</span></div></div>
+    <div class="seq-step"><div class="seq-num">3</div><div class="seq-text">Authorization Server → Service: access_token<span class="seq-meta">Scoped to whatever the service client is permitted.</span></div></div>
+    <div class="seq-step"><div class="seq-num">4</div><div class="seq-text">Service → Resource Server: request with access_token<span class="seq-meta">Identical validation path as any other access token.</span></div></div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 6 — Grant Type Selection Decision Tree</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch;">
+      <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">Is there a human user involved?<span class="seq-meta">No → <strong>Client Credentials</strong></span></div></div>
+      <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">Yes → Is it a device with limited input (TV, IoT)?<span class="seq-meta">Yes → <strong>Device Code</strong></span></div></div>
+      <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">No → Is it a web or mobile app?<span class="seq-meta">Yes, with a secure back channel → <strong>Authorization Code + PKCE</strong></span></div></div>
+      <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">No back channel (pure SPA)?<span class="seq-meta">Still → <strong>Authorization Code + PKCE</strong> (PKCE makes this safe without a secret)</span></div></div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 7 — Grant Type Comparison</div>
+  <div class="table-wrap" style="margin-top:0;">
+    <table>
+      <thead><tr><th>Grant Type</th><th>Actor</th><th>Back Channel?</th><th>Token Location</th><th>Refresh Token?</th><th>Use Case</th><th>Security Note</th></tr></thead>
+      <tbody>
+        <tr><td>Authorization Code (+PKCE)</td><td>Human user</td><td>Yes (or PKCE)</td><td>Token endpoint response</td><td>Yes</td><td>Web, mobile, SPA apps</td><td>Default choice for all user-facing apps</td></tr>
+        <tr><td>Client Credentials</td><td>Service/machine</td><td>N/A</td><td>Token endpoint response</td><td>No</td><td>M2M, batch jobs, service APIs</td><td>Security rests entirely on secret protection</td></tr>
+        <tr><td>Device Code</td><td>Human user, limited-input device</td><td>Secondary device</td><td>Polling response</td><td>Yes</td><td>Smart TVs, CLI tools, IoT</td><td>User code must be short-lived</td></tr>
+        <tr><td>Implicit (deprecated)</td><td>Human user</td><td>None</td><td>URL fragment</td><td>No</td><td>Legacy SPAs only</td><td>Tokens leak via browser history/logs</td></tr>
+        <tr><td>ROPC (deprecated)</td><td>Human user</td><td>N/A</td><td>Token endpoint response</td><td>Sometimes</td><td>Legacy migration only</td><td>Client sees raw credentials — defeats OAuth's purpose</td></tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 Why the Implicit grant was deprecated</div>
+    <p>In the Implicit flow, the access token is returned in the URL fragment (after the #). Browser history, referrer headers, and proxy logs can all capture URL fragments — meaning access tokens leaked into browser history and server logs routinely. Authorization Code + PKCE solves this by keeping tokens out of URLs entirely: only the short-lived, single-use authorization code appears in the URL.</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>In your development environment or PingFederate, trace a complete Authorization Code flow using browser dev tools. Capture the <code>/authorize</code> redirect, the code in the callback URL, the <code>/token</code> POST request body, and the token response. Decode the access token at jwt.io. What claims are in it? Who is the audience?</p>
+  </div>
+</section>
+
+
+<section class="section" id="s3-4" data-nav-label="3.4 OpenID Connect (OIDC)" data-stack-layers="tokens,sso,applications">
+  <h2><span class="module-num">3.4</span> OpenID Connect (OIDC): Authentication on OAuth</h2>
+
+  <p>OIDC is best understood with one sentence: <strong>OIDC = OAuth 2.0 + an identity layer.</strong> It doesn't replace any part of OAuth's authorization machinery — it adds exactly what OAuth was missing: a standardized, verifiable answer to "who is this user?" Layering it on top of an already-deployed authorization framework, rather than inventing something new, was the right design decision because it let OIDC reuse OAuth's entire endpoint and flow infrastructure.</p>
+
+  <h3>The ID token</h3>
+  <p>The ID token is OIDC's core addition. It's a JWT, it's issued alongside the access token at the <code>/token</code> endpoint, and it is <strong>for the client</strong> — not for any API. This is the distinction that matters most: <strong>the ID token says who you are; the access token says what you're allowed to do with this specific API.</strong> Sending an ID token to a Resource Server, or using an access token as proof of identity, are both protocol misuses that show up constantly in real deployments.</p>
+
+  <p>Standard OIDC claims carry specific architectural meaning: <code>sub</code> (the stable, unique subject identifier — never reuse this for a different user), <code>iss</code> (which Authorization Server issued this), <code>aud</code> (which client this ID token is for), <code>exp</code>/<code>iat</code> (validity window), and <code>nonce</code> (binds the token to a specific authentication request — more on this below).</p>
+
+  <p>The <strong>UserInfo endpoint</strong> exists for claims that are too large or too sensitive to embed in every ID token — the client calls it with the access token to pull additional profile data on demand, rather than bloating every token. OIDC scopes control what's returned: <code>openid</code> is mandatory and triggers OIDC behavior at all; <code>profile</code>, <code>email</code>, <code>address</code>, and <code>phone</code> each unlock a defined claim set.</p>
+
+  <p>This split matters architecturally for a reason beyond token size: the ID token is signed once at issuance and the client typically caches it for the life of the session, while a UserInfo call happens fresh, on demand, against current directory state. If an attribute changes mid-session — a department transfer, a group membership update during an access review — the ID token won't reflect it until the next full authentication, but a UserInfo call will, because it reads PingDirectory live. Architects choosing what to embed in the ID token versus what to leave for UserInfo are really deciding how stale an attribute is allowed to get before it matters.</p>
+
+  <p>OIDC reuses OAuth's flows directly — Authorization Code is the standard choice, Implicit is deprecated for the same reasons covered in Section 3.3, and Hybrid combines elements of both for specific native-app scenarios. The <strong>discovery document</strong> at <code>/.well-known/openid-configuration</code> is how a client learns every endpoint, supported scope, and signing algorithm an Authorization Server offers without hardcoding any of it — PingFederate publishes this automatically for every OIDC provider role it serves.</p>
+
+  <p>Before logout, there's session <em>renewal</em> to consider — keeping a user signed in without forcing a full re-authentication every time an access token expires. The classic browser-based pattern is "silent renew": the client opens a hidden iframe back to the <code>/authorize</code> endpoint with <code>prompt=none</code>, and if the user still has a live session at the Authorization Server, fresh tokens come back without any visible UI. It's a convenient pattern, but it depends on the same third-party cookie and iframe behavior that's increasingly restricted by modern browsers — which is part of why long-lived refresh tokens (Section 3.3) have become the more reliable mechanism for keeping a session alive across an extended single-page application session, with silent renew treated as a nice-to-have rather than something the architecture depends on.</p>
+
+  <p>Session management is where OIDC gets architecturally interesting at enterprise scale: <strong>front-channel logout</strong> uses an iframe loaded in the user's browser to notify each relying party of logout, which fails silently if a browser blocks third-party iframes or cookies. <strong>Back-channel logout</strong> has the Authorization Server call each relying party's logout endpoint directly, server-to-server — more reliable, but it requires the relying party to expose a reachable endpoint. PingFederate's back-channel logout support matters precisely because front-channel logout has become unreliable as browsers lock down third-party iframe behavior.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 8 — OAuth 2.0 vs OIDC: What Gets Added</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch;">
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text"><strong>OAuth 2.0 foundation</strong><span class="seq-meta">/authorize endpoint · /token endpoint (returns access_token) · Resource Server validation</span></div></div>
+      <div class="seq-step"><div class="seq-num">+</div><div class="seq-text"><strong>OIDC additions</strong><span class="seq-meta"><code>openid</code> scope triggers OIDC mode · /token now also returns id_token · /userinfo endpoint · /.well-known/openid-configuration · session management endpoints</span></div></div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 9 — ID Token vs Access Token: Side-by-Side Decode</div>
+    <div class="table-wrap" style="margin-top:0;">
+      <table>
+        <thead><tr><th>ID Token payload</th><th>Access Token payload</th></tr></thead>
+        <tbody>
+          <tr><td><code>sub: "12345"</code></td><td><code>sub: "12345"</code></td></tr>
+          <tr><td><code>iss: "https://ping.company.com"</code></td><td><code>iss: "https://ping.company.com"</code></td></tr>
+          <tr><td><code>aud: "my-web-app"</code></td><td><code>aud: "https://api.company.com"</code></td></tr>
+          <tr><td><code>email: "user@company.com"</code></td><td><code>scope: "read:orders write:profile"</code></td></tr>
+          <tr><td><code>name: "Jane Smith"</code></td><td><code>jti: "unique-token-id"</code></td></tr>
+          <tr><td><code>nonce: "abc123"</code></td><td><code>exp: 1234567890</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="diagram-caption">The ID token is for the CLIENT to know who logged in. The access token is for the RESOURCE SERVER to grant access. Never send the ID token to an API.</p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 10 — OIDC Authentication Flow with PingFederate</div>
+    <div class="seq-step"><div class="seq-num">1–9</div><div class="seq-text">Same as the Authorization Code flow (Diagram 4)<span class="seq-meta">With one addition: the <code>openid</code> scope is included in the /authorize request.</span></div></div>
+    <div class="seq-step"><div class="seq-num">+</div><div class="seq-text">/token response now includes id_token<span class="seq-meta">Alongside access_token and refresh_token.</span></div></div>
+    <div class="seq-step"><div class="seq-num">+</div><div class="seq-text">Optional: client calls /userinfo with access_token<span class="seq-meta">For additional profile claims not embedded in the ID token.</span></div></div>
+    <div class="seq-step"><div class="seq-num">+</div><div class="seq-text">PingFederate reads from PingDirectory to populate claims<span class="seq-meta">Email, name, department come from LDAP attributes (Module 02). MFA context comes from PingID. Sub and nonce are generated by PingFederate itself.</span></div></div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 The nonce parameter in OIDC</div>
+    <p>The nonce is a random value the client includes in the <code>/authorize</code> request and expects to see in the ID token. It binds the ID token to the specific authentication request, preventing replay attacks where an attacker captures an ID token and replays it in a different session. Failing to validate the nonce is a security vulnerability even if everything else in the OIDC flow is correct. Check your OIDC client libraries — many handle nonce validation automatically, but custom implementations often skip it.</p>
+  </div>
+
+  <div class="analogy-box analogy-amber">
+    <p>ID token as a boarding pass, access token as a gate badge. When you board a flight, you show your boarding pass (ID token) to prove who you are and that you're authorized on this specific flight. Once through security, you use your gate badge (access token) to access the lounge, priority boarding, etc. The boarding pass is about you. The gate badge is about what you're allowed to do. Airlines don't let you use the gate badge as ID. OIDC-compliant applications shouldn't use the access token as proof of identity.</p>
+  </div>
+
+  <div class="deepdive-box">
+    <div class="dd-title">🟣 Deep dive: Front-channel vs. back-channel logout</div>
+    <p>Front-channel logout loads a hidden iframe per relying party in the user's browser pointing at each app's logout endpoint — it depends on the browser actually executing those iframe loads, which modern third-party cookie and iframe restrictions increasingly break. Back-channel logout has the Authorization Server call each relying party's registered logout endpoint directly, server-to-server, with a signed logout token — it doesn't depend on the user's browser at all, which is why it's more reliable for enterprise SSO at scale. PingFederate's back-channel logout support means a single logout event can reliably terminate sessions across dozens of SP connections even if the user's browser closes immediately after clicking "Sign out."</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Trigger an OIDC login flow against your PingFederate OIDC provider. Capture the token response. Decode both the id_token and the access_token at jwt.io. Compare: what's in the id_token that isn't in the access_token? What's in the access_token that isn't in the id_token? That comparison is the entire OIDC design rationale in practical form.</p>
+  </div>
+</section>
+
+
+<section class="section" id="s3-5" data-nav-label="3.5 SAML 2.0 — Federation Standard" data-stack-layers="sso,tokens,applications">
+  <h2><span class="module-num">3.5</span> SAML 2.0: The Enterprise Federation Standard</h2>
+
+  <p>SAML 2.0 was finalized in 2005, when XML, SOAP, and browser form-post redirects were the default enterprise integration stack. It still runs an enormous share of enterprise SSO today — not because it's outdated and waiting to be replaced, but because the applications it was built to federate (Salesforce, Workday, ServiceNow, SAP) standardized on it and still support it as a first-class option.</p>
+
+  <p>SAML defines three roles, which map exactly onto the trust triangle from Module 01: the <strong>IdP</strong> (Identity Provider, who authenticates the user), the <strong>SP</strong> (Service Provider, the application granting access), and the <strong>Principal</strong> (the user). The core artifact that flows between them is the <strong>SAML assertion</strong> — an XML document, signed (and optionally encrypted) by the IdP, that makes a statement: "this user authenticated, here's when, and here's what I know about them."</p>
+
+  <h3>Bindings, flows, and identifiers</h3>
+  <p>SAML defines several <strong>bindings</strong> — the mechanism by which the assertion or request travels between parties: <strong>HTTP Redirect</strong> (compact data in the URL, used for the AuthnRequest), <strong>HTTP POST</strong> (the assertion delivered via an auto-submitting HTML form — used for the larger assertion payload), and <strong>Artifact</strong> (a reference is passed through the browser, and the actual assertion is fetched back-channel — more secure, more complex, less commonly deployed).</p>
+
+  <p>The trade-off between these bindings is mostly about where the sensitive payload travels. Redirect binding keeps everything in the URL, which has a practical size limit and exposes the request to anything that logs URLs — fine for an AuthnRequest, which carries no sensitive user data, but never used for the assertion itself. POST binding moves the payload into the form body, off the URL entirely, which is why it's the standard choice for delivering the assertion. Artifact binding goes a step further: only an opaque reference ever touches the browser, and the SP retrieves the real assertion through a direct back-channel call to the IdP — eliminating browser-side exposure altogether, at the cost of an extra round-trip and a back-channel connection the SP must be able to make. Most enterprise deployments default to POST for the assertion and Redirect for the AuthnRequest, reserving Artifact for environments with stricter exposure requirements.</p>
+
+  <p>There are two initiation patterns. <strong>SP-initiated</strong> starts when the user hits a protected resource at the SP, which sends an <code>AuthnRequest</code> to the IdP — this request carries a unique ID that the SP can later correlate against the response. <strong>IdP-initiated</strong> starts at the IdP's portal — the user clicks an app tile and the IdP pushes an assertion to the SP with no prior request. This sounds convenient, but it has a real security implication: with no AuthnRequest, there's no request ID to correlate the response against, which removes a layer of replay protection.</p>
+
+  <p><strong>NameID</strong> is how SAML identifies the user to the SP, and its format matters architecturally: <code>persistent</code> gives a stable, opaque identifier ideal for account linking; <code>transient</code> is a one-time-use identifier for privacy-sensitive scenarios; <code>email</code> and <code>unspecified</code> are simpler but tie identity to a potentially-changing attribute.</p>
+
+  <p>Choosing the wrong NameID format has a specific, recurring failure mode: if an SP correlates users by email and a user's email address changes (marriage, department transfer, a corporate rebrand), the SP sees what looks like a brand-new user with no history — orphaning their existing account, permissions, and data. A persistent NameID, by contrast, stays stable across that kind of change because it's never tied to a human-readable attribute in the first place. This is exactly the kind of detail that looks like a minor configuration choice during initial SP onboarding and becomes a painful, hard-to-diagnose production incident eighteen months later.</p>
+
+  <p>User attributes travel in the assertion's <strong>AttributeStatement</strong> — built by PingFederate from the directory data covered in Module 02 (group memberships, department, email, and so on pulled from PingDirectory or AD). <strong>SAML metadata</strong> is the XML document each party publishes describing its endpoints, certificates, and supported bindings; metadata exchange is literally how IdP↔SP trust gets established, and expired metadata (specifically expired signing certificates) is one of the most common real-world causes of a sudden SSO outage — directly connecting back to the trust-failure scenarios in Module 01.</p>
+
+  <p>SAML separates <strong>signing</strong> (proves the assertion wasn't tampered with and really came from the claimed IdP) from <strong>encryption</strong> (protects the assertion contents from being read by anyone other than the intended SP, even if intercepted in transit). A mature deployment uses both — signing is closer to universal, encryption is reserved for assertions carrying sensitive attributes.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 11 — SAML SP-Initiated Flow: Full Sequence</div>
+    <div class="seq-step"><div class="seq-num">1</div><div class="seq-text">User → SP: access protected resource<span class="seq-meta">No session exists yet at the SP.</span></div></div>
+    <div class="seq-step"><div class="seq-num">2</div><div class="seq-text">SP → Browser: redirect to IdP<span class="seq-meta">AuthnRequest delivered via URL (Redirect binding) or form (POST binding).</span></div></div>
+    <div class="seq-step"><div class="seq-num">3</div><div class="seq-text">Browser → IdP (PingFederate): deliver AuthnRequest<span class="seq-meta">Includes the SP's requested NameID format and ACS URL.</span></div></div>
+    <div class="seq-step"><div class="seq-num">4</div><div class="seq-text">IdP: authenticate user<span class="seq-meta">LDAP bind to PingDirectory, per Module 02.</span></div></div>
+    <div class="seq-step"><div class="seq-num">5</div><div class="seq-text">IdP: build SAML assertion<span class="seq-meta">Attributes pulled from directory, signed (and optionally encrypted).</span></div></div>
+    <div class="seq-step"><div class="seq-num">6</div><div class="seq-text">IdP → Browser: POST to SP's ACS URL<span class="seq-meta">Assertion embedded in an auto-submitting HTML form.</span></div></div>
+    <div class="seq-step"><div class="seq-num">7</div><div class="seq-text">Browser → SP: POST form (assertion in SAMLResponse)<span class="seq-meta">Browser auto-submits, user sees nothing but a redirect.</span></div></div>
+    <div class="seq-step"><div class="seq-num">8</div><div class="seq-text">SP: validate assertion<span class="seq-meta">Signature, Conditions (NotBefore/NotOnOrAfter), AudienceRestriction all checked.</span></div></div>
+    <div class="seq-step"><div class="seq-num">9</div><div class="seq-text">SP → User: grant access<span class="seq-meta">Local session established at the SP.</span></div></div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 12 — IdP-Initiated vs SP-Initiated Flow</div>
+    <div class="flow-row"><div class="flow-node accent">SP-initiated</div><div class="flow-arrow">→</div><div class="flow-node">Starts at SP, AuthnRequest sent, response correlated by request ID</div></div>
+    <div class="flow-row"><div class="flow-node accent">IdP-initiated</div><div class="flow-arrow">→</div><div class="flow-node">Starts at IdP portal, assertion pushed without a prior request</div></div>
+    <p class="diagram-caption">Security concern: IdP-initiated has no AuthnRequest → no request ID to correlate → elevated replay risk relative to SP-initiated.</p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 13 — SAML Assertion Structure (Conceptual)</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch;">
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text">SAML Response<span class="seq-meta">└ Assertion</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text">Issuer<span class="seq-meta">The IdP's entity ID</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text">Conditions<span class="seq-meta">NotBefore, NotOnOrAfter, AudienceRestriction</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text">AuthnStatement<span class="seq-meta">How the user authenticated, and when</span></div></div>
+      <div class="seq-step"><div class="seq-num">·</div><div class="seq-text">AttributeStatement<span class="seq-meta">email = user@company.com · groups = [Engineering, VPN-Users] · department = Engineering</span></div></div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 14 — SAML vs OIDC Architectural Comparison</div>
+  <div class="table-wrap" style="margin-top:0;">
+    <table>
+      <thead><tr><th>Dimension</th><th>SAML 2.0</th><th>OIDC</th></tr></thead>
+      <tbody>
+        <tr><td>Year designed</td><td>2005</td><td>2014</td></tr>
+        <tr><td>Token format</td><td>XML assertion</td><td>JWT</td></tr>
+        <tr><td>Transport</td><td>Browser redirect / POST form</td><td>Redirect + back-channel token exchange</td></tr>
+        <tr><td>Enterprise adoption</td><td>Very high (legacy SaaS apps)</td><td>High and growing</td></tr>
+        <tr><td>Consumer adoption</td><td>Low</td><td>Very high</td></tr>
+        <tr><td>Mobile friendliness</td><td>Poor (browser-dependent)</td><td>Strong (native flows, PKCE)</td></tr>
+        <tr><td>Parsing overhead</td><td>Higher (XML, XML-DSig)</td><td>Lower (JSON, JWT)</td></tr>
+        <tr><td>Library maturity</td><td>Mature, enterprise-grade</td><td>Mature, broad ecosystem</td></tr>
+        <tr><td>Debugging difficulty</td><td>Harder (opaque XML, SAML-tracer needed)</td><td>Easier (jwt.io decodes instantly)</td></tr>
+        <tr><td>Best use case</td><td>Enterprise SaaS integration</td><td>Web, mobile, APIs, custom apps</td></tr>
+        <tr><td>PingFederate support</td><td>Full IdP + SP roles</td><td>Full OP + RP roles</td></tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+
+  <div class="callout callout-cost">
+    <div class="callout-title">🟡 When to use SAML vs OIDC</div>
+    <p>SAML is the right answer for enterprise application integration where the SP is an established enterprise application (Salesforce, Workday, ServiceNow, SAP) — these apps have excellent SAML support and often offer SAML as their primary federation option. OIDC is the right answer for modern web apps, mobile apps, APIs, and anything you're building yourself. The mistake architects make is trying to mandate one or the other universally — in a real enterprise, you'll maintain both for the foreseeable future.</p>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 The SAML assertion replay attack</div>
+    <p>A SAML assertion has validity conditions (NotBefore, NotOnOrAfter). If an attacker captures an assertion in transit, they can potentially replay it at the SP before it expires. Mitigations: short assertion lifetime (minutes, not hours), the SP tracks InResponseTo values and rejects duplicate assertion IDs, HTTPS-only ACS endpoints. Check your PingFederate SP connection configurations — what assertion lifetime are you issuing?</p>
+  </div>
+
+  <div class="deepdive-box">
+    <div class="dd-title">🟣 Deep dive: SAML holder-of-key subject confirmation</div>
+    <p>The standard SAML subject confirmation method is <strong>bearer</strong> — whoever presents the assertion is treated as the legitimate subject, with no additional proof required. <strong>Holder-of-key</strong> raises the bar: the assertion is bound to a specific cryptographic key the subject holds (typically a client certificate), so even if an assertion is intercepted, the attacker can't use it without also possessing the private key. Enterprises adopt holder-of-key for very high-assurance scenarios — government, defense, financial-services federations — where bearer's "possession equals authorization" model isn't an acceptable risk posture, and where every party in the federation can support the added certificate-management overhead.</p>
+  </div>
+
+  <div class="usecase-box">
+    <div class="uc-tag">USE CASE</div>
+    <p>A vendor tells you they only support SAML 2.0 SP-initiated SSO with HTTP-POST binding and persistent NameID format. You're integrating them into your PingFederate environment. Walk through every configuration decision you need to make and what you'd validate in the SAML trace to confirm the integration is working and secure.</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Using SAML-tracer (Firefox/Chrome extension) or browser developer tools, capture a SAML SSO flow against a PingFederate-backed application. Decode the base64 SAMLResponse. Identify: the assertion issuer, the NotBefore/NotOnOrAfter conditions, the NameID format and value, and the attribute statements. Compare what's in the assertion to what's in the PingDirectory LDAP entry for the same user.</p>
+  </div>
+</section>
+
+
+<section class="section" id="s3-6" data-nav-label="3.6 JWT — Structure & Validation" data-stack-layers="tokens,authz">
+  <h2><span class="module-num">3.6</span> JWT: Structure, Claims &amp; Validation Architecture</h2>
+
+  <p>It's worth saying plainly: <strong>JWT (JSON Web Token) is a format, not a protocol.</strong> It's used by OIDC, by OAuth 2.0 access tokens, and by plenty of systems that have nothing to do with identity federation at all. Understanding JWT as a self-contained format is what lets you reason about it independently of whichever protocol happens to be using it.</p>
+
+  <h3>The three parts</h3>
+  <p>A JWT is three base64url-encoded segments joined by dots: <strong>header.payload.signature</strong>.</p>
+  <ul>
+    <li><strong>Header</strong> — contains <code>alg</code> (the signing algorithm), <code>typ</code> (the token type, always "JWT"), and <code>kid</code> (a key identifier telling the validator which public key to use).</li>
+    <li><strong>Payload</strong> — the claims. <strong>Registered claims</strong> (<code>iss</code>, <code>sub</code>, <code>aud</code>, <code>exp</code>, <code>nbf</code>, <code>iat</code>, <code>jti</code>) have standardized meaning across every JWT consumer. <strong>Public claims</strong> are registered in IANA's JWT registry for shared use. <strong>Private claims</strong> are whatever the issuer and consumer agree on between themselves — PingFederate's custom claims fall here.</li>
+    <li><strong>Signature</strong> — computed over the header and payload, and this is what makes the token tamper-evident: changing any claim invalidates the signature.</li>
+  </ul>
+
+  <p><strong>Symmetric signing (HS256)</strong> uses one shared secret to both sign and verify — simple, but every party that can verify a token can also forge one, which limits it to closed, internal systems with one trusted secret holder on each side. <strong>Asymmetric signing (RS256, ES256)</strong> uses a private key to sign and a public key to verify — the private key stays exclusively with the Authorization Server, while any number of Resource Servers can safely hold the public key and verify tokens they could never forge. The <strong>JWKS endpoint</strong> (JSON Web Key Set) is how that public key gets published and discovered, and key rotation works by publishing a new key under a new <code>kid</code> while the old key remains available just long enough for in-flight tokens to expire.</p>
+
+  <p>A full JWT validator must perform a specific sequence of checks — skipping any one of them reopens an attack the check exists to close: decode the header and locate <code>kid</code>; fetch the matching public key from JWKS (or cache); verify the signature; validate <code>iss</code> (is this the expected issuer?); validate <code>aud</code> (is this token intended for this Resource Server?); validate <code>exp</code> (not expired); validate <code>nbf</code> (not used too early); and check <code>jti</code> against a revocation list if your architecture requires it.</p>
+
+  <p>There's also a fundamental trade-off between <strong>opaque tokens</strong> and JWTs: an opaque token carries no information itself and must be checked against the Authorization Server's <code>/introspect</code> endpoint on every use, while a JWT can be validated locally using only a cached public key — far better for performance and availability, at the cost of being unable to instantly revoke an individual token before its natural expiry.</p>
+
+  <p>Finally, claims function as the authorization data plane: groups, roles, and entitlements embedded directly in the token let a Resource Server make access decisions without an extra network call. But claims have real limits — they're fixed at token-issuance time and can't express dynamic, contextual, or fine-grained policy (e.g., "this user can approve invoices under $1,000 but not over"). That gap is exactly what Module 08's policy-engine content addresses.</p>
+
+  <p>One more distinction worth holding onto: everything above describes a <strong>JWS</strong> (JSON Web Signature) — a signed JWT, which is what nearly every OIDC ID token and OAuth access token actually is. A <strong>JWE</strong> (JSON Web Encryption) is a different, less commonly used variant: instead of (or in addition to) signing, the payload itself is encrypted, so that only a holder of the correct decryption key can read the claims at all, not just verify them. Signing proves a token wasn't tampered with; encryption hides its contents from anyone who isn't the intended recipient. Most enterprise JWT usage relies on signing alone, because the claims aren't secret — they just need to be trustworthy. Encryption is reserved for tokens carrying genuinely sensitive data that shouldn't be readable by intermediate parties, mirroring the signing-vs-encryption distinction already covered for SAML assertions in Section 3.5.</p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 15 — JWT Structure: Decoded</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch;">
+      <div class="seq-step"><div class="seq-num">H</div><div class="seq-text">Header<span class="seq-meta"><code>{ "alg": "RS256", "typ": "JWT", "kid": "key-2024-01" }</code></span></div></div>
+      <div class="seq-step"><div class="seq-num">P</div><div class="seq-text">Payload<span class="seq-meta">Registered claims (iss, sub, aud, exp, iat, jti) plus custom claims like groups or department.</span></div></div>
+      <div class="seq-step"><div class="seq-num">S</div><div class="seq-text">Signature<span class="seq-meta"><code>base64url(sign(header.payload, private_key))</code></span></div></div>
+    </div>
+    <p class="diagram-caption">The signature binds header and payload together. Changing any claim invalidates the signature.</p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 16 — JWT Validation Flow</div>
+    <div class="seq-step"><div class="seq-num">1</div><div class="seq-text">Resource Server receives JWT</div></div>
+    <div class="seq-step"><div class="seq-num">2</div><div class="seq-text">Decode header → find kid</div></div>
+    <div class="seq-step"><div class="seq-num">3</div><div class="seq-text">Fetch JWKS endpoint (or cache) → find public key by kid<span class="seq-meta">Prevents: trusting a key the validator never confirmed belongs to the issuer.</span></div></div>
+    <div class="seq-step"><div class="seq-num">4</div><div class="seq-text">Verify signature using public key<span class="seq-meta">Prevents: forged or tampered tokens.</span></div></div>
+    <div class="seq-step"><div class="seq-num">5</div><div class="seq-text">Validate iss (expected issuer?)<span class="seq-meta">Prevents: accepting tokens from an untrusted Authorization Server.</span></div></div>
+    <div class="seq-step"><div class="seq-num">6</div><div class="seq-text">Validate aud (intended for this service?)<span class="seq-meta">Prevents: token confusion — a token issued for Service A being replayed at Service B.</span></div></div>
+    <div class="seq-step"><div class="seq-num">7</div><div class="seq-text">Validate exp (not expired?)<span class="seq-meta">Prevents: indefinite token lifetime.</span></div></div>
+    <div class="seq-step"><div class="seq-num">8</div><div class="seq-text">Validate nbf (not too early?)<span class="seq-meta">Prevents: premature use of a future-dated token.</span></div></div>
+    <div class="seq-step"><div class="seq-num">9</div><div class="seq-text">Check jti (not previously seen? revocation list?)<span class="seq-meta">Prevents: replay of a specific, individually-revoked token.</span></div></div>
+    <div class="seq-step"><div class="seq-num">10</div><div class="seq-text">Extract claims → make authorization decisions</div></div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 17 — Symmetric vs Asymmetric JWT Signing</div>
+    <div class="flow-row" style="gap:24px; align-items:flex-start;">
+      <div style="flex:1; min-width:220px;">
+        <div class="flow-node accent" style="margin-bottom:8px;">HS256 (symmetric)</div>
+        <p style="font-size:13.3px; margin-bottom:0;">Same secret key signs and verifies. All parties need the secret → key distribution problem. Good for internal services sharing one secret. Risk: any service that can verify can also issue tokens.</p>
+      </div>
+      <div style="flex:1; min-width:220px;">
+        <div class="flow-node accent" style="margin-bottom:8px;">RS256 / ES256 (asymmetric)</div>
+        <p style="font-size:13.3px; margin-bottom:0;">Private key signs (only the Authorization Server). Public key verifies (any Resource Server) and is publishable via JWKS. Good for public APIs, multi-party systems. Risk: private key compromise means full token forgery.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 The alg:none attack</div>
+    <p>The JWT specification originally allowed an algorithm value of "none" — meaning the signature should not be validated. Some early JWT libraries honored this, allowing an attacker to forge tokens by simply setting alg to "none" and stripping the signature. Any JWT library that accepts alg:none in production is critically vulnerable. Verify that your token validation code (or your PingFederate configuration) explicitly rejects unsigned JWTs.</p>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 JWT clock skew</div>
+    <p>exp and nbf claims are epoch timestamps. If the issuer's clock and the validator's clock disagree by even a few minutes, valid tokens get rejected (clock skew forward) or expired tokens get accepted (clock skew backward). Enterprise deployments must enforce NTP synchronization across all systems that issue or validate JWTs — and must configure a small (60–300 second) clock skew tolerance in validators.</p>
+  </div>
+
+  <div class="analogy-box analogy-green">
+    <p>JWT validation is exactly like verifying a signed JAR file in Java. The JAR contains the payload (classes). The signature in the manifest proves the content hasn't been tampered with since it was signed by the publisher's private key. The validator uses the publisher's public key (from the certificate chain) to verify the signature without needing access to the private key. JWTs use the same cryptographic pattern: the Authorization Server's private key signs, the Resource Server's validator uses the published public key (via JWKS) to verify.</p>
+  </div>
+
+  <div class="deepdive-box">
+    <div class="dd-title">🟣 Deep dive: JWT introspection (RFC 7662) vs local validation</div>
+    <p>Introspection sends the token to the Authorization Server's <code>/introspect</code> endpoint on every single use and gets back a live answer: still valid, or already revoked. Local JWT validation checks the signature and claims entirely offline, using a cached public key, with no network round-trip. The trade-off is direct: introspection gives you instant revocation at the cost of a network call (and a hard dependency) on every request, while local validation scales effortlessly and survives Authorization Server outages, but can't revoke an individual token before its natural expiry — you can only shorten token lifetimes or maintain a separate revocation list checked via <code>jti</code>. High-throughput Resource Servers default to local validation with short-lived tokens; introspection is reserved for scenarios where instant revocation is a hard requirement.</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>Take a JWT from your PingFederate OAuth environment and paste it into jwt.io. Without entering any secret: What algorithm is used to sign it? What is the key ID (kid)? When does it expire? What is the audience (aud)? What custom claims does PingFederate include? Now fetch the JWKS endpoint from PingFederate and find the public key matching the kid. This is exactly what a Resource Server does on every API call.</p>
+  </div>
+</section>
+
+
+<section class="section" id="s3-7" data-nav-label="3.7 Protocol Selection Framework" data-stack-layers="sso,tokens,authz">
+  <h2><span class="module-num">3.7</span> Protocol Selection Framework</h2>
+
+  <p>At some point every IAM architect gets asked, "which protocol should we use for this integration?" — and the answer should never be a personal preference. It's a decision driven by a specific set of variables: the application type (web, mobile, SPA, server-to-server), whether the integration is enterprise-facing, consumer-facing, or partner-facing, what the Service Provider already supports (SAML-only? OIDC? both?), whether the implementing team can correctly build an OIDC integration, the required security assurance level, and any legacy constraints (an app that's been running SAML for 15 years isn't getting re-platformed just to switch protocols).</p>
+
+  <p>That "can the team implement it correctly" variable deserves more weight than architects usually give it. OIDC's flexibility is also its risk: a team that skips nonce validation, mishandles PKCE, or trusts the ID token at the Resource Server has built something that looks correct in a demo and fails silently in production. SAML's rigidity — heavier libraries, more boilerplate, less room to improvise — is sometimes the safer choice precisely because there's less surface area for a team to get wrong on their first attempt. Protocol selection isn't only about the application; it's also an honest assessment of who's going to build and maintain the integration.</p>
+
+  <p>Security assurance level is the other variable that tends to get skipped in a rushed integration conversation. A low-assurance internal tool with no sensitive data has very different protocol requirements than a SOX-relevant finance application or a system handling protected health information. Higher assurance typically pushes toward asymmetric JWT signing over symmetric, mandatory PKCE even for confidential clients, shorter token lifetimes, and — in the highest-assurance cases — SAML's holder-of-key subject confirmation (Section 3.5) over bearer. The protocol itself rarely changes based on assurance level; the configuration choices within that protocol do.</p>
+
+  <p>Real enterprises don't standardize on one protocol — they run all three simultaneously, and PingFederate's hub role (Section 3.8) is exactly what makes that coexistence manageable rather than chaotic. The common integration patterns by application type are fairly stable across enterprises: <strong>SaaS enterprise apps</strong> (Salesforce, Workday, SAP) → SAML; <strong>modern web apps</strong> → OIDC Authorization Code + PKCE; <strong>mobile apps</strong> → OIDC Authorization Code + PKCE; <strong>machine-to-machine</strong> → OAuth Client Credentials; <strong>legacy apps with no OIDC or SAML support</strong> → an adapter or reverse-proxy pattern that translates on their behalf.</p>
+
+  <p>Watch for protocol anti-patterns: choosing ROPC "because it's simple," sticking with Implicit grant "because it works in the browser," or forcing SAML onto a mobile app because that's what the team already knows. Each of these trades a small amount of integration effort today for a security or maintainability cost later.</p>
+
+  <div class="analogy-box analogy-amber">
+    <p>Protocol selection is like choosing a shipping method, not a religion. You wouldn't ship a single document across town by ocean freight just because your company "standardized on ocean freight" for its export business — you'd use the method that fits the cargo, the distance, and the urgency. SAML is ocean freight: heavier, slower to set up, but extremely well-proven for large, established enterprise relationships. OIDC is air freight: faster to integrate, lighter-weight, ideal for anything modern and fast-moving. An enterprise that insists on one shipping method for every package isn't being disciplined — it's ignoring what the cargo actually needs.</p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 18 — Protocol Selection Decision Tree</div>
+    <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">What type of integration is this?<span class="seq-meta">Root decision point</span></div></div>
+    <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">Is a human user involved?<span class="seq-meta">No → <strong>OAuth Client Credentials</strong> → Done</span></div></div>
+    <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">Yes → Is it an enterprise SaaS app with SAML support?<span class="seq-meta">Yes → <strong>SAML 2.0 SP-initiated</strong></span></div></div>
+    <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">No → Is it a modern web app, mobile app, or SPA?<span class="seq-meta">Yes → <strong>OIDC Authorization Code + PKCE</strong></span></div></div>
+    <div class="seq-step"><div class="seq-num">?</div><div class="seq-text">No → Legacy app with no OIDC or SAML support?<span class="seq-meta">→ <strong>Adapter / reverse proxy pattern</strong></span></div></div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 19 — Protocol Selection by Application Type</div>
+    <div class="table-wrap" style="margin-top:0;">
+      <table>
+        <thead><tr><th>Application Type</th><th>Recommended Protocol</th><th>Grant/Binding</th><th>PingFederate Configuration</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Enterprise SaaS</td><td>SAML 2.0</td><td>SP-initiated, HTTP-POST</td><td>SP connection</td><td>Salesforce, Workday, SAP-style integrations</td></tr>
+          <tr><td>Modern Web App</td><td>OIDC</td><td>Authorization Code + PKCE</td><td>OIDC RP connection</td><td>Default choice for anything built in-house</td></tr>
+          <tr><td>SPA</td><td>OIDC</td><td>Authorization Code + PKCE</td><td>Public client</td><td>No client secret stored in the browser</td></tr>
+          <tr><td>Mobile App</td><td>OIDC</td><td>Authorization Code + PKCE</td><td>Public client</td><td>Uses system browser, not embedded webview</td></tr>
+          <tr><td>Machine-to-Machine API</td><td>OAuth 2.0</td><td>Client Credentials</td><td>Confidential client</td><td>Secret rotation is a PAM/IAM concern</td></tr>
+          <tr><td>IoT Device</td><td>OAuth 2.0</td><td>Device Code</td><td>Confidential or public client</td><td>Module 11 covers IoT identity in depth</td></tr>
+          <tr><td>Legacy On-Prem App</td><td>SAML or adapter</td><td>Varies</td><td>SP connection or proxy</td><td>Translate via PingFederate hub where possible</td></tr>
+          <tr><td>Partner B2B Federation</td><td>SAML or OIDC</td><td>Per partner capability</td><td>SP/RP connection</td><td>Driven by partner's own protocol support</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout-cost">
+    <div class="callout-title">🟡 The "just use SAML for everything" anti-pattern</div>
+    <p>SAML was designed for browser-based SSO between enterprise applications. Using it for mobile apps requires launching a browser, which degrades UX and security. Using it for machine-to-machine is technically possible via the SAML Bearer assertion grant in OAuth — but that's a compatibility adapter, not the right design. Protocol selection is an architecture decision, not an admin preference. Make it deliberately.</p>
+  </div>
+
+  <div class="usecase-box">
+    <div class="uc-tag">USE CASE</div>
+    <p>A platform team is building a new internal developer portal that needs SSO, an iOS mobile app companion, a set of REST APIs consumed by other microservices, and integration with Workday (HR) and ServiceNow. Design the protocol architecture for each integration point — which protocol, which flow, and why.</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>List the top 5 applications in your enterprise that use SSO. For each, identify: which protocol (SAML or OIDC)? Which grant type or binding? Is that the right choice for that application type, or is it a historical accident? What would the right choice be today?</p>
+  </div>
+</section>
+
+<section class="section" id="s3-8" data-nav-label="3.8 Federation Patterns & Topologies" data-stack-layers="sso,tokens,directory">
+  <h2><span class="module-num">3.8</span> Federation Patterns &amp; Topologies</h2>
+
+  <p>Federation topology is about how multiple IdPs and SPs connect across an enterprise IAM ecosystem — and the shape of that topology has direct operational consequences.</p>
+
+  <p><strong>Point-to-point federation</strong> connects each IdP directly to each SP. It's simple to reason about for a single connection, but it doesn't scale: 10 IdPs × 50 SPs means 500 individual trust relationships, each with its own certificate lifecycle and configuration to maintain.</p>
+
+  <p><strong>Hub-and-spoke federation</strong> routes every connection through a central federation hub — PingFederate — so SPs connect to the hub and IdPs connect to the hub, turning an N×M problem into roughly N+M connections. PingFederate's value as a hub goes beyond simplifying the connection count: it translates between SAML and OIDC, and between multiple upstream IdPs and downstream SPs that would otherwise have no way to speak to each other.</p>
+
+  <p><strong>Mesh federation</strong> connects multiple hubs to each other with their own trust relationships — this shows up in large multi-organization environments, government federations, and healthcare trust frameworks where no single hub can or should own every relationship. A mesh topology trades the simplicity of a single hub for political and operational reality: in a merger of two large companies, neither side's PingFederate instance is going to fully absorb the other on day one, so the two hubs federate with each other instead, each retaining authority over its own IdPs and SPs while exposing a controlled trust boundary to the other. M&A divestiture work — separating one company's identity infrastructure back out of a shared hub — is the mirror image of this same problem, and it's exactly the kind of topology decision that takes real architectural judgment rather than a checklist.</p>
+
+  <p><strong>Brokered identity (identity proxy)</strong> is the architectural role PingFederate plays as a hub: it doesn't just route traffic, it translates protocols, enriches attributes, and enforces policy at the federation layer itself.</p>
+
+  <p>The <strong>attribute authority</strong> question — where do the attributes in a token or assertion actually come from? — traces a specific flow: the upstream IdP passes whatever claims it has, the hub enriches them from the directory (Module 02's PingDirectory/AD content), and the downstream SP receives the enriched result. This enrichment step is where a lot of real architectural value gets created and a lot of real bugs get introduced: an upstream partner IdP might only know a user's email address, while the downstream SP needs department, cost center, and group membership to make an authorization decision. The hub is what bridges that gap — but it also means the hub now owns a transformation rule that, if wrong, silently corrupts every assertion that passes through it. Treat attribute mapping and transformation rules with the same change-control rigor as any other production configuration, because a broken transformation doesn't throw an error — it just hands the SP the wrong department or an empty group list.</p>
+
+  <p><strong>Protocol translation</strong> is the concrete version of this: PingFederate can receive a SAML assertion from an upstream corporate IdP and issue an OIDC token to a downstream SP, with neither party needing to know what protocol the other one speaks.</p>
+
+  <div class="deepdive-box">
+    <div class="dd-title">🟣 Deep dive: What does protocol translation actually cost architecturally?</div>
+    <p>Every translation point in a federation topology is a place where the hub must hold enough trust and enough information to re-issue a credential in a different format — which means it's also a place where a compromise or misconfiguration has outsized blast radius. When PingFederate translates an upstream SAML assertion into a downstream OIDC token, it isn't just reformatting data: it's making an independent assertion, under its own signing key, that "this user authenticated, and here is who they are" — separate from whatever the upstream IdP originally signed. That's a deliberate trust decision, not a mechanical one. The architectural cost shows up in three places: the hub's signing key becomes a single point of failure for every translated relationship behind it; the hub's attribute-mapping logic becomes the de facto source of truth for downstream authorization, even though it didn't originate the data; and the hub itself becomes the place auditors look first when something about a user's access doesn't trace back cleanly to its origin. None of this is a reason to avoid the hub-and-spoke pattern — point-to-point federation has worse problems at scale — but it is the reason hub configuration changes deserve the same scrutiny as a production code deployment.</p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 20 — Point-to-Point vs Hub-and-Spoke Federation</div>
+    <div class="flow-row" style="gap:24px; align-items:flex-start;">
+      <div style="flex:1; min-width:220px;">
+        <div class="flow-node accent" style="margin-bottom:8px;">Point-to-Point</div>
+        <p style="font-size:13.3px; margin-bottom:0;">3 IdPs × 4 SPs = 12 direct connections. Every new SP or IdP multiplies the connection count.</p>
+      </div>
+      <div style="flex:1; min-width:220px;">
+        <div class="flow-node accent" style="margin-bottom:8px;">Hub-and-Spoke (PingFederate)</div>
+        <p style="font-size:13.3px; margin-bottom:0;">3 IdPs → 1 Hub ← 4 SPs = 7 connections total. PingFederate as the federation hub.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Diagram 21 — PingFederate as Identity Broker</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch;">
+      <div class="seq-step"><div class="seq-num">↑</div><div class="seq-text">Upstream: SAML IdP (corporate AD), OIDC IdP (social/partner)</div></div>
+      <div class="seq-step"><div class="seq-num">⬢</div><div class="seq-text">PingFederate (hub)<span class="seq-meta">Protocol translation (SAML → OIDC) · Attribute enrichment from directory · Policy enforcement (MFA step-up, risk evaluation) · Claim transformation (rename/map attributes)</span></div></div>
+      <div class="seq-step"><div class="seq-num">↓</div><div class="seq-text">Downstream: SAML apps, OIDC apps, OAuth resource servers</div></div>
+    </div>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 PingFederate's power as a hub is translation and enrichment</div>
+    <p>An upstream LDAP directory doesn't speak OIDC — but PingFederate does. A legacy SAML SP doesn't speak OIDC — but PingFederate can present as SAML to that SP while authenticating via OIDC upstream. The hub pattern is what makes a heterogeneous enterprise IAM ecosystem manageable. When you design federation topology, the question isn't just "what protocol?" it's "where does protocol translation happen, and what's the architectural cost of each translation point?"</p>
+  </div>
+
+  <div class="usecase-box">
+    <div class="uc-tag">USE CASE</div>
+    <p>Your company's PingFederate hub currently has 3 upstream IdPs (corporate AD, an acquired company's Okta, and a partner company's ADFS) and 67 SP connections. The security team wants to add MFA step-up policies for 12 high-risk applications. Walk through how hub-and-spoke federation makes this a single-point policy change rather than 12 separate SP configurations.</p>
+  </div>
+
+  <div class="lab-box">
+    <div class="lab-title">🧪 Lab</div>
+    <p>In your PingFederate admin console, look at your SP connections. How many are SAML? How many are OIDC? How many IdP connections exist? Draw the actual topology of your PingFederate deployment on paper. Does it match the hub-and-spoke pattern? Where are the point-to-point connections that bypass the hub?</p>
+  </div>
+</section>
+
+
+<section class="section" id="cheatsheet" data-nav-label="📋 Architecture Cheat Sheet" data-stack-layers="sso,tokens,authz">
+  <h2>📋 Architecture Cheat Sheet</h2>
+  <div class="cheat-grid">
+    <div class="cheat-item"><span class="cheat-num">1</span><span>OAuth 2.0 = authorization framework, NOT authentication</span></div>
+    <div class="cheat-item"><span class="cheat-num">2</span><span>OIDC = OAuth 2.0 + identity layer (ID token = who you are, access token = what you can do)</span></div>
+    <div class="cheat-item"><span class="cheat-num">3</span><span>SAML = XML-based enterprise federation standard (2005), still the right choice for enterprise SaaS apps</span></div>
+    <div class="cheat-item"><span class="cheat-num">4</span><span>JWT = a format (not a protocol); used by OIDC and OAuth</span></div>
+    <div class="cheat-item"><span class="cheat-num">5</span><span>Authorization Code + PKCE = the correct flow for all user-facing applications in 2025+</span></div>
+    <div class="cheat-item"><span class="cheat-num">6</span><span>Implicit grant = deprecated; ROPC = should not exist</span></div>
+    <div class="cheat-item"><span class="cheat-num">7</span><span>Hub-and-spoke federation: N+M connections, not N×M</span></div>
+    <div class="cheat-item"><span class="cheat-num">8</span><span>Protocol selection follows application type — not preference</span></div>
+  </div>
+</section>
+
+<section class="section" id="mindmap" data-nav-label="🧠 Mind Map" data-stack-layers="sso,tokens,authz">
+  <h2>🧠 Mind Map</h2>
+  <div class="diagram-box">
+    <div class="diagram-title">Module 03 Concept Mind Map</div>
+    <div class="flow-row" style="flex-direction:column; align-items:stretch; gap:14px;">
+      <div class="seq-step"><div class="seq-num">⬢</div><div class="seq-text"><strong>Identity Protocols</strong> (central)</div></div>
+      <div class="seq-step"><div class="seq-num">→</div><div class="seq-text"><strong>OAuth 2.0</strong><span class="seq-meta">Grant Types · Tokens · Scopes · Endpoints</span></div></div>
+      <div class="seq-step"><div class="seq-num">→</div><div class="seq-text"><strong>OIDC</strong><span class="seq-meta">ID Token · UserInfo · Discovery · Session Management</span></div></div>
+      <div class="seq-step"><div class="seq-num">→</div><div class="seq-text"><strong>SAML 2.0</strong><span class="seq-meta">Assertions · Bindings · Metadata · NameID</span></div></div>
+      <div class="seq-step"><div class="seq-num">→</div><div class="seq-text"><strong>JWT</strong><span class="seq-meta">Header · Payload · Signature · Validation · JWKS</span></div></div>
+      <div class="seq-step"><div class="seq-num">→</div><div class="seq-text"><strong>Protocol Selection</strong><span class="seq-meta">Application Type · Enterprise · Consumer</span></div></div>
+      <div class="seq-step"><div class="seq-num">→</div><div class="seq-text"><strong>Federation Patterns</strong><span class="seq-meta">Point-to-Point · Hub-and-Spoke · Broker</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="knowledge-check" data-nav-label="✅ Knowledge Check" data-stack-layers="sso,tokens,authz">
+  <h2>✅ Knowledge Check</h2>
+  <div class="qa-item"><div class="qa-tag">Q1</div><p>A developer says they're implementing "OAuth for login." What's the architectural error in that statement and what should they implement instead?</p></div>
+  <div class="qa-item"><div class="qa-tag">Q2</div><p>Compare the security profile of Authorization Code + PKCE vs Implicit grant for a single-page application. Why was the Implicit grant deprecated?</p></div>
+  <div class="qa-item"><div class="qa-tag">Q3</div><p>A SAML assertion has NotOnOrAfter set to 8 hours from issuance. What are the security implications and what would you change?</p></div>
+  <div class="qa-item"><div class="qa-tag">Q4</div><p>A Resource Server is validating JWTs by checking only the signature and the exp claim. What attack vectors does this leave open?</p></div>
+  <div class="qa-item"><div class="qa-tag">Q5</div><p>Your enterprise has 3 upstream IdPs and 80 SP connections all managed in PingFederate. The security team wants to enforce MFA for all privileged applications. Walk through why the hub-and-spoke topology makes this operationally feasible.</p></div>
+</section>
+
+<section class="section" id="architect-review" data-nav-label="🏗️ Architect Review" data-stack-layers="sso,tokens,authz">
+  <h2>🏗️ Architect Review Questions</h2>
+  <div class="qa-item"><div class="qa-tag">ARQ1</div><p>Design the protocol architecture for a new enterprise platform that includes a web portal, a mobile app, 12 microservices, 3 external partner integrations, and 15 legacy SaaS apps. What protocols, what flows, and where does PingFederate fit?</p></div>
+  <div class="qa-item"><div class="qa-tag">ARQ2</div><p>Your security team has asked you to evaluate whether to replace SAML with OIDC for all SP integrations. Build the business and technical case for and against this migration.</p></div>
+  <div class="qa-item"><div class="qa-tag">ARQ3</div><p>A pentest finding shows that your OAuth authorization server accepts the RS256, HS256, and none algorithms. What is the severity of this finding and what is the remediation architecture?</p></div>
+
+  <h3 style="margin-top:34px;">Real-World Scenario: The Protocol Consolidation Project</h3>
+  <p>A large enterprise runs PingFederate with 90 SP connections: 55 SAML, 25 OIDC, 10 custom/proprietary. The new CTO wants to "standardize on OIDC."</p>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 Situation</div>
+    <p>The CTO's directive arrives as a flat mandate with a deadline, no budget line, and no inventory of why each of the 90 SPs is on the protocol it's on. Some of the 55 SAML connections are recent; many are 8–10 years old, tied to vendor contracts the company doesn't control.</p>
+  </div>
+
+  <div class="callout callout-security">
+    <div class="callout-title">🔴 Constraints</div>
+    <p>A meaningful share of the SAML SPs are commercial SaaS platforms (Workday, SAP, legacy ServiceNow modules) whose OIDC support is either absent, partial, or requires a paid tier upgrade the company hasn't budgeted for. The 10 custom/proprietary connections were built by teams that no longer exist in their original form, with no current owner.</p>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Decision Framework</div>
+    <p>Segment the 90 connections into three buckets: (1) SPs where OIDC is already supported and the migration is low-risk — prioritize these first for visible early wins; (2) SPs where SAML is the vendor's primary or only supported option — these are not migration candidates, full stop; (3) custom/proprietary connections with no clear owner — these need an ownership and risk assessment before any protocol conversation even starts.</p>
+  </div>
+
+  <div class="callout callout-cost">
+    <div class="callout-title">🟡 Migration Architecture</div>
+    <p>For bucket (1), migrate incrementally behind the PingFederate hub, validating each cutover against a rollback plan before decommissioning the old SAML connection. For bucket (2), the architecture doesn't change — document explicitly why, so the decision survives the next leadership turnover. For bucket (3), establish ownership and current usage before deciding whether to migrate, retire, or leave as-is.</p>
+  </div>
+
+  <div class="callout callout-concept">
+    <div class="callout-title">🔵 What You Never Migrate</div>
+    <p>Any SP where the vendor's primary, best-supported integration path is SAML. Forcing OIDC onto a SAML-native vendor integration trades a stable, well-tested connection for a worse-supported one, purely to satisfy a protocol-purity goal that has no real security or operational benefit.</p>
+  </div>
+
+  <div class="callout callout-architect">
+    <div class="callout-title">🟢 Outcome</div>
+    <p>The realistic result of a project like this is never "100% OIDC." It's a smaller, better-understood SAML footprint, a documented rationale for every connection that stays on SAML, and an OIDC-first policy for all new integrations going forward — which is the actual win the CTO's directive was reaching for, even if the literal mandate wasn't achievable.</p>
+  </div>
+</section>
+
+<section class="section" id="bridge" data-nav-label="🌉 Bridge to Module 04" data-stack-layers="sso,tokens,authz">
+  <h2>🌉 Bridge to Module 04</h2>
+  <div class="bridge-band">
+    <div class="bridge-col done">
+      <div class="bridge-tag">✅ WHAT YOU BUILT · 🔥 ATLAS EMBER · MODULE 03</div>
+      <h3>The protocol layer is no longer a black box</h3>
+      <p>OAuth, OIDC, SAML, JWT — design rationale for each, when to use which, how they work in PingFederate.</p>
+    </div>
+    <div class="bridge-col next">
+      <div class="bridge-tag">⏭️ UP NEXT · 🔥 ATLAS EMBER · MODULE 04</div>
+      <h3>The platform behind the protocols</h3>
+      <p>You now understand the protocols. Module 04 takes you inside PingFederate, PingDirectory, and PingID as architectural systems — not as products to configure, but as platforms to design with. How do you build enterprise federation topology? How does PingID's adaptive MFA engine work architecturally? How does the Ping stack fit into (and alongside) Okta, Entra ID, and other IdPs? The protocols you just learned are the language. Module 04 is the platform that speaks it. 🔥</p>
+    </div>
+  </div>
+  <a class="cta-button" href="module04.html">Continue to Module 04: Ping Platform Architecture →</a>
+</section>
+
+
+</main>
+
+<script>
+(function() {
+  // Theme toggle — defaults to dark (this series is dark-first), but
+  // respects an explicit system preference for light on first load.
+  // No persistence storage is used; the toggle is a session-only override
+  // and each fresh load re-checks system preference.
+  const root = document.documentElement;
+  const themeToggle = document.getElementById('theme-toggle');
+
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      root.setAttribute('data-theme', 'light');
+      if (themeToggle) { themeToggle.textContent = '🌙'; themeToggle.title = 'Switch to dark theme'; }
+    } else {
+      root.removeAttribute('data-theme');
+      if (themeToggle) { themeToggle.textContent = '☀️'; themeToggle.title = 'Switch to light theme'; }
+    }
+  }
+
+  let currentTheme = 'dark';
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      currentTheme = 'light';
+    }
+  } catch (e) { /* matchMedia unsupported — stay dark */ }
+  applyTheme(currentTheme);
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      applyTheme(currentTheme);
+    });
+  }
+
+  // Progress bar
+  const progressBar = document.getElementById('progress-bar');
+  function updateProgress() {
+    const h = document.documentElement;
+    const scrolled = h.scrollTop;
+    const height = h.scrollHeight - h.clientHeight;
+    const pct = height > 0 ? (scrolled / height) * 100 : 0;
+    progressBar.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // Mobile sidebar toggle
+  const sidebar = document.getElementById('sidebar');
+  const menuToggle = document.getElementById('menu-toggle');
+  menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 980 && sidebar.classList.contains('open')) {
+      if (!sidebar.contains(e.target) && e.target !== menuToggle) {
+        sidebar.classList.remove('open');
+      }
+    }
+  });
+
+  // Section observer: active nav + stack rail lighting + top bar indicator
+  const navItems = Array.from(document.querySelectorAll('.nav-item'));
+  const stackItems = Array.from(document.querySelectorAll('.stack-item'));
+  const sections = Array.from(document.querySelectorAll('.section[id]'));
+  const tbIndicator = document.getElementById('tb-section-indicator');
+
+  function setActive(id, label, layers) {
+    navItems.forEach(n => n.classList.toggle('active', n.getAttribute('href') === '#' + id));
+    const layerSet = (layers || '').split(',').map(s => s.trim()).filter(Boolean);
+    stackItems.forEach(s => s.classList.toggle('lit', layerSet.includes(s.dataset.layer)));
+    if (tbIndicator && label) tbIndicator.textContent = label;
+  }
+
+  if (sections.length) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          setActive(el.id, el.dataset.navLabel || '', el.dataset.stackLayers || '');
+        }
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    sections.forEach(s => observer.observe(s));
+  }
+})();
+</script>
+
+</body>
+</html>

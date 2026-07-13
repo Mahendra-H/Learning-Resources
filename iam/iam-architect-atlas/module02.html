@@ -1,0 +1,3357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 02 · Directory Services & Identity Stores — IAM Architect Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   IAM ARCHITECT ATLAS — MODULE 02 — ATLAS DAWN DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --text: #1A1D24;
+  --text-muted: #6B6F7A;
+  --border: #DEDAD1;
+  --radius: 12px;
+  --accent-blue: #5B8FF0;
+  --accent-amber: #E8A33D;
+  --accent-green: #4FB286;
+  --accent-violet: #7B6FE0;
+  --accent-red: #D9534F;
+  --accent-primary: #5B8FF0;
+
+  --sidebar-w: 300px;
+  --topbar-h: 56px;
+  --font-display: 'Inter Tight', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+html.dark {
+  --bg: #0B0E14;
+  --surface: #151A24;
+  --text: #E8E6E1;
+  --text-muted: #A4AAB8; /* brightened from spec baseline for AA contrast on dark surfaces */
+  --border: #262B38;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+a { color: var(--accent-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+::selection { background: color-mix(in srgb, var(--accent-primary) 30%, transparent); }
+
+/* ───────────────────────── TOP BAR ───────────────────────── */
+
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 0 16px;
+}
+
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+
+.menu-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px; height: 36px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text);
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.topbar-label strong { color: var(--text); font-weight: 600; }
+
+.theme-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 40px; height: 40px;
+  cursor: pointer;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+.theme-toggle:hover { border-color: var(--accent-primary); }
+
+.progress-bar {
+  position: fixed;
+  top: var(--topbar-h); left: 0;
+  height: 3px;
+  background: var(--accent-primary);
+  width: 0%;
+  z-index: 101;
+  transition: width 0.1s linear;
+}
+
+/* ───────────────────────── LAYOUT ───────────────────────── */
+
+.layout {
+  display: flex;
+  margin-top: var(--topbar-h);
+  min-height: calc(100vh - var(--topbar-h));
+}
+
+/* ───────────────────────── SIDEBAR ───────────────────────── */
+
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  padding: 24px 18px 32px;
+}
+
+.sidebar-brand {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+
+.sidebar-phase {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.sidebar-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.sidebar-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+}
+.sidebar-back:hover { color: var(--accent-primary); text-decoration: none; }
+
+.sidebar-search {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  margin-bottom: 22px;
+}
+.sidebar-search:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.nav-group { margin-bottom: 20px; }
+
+.nav-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding: 0 8px;
+}
+
+.nav-link {
+  display: block;
+  padding: 7px 8px;
+  border-radius: 7px;
+  font-size: 0.86rem;
+  color: var(--text);
+  margin-bottom: 1px;
+  line-height: 1.4;
+}
+.nav-link:hover {
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  text-decoration: none;
+}
+.nav-link.active {
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+.nav-link:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.stack-rail {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.stack-rail-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  padding: 0 8px;
+}
+
+.stack-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  cursor: default;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.stack-item.lit {
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ───────────────────────── MAIN CONTENT ───────────────────────── */
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 48px 56px 120px;
+  max-width: 920px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 14px;
+  display: block;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.5rem;
+  display: inline-block;
+  border-bottom: 3px solid var(--accent-primary);
+  padding-bottom: 14px;
+  margin: 0 0 24px;
+  line-height: 1.15;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin: 0 0 18px;
+}
+
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.12rem;
+  margin: 28px 0 12px;
+}
+
+h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 20px 0 10px;
+}
+
+p { margin: 0 0 16px; }
+
+.lede {
+  font-size: 1.12rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 28px;
+}
+
+.module-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.4rem;
+  color: var(--accent-primary);
+  opacity: 0.3;
+  line-height: 1;
+}
+
+.module-divider {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin: 56px 0 24px;
+  padding-top: 8px;
+}
+.module-divider h2 { margin: 0; border: none; padding: 0; flex: 1; }
+
+.module:first-of-type .module-divider { margin-top: 0; }
+
+/* ───────────────────────── WHERE AM I CARD ───────────────────────── */
+
+.where-am-i {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 32px;
+  font-size: 0.86rem;
+}
+.where-am-i .wai-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.where-am-i .wai-fill {
+  height: 100%;
+  width: 12.5%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+}
+
+/* ───────────────────────── CALLOUTS ───────────────────────── */
+
+.callout {
+  border-radius: var(--radius);
+  border: 1px solid;
+  padding: 18px 22px;
+  margin: 22px 0;
+  font-size: 0.94rem;
+}
+.callout h4 { margin-top: 0; }
+.callout p:last-child { margin-bottom: 0; }
+
+.callout-concept {
+  background: color-mix(in srgb, var(--accent-blue) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--border));
+}
+.callout-concept h4 { color: var(--accent-blue); }
+
+.callout-cost {
+  background: color-mix(in srgb, var(--accent-amber) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-amber) 35%, var(--border));
+}
+.callout-cost h4 { color: var(--accent-amber); }
+
+.callout-architect {
+  background: color-mix(in srgb, var(--accent-green) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-green) 35%, var(--border));
+}
+.callout-architect h4 { color: var(--accent-green); }
+
+.callout-security {
+  background: color-mix(in srgb, var(--accent-violet) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-violet) 35%, var(--border));
+}
+.callout-security h4 { color: var(--accent-violet); }
+
+/* ───────────────────────── ANALOGY BOXES ───────────────────────── */
+
+.analogy {
+  border: 1.5px dashed;
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin: 22px 0;
+  font-size: 0.94rem;
+}
+.analogy h4 { margin-top: 0; font-family: var(--font-mono); letter-spacing: 0; }
+.analogy p:last-child { margin-bottom: 0; }
+
+.analogy.blue {
+  background: color-mix(in srgb, var(--accent-blue) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-blue) 45%, var(--border));
+}
+.analogy.violet {
+  background: color-mix(in srgb, var(--accent-violet) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-violet) 45%, var(--border));
+}
+.analogy.amber {
+  background: color-mix(in srgb, var(--accent-amber) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-amber) 45%, var(--border));
+}
+.analogy.green {
+  background: color-mix(in srgb, var(--accent-green) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-green) 45%, var(--border));
+}
+
+/* ───────────────────────── USE CASE BOXES ───────────────────────── */
+
+.usecase {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin: 22px 0;
+  font-size: 0.94rem;
+}
+.usecase-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  color: var(--accent-primary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.usecase p:last-child { margin-bottom: 0; }
+
+/* ───────────────────────── DEEP DIVE ───────────────────────── */
+
+details.deepdive {
+  border: 1px solid color-mix(in srgb, var(--accent-violet) 35%, var(--border));
+  border-radius: var(--radius);
+  margin: 22px 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+details.deepdive summary {
+  padding: 16px 22px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent-violet);
+  font-size: 0.92rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+details.deepdive summary::-webkit-details-marker { display: none; }
+details.deepdive summary::after {
+  content: '+';
+  font-size: 1.2rem;
+  color: var(--accent-violet);
+  transition: transform 0.2s ease;
+}
+details.deepdive[open] summary::after { transform: rotate(45deg); }
+details.deepdive .deepdive-body {
+  padding: 0 22px 20px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+details.deepdive .deepdive-body p:last-child { margin-bottom: 0; }
+
+/* ───────────────────────── LAB BOX ───────────────────────── */
+
+.lab {
+  background: color-mix(in srgb, var(--accent-green) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent-green) 40%, var(--border));
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin: 22px 0;
+  font-size: 0.92rem;
+}
+.lab-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent-green);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: block;
+  margin-bottom: 10px;
+}
+.lab p:last-child { margin-bottom: 0; }
+
+/* ───────────────────────── DIAGRAM BOX ───────────────────────── */
+
+.diagram-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 24px 0;
+}
+.diagram-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+.diagram-caption {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.diagram-box svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.diagram-box text { fill: var(--text); font-family: var(--font-body); }
+.diagram-box .dg-muted { fill: var(--text-muted); }
+.diagram-box .dg-mono { font-family: var(--font-mono); }
+
+/* ───────────────────────── BRIDGE BAND ───────────────────────── */
+
+.bridge-band {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin: 24px 0;
+}
+.bridge-half { flex: 1; padding: 26px 28px; }
+.bridge-half.from {
+  background: color-mix(in srgb, var(--accent-blue) 10%, var(--surface));
+}
+.bridge-half.to {
+  background: color-mix(in srgb, var(--accent-amber) 18%, var(--surface));
+}
+.bridge-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.bridge-half h3 { margin-top: 0; }
+.bridge-cta {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 12px 22px;
+  border-radius: 8px;
+  background: var(--accent-amber);
+  color: #1A1D24;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.bridge-cta:hover { text-decoration: none; filter: brightness(1.05); }
+
+@media (max-width: 700px) {
+  .bridge-band { flex-direction: column; }
+}
+
+/* ───────────────────────── CHEAT GRID ───────────────────────── */
+
+.cheat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 24px 0;
+}
+.cheat-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  font-size: 0.88rem;
+}
+.cheat-item .cheat-num {
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  font-weight: 600;
+  margin-right: 6px;
+}
+@media (max-width: 700px) {
+  .cheat-grid { grid-template-columns: 1fr; }
+}
+
+/* ───────────────────────── TABLES ───────────────────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 22px 0;
+  font-size: 0.88rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--bg);
+}
+tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--accent-primary) 4%, transparent);
+}
+tr:last-child td { border-bottom: none; }
+
+/* ───────────────────────── QUESTION BLOCKS ───────────────────────── */
+
+.qblock {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 0.92rem;
+}
+.qblock .qtag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent-primary);
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ───────────────────────── SCENARIO BOX ───────────────────────── */
+
+.scenario-meta {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 20px 0;
+}
+.scenario-meta h4 { margin-top: 0; }
+.scenario-meta ul { margin: 6px 0 0; padding-left: 20px; }
+.scenario-meta li { margin-bottom: 4px; }
+
+/* ───────────────────────── FOOTER NAV ───────────────────────── */
+
+.section-anchor-spacer { scroll-margin-top: calc(var(--topbar-h) + 16px); }
+
+/* ───────────────────────── RESPONSIVE ───────────────────────── */
+
+@media (max-width: 980px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--topbar-h);
+    z-index: 99;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    background: var(--surface);
+    box-shadow: 2px 0 20px rgba(0,0,0,0.15);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .menu-toggle { display: flex; }
+  .main { padding: 32px 20px 100px; max-width: 100%; }
+  h1 { font-size: 1.9rem; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 24px 14px 90px; }
+  h1 { font-size: 1.6rem; }
+  .cheat-grid { grid-template-columns: 1fr; }
+}
+
+/* Focus visibility for keyboard nav, app-wide */
+a:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ TOP BAR ═══════════════════ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">☰</button>
+    <span class="topbar-label">Module <strong>02</strong> of 16 · 🌅 Atlas Dawn · ~3 hr read</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+</div>
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="layout">
+
+  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">🔐 IAM Architect Atlas</div>
+    <div class="sidebar-phase">MODULE 02 · ATLAS DAWN</div>
+    <div class="sidebar-subtitle">Directory Services &amp; Identity Stores</div>
+    <a href="index.html" class="sidebar-back">← Back to Index</a>
+    <input type="text" class="sidebar-search" id="sidebarSearch" placeholder="🔍 Search this module...">
+
+    <div class="nav-group">
+      <div class="nav-group-label">Directory Foundations</div>
+      <a class="nav-link" href="#s2-1">2.1 What Is a Directory?</a>
+      <a class="nav-link" href="#s2-2">2.2 LDAP — Architecture &amp; Protocol</a>
+      <a class="nav-link" href="#s2-3">2.3 Active Directory Deep Dive</a>
+      <a class="nav-link" href="#s2-4">2.4 Microsoft Entra ID</a>
+      <a class="nav-link" href="#s2-5">2.5 PingDirectory as an Identity Platform</a>
+      <a class="nav-link" href="#s2-6">2.6 Kerberos &amp; NTLM Authentication</a>
+      <a class="nav-link" href="#s2-7">2.7 Forests, Trusts &amp; Multi-Domain Architecture</a>
+      <a class="nav-link" href="#s2-8">2.8 Hybrid Identity &amp; Directory Synchronization</a>
+      <a class="nav-link" href="#s2-9">2.9 Virtual Directories &amp; Meta-Directories</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Wrap-Up</div>
+      <a class="nav-link" href="#cheatsheet">📋 Architecture Cheat Sheet</a>
+      <a class="nav-link" href="#mindmap">🧠 Mind Map</a>
+      <a class="nav-link" href="#knowledge-check">✅ Knowledge Check</a>
+      <a class="nav-link" href="#architect-review">🏗️ Architect Review</a>
+      <a class="nav-link" href="#scenario">🏢 Real-World Scenario</a>
+      <a class="nav-link" href="#bridge">🌉 Bridge to Module 03</a>
+    </div>
+
+    <div class="stack-rail">
+      <div class="stack-rail-label">Identity Stack</div>
+      <div class="stack-item" data-layer="applications">👤 Applications &amp; Portals</div>
+      <div class="stack-item" data-layer="sso">🔐 SSO &amp; Federation</div>
+      <div class="stack-item" data-layer="tokens">🎫 Token &amp; Protocol Layer</div>
+      <div class="stack-item" data-layer="authz">⚖️ Authorization Engine</div>
+      <div class="stack-item" data-layer="iga">📋 IGA &amp; Lifecycle</div>
+      <div class="stack-item" data-layer="pam">🏦 PAM &amp; Privileged</div>
+      <div class="stack-item" data-layer="directory">📂 Directory &amp; Stores</div>
+      <div class="stack-item" data-layer="network">🌐 Network &amp; Infra Auth</div>
+      <div class="stack-item" data-layer="cloud">☁️ Cloud &amp; Machine</div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+  <main class="main">
+
+    <!-- HERO -->
+    <section id="hero">
+      <span class="eyebrow">🌅 MODULE 02 · ATLAS DAWN · PHASE 1 · ~3 HR READ</span>
+      <h1>Directory Services &amp; Identity Stores</h1>
+
+      <p class="lede">
+        In Module 01 you built the architectural mental model: IAM as infrastructure, the
+        JML lifecycle as an event system, trust as something established not assumed.
+        Every one of those concepts quietly assumed that identity data lives somewhere.
+        This module answers that question. Directories are the gravitational center of
+        enterprise identity — the systems every authentication flow eventually resolves
+        against, that every provisioning action writes to, and that every governance tool
+        reads from. You've worked with Active Directory and PingDirectory for years
+        already. This module teaches you to think about them as an architect: why they're
+        designed the way they are, what trade-offs that design creates, and how the choice
+        of identity store shapes every downstream IAM decision you'll ever make.
+      </p>
+
+      <div class="callout callout-architect">
+        <h4>🟢 Carrying Forward from Module 01</h4>
+        <p>
+          Module 02 builds directly on four ideas from Module 01, and you'll see each one
+          resurface concretely in the sections ahead. The <strong>JML lifecycle</strong> was
+          an event-driven architecture problem — and every provisioning event in that
+          lifecycle eventually resolves to a write against a directory entry. <strong>Trust
+          models</strong> were established, not assumed — and federation establishes that
+          trust by resolving an assertion back to a directory lookup. The three
+          <strong>reference architectures</strong> map almost one-to-one onto directory
+          topology: a centralized IAM architecture implies a centralized directory, a hybrid
+          IAM architecture implies a hybrid directory (Section 2.8 is where that gets
+          concrete). And the <strong>IAM maturity model</strong> draws a hard line at L3+,
+          where "governed identity store" stops being optional — you cannot mature past L2
+          on a directory nobody owns.
+        </p>
+      </div>
+
+      <div class="where-am-i">
+        <strong>📍 Where Am I?</strong> — Module 02 / Phase 1 — Identity Foundations
+        <div class="wai-bar"><div class="wai-fill"></div></div>
+        <div style="margin-top:8px; color:var(--text-muted); font-size:0.82rem;">
+          Progress: 2 of 16 modules (12% complete)
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2.1 -->
+    <div class="module section-anchor-spacer" data-stack-layers="directory" id="s2-1">
+      <div class="module-divider">
+        <div class="module-num">2.1</div>
+        <h2>📂 What Is a Directory? (And Why Is It Not a Database?)</h2>
+      </div>
+
+      <p>
+        Every engineer who has spent serious time with relational databases eventually
+        asks the same question the first time they touch Active Directory or
+        PingDirectory: <em>why doesn't this just run on Postgres?</em> The honest answer is
+        that it could — and early identity systems sometimes did exactly that — but the
+        result is consistently worse than a purpose-built directory for the specific
+        workload identity systems generate. Understanding why is the foundation for
+        everything else in this module.
+      </p>
+
+      <p>
+        A directory is a specialized data store optimized for three things a relational
+        database is not: <strong>read-heavy workloads</strong> at extreme scale,
+        <strong>hierarchical organization</strong> of entries, and <strong>strong, enforced
+        schema</strong> for the attributes those entries carry. It also bakes in
+        replication as a first-class architectural concern rather than an operational
+        bolt-on. What it deliberately sacrifices is exactly what relational databases are
+        good at: ad hoc complex queries, multi-table joins, and write-heavy transactional
+        workloads. A directory will let you find one entry among fifty million in
+        milliseconds. It will not let you efficiently ask "which users changed their
+        manager attribute in the last 90 days, joined against their group memberships,
+        sorted by department" — that's a reporting query, and directories are not
+        reporting engines.
+      </p>
+
+      <p>
+        This asymmetry isn't an oversight. It's a direct reflection of what identity
+        systems actually do at runtime: authenticate. Every single sign-on, every API call
+        validated against a bind credential, every SAML assertion PingFederate builds —
+        each one is fundamentally a directory <em>read</em>. Writes (provisioning a new
+        hire, updating a job title, disabling a leaver) happen constantly across an
+        enterprise but at nowhere near the volume of authentication reads. A directory
+        architected for that 1000:1 (or higher) read-to-write ratio looks completely
+        different from a transactional database architected for balanced read/write load.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 1 · THE DIRECTORY SPECTRUM</div>
+        <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/>
+            </marker>
+          </defs>
+          <!-- connecting arrows -->
+          <line x1="180" y1="120" x2="198" y2="120" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow1)"/>
+          <line x1="370" y1="120" x2="388" y2="120" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow1)"/>
+          <line x1="560" y1="120" x2="578" y2="120" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow1)"/>
+
+          <!-- Box 1: Flat File -->
+          <rect x="10" y="40" width="170" height="160" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+          <rect x="10" y="40" width="170" height="6" rx="3" fill="var(--text-muted)"/>
+          <text x="95" y="68" text-anchor="middle" font-weight="700" font-size="13">Flat File</text>
+          <text x="24" y="92" font-size="9.5" class="dg-muted">Optimized for:</text>
+          <text x="24" y="105" font-size="9.5">simple key-value storage</text>
+          <text x="24" y="128" font-size="9.5" class="dg-muted">Not good at:</text>
+          <text x="24" y="141" font-size="9.5">queries, scale, concurrency</text>
+          <text x="24" y="164" font-size="9.5" class="dg-muted">IAM use:</text>
+          <text x="24" y="177" font-size="9.5">/etc/passwd (legacy Unix)</text>
+
+          <!-- Box 2: Relational DB -->
+          <rect x="200" y="40" width="170" height="160" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+          <rect x="200" y="40" width="170" height="6" rx="3" fill="var(--accent-blue)"/>
+          <text x="285" y="68" text-anchor="middle" font-weight="700" font-size="13">Relational DB</text>
+          <text x="214" y="92" font-size="9.5" class="dg-muted">Optimized for:</text>
+          <text x="214" y="105" font-size="9.5">joins, transactions, writes</text>
+          <text x="214" y="128" font-size="9.5" class="dg-muted">Not good at:</text>
+          <text x="214" y="141" font-size="9.5">deep hierarchy at scale</text>
+          <text x="214" y="164" font-size="9.5" class="dg-muted">IAM use:</text>
+          <text x="214" y="177" font-size="9.5">app-level user tables</text>
+
+          <!-- Box 3: LDAP Directory -->
+          <rect x="390" y="40" width="170" height="160" rx="10" fill="color-mix(in srgb, var(--accent-blue) 10%, var(--surface))" stroke="var(--accent-blue)"/>
+          <rect x="390" y="40" width="170" height="6" rx="3" fill="var(--accent-blue)"/>
+          <text x="475" y="68" text-anchor="middle" font-weight="700" font-size="13">LDAP Directory</text>
+          <text x="404" y="92" font-size="9.5" class="dg-muted">Optimized for:</text>
+          <text x="404" y="105" font-size="9.5">read-heavy, hierarchy</text>
+          <text x="404" y="128" font-size="9.5" class="dg-muted">Not good at:</text>
+          <text x="404" y="141" font-size="9.5">joins, ad hoc reporting</text>
+          <text x="404" y="164" font-size="9.5" class="dg-muted">IAM use:</text>
+          <text x="404" y="177" font-size="9.5">Active Directory, PingDirectory</text>
+
+          <!-- Box 4: Identity Platform -->
+          <rect x="580" y="40" width="170" height="160" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+          <rect x="580" y="40" width="170" height="6" rx="3" fill="var(--accent-green)"/>
+          <text x="665" y="68" text-anchor="middle" font-weight="700" font-size="13">Identity Platform</text>
+          <text x="594" y="92" font-size="9.5" class="dg-muted">Optimized for:</text>
+          <text x="594" y="105" font-size="9.5">full lifecycle, REST APIs</text>
+          <text x="594" y="128" font-size="9.5" class="dg-muted">Not good at:</text>
+          <text x="594" y="141" font-size="9.5">being "just" a directory</text>
+          <text x="594" y="164" font-size="9.5" class="dg-muted">IAM use:</text>
+          <text x="594" y="177" font-size="9.5">Saviynt, Entra ID, PingOne</text>
+
+          <text x="380" y="232" text-anchor="middle" font-size="10" class="dg-muted dg-mono">increasing identity-awareness, decreasing query flexibility →</text>
+        </svg>
+        <div class="diagram-caption">
+          The spectrum from raw storage to identity platform. Each step trades general-purpose
+          query flexibility for identity-specific performance and structure. Most enterprises
+          run all four somewhere in their environment — the architectural skill is knowing
+          which layer a given identity workload actually belongs on.
+        </div>
+      </div>
+
+      <div class="analogy blue">
+        <h4>🔵 ANALOGY · The Phone Book vs the CRM</h4>
+        <p>
+          Think of a directory as a phone book and a relational database as a CRM. A phone
+          book is optimized for exactly one operation done extremely well: look up this
+          name, get this number, fast — millions of times a day, by millions of people,
+          with the data rarely changing. A CRM is optimized for the opposite: track complex
+          relationships between accounts, contacts, and deals, run arbitrary reports, support
+          heavy write volume as deals move through stages. Enterprise directories are the
+          world's most sophisticated phone books. The recurring engineering mistake — one
+          you've probably watched a team make — is trying to use the phone book like a CRM:
+          bolting reporting dashboards onto LDAP queries, or modeling rapidly-changing
+          relational data as directory attributes. It works at small scale and degrades
+          badly at enterprise scale.
+        </p>
+      </div>
+
+      <div class="callout callout-concept">
+        <h4>🔵 CONCEPT · Why Read Optimization Is the Whole Game</h4>
+        <p>
+          Every authentication event is a directory read. A mid-size enterprise generates
+          millions of directory reads per day — every login, every API token validation,
+          every SSO redirect through PingFederate triggers at least a bind and usually a
+          search. Write operations — provisioning a new hire, updating a department code,
+          disabling a leaver — are comparatively rare, numbering in the thousands per day
+          even at large scale. This asymmetry, often 1000:1 or higher, is the single design
+          constraint that explains nearly every architectural choice LDAP directories make:
+          aggressive caching, read replicas, indexed attribute lookups, and a data model
+          that favors fast retrieval over flexible mutation.
+        </p>
+      </div>
+
+      <p>
+        That hierarchical organization has a name: the <strong>Directory Information Tree
+        (DIT)</strong>. Every entry in an LDAP directory sits at a specific point in a tree
+        structure, and that position is not cosmetic — it's how access control delegation,
+        search scoping, and replication topology all get defined. An entry's position in
+        the tree is expressed as a <strong>Distinguished Name (DN)</strong>: a sequence of
+        relative names read right-to-left from the root, like
+        <code>cn=John Smith,ou=Users,dc=company,dc=com</code>. The <code>dc=</code>
+        components map to your domain (company.com), <code>ou=</code> is an organizational
+        unit (a container, like a folder), and <code>cn=</code> is the common name of the
+        specific entry. Every entry also belongs to one or more <strong>object classes</strong>
+        — schema definitions that determine which <strong>attributes</strong> that entry is
+        required or permitted to carry. A <code>person</code> object class might require
+        <code>cn</code> and <code>sn</code> (surname) and permit <code>mail</code>,
+        <code>telephoneNumber</code>, and dozens of others. This schema enforcement is part
+        of why directories are trustworthy as identity sources of truth — the structure is
+        guaranteed, not merely conventional.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 2 · DIRECTORY INFORMATION TREE (DIT)</div>
+        <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+          <!-- root -->
+          <rect x="300" y="10" width="160" height="42" rx="8" fill="color-mix(in srgb, var(--accent-blue) 14%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="380" y="36" text-anchor="middle" font-size="11" font-weight="700" class="dg-mono">dc=company,dc=com</text>
+
+          <!-- lines to children -->
+          <line x1="380" y1="52" x2="160" y2="92" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="380" y1="52" x2="380" y2="92" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="380" y1="52" x2="600" y2="92" stroke="var(--border)" stroke-width="1.5"/>
+
+          <!-- ou=Users -->
+          <rect x="80" y="92" width="160" height="38" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="160" y="116" text-anchor="middle" font-size="11" class="dg-mono">ou=Users</text>
+
+          <!-- ou=Groups -->
+          <rect x="300" y="92" width="160" height="38" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="380" y="116" text-anchor="middle" font-size="11" class="dg-mono">ou=Groups</text>
+
+          <!-- ou=ServiceAccounts -->
+          <rect x="520" y="92" width="160" height="38" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="600" y="116" text-anchor="middle" font-size="11" class="dg-mono">ou=ServiceAccounts</text>
+
+          <!-- lines to leaves -->
+          <line x1="160" y1="130" x2="160" y2="166" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="380" y1="130" x2="380" y2="166" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="600" y1="130" x2="600" y2="166" stroke="var(--border)" stroke-width="1.5"/>
+
+          <!-- leaf: John Smith -->
+          <rect x="80" y="166" width="160" height="38" rx="8" fill="color-mix(in srgb, var(--accent-green) 12%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="160" y="190" text-anchor="middle" font-size="11" class="dg-mono">cn=John Smith</text>
+
+          <!-- leaf: Engineering -->
+          <rect x="300" y="166" width="160" height="38" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="380" y="190" text-anchor="middle" font-size="11" class="dg-mono">cn=Engineering</text>
+
+          <!-- leaf: app-ping-svc -->
+          <rect x="520" y="166" width="160" height="38" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="600" y="190" text-anchor="middle" font-size="11" class="dg-mono">cn=app-ping-svc</text>
+
+          <!-- full DN annotation -->
+          <line x1="160" y1="204" x2="160" y2="230" stroke="var(--accent-green)" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <rect x="40" y="230" width="400" height="36" rx="8" fill="color-mix(in srgb, var(--accent-green) 8%, var(--surface))" stroke="var(--accent-green)" stroke-dasharray="3,3"/>
+          <text x="240" y="253" text-anchor="middle" font-size="10.5" class="dg-mono" fill="var(--accent-green)">cn=John Smith,ou=Users,dc=company,dc=com</text>
+
+          <text x="380" y="296" text-anchor="middle" font-size="10" class="dg-muted">DN reads right-to-left: leaf entry → containing OU → domain components (root)</text>
+        </svg>
+        <div class="diagram-caption">
+          The DIT organizes entries hierarchically under the root domain. A Distinguished
+          Name is constructed by walking from the leaf entry up to the root, comma-separated
+          — this is exactly how PingFederate or any LDAP client addresses a specific entry
+          for a bind or search operation.
+        </div>
+      </div>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 10 MIN</span>
+        <p>
+          Open your AD or PingDirectory admin tool. Navigate the DIT tree. Find your own user
+          entry and note its full DN. Count how many attributes are populated on it. Then
+          identify which of those attributes are actually used by PingFederate to build SAML
+          assertions or OIDC claims for the applications you support — open one of your
+          PingFederate IdP adapter or attribute contract configurations and trace the mapping.
+          Those specific attributes are your identity data pipeline; everything else on the
+          entry is just along for the ride.
+        </p>
+      </div>
+    </div>
+
+    <!-- SECTION 2.2 -->
+    <div class="module section-anchor-spacer" data-stack-layers="directory,sso" id="s2-2">
+      <div class="module-divider">
+        <div class="module-num">2.2</div>
+        <h2>🔌 LDAP: The Protocol That Powers Enterprise Identity</h2>
+      </div>
+
+      <p>
+        LDAP — the <strong>Lightweight Directory Access Protocol</strong> — is the wire
+        protocol that nearly every enterprise directory speaks, regardless of whether the
+        product behind it is Active Directory, PingDirectory, or open-source OpenLDAP.
+        "Lightweight" is relative: LDAP was designed in the early 1990s as a simpler
+        alternative to DAP, the original X.500 directory access protocol, which required a
+        full OSI networking stack and was, even by the standards of the time, painfully
+        heavy for client applications. LDAP stripped that down to run over plain TCP/IP and
+        exposed a much smaller, more tractable set of operations. That design decision —
+        optimize for client simplicity over protocol completeness — is why LDAP won and DAP
+        is now a historical footnote.
+      </p>
+
+      <p>
+        LDAP defines a small number of operations, and understanding each one's
+        architectural purpose tells you almost everything about how authentication actually
+        works under the hood:
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 4 · LDAP OPERATIONS REFERENCE</div>
+        <table>
+          <thead>
+            <tr><th>Operation</th><th>Purpose</th><th>IAM Use Case</th><th>Security Note</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Bind</strong></td><td>Authenticate a connection as a given DN</td><td>The actual login step — PingFederate binds as the user (or a service account) to verify a password</td><td>Anonymous bind should be disabled; simple bind requires TLS</td></tr>
+            <tr><td><strong>Search</strong></td><td>Query entries by base DN, scope, and filter</td><td>Retrieving user attributes after a successful bind, to populate a SAML assertion</td><td>Overly broad search scope can leak more attributes than an app needs</td></tr>
+            <tr><td><strong>Add</strong></td><td>Create a new entry</td><td>Provisioning a new hire's account from an IGA tool like Saviynt</td><td>Should be restricted to provisioning service accounts only</td></tr>
+            <tr><td><strong>Modify</strong></td><td>Update attributes on an existing entry</td><td>Updating job title, manager, or group membership</td><td>Audit logging on Modify is essential for compliance</td></tr>
+            <tr><td><strong>Delete</strong></td><td>Remove an entry</td><td>Rare in IAM — most orgs disable (deprovision) rather than delete</td><td>Hard deletes destroy audit trail; prefer soft-disable</td></tr>
+            <tr><td><strong>Compare</strong></td><td>Test whether an attribute equals a given value</td><td>Checking group membership without retrieving the full entry</td><td>Lower-overhead than Search for simple membership checks</td></tr>
+            <tr><td><strong>Abandon</strong></td><td>Cancel an in-flight operation</td><td>Client-side timeout handling for slow searches</td><td>Rarely security-relevant; mostly a performance control</td></tr>
+          </tbody>
+        </table>
+        <div class="diagram-caption">
+          Seven operations cover the entire LDAP protocol surface. In a typical PingFederate
+          authentication flow, only Bind and Search are exercised per login — Add, Modify,
+          and Delete belong almost entirely to provisioning tools like Saviynt, not to the
+          runtime authentication path.
+        </div>
+      </div>
+
+      <p>
+        Search operations are filtered using LDAP's own filter syntax —
+        <code>(&amp;(objectClass=person)(mail=jsmith@company.com))</code> is a typical
+        example, combining an object class constraint with an attribute equality match using
+        prefix (Polish) notation rather than the infix notation Java developers are used to
+        from SQL <code>WHERE</code> clauses. The syntax looks unfamiliar at first but maps
+        cleanly to a small set of operators: <code>&amp;</code> (AND), <code>|</code> (OR),
+        <code>!</code> (NOT), plus equality, substring, and presence tests. Most IAM-relevant
+        filters you'll write are simple equality or membership checks against
+        <code>sAMAccountName</code>, <code>mail</code>, or <code>memberOf</code>.
+      </p>
+
+      <p>
+        Two protocol details matter more than their obscurity suggests. First,
+        <strong>referrals</strong>: when a directory doesn't hold the entry a client asked
+        for but knows which other directory does, it can return a referral pointing the
+        client elsewhere instead of failing the request outright. This is what makes
+        distributed, multi-domain directories navigable to clients without those clients
+        needing hardcoded knowledge of the whole topology — Section 2.7 covers exactly this
+        in the context of AD forests. Second, <strong>LDAPS vs StartTLS</strong> — covered in
+        the security callout below — because the two are commonly confused and the
+        difference has real operational consequences.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 3 · LDAP AUTHENTICATION FLOW</div>
+        <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-blue)"/>
+            </marker>
+            <marker id="arrow3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-green)"/>
+            </marker>
+          </defs>
+          <!-- lifelines -->
+          <rect x="40" y="14" width="200" height="36" rx="8" fill="color-mix(in srgb, var(--accent-blue) 12%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="140" y="37" text-anchor="middle" font-size="11" font-weight="700">Client (PingFederate)</text>
+          <line x1="140" y1="50" x2="140" y2="280" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+          <rect x="480" y="14" width="200" height="36" rx="8" fill="color-mix(in srgb, var(--accent-green) 12%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="580" y="37" text-anchor="middle" font-size="11" font-weight="700">LDAP Directory</text>
+          <line x1="580" y1="50" x2="580" y2="280" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+          <!-- Step 1 -->
+          <line x1="140" y1="80" x2="572" y2="80" stroke="var(--accent-blue)" stroke-width="1.5" marker-end="url(#arrow2)"/>
+          <text x="360" y="73" text-anchor="middle" font-size="10" font-weight="600">1. Bind Request (DN + password)</text>
+          <text x="360" y="95" text-anchor="middle" font-size="9" class="dg-muted">PingFederate authenticates the user's submitted credentials</text>
+
+          <!-- Step 2 -->
+          <line x1="580" y1="125" x2="148" y2="125" stroke="var(--accent-green)" stroke-width="1.5" marker-end="url(#arrow3)"/>
+          <text x="360" y="118" text-anchor="middle" font-size="10" font-weight="600">2. Bind Response (success / fail)</text>
+          <text x="360" y="140" text-anchor="middle" font-size="9" class="dg-muted">Invalid credentials stop the flow here — no search is attempted</text>
+
+          <!-- Step 3 -->
+          <line x1="140" y1="170" x2="572" y2="170" stroke="var(--accent-blue)" stroke-width="1.5" marker-end="url(#arrow2)"/>
+          <text x="360" y="163" text-anchor="middle" font-size="10" font-weight="600">3. Search Request (filter + base DN)</text>
+          <text x="360" y="185" text-anchor="middle" font-size="9" class="dg-muted">A second bind (often as a service account) retrieves user attributes</text>
+
+          <!-- Step 4 -->
+          <line x1="580" y1="215" x2="148" y2="215" stroke="var(--accent-green)" stroke-width="1.5" marker-end="url(#arrow3)"/>
+          <text x="360" y="208" text-anchor="middle" font-size="10" font-weight="600">4. Search Response (attributes)</text>
+          <text x="360" y="230" text-anchor="middle" font-size="9" class="dg-muted">Returned attributes are mapped into the SAML assertion or OIDC claims</text>
+
+          <rect x="120" y="250" width="480" height="34" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="360" y="271" text-anchor="middle" font-size="9.5" class="dg-muted">Two round trips per login: one to verify identity, one to retrieve identity data</text>
+        </svg>
+        <div class="diagram-caption">
+          This is the flow PingFederate executes against an LDAP data store on every
+          credential-based authentication: bind to verify, then a separate search (often
+          using a dedicated service account with read-only search rights) to retrieve the
+          attributes that populate the outbound token or assertion.
+        </div>
+      </div>
+
+      <div class="analogy green">
+        <h4>🟢 ANALOGY · LDAP as a Read-Optimized REST API</h4>
+        <p>
+          The Java developer in you already understands this pattern — you've just never
+          seen it on this wire protocol. LDAP Bind is conceptually <code>POST
+          /authenticate</code>. LDAP Search is <code>GET /users?filter=...</code>. LDAP
+          Modify is <code>PATCH /users/{dn}/attributes</code>. Same conceptual model as a
+          REST API over identity data, radically different performance characteristics and
+          wire format. The reason PingFederate can sit in front of AD, PingDirectory, or any
+          other LDAP-speaking source interchangeably is exactly this: it's coding against a
+          stable protocol contract, the same way your services code against a REST contract
+          regardless of what's behind it.
+        </p>
+      </div>
+
+      <div class="callout callout-security">
+        <h4>🟣 SECURITY NOTE · LDAPS vs StartTLS</h4>
+        <p>
+          These get confused constantly, and the difference is not cosmetic. <strong>LDAPS</strong>
+          opens a TLS-encrypted connection before any LDAP traffic flows at all, typically on
+          port 636 — the entire session is encrypted from the first byte. <strong>StartTLS</strong>
+          begins on a plaintext connection (port 389) and upgrades to TLS mid-session via an
+          explicit negotiation. The risk with StartTLS is that a misconfigured or
+          poorly-implemented client can silently fall back to plaintext if that negotiation
+          fails, exposing bind credentials on the wire without any obvious error. For
+          enterprise IAM, LDAPS as the default is the safer architectural choice. Go check
+          which one your PingFederate data store configuration actually uses right now — it's
+          a five-minute check that resolves a surprising number of "we assumed it was
+          encrypted" incidents.
+        </p>
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: How does LDAP connection pooling work, and why does pool exhaustion cause cascading authentication failures that look like an IdP outage?</summary>
+        <div class="deepdive-body">
+          <p>
+            PingFederate, like any well-built LDAP client, maintains a pool of persistent
+            connections to your directory rather than opening a new TCP connection (and
+            paying the TLS handshake cost) for every single bind or search. The pool has a
+            configured maximum size. Under normal load, connections are checked out, used for
+            one operation, and returned promptly. Under abnormal load — a traffic spike, a
+            slow directory response, or a directory-side issue causing operations to hang —
+            connections get checked out and held longer than expected. Once every connection
+            in the pool is checked out and none are returning fast enough, new authentication
+            requests queue waiting for an available connection, and if they wait long enough,
+            they time out and fail.
+          </p>
+          <p>
+            From the outside, this looks exactly like PingFederate itself is down: users see
+            authentication failures or timeouts, dashboards show elevated error rates on the
+            IdP, and the instinctive response is to restart PingFederate or scale it
+            horizontally. Neither fixes the actual problem, because the bottleneck isn't
+            PingFederate's compute — it's the fixed-size pool of connections to a directory
+            that's responding slowly. The real fix is almost always either increasing pool
+            size (if the directory can handle more concurrent connections), addressing
+            whatever is making directory responses slow, or both. This is precisely why
+            connection pool metrics belong on the same dashboard as PingFederate's own health
+            metrics — without them, this failure mode is genuinely hard to diagnose under
+            pressure.
+          </p>
+        </div>
+      </details>
+
+      <div class="usecase">
+        <span class="usecase-tag">🏢 ENTERPRISE USE CASE</span>
+        <p>
+          <strong>The scenario:</strong> PingFederate is returning authentication errors for
+          roughly 30% of users, sporadically, concentrated during business hours. The
+          application teams are convinced it's a PingFederate problem and are escalating
+          loudly. You suspect the LDAP layer underneath it.
+        </p>
+        <p>
+          <strong>The diagnostic approach:</strong> Start by separating "PingFederate is
+          unhealthy" from "PingFederate can't get timely answers from its data store" — these
+          produce identical symptoms to end users but require completely different fixes.
+          Pull the LDAP connection pool metrics (active connections vs max pool size, average
+          checkout duration) for the affected window. Correlate the failure spikes against
+          directory-side load — is this happening at a time of day when batch provisioning
+          jobs or AD replication cycles are also running? Check whether failures cluster on
+          one specific DC if PingFederate is pointed at a single directory endpoint rather
+          than a load-balanced VIP. In most real incidents that match this description, the
+          root cause is pool exhaustion or a single overloaded DC — not a PingFederate defect
+          — and the fix is a data store configuration change, not an IdP restart.
+        </p>
+      </div>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 15 MIN</span>
+        <p>
+          Using <code>ldapsearch</code> (or your AD/PingDirectory admin tool), run a search
+          against your directory for your own user entry and examine the filter syntax you
+          used. Then go find the connection pool configuration in PingFederate's data store
+          settings for that directory. What is the max connections value? Compare it against
+          your peak concurrent authentication load — do you actually know that number, or are
+          you about to find out it was never sized deliberately?
+        </p>
+      </div>
+    </div>
+
+    <div class="module section-anchor-spacer" data-stack-layers="directory,network,sso" id="s2-3">
+      <div class="module-divider">
+        <div class="module-num">2.3</div>
+        <h2>🏛️ Active Directory: Architecture &amp; IAM Role</h2>
+      </div>
+
+      <p>
+        It's worth saying plainly, because it changes how you should think about every AD
+        integration you'll ever design: Active Directory is not a directory with some extra
+        features. It's a tightly integrated <strong>platform</strong> in which LDAP is just
+        one of six load-bearing services — alongside Kerberos, DNS, Group Policy,
+        multi-master replication, and (optionally) Certificate Services — all wired together
+        and all assuming each other's presence. You can run a standalone LDAP directory with
+        none of those other services. You cannot run AD without DNS, because every
+        domain-joined client locates its Domain Controllers via DNS SRV records. You cannot
+        run AD without Kerberos, because that's the default authentication mechanism for
+        every Windows login. Treating AD as "LDAP with a Microsoft logo" is the single most
+        common architectural misunderstanding engineers bring into enterprise IAM work — and
+        it's the one this section exists to correct.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 5 · ACTIVE DIRECTORY ARCHITECTURE OVERVIEW</div>
+        <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+          <rect x="300" y="10" width="160" height="50" rx="10" fill="color-mix(in srgb, var(--accent-blue) 16%, var(--surface))" stroke="var(--accent-blue)" stroke-width="1.5"/>
+          <text x="380" y="40" text-anchor="middle" font-size="12" font-weight="700">Domain Controller</text>
+
+          <!-- spoke lines -->
+          <line x1="60" y1="140" x2="370" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="170" y1="140" x2="375" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="280" y1="140" x2="380" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="390" y1="140" x2="382" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="500" y1="140" x2="388" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="610" y1="140" x2="392" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="700" y1="140" x2="396" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+
+          <!-- 7 spokes -->
+          <g font-size="9">
+            <rect x="14" y="140" width="96" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="62" y="160" text-anchor="middle" font-weight="700" font-size="9.5">LDAP Service</text>
+            <text x="62" y="178" text-anchor="middle" class="dg-muted">Read/write</text>
+            <text x="62" y="190" text-anchor="middle" class="dg-muted">entries &amp;</text>
+            <text x="62" y="202" text-anchor="middle" class="dg-muted">attributes</text>
+
+            <rect x="124" y="140" width="96" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="172" y="160" text-anchor="middle" font-weight="700" font-size="9.5">Kerberos KDC</text>
+            <text x="172" y="178" text-anchor="middle" class="dg-muted">Issues TGTs</text>
+            <text x="172" y="190" text-anchor="middle" class="dg-muted">&amp; service</text>
+            <text x="172" y="202" text-anchor="middle" class="dg-muted">tickets</text>
+
+            <rect x="234" y="140" width="96" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="282" y="160" text-anchor="middle" font-weight="700" font-size="9.5">DNS</text>
+            <text x="282" y="178" text-anchor="middle" class="dg-muted">Locates DCs</text>
+            <text x="282" y="190" text-anchor="middle" class="dg-muted">via SRV</text>
+            <text x="282" y="202" text-anchor="middle" class="dg-muted">records</text>
+
+            <rect x="344" y="140" width="96" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="392" y="160" text-anchor="middle" font-weight="700" font-size="9.5">Group Policy</text>
+            <text x="392" y="178" text-anchor="middle" class="dg-muted">Config &amp;</text>
+            <text x="392" y="190" text-anchor="middle" class="dg-muted">security</text>
+            <text x="392" y="202" text-anchor="middle" class="dg-muted">enforcement</text>
+
+            <rect x="454" y="140" width="96" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="502" y="160" text-anchor="middle" font-weight="700" font-size="9.5">AD Replication</text>
+            <text x="502" y="178" text-anchor="middle" class="dg-muted">Multi-master</text>
+            <text x="502" y="190" text-anchor="middle" class="dg-muted">sync across</text>
+            <text x="502" y="202" text-anchor="middle" class="dg-muted">DCs</text>
+
+            <rect x="564" y="140" width="96" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="612" y="160" text-anchor="middle" font-weight="700" font-size="9.5">Global Catalog</text>
+            <text x="612" y="178" text-anchor="middle" class="dg-muted">Forest-wide</text>
+            <text x="612" y="190" text-anchor="middle" class="dg-muted">partial-attr</text>
+            <text x="612" y="202" text-anchor="middle" class="dg-muted">search</text>
+
+            <rect x="650" y="140" width="96" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="698" y="160" text-anchor="middle" font-weight="700" font-size="9.5">Cert Services</text>
+            <text x="698" y="178" text-anchor="middle" class="dg-muted">PKI, smart</text>
+            <text x="698" y="190" text-anchor="middle" class="dg-muted">cards, cert-</text>
+            <text x="698" y="202" text-anchor="middle" class="dg-muted">based auth</text>
+          </g>
+          <text x="380" y="280" text-anchor="middle" font-size="10" class="dg-muted">Six integrated services, one domain — this is why "just point it at AD's LDAP port" undersells what you're actually depending on</text>
+        </svg>
+        <div class="diagram-caption">
+          Active Directory bundles six services that, in a non-Microsoft stack, would
+          typically be six separate products. The integration is the product — and the
+          coupling is exactly why AD outages cascade so broadly.
+        </div>
+      </div>
+
+      <p>
+        The organizing unit of all of this is the <strong>domain</strong> — a security and
+        administrative boundary that everything else nests inside. <strong>Domain
+        Controllers (DCs)</strong> are the servers that host a writable (or, for Read-Only
+        Domain Controllers, read-only) copy of the domain's directory data and run the
+        Kerberos KDC, replicating changes to each other on a multi-master basis. Within that
+        multi-master model, five specific operations are too sensitive to be multi-master
+        and are instead held by exactly one DC at a time — the <strong>FSMO roles</strong>
+        (Flexible Single Master Operations): Schema Master, Domain Naming Master, RID Master,
+        PDC Emulator, and Infrastructure Master. The PDC Emulator in particular matters
+        operationally far more than its obscure name suggests — it's the authoritative time
+        source for the domain and the first place password changes land, which is directly
+        relevant to the replication-lag scenario later in this section.
+      </p>
+
+      <p>
+        Below the domain, <strong>Organizational Units (OUs)</strong> provide the structural
+        container for delegation of administrative control and for targeted Group Policy
+        application — an OU is where you'd scope "the helpdesk team can reset passwords for
+        users in this OU only" or "this Group Policy Object applies only to Finance
+        workstations." This is structurally distinct from <strong>Security Groups</strong>,
+        which are the actual RBAC primitive used to grant access to resources — a user's
+        OU placement controls administration and policy, while their group membership
+        controls what they can access. Distribution Groups look similar but exist purely for
+        email routing and carry no access-control semantics whatsoever; conflating the two is
+        a common and consequential mistake. Within this structure, three object types matter
+        most for IAM: <strong>User objects</strong> (human identities), <strong>Computer
+        objects</strong> (domain-joined machines, which authenticate to the domain in their
+        own right), and <strong>Service Account objects</strong> — which deserve materially
+        different governance than human accounts, since they typically can't do interactive
+        MFA and are exactly the credential type CyberArk and PAM programs exist to vault and
+        rotate.
+      </p>
+
+      <p>
+        The <strong>Global Catalog (GC)</strong> is a special, partial-attribute index of
+        every object across an entire multi-domain forest, hosted on designated DCs. It
+        exists because a normal domain-scoped search can only see objects within its own
+        domain — but some operations (universal group membership evaluation, certain
+        application searches, UPN-based logon when the user's domain isn't known in advance)
+        need forest-wide visibility. When the Global Catalog is unavailable, those specific
+        operations fail or degrade even if the rest of AD is healthy — a failure mode that's
+        easy to misdiagnose as "AD is down" when really it's "the GC is unreachable from this
+        specific location."
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 6 · AD DOMAIN STRUCTURE</div>
+        <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+          <rect x="300" y="10" width="160" height="38" rx="8" fill="color-mix(in srgb, var(--accent-blue) 12%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="380" y="33" text-anchor="middle" font-size="11" font-weight="700">Forest: company.com</text>
+
+          <line x1="380" y1="48" x2="380" y2="78" stroke="var(--border)" stroke-width="1.5"/>
+          <rect x="300" y="78" width="160" height="38" rx="8" fill="color-mix(in srgb, var(--accent-blue) 18%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="380" y="101" text-anchor="middle" font-size="11" font-weight="700" class="dg-mono">corp.company.com</text>
+
+          <!-- PingFederate connector -->
+          <line x1="460" y1="97" x2="556" y2="97" stroke="var(--accent-green)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <rect x="556" y="78" width="180" height="38" rx="8" fill="color-mix(in srgb, var(--accent-green) 12%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="646" y="97" text-anchor="middle" font-size="10" font-weight="700">PingFederate</text>
+          <text x="500" y="88" text-anchor="middle" font-size="8" class="dg-muted">LDAP bind/</text>
+          <text x="500" y="98" text-anchor="middle" font-size="8" class="dg-muted">search</text>
+
+          <!-- children -->
+          <line x1="380" y1="116" x2="110" y2="156" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="380" y1="116" x2="280" y2="156" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="380" y1="116" x2="460" y2="156" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="380" y1="116" x2="640" y2="156" stroke="var(--border)" stroke-width="1.3"/>
+
+          <rect x="40" y="156" width="140" height="36" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="110" y="178" text-anchor="middle" font-size="10" class="dg-mono">OU=Users</text>
+
+          <rect x="210" y="156" width="140" height="36" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="280" y="178" text-anchor="middle" font-size="10" class="dg-mono">OU=Computers</text>
+
+          <rect x="390" y="156" width="140" height="36" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="460" y="178" text-anchor="middle" font-size="10" class="dg-mono">OU=ServiceAccounts</text>
+
+          <rect x="560" y="156" width="170" height="36" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="645" y="172" text-anchor="middle" font-size="9.5">Security Groups</text>
+          <text x="645" y="185" text-anchor="middle" font-size="7.5" class="dg-muted">Engineering-All, Finance-RO</text>
+
+          <!-- leaf OUs under Users -->
+          <line x1="110" y1="192" x2="70" y2="222" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="110" y1="192" x2="170" y2="222" stroke="var(--border)" stroke-width="1.2"/>
+
+          <rect x="10" y="222" width="120" height="50" rx="7" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="70" y="242" text-anchor="middle" font-size="9.5" class="dg-mono">OU=Engineering</text>
+          <text x="70" y="258" text-anchor="middle" font-size="8" class="dg-muted">[User Objects]</text>
+
+          <rect x="140" y="222" width="120" height="50" rx="7" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="200" y="242" text-anchor="middle" font-size="9.5" class="dg-mono">OU=Finance</text>
+          <text x="200" y="258" text-anchor="middle" font-size="8" class="dg-muted">[User Objects]</text>
+        </svg>
+        <div class="diagram-caption">
+          PingFederate integrates at the domain level via LDAP bind/search — it doesn't need
+          to know about OU structure to authenticate a user, only the base DN to search from
+          and a service account with appropriate read rights.
+        </div>
+      </div>
+
+      <p>
+        <strong>AD Replication</strong> propagates every write — a password change, a group
+        membership update, an attribute modification — from the DC it landed on to every
+        other DC in the domain, on a multi-master basis with a default intra-site interval
+        measured in seconds and inter-site replication on a configurable schedule that's
+        often much longer. That gap between "the write happened" and "every DC has seen it"
+        is <strong>replication lag</strong>, and it has direct, sometimes confusing,
+        consequences for authentication — most visibly right after a password change, which
+        is the subject of the use case below.
+      </p>
+
+      <p>
+        Taken together, this is why so many IAM products — Saviynt, CyberArk, PingFederate
+        among them — treat AD as the authoritative source of truth even in organizations
+        running multiple identity systems: AD already has authoritative, replicated,
+        schema-enforced data for the overwhelming majority of the workforce, and re-deriving
+        that from scratch elsewhere is rarely worth the cost. The common integration patterns
+        you'll design against it are an LDAP read for attribute retrieval (Section 2.2),
+        Kerberos delegation for seamless SSO from domain-joined machines (Section 2.6), and
+        SAML federation with PingFederate sitting as an intermediary translating AD-resident
+        identity into tokens external applications can consume.
+      </p>
+
+      <div class="callout callout-cost">
+        <h4>🟠 ARCHITECTURE · AD as the Identity Bottleneck</h4>
+        <p>
+          When AD is simultaneously your single authoritative directory, your Kerberos KDC,
+          your Group Policy engine, and your DNS server, its availability becomes total —
+          every authentication event, every computer login, every file share access depends
+          on it being reachable. The architecture question this forces is concrete: how many
+          DCs do you need, in which sites, and what is your actual measured recovery time if
+          a DC — or an entire site's worth of DCs — goes dark? Most enterprises underinvest
+          in DC redundancy precisely because AD is so reliable day-to-day that the true cost
+          of an outage only becomes obvious during the outage itself, which is the worst
+          possible time to discover it.
+        </p>
+      </div>
+
+      <div class="analogy amber">
+        <h4>🟠 ANALOGY · AD as the Spring Application Context</h4>
+        <p>
+          Think about what Spring's application context actually does: it wires together
+          your beans, manages their lifecycle, enforces configuration, and provides shared
+          services your components depend on without each of them having to manage that
+          plumbing themselves. AD does the identity-domain equivalent — it wires together
+          your identities, manages their lifecycle events, enforces Group Policy as
+          configuration, and provides shared services (DNS, Kerberos, Global Catalog) that
+          every domain-joined system depends on. An AD domain isn't just a data store you
+          query. It's an opinionated, integrated application platform for identity — which is
+          exactly why migrating off it is so much harder than migrating off "a directory."
+        </p>
+      </div>
+
+      <div class="callout callout-security">
+        <h4>🟣 SECURITY NOTE · Why AD Is Attacker Target Number One</h4>
+        <p>
+          Every privileged identity, every service account credential, every Kerberos
+          ticket-granting ticket in a Windows environment lives in or flows through AD. A
+          Domain Admin account isn't merely "elevated access" — it's the master key to every
+          AD-integrated system in the environment, which in most enterprises means nearly
+          everything. This single fact is why Privileged Access Management (Module 10) and
+          Kerberos-specific hardening (Section 2.6, including protecting the krbtgt account)
+          aren't optional best practices at enterprise scale — they're the direct,
+          load-bearing controls that stand between "an attacker compromised one workstation"
+          and "an attacker owns the domain."
+        </p>
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: What are FSMO roles, why does only one DC hold each role at a time, and what happens if the PDC Emulator goes offline?</summary>
+        <div class="deepdive-body">
+          <p>
+            Most AD operations are multi-master — any writable DC can accept a change and
+            replicate it outward. Five specific operations break that model because allowing
+            them to happen simultaneously on multiple DCs would create conflicts that can't
+            be cleanly resolved after the fact, so AD designates exactly one DC to perform
+            each: the <strong>Schema Master</strong> (the only DC that can modify the AD
+            schema itself), the <strong>Domain Naming Master</strong> (adds or removes
+            domains from the forest), the <strong>RID Master</strong> (allocates blocks of
+            unique relative identifiers other DCs use to mint new object SIDs, preventing
+            duplicate SIDs forest-wide), the <strong>PDC Emulator</strong>, and the
+            <strong>Infrastructure Master</strong> (keeps cross-domain object references
+            consistent).
+          </p>
+          <p>
+            The PDC Emulator deserves special attention because its responsibilities are the
+            most operationally visible of the five. It's the domain's authoritative time
+            source — and Kerberos has a built-in maximum clock skew tolerance (five minutes by
+            default), so significant time drift across DCs or clients can itself cause
+            authentication failures that look nothing like a time problem. It's also the
+            first DC any password change is sent to and the DC every other DC checks against
+            when a logon fails elsewhere, specifically to catch the case where a user changed
+            their password and tried to log in again before that change had fully replicated.
+            If the PDC Emulator goes offline, that fallback checking mechanism stops working,
+            time synchronization for the domain degrades, and certain legacy applications that
+            specifically target the PDC Emulator role lose functionality — but routine
+            authentication against any healthy DC continues, because FSMO role unavailability
+            is graceful degradation, not a domain-wide outage.
+          </p>
+        </div>
+      </details>
+
+      <div class="usecase">
+        <span class="usecase-tag">🏢 ENTERPRISE USE CASE</span>
+        <p>
+          <strong>The scenario:</strong> A password reset in AD isn't reflected in an
+          application for 45 minutes after the user actually resets it. The user can't log in
+          anywhere during that window and is, understandably, furious.
+        </p>
+        <p>
+          <strong>The architecture explanation:</strong> The password change lands first on
+          the PDC Emulator (or the DC the user's site routes to), then propagates outward via
+          replication. If the application's authentication path hits a DC that hasn't
+          received that replication yet, the old password still appears valid there — or, in
+          some configurations, the new password appears invalid until that specific DC
+          catches up. Layer Kerberos on top: even after replication completes everywhere, a
+          previously-issued Ticket-Granting Ticket remains valid until its lifetime expires
+          (commonly 10 hours by default), so a session established before the password change
+          may continue working on cached tickets regardless of the new password. The fix
+          isn't a single setting — it's making sure authentication-critical paths either query
+          the PDC Emulator directly for password validation (a built-in fallback Windows
+          already uses for failed logons) or explicitly account for replication convergence
+          time in any SLA you communicate to end users and helpdesk.
+        </p>
+      </div>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 15 MIN</span>
+        <p>
+          In your AD environment, find the Global Catalog servers and identify which DC holds
+          the PDC Emulator FSMO role. Check the replication status between your DCs — is
+          there a backlog anywhere? Now go find your PingFederate AD data store configuration
+          — which DC (or VIP) is it actually pointed at? Is that DC a Global Catalog server?
+          Should it be, given what your PingFederate deployment actually searches for?
+        </p>
+      </div>
+
+    </div>
+
+    <div class="module section-anchor-spacer" data-stack-layers="directory,cloud,sso" id="s2-4">
+      <div class="module-divider">
+        <div class="module-num">2.4</div>
+        <h2>☁️ Microsoft Entra ID: Cloud Identity Architecture</h2>
+      </div>
+
+      <p>
+        The single most persistent misconception in enterprise identity — one worth stating
+        before anything else in this section — is that Entra ID (formerly Azure AD) is "AD
+        in the cloud." It isn't. Entra ID is a fundamentally different architecture, designed
+        from the ground up for cloud-native identity: no LDAP, no Kerberos, no OUs, no Group
+        Policy, a flat namespace instead of a hierarchical one, HTTP/REST-based protocols
+        instead of binary wire protocols, and multi-tenancy as a core design assumption
+        rather than an afterthought. AD and Entra ID share a name lineage and, via Entra ID
+        Connect, often share underlying identity data — but architecturally they are
+        different systems solving different problems, and treating them as equivalent is
+        where integration failures and security gaps both originate.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 7 · AD VS ENTRA ID ARCHITECTURE COMPARISON</div>
+        <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="10" width="340" height="280" rx="10" fill="color-mix(in srgb, var(--accent-blue) 8%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="190" y="38" text-anchor="middle" font-size="13" font-weight="700">Active Directory</text>
+          <g font-size="10">
+            <text x="40" y="70" class="dg-muted">Protocol:</text><text x="160" y="70">LDAP + Kerberos</text>
+            <text x="40" y="98" class="dg-muted">Namespace:</text><text x="160" y="98">Hierarchical (OUs, domains)</text>
+            <text x="40" y="126" class="dg-muted">Authentication:</text><text x="160" y="126">Kerberos tickets</text>
+            <text x="40" y="154" class="dg-muted">Access model:</text><text x="160" y="154">Group Policy + ACLs</text>
+            <text x="40" y="182" class="dg-muted">Deployment:</text><text x="160" y="182">On-premises DCs</text>
+            <text x="40" y="210" class="dg-muted">Scope:</text><text x="160" y="210">Windows-centric</text>
+          </g>
+
+          <rect x="400" y="10" width="340" height="280" rx="10" fill="color-mix(in srgb, var(--accent-green) 8%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="570" y="38" text-anchor="middle" font-size="13" font-weight="700">Microsoft Entra ID</text>
+          <g font-size="10">
+            <text x="420" y="70" class="dg-muted">Protocol:</text><text x="540" y="70">OIDC + OAuth 2.0 + SAML</text>
+            <text x="420" y="98" class="dg-muted">Namespace:</text><text x="540" y="98">Flat (no OUs, no domains)</text>
+            <text x="420" y="126" class="dg-muted">Authentication:</text><text x="540" y="126">JWT tokens</text>
+            <text x="420" y="154" class="dg-muted">Access model:</text><text x="540" y="154">Conditional Access policies</text>
+            <text x="420" y="182" class="dg-muted">Deployment:</text><text x="540" y="182">Cloud, Microsoft-managed</text>
+            <text x="420" y="210" class="dg-muted">Scope:</text><text x="540" y="210">Cloud-first, cross-platform</text>
+          </g>
+          <text x="380" y="270" text-anchor="middle" font-size="9.5" class="dg-muted">Same identity, two architecturally distinct systems — bridged, not merged, by Entra ID Connect</text>
+        </svg>
+        <div class="diagram-caption">
+          Side by side, the differences aren't cosmetic naming — every row reflects a genuine
+          architectural divergence in how the two systems represent and protect identity.
+        </div>
+      </div>
+
+      <p>
+        Entra ID's multi-tenancy is itself an architectural statement: a <strong>tenant</strong>
+        is a dedicated, logically isolated instance of Entra ID belonging to one organization,
+        and a tenant can host one or more <strong>subscriptions</strong> (the billing and
+        resource-management boundary for Azure services). The relationship confuses people
+        because the same word "directory" gets reused — a tenant's identity store is also
+        called its "Azure AD directory" — but it's a flat, REST-addressable identity store,
+        not an LDAP DIT. Authentication against it happens via <strong>OpenID Connect</strong>
+        and <strong>OAuth 2.0</strong> for modern app and API scenarios, <strong>SAML 2.0</strong>
+        for federating with applications that only speak SAML, and legacy <strong>WS-Federation</strong>
+        support retained mostly for older Microsoft application compatibility.
+      </p>
+
+      <p>
+        Two registration concepts trip people up constantly: an <strong>App Registration</strong>
+        is the definition of an application — its identity, its permissions, its credentials
+        — and lives in the tenant that <em>owns</em> the application. An <strong>Enterprise
+        Application</strong> is the service principal representing that app's presence and
+        consent grants in a tenant that <em>uses</em> it — which might be the same tenant or,
+        for multi-tenant SaaS apps, a completely different customer's tenant. If you've ever
+        wondered why an app shows up as an Enterprise Application in your tenant without your
+        team having registered anything, this is why: someone consented to a multi-tenant
+        app whose registration lives elsewhere. <strong>Managed Identities</strong> solve a
+        different, narrower problem — an Azure resource (a VM, a Function, an App Service)
+        gets an identity it can use to authenticate to other Azure services with zero stored
+        credentials. No credential to steal is a genuinely different security posture than
+        "a well-rotated credential," not just a better version of the same thing.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 8 · CONDITIONAL ACCESS POLICY FLOW</div>
+        <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow4" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/>
+            </marker>
+          </defs>
+          <rect x="20" y="100" width="190" height="180" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="115" y="124" text-anchor="middle" font-size="11" font-weight="700">Signals</text>
+          <g font-size="9.5" class="dg-muted">
+            <text x="36" y="146">• User identity</text>
+            <text x="36" y="166">• Device state</text>
+            <text x="36" y="186">• Location</text>
+            <text x="36" y="206">• Target app</text>
+            <text x="36" y="226">• Risk score</text>
+            <text x="36" y="246">• Sign-in behavior</text>
+          </g>
+
+          <line x1="210" y1="190" x2="296" y2="190" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow4)"/>
+
+          <rect x="300" y="150" width="160" height="80" rx="10" fill="color-mix(in srgb, var(--accent-blue) 14%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="380" y="183" text-anchor="middle" font-size="11" font-weight="700">Policy Engine</text>
+          <text x="380" y="200" text-anchor="middle" font-size="8.5" class="dg-muted">Evaluates all configured</text>
+          <text x="380" y="212" text-anchor="middle" font-size="8.5" class="dg-muted">CA policies</text>
+
+          <line x1="460" y1="160" x2="556" y2="40" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arrow4)"/>
+          <line x1="460" y1="172" x2="556" y2="100" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arrow4)"/>
+          <line x1="460" y1="188" x2="556" y2="190" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arrow4)"/>
+          <line x1="460" y1="204" x2="556" y2="280" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arrow4)"/>
+          <line x1="460" y1="218" x2="556" y2="340" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arrow4)"/>
+
+          <rect x="560" y="14" width="180" height="44" rx="8" fill="color-mix(in srgb, var(--accent-green) 14%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="650" y="41" text-anchor="middle" font-size="10" font-weight="700">Allow</text>
+
+          <rect x="560" y="74" width="180" height="44" rx="8" fill="color-mix(in srgb, var(--accent-red) 12%, var(--surface))" stroke="var(--accent-red)"/>
+          <text x="650" y="101" text-anchor="middle" font-size="10" font-weight="700">Block</text>
+
+          <rect x="560" y="164" width="180" height="44" rx="8" fill="color-mix(in srgb, var(--accent-amber) 14%, var(--surface))" stroke="var(--accent-amber)"/>
+          <text x="650" y="191" text-anchor="middle" font-size="10" font-weight="700">Require MFA</text>
+
+          <rect x="560" y="254" width="180" height="44" rx="8" fill="color-mix(in srgb, var(--accent-amber) 14%, var(--surface))" stroke="var(--accent-amber)"/>
+          <text x="650" y="276" text-anchor="middle" font-size="9.5" font-weight="700">Require compliant</text>
+          <text x="650" y="290" text-anchor="middle" font-size="9.5" font-weight="700">device</text>
+
+          <rect x="560" y="314" width="180" height="44" rx="8" fill="color-mix(in srgb, var(--accent-violet) 12%, var(--surface))" stroke="var(--accent-violet)"/>
+          <text x="650" y="341" text-anchor="middle" font-size="10" font-weight="700">Require terms</text>
+        </svg>
+        <div class="diagram-caption">
+          Every Entra ID sign-in is a policy evaluation request: signals go in, the policy
+          engine evaluates every applicable Conditional Access policy, and an access decision
+          comes out. Multiple policies can apply simultaneously and their requirements stack.
+        </div>
+      </div>
+
+      <div class="callout callout-concept">
+        <h4>🔵 CONCEPT · Why Entra ID Is Not "AD in the Cloud"</h4>
+        <p>
+          AD is a Windows-platform service built on Kerberos and LDAP, with a hierarchical
+          namespace and on-premises deployment as its native mode. Entra ID is a cloud,
+          multi-tenant identity platform built on OAuth 2.0 and OpenID Connect, with a flat
+          namespace and Microsoft-managed deployment as its only mode. The two are bridged —
+          via Entra ID Connect, covered fully in Section 2.8 — but bridged is not the same as
+          unified. Carrying AD assumptions (OU-based delegation, Group Policy, Kerberos
+          tickets) into Entra ID architecture decisions produces designs that don't work the
+          way their authors expect.
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Capability</th><th>Active Directory</th><th>Entra ID</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Protocol</td><td>LDAP, Kerberos</td><td>OIDC, OAuth 2.0, SAML 2.0</td></tr>
+          <tr><td>Primary auth mechanism</td><td>Kerberos tickets / NTLM</td><td>JWT access &amp; ID tokens</td></tr>
+          <tr><td>Directory structure</td><td>Hierarchical (forest/domain/OU)</td><td>Flat tenant namespace</td></tr>
+          <tr><td>Group Policy</td><td>Yes — core management mechanism</td><td>No equivalent (use Intune/Conditional Access)</td></tr>
+          <tr><td>MFA</td><td>Bolt-on (via PingID, Azure MFA, etc.)</td><td>Native, policy-driven</td></tr>
+          <tr><td>Conditional Access</td><td>Not native</td><td>Native, signal-based policy engine</td></tr>
+          <tr><td>Guest access</td><td>Requires external trust or separate account</td><td>Native B2B external identities</td></tr>
+          <tr><td>Device management</td><td>Group Policy, SCCM</td><td>Intune, device compliance state</td></tr>
+          <tr><td>Service accounts</td><td>Service Account objects</td><td>Managed Identities, service principals</td></tr>
+          <tr><td>API access</td><td>LDAP API (DS HTTP SDK varies by vendor)</td><td>Native Microsoft Graph REST API</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        Hybrid bridges between the two are covered in full in Section 2.8, but the
+        directional concept matters here: <strong>Entra ID Connect</strong> syncs identities
+        from on-prem AD into Entra ID — typically one-way for most attributes, with optional
+        write-back for specific cases like passwords — at a sync interval, not in real time.
+        That latency has lifecycle implications you'll feel directly in JML processes.
+        Separately, <strong>External Identities (B2B)</strong> let Entra ID federate guest
+        access from a partner organization's own identity provider without provisioning a
+        full local account for every external user — a materially different trust model than
+        AD's external trust relationships in Section 2.7.
+      </p>
+
+      <div class="analogy blue">
+        <h4>🔵 ANALOGY · Conditional Access as Your API Gateway's Policy Engine</h4>
+        <p>
+          You've built (or operated) API gateways that evaluate request context — caller
+          identity, source IP, rate-limit state, JWT claims — and make allow, deny, or
+          redirect decisions before a request ever reaches a backend service. Conditional
+          Access is that exact pattern applied to human sign-in: every authentication attempt
+          is a policy evaluation request, with signals (user, device, location, risk, app) as
+          inputs and an access decision (allow, block, step-up to MFA, require a compliant
+          device) as output. The architecture is identical to what you've already built —
+          it's the same pattern in a different domain, which is exactly why it should feel
+          immediately legible rather than like a new paradigm to learn from scratch.
+        </p>
+      </div>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 15 MIN</span>
+        <p>
+          In your Entra ID tenant (or a trial tenant if you don't have access to a production
+          one), find the Conditional Access policies and identify what signals each one
+          actually evaluates. Then find your Enterprise Applications list and compare it
+          against your App Registrations list. Before reading further in this module: do you
+          already know the difference between them? If not, finding the answer by exploring
+          your own tenant is the lab — it will stick better than any definition on this page.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="module section-anchor-spacer" data-stack-layers="directory,sso,tokens" id="s2-5">
+      <div class="module-divider">
+        <div class="module-num">2.5</div>
+        <h2>🟢 PingDirectory: Beyond a Directory to an Identity Platform</h2>
+      </div>
+
+      <p>
+        PingDirectory is, at its core, an extremely high-performance LDAP directory — but
+        describing it only that way undersells what it actually is in a modern PingFederate
+        deployment. Its core architecture adds capabilities standard LDAP never specified:
+        multi-master replication engineered for both consistency and very fast write
+        throughput, a full REST/HTTP API layer sitting alongside the LDAP port, native
+        consent management, and a data synchronization engine capable of keeping
+        PingDirectory in step with AD or other directories. If your team is only using
+        PingDirectory as an LDAP endpoint that PingFederate binds against, you're using a
+        fraction of what it's built to do.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 9 · PINGFEDERATE + PINGDIRECTORY INTEGRATION</div>
+        <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow5" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/>
+            </marker>
+          </defs>
+          <rect x="20" y="20" width="140" height="44" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="90" y="47" text-anchor="middle" font-size="11" font-weight="700">User</text>
+
+          <line x1="160" y1="42" x2="296" y2="42" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+          <text x="228" y="32" text-anchor="middle" font-size="8.5" class="dg-muted">login request</text>
+
+          <rect x="300" y="16" width="180" height="52" rx="8" fill="color-mix(in srgb, var(--accent-blue) 14%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="390" y="38" text-anchor="middle" font-size="11" font-weight="700">PingFederate</text>
+          <text x="390" y="54" text-anchor="middle" font-size="8" class="dg-muted">IdP / federation engine</text>
+
+          <line x1="480" y1="42" x2="586" y2="42" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+          <text x="533" y="32" text-anchor="middle" font-size="8" class="dg-muted">SAML / OIDC</text>
+
+          <rect x="590" y="16" width="150" height="52" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="665" y="38" text-anchor="middle" font-size="11" font-weight="700">Application</text>
+          <text x="665" y="54" text-anchor="middle" font-size="8" class="dg-muted">relying party</text>
+
+          <line x1="390" y1="68" x2="390" y2="130" stroke="var(--accent-green)" stroke-width="1.5" marker-end="url(#arrow5)"/>
+          <text x="470" y="100" text-anchor="middle" font-size="8.5" class="dg-muted">LDAP bind (auth) +</text>
+          <text x="470" y="112" text-anchor="middle" font-size="8.5" class="dg-muted">search (attrs)</text>
+
+          <rect x="270" y="134" width="240" height="130" rx="10" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="390" y="158" text-anchor="middle" font-size="12" font-weight="700">PingDirectory</text>
+          <g font-size="9" class="dg-muted">
+            <text x="288" y="178">• User profiles &amp; credentials</text>
+            <text x="288" y="194">• Consent records</text>
+            <text x="288" y="210">• Group memberships</text>
+            <text x="288" y="226">• Custom attributes</text>
+          </g>
+
+          <line x1="270" y1="180" x2="170" y2="180" stroke="var(--text-muted)" stroke-width="1.2" stroke-dasharray="3,3"/>
+          <text x="220" y="172" text-anchor="middle" font-size="7.5" class="dg-muted">attrs returned</text>
+        </svg>
+        <div class="diagram-caption">
+          PingFederate authenticates against PingDirectory via LDAP bind, retrieves attributes
+          via LDAP search, then builds the outbound SAML assertion or OIDC token from those
+          attributes — the same two-step flow as Diagram 3, with PingDirectory specifically as
+          the back-end.
+        </div>
+      </div>
+
+      <p>
+        The <strong>REST/HTTP API layer</strong> — PingDirectory's DS HTTP SDK — exists for a
+        reason that goes beyond convenience: modern microservices increasingly don't speak
+        LDAP at all, and forcing them to adopt a 1990s binary protocol just to read identity
+        attributes is friction nobody should accept anymore. The REST layer lets
+        PingDirectory serve as an identity data source to those same modern applications
+        without requiring an LDAP client library in every service. <strong>Consent
+        management</strong> is a built-in capability directly relevant to GDPR and similar
+        regulations — PingDirectory can track what a user has consented to, when, and for
+        what purpose, and expose that to applications consistently rather than every app
+        team rolling their own consent storage. And the <strong>synchronization engine</strong>
+        lets PingDirectory sit at the hub of a multi-directory enterprise, syncing to and from
+        AD, Oracle directories, or other LDAP sources — a topology decision covered more fully
+        in Section 2.9.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 10 · PINGDIRECTORY PLATFORM CAPABILITIES</div>
+        <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
+          <rect x="300" y="10" width="160" height="50" rx="10" fill="color-mix(in srgb, var(--accent-green) 16%, var(--surface))" stroke="var(--accent-green)" stroke-width="1.5"/>
+          <text x="380" y="40" text-anchor="middle" font-size="12" font-weight="700">PingDirectory</text>
+
+          <line x1="60" y1="130" x2="370" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="170" y1="130" x2="375" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="280" y1="130" x2="380" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="500" y1="130" x2="386" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="610" y1="130" x2="392" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="700" y1="130" x2="396" y2="62" stroke="var(--border)" stroke-width="1.3"/>
+
+          <g font-size="9">
+            <rect x="14" y="130" width="106" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="67" y="150" text-anchor="middle" font-weight="700" font-size="9">High-perf LDAP</text>
+            <text x="67" y="168" text-anchor="middle" class="dg-muted">Millions of</text>
+            <text x="67" y="180" text-anchor="middle" class="dg-muted">ops/sec</text>
+
+            <rect x="124" y="130" width="106" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="177" y="150" text-anchor="middle" font-weight="700" font-size="9">REST / HTTP API</text>
+            <text x="177" y="168" text-anchor="middle" class="dg-muted">Modern app</text>
+            <text x="177" y="180" text-anchor="middle" class="dg-muted">access</text>
+
+            <rect x="234" y="130" width="106" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="287" y="150" text-anchor="middle" font-weight="700" font-size="8.5">Multi-master repl.</text>
+            <text x="287" y="168" text-anchor="middle" class="dg-muted">Geo-</text>
+            <text x="287" y="180" text-anchor="middle" class="dg-muted">distributed</text>
+
+            <rect x="490" y="130" width="106" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="543" y="150" text-anchor="middle" font-weight="700" font-size="9">Consent mgmt</text>
+            <text x="543" y="168" text-anchor="middle" class="dg-muted">GDPR-</text>
+            <text x="543" y="180" text-anchor="middle" class="dg-muted">capable</text>
+
+            <rect x="600" y="130" width="106" height="100" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="653" y="150" text-anchor="middle" font-weight="700" font-size="8">Data sync</text>
+            <text x="653" y="168" text-anchor="middle" class="dg-muted">To/from AD,</text>
+            <text x="653" y="180" text-anchor="middle" class="dg-muted">Oracle, etc.</text>
+
+            <rect x="360" y="220" width="106" height="60" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <text x="413" y="244" text-anchor="middle" font-weight="700" font-size="8.5">Entry balancing</text>
+            <text x="413" y="262" text-anchor="middle" class="dg-muted">Horizontal scale</text>
+          </g>
+          <line x1="380" y1="220" x2="413" y2="60" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
+        </svg>
+        <div class="diagram-caption">
+          Six platform capabilities sit alongside the core LDAP service — most teams stop at
+          "high-performance LDAP" and never architect for the rest of what's available.
+        </div>
+      </div>
+
+      <p>
+        Compared to open-source OpenLDAP, the case for PingDirectory in an enterprise
+        PingFederate deployment usually comes down to exactly these platform capabilities
+        plus commercial support, operational tooling (PingData Metrics for observability), and
+        an <strong>entry balancing</strong> feature that horizontally shards a directory across
+        multiple backend servers while presenting a single logical directory to clients —
+        relevant once you're serving tens of millions of profiles rather than tens of
+        thousands. None of that is unachievable with OpenLDAP and enough custom engineering;
+        PingDirectory's value proposition is that it's already built, supported, and battle
+        tested at that scale.
+      </p>
+
+      <div class="callout callout-architect">
+        <h4>🟢 ENGINEER'S TAKE · Platform vs Endpoint</h4>
+        <p>
+          If PingDirectory in your environment is purely an LDAP endpoint that PingFederate
+          binds against, you're using roughly 20% of its actual capability. The REST API layer
+          makes it accessible to microservices that will never speak LDAP. The consent
+          management layer makes it GDPR-capable without bolting on a separate consent store.
+          The sync engine makes it the hub of a multi-directory enterprise rather than one more
+          silo. The architectural recommendation is straightforward: design for the full
+          capability set you're paying for, not just the LDAP port you happened to start with.
+        </p>
+      </div>
+
+      <div class="analogy green">
+        <h4>🟢 ANALOGY · PingDirectory Is to LDAP What Spring Boot Is to a Plain Servlet</h4>
+        <p>
+          A plain Java servlet gives you the underlying protocol mechanics — request in,
+          response out — and nothing else; everything else is on you to build. Spring Boot
+          sits on top of that same protocol and adds opinionated defaults, REST abstractions,
+          operational tooling, and platform capabilities that turn raw protocol handling into
+          an enterprise-grade application platform. PingDirectory does the identical thing to
+          raw LDAP: the protocol is still there underneath, but what's built on top of it —
+          REST abstractions, replication tooling, consent management, operational metrics — is
+          what separates an enterprise identity platform from a bare protocol implementation.
+        </p>
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: What is PingDirectory's entry balancing feature, and why does it matter for a directory serving 50 million user profiles across a global enterprise?</summary>
+        <div class="deepdive-body">
+          <p>
+            A single directory server, no matter how well-tuned, has a practical ceiling on
+            how many entries it can index and serve with acceptable latency — and a global
+            enterprise with tens of millions of identities (employees, contractors, customers,
+            service accounts, IoT identities) can exceed that ceiling on a single backend.
+            Entry balancing addresses this by horizontally partitioning the directory's data
+            across multiple backend server sets — split, commonly, by a hash of the entry's DN
+            or another deterministic key — while a balancing layer in front presents clients
+            with what looks like one single, logical directory. A client issuing a search
+            doesn't need to know which backend actually holds the entry it's looking for; the
+            balancer routes the request transparently.
+          </p>
+          <p>
+            This matters architecturally for two reasons. First, it lets write and read
+            capacity scale roughly linearly by adding more backend sets, rather than hitting a
+            hard wall and being forced into application-level sharding that every client then
+            has to be aware of. Second, it preserves the single-directory mental model for
+            every downstream consumer — PingFederate, custom applications, anything doing an
+            LDAP bind or search — so the horizontal scaling decision stays entirely contained
+            within the directory tier and never leaks into application architecture. This is
+            precisely the kind of capability that goes unused in deployments treating
+            PingDirectory as "just an LDAP endpoint," and precisely the kind of capability that
+            becomes non-negotiable once an enterprise crosses from millions to tens of millions
+            of identities.
+          </p>
+        </div>
+      </details>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 15 MIN</span>
+        <p>
+          In your PingDirectory deployment, find the replication topology configuration. How
+          many replicas exist, and what is the configured replication lag threshold? Now in
+          PingFederate, find the data store entry pointing to PingDirectory — which specific
+          LDAP operations does PingFederate perform against it during a single SAML
+          authentication flow? Trace that flow end to end, from the initial bind through the
+          attribute search to the assertion being built.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="module section-anchor-spacer" data-stack-layers="network,directory,sso" id="s2-6">
+      <div class="module-divider">
+        <div class="module-num">2.6</div>
+        <h2>🎫 Kerberos &amp; NTLM: The Authentication Protocols Behind AD</h2>
+      </div>
+
+      <p>
+        Kerberos exists to solve a problem that plain password-based authentication can't
+        solve safely at network scale: how do you let a user prove their identity to dozens
+        of different services throughout a day without sending their password — or any
+        secret derived directly from it — across the network to every single one of those
+        services. Send the password (or an equivalent secret) to every service and you've
+        multiplied your attack surface by the number of services; compromise any one of them
+        and you've potentially compromised the credential outright. Kerberos's answer is a
+        ticket-based system where the user proves their identity once, to a trusted third
+        party, and then carries cryptographically-protected tickets that downstream services
+        can validate without ever seeing — or needing — the original password.
+      </p>
+
+      <p>
+        The vocabulary matters because every piece maps to a specific architectural role: a
+        <strong>principal</strong> is any identity participating in Kerberos (a user or a
+        service), the <strong>realm</strong> is the administrative domain a set of principals
+        belongs to (in AD, this is the domain), and the <strong>KDC</strong> (Key Distribution
+        Center) is the trusted third party — running on every Domain Controller — that issues
+        tickets. The KDC internally has two logical components: the <strong>Authentication
+        Service (AS)</strong>, which validates the user's initial identity, and the
+        <strong>Ticket-Granting Service (TGS)</strong>, which issues tickets for specific
+        services once the user has already proven who they are.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 11 · KERBEROS AUTHENTICATION FLOW</div>
+        <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow6" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-violet)"/>
+            </marker>
+          </defs>
+          <rect x="20" y="14" width="170" height="36" rx="8" fill="color-mix(in srgb, var(--accent-blue) 12%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="105" y="37" text-anchor="middle" font-size="11" font-weight="700">Client</text>
+          <line x1="105" y1="50" x2="105" y2="340" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+          <rect x="300" y="14" width="180" height="36" rx="8" fill="color-mix(in srgb, var(--accent-violet) 12%, var(--surface))" stroke="var(--accent-violet)"/>
+          <text x="390" y="37" text-anchor="middle" font-size="11" font-weight="700">KDC (AS + TGS)</text>
+          <line x1="390" y1="50" x2="390" y2="340" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+          <rect x="570" y="14" width="170" height="36" rx="8" fill="color-mix(in srgb, var(--accent-green) 12%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="655" y="37" text-anchor="middle" font-size="11" font-weight="700">Service X</text>
+          <line x1="655" y1="50" x2="655" y2="340" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+          <line x1="105" y1="78" x2="382" y2="78" stroke="var(--accent-violet)" stroke-width="1.4" marker-end="url(#arrow6)"/>
+          <text x="248" y="71" text-anchor="middle" font-size="9" font-weight="600">1. AS-REQ (I am user@COMPANY.COM)</text>
+
+          <line x1="390" y1="108" x2="113" y2="108" stroke="var(--accent-violet)" stroke-width="1.4" marker-end="url(#arrow6)"/>
+          <text x="248" y="101" text-anchor="middle" font-size="9" font-weight="600">2. AS-REP (TGT, encrypted w/ password-derived key)</text>
+
+          <line x1="105" y1="148" x2="382" y2="148" stroke="var(--accent-violet)" stroke-width="1.4" marker-end="url(#arrow6)"/>
+          <text x="248" y="141" text-anchor="middle" font-size="9" font-weight="600">3. TGS-REQ (give me a ticket for Service X + my TGT)</text>
+
+          <line x1="390" y1="178" x2="113" y2="178" stroke="var(--accent-violet)" stroke-width="1.4" marker-end="url(#arrow6)"/>
+          <text x="248" y="171" text-anchor="middle" font-size="9" font-weight="600">4. TGS-REP (service ticket for Service X)</text>
+
+          <line x1="105" y1="218" x2="647" y2="218" stroke="var(--accent-green)" stroke-width="1.4" marker-end="url(#arrow6)"/>
+          <text x="380" y="211" text-anchor="middle" font-size="9" font-weight="600">5. AP-REQ (here is my service ticket, let me in)</text>
+
+          <line x1="655" y1="248" x2="113" y2="248" stroke="var(--accent-green)" stroke-width="1.4" marker-end="url(#arrow6)"/>
+          <text x="380" y="241" text-anchor="middle" font-size="9" font-weight="600">6. AP-REP (you're authenticated)</text>
+
+          <rect x="60" y="280" width="640" height="60" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="380" y="300" text-anchor="middle" font-size="9" class="dg-muted">Key insight: Service X never sees the user's password, the TGT, or the KDC exchange —</text>
+          <text x="380" y="316" text-anchor="middle" font-size="9" class="dg-muted">it only validates the service ticket, which is encrypted with a key it shares with the KDC, not the client</text>
+        </svg>
+        <div class="diagram-caption">
+          Six messages, two round trips to the KDC and one to the target service. Each ticket
+          is encrypted with a key specific to its intended recipient — the TGT with a key
+          derived from the user's password, the service ticket with a key shared between the
+          KDC and the service — which is what makes the whole exchange resistant to
+          interception.
+        </div>
+      </div>
+
+      <p>
+        The <strong>Ticket-Granting Ticket (TGT)</strong> issued in step 2 is the credential
+        that lets a user request access to any service in the realm for the rest of their
+        session without re-entering their password — a typical default lifetime is 10 hours,
+        renewable up to a configured maximum. Its theft is one of the most consequential
+        credential compromises possible in a Windows environment, covered in the Golden
+        Ticket security note below. <strong>Service tickets</strong>, by contrast, are
+        scoped to one specific service and carry the user's identity in a form that service
+        can validate using a key it shares only with the KDC — the client never sees or needs
+        that key.
+      </p>
+
+      <p>
+        <strong>Delegation</strong> is where Kerberos gets architecturally interesting — and
+        dangerous if misconfigured. Delegation lets a service that received a user's ticket
+        turn around and request a ticket to a <em>second</em> service on that user's behalf,
+        which is exactly what's needed for multi-tier applications (a web front end calling a
+        backend database as the logged-in user, for instance). <strong>Unconstrained
+        delegation</strong> lets the first service impersonate the user to <em>any</em>
+        service in the realm — a blank check. <strong>Constrained delegation</strong>
+        restricts that impersonation to an explicitly configured list of target services. The
+        security difference between these two is enormous, and it's covered in detail below
+        because it's one of the most common AD hardening gaps penetration tests find.
+      </p>
+
+      <p>
+        <strong>NTLM</strong> is the older challenge-response authentication protocol Kerberos
+        was designed to replace, and it still exists in most environments for backward
+        compatibility — non-domain-joined clients, certain legacy applications, and scenarios
+        where Kerberos simply can't be used (no SPN registered, for instance) all fall back to
+        it. Architecturally it's weaker on several fronts: no mutual authentication by
+        default (the client can't cryptographically verify it's really talking to the
+        legitimate server), and it's specifically vulnerable to relay attacks where a captured
+        NTLM exchange gets replayed against a different target. Microsoft's own guidance has
+        pushed NTLM deprecation for years, but full elimination is slow precisely because
+        legacy application dependencies are exactly the kind of technical debt that's
+        expensive to chase down.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 12 · KERBEROS VS NTLM COMPARISON</div>
+        <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="10" width="340" height="200" rx="10" fill="color-mix(in srgb, var(--accent-violet) 8%, var(--surface))" stroke="var(--accent-violet)"/>
+          <text x="190" y="36" text-anchor="middle" font-size="13" font-weight="700">Kerberos</text>
+          <g font-size="9.5" class="dg-muted">
+            <text x="40" y="64">• Ticket-based, three-party model</text>
+            <text x="40" y="86">• Mutual authentication by default</text>
+            <text x="40" y="108">• Scalable across large realms</text>
+            <text x="40" y="130">• Strong auditability via ticket logs</text>
+            <text x="40" y="152">• Default for domain-joined Windows</text>
+          </g>
+
+          <rect x="400" y="10" width="340" height="200" rx="10" fill="color-mix(in srgb, var(--accent-amber) 8%, var(--surface))" stroke="var(--accent-amber)"/>
+          <text x="570" y="36" text-anchor="middle" font-size="13" font-weight="700">NTLM</text>
+          <g font-size="9.5" class="dg-muted">
+            <text x="420" y="64">• Challenge-response model</text>
+            <text x="420" y="86">• No mutual auth by default</text>
+            <text x="420" y="108">• Vulnerable to relay attacks</text>
+            <text x="420" y="130">• Weaker audit trail</text>
+            <text x="420" y="152">• Legacy compatibility fallback</text>
+          </g>
+        </svg>
+        <div class="diagram-caption">
+          Kerberos is the default and the architecturally stronger choice in any modern
+          Windows environment; NTLM persists almost entirely as compatibility debt, not by
+          design preference.
+        </div>
+      </div>
+
+      <p>
+        One more piece completes the picture: <strong>Integrated Windows Authentication
+        (IWA)</strong>, the mechanism by which a domain-joined machine gets seamless,
+        passwordless SSO to internal web applications and, relevantly, to PingFederate itself.
+        When a user on a domain-joined Windows machine hits an internal application protected
+        by PingFederate, the browser can negotiate Kerberos authentication transparently using
+        the TGT the user already obtained at login — no password prompt, no separate SAML
+        login screen. PingFederate supports this via its Kerberos/IWA adapter, which is why
+        some internal applications "just work" with zero visible login step while
+        external-facing applications always show a login page.
+      </p>
+
+      <div class="callout callout-security">
+        <h4>🟣 SECURITY NOTE · The Golden Ticket Attack</h4>
+        <p>
+          Every TGT in a domain is ultimately encrypted using a key derived from one
+          specific account's password hash: the <code>krbtgt</code> service account. If an
+          attacker steals that hash — typically by first compromising a Domain Admin-level
+          foothold — they can forge TGTs for <em>any</em> user, including Domain Admins, with
+          any expiry time they choose, completely bypassing normal Kerberos issuance controls
+          and any password policy. This is a Golden Ticket. It's the reason protecting the
+          krbtgt account, and rotating its password <em>twice</em> in sequence after any
+          suspected domain compromise (a single rotation isn't sufficient given how the
+          account's key history works), is a foundational AD security control — and it's
+          exactly why PAM platforms like CyberArk exist: to vault and tightly control the
+          accounts that have any path to compromising krbtgt in the first place.
+        </p>
+      </div>
+
+      <div class="callout callout-security">
+        <h4>🟣 SECURITY NOTE · Unconstrained Kerberos Delegation</h4>
+        <p>
+          A service account configured with unconstrained delegation can request a ticket to
+          <em>any</em> service in the realm on behalf of any user who authenticates to it —
+          which means if an attacker compromises a server configured this way, they inherit
+          the ability to impersonate any user who has ever logged into that server, to any
+          other service. Modern AD hardening removes unconstrained delegation entirely in
+          favor of constrained delegation (an explicit allow-list of target services) or
+          resource-based constrained delegation (where the target service itself controls who
+          can delegate to it). If a security review of your environment hasn't specifically
+          checked for unconstrained delegation, that's worth raising — it's a common
+          leftover from older application deployments that nobody has revisited since.
+        </p>
+      </div>
+
+      <div class="analogy violet">
+        <h4>🟣 ANALOGY · Kerberos as a Stadium Access System</h4>
+        <p>
+          Picture entering a stadium. At the main gate you show your ticket once (AS-REQ) and
+          receive a wristband (the TGT) that proves you paid for entry — that wristband is
+          what you'll show for everything else today, not your original ticket. When you want
+          to enter a specific section, you show the wristband to a section usher (the TGS),
+          who issues you a section-specific pass (the service ticket). Critically, that
+          section usher never saw your original ticket purchase — they only ever validate the
+          wristband and issue a scoped pass for their section. The section gate itself only
+          checks the section pass, never the wristband and never your original ticket. This is
+          precisely how Kerberos separates the act of proving who you are (once, to the KDC)
+          from the act of accessing any individual service (validated independently, every
+          time, without that service ever touching your original credentials).
+        </p>
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: What is a Kerberoasting attack, how does it exploit service account SPNs, and what controls prevent it?</summary>
+        <div class="deepdive-body">
+          <p>
+            Any account registered with a Service Principal Name (SPN) — almost always a
+            service account — can have a service ticket requested for it by <em>any</em>
+            authenticated domain user, no special privilege required, because requesting a
+            service ticket is a normal part of how Kerberos is supposed to work. That service
+            ticket is encrypted using a key derived from the service account's own password
+            hash. Kerberoasting exploits this directly: an attacker who has any valid domain
+            credentials — even a completely unprivileged one — requests service tickets for
+            every SPN-registered account they can find, then takes those tickets offline and
+            attempts to crack the encryption to recover the service account's password,
+            entirely without touching the network again or triggering a failed-logon alert.
+          </p>
+          <p>
+            This works because the request itself is completely legitimate Kerberos behavior
+            — nothing about requesting a service ticket looks anomalous from a domain
+            controller's perspective — and because service accounts have historically been
+            configured with long, rarely-rotated, sometimes weak passwords precisely because
+            rotating them risks breaking whatever application depends on them. The controls
+            that actually prevent this: enforce long, high-entropy, regularly rotated
+            passwords on every service account (ideally vaulted and auto-rotated through
+            CyberArk rather than managed manually), use Managed Service Accounts or Group
+            Managed Service Accounts where the platform supports them — since their passwords
+            are long, random, and rotated automatically without a human ever needing to know
+            them — and monitor for unusual volumes of TGS-REQ activity against
+            service-account SPNs, which is a meaningful detection signal even though the
+            individual requests look legitimate in isolation.
+          </p>
+        </div>
+      </details>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 10 MIN</span>
+        <p>
+          On a domain-joined Windows machine, open a command prompt and run <code>klist</code>
+          to see your current Kerberos tickets. Identify your TGT and note its expiry time.
+          Identify any service tickets you've accumulated. Now think through what actually
+          happens to your active session with each of those services as their respective
+          tickets expire — is renewal silent and automatic, or does the user experience a
+          visible interruption? Understanding that renewal behavior is most of what you need
+          to diagnose "why did my session just drop" tickets from end users.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="module section-anchor-spacer" data-stack-layers="directory,sso" id="s2-7">
+      <div class="module-divider">
+        <div class="module-num">2.7</div>
+        <h2>🌲 AD Forests, Trusts &amp; Multi-Domain Architecture</h2>
+      </div>
+
+      <p>
+        AD's hierarchy doesn't stop at the domain. A <strong>tree</strong> is a set of one or
+        more domains that share a contiguous DNS namespace (think <code>corp.company.com</code>
+        and <code>dev.company.com</code> both hanging off <code>company.com</code>), and a
+        <strong>forest</strong> is the actual security boundary — a collection of one or more
+        trees that share a common schema, configuration partition, and Global Catalog, but
+        which don't necessarily share a DNS namespace at all. This last point surprises people:
+        you can have a single forest spanning <code>company.com</code> and
+        <code>acquired-corp.com</code> as two completely separate trees, joined not by naming
+        convention but by an explicit trust relationship.
+      </p>
+
+      <p>
+        <strong>Trust</strong> is what makes any of this navigable. A <strong>forest trust</strong>
+        allows authentication to flow across the boundary between two forests — most commonly
+        relevant after an acquisition, where two previously independent AD environments need
+        some level of mutual access. Trusts have direction: a <strong>one-way trust</strong>
+        means domain A trusts domain B's users to authenticate against A's resources, but not
+        the reverse — B doesn't trust A's users at all. A <strong>two-way trust</strong> opens
+        that access in both directions simultaneously. They also have transitivity:
+        <strong>transitive trusts</strong> propagate automatically through an entire forest (if
+        A trusts B and B trusts C, A implicitly trusts C), while <strong>non-transitive
+        trusts</strong> — the default for trusts to entities outside your forest, called
+        <strong>external trusts</strong> — apply only to the two specific domains involved and
+        go no further.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 13 · FOREST / DOMAIN / TREE HIERARCHY</div>
+        <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow7" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-amber)"/>
+            </marker>
+          </defs>
+          <rect x="30" y="6" width="700" height="300" rx="12" fill="none" stroke="var(--border)" stroke-width="1.2" stroke-dasharray="5,4"/>
+          <text x="700" y="22" text-anchor="end" font-size="8.5" class="dg-muted">Global Catalog scope: entire forest</text>
+
+          <rect x="290" y="30" width="180" height="38" rx="8" fill="color-mix(in srgb, var(--accent-blue) 14%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="380" y="53" text-anchor="middle" font-size="11" font-weight="700">Forest: company.com</text>
+
+          <line x1="330" y1="68" x2="180" y2="96" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="430" y1="68" x2="580" y2="96" stroke="var(--border)" stroke-width="1.3"/>
+
+          <rect x="80" y="96" width="200" height="34" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="180" y="118" text-anchor="middle" font-size="10" font-weight="700">Tree 1: company.com</text>
+
+          <rect x="480" y="96" width="200" height="34" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="580" y="118" text-anchor="middle" font-size="10" font-weight="700">Tree 2: acquired-corp.com</text>
+
+          <line x1="280" y1="113" x2="478" y2="113" stroke="var(--accent-amber)" stroke-width="1.5" marker-end="url(#arrow7)" marker-start="url(#arrow7)"/>
+          <text x="380" y="105" text-anchor="middle" font-size="7.5" fill="var(--accent-amber)">transitive trust (forest-wide)</text>
+
+          <line x1="130" y1="130" x2="100" y2="166" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="230" y1="130" x2="260" y2="166" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="580" y1="130" x2="580" y2="166" stroke="var(--border)" stroke-width="1.2"/>
+
+          <rect x="40" y="166" width="120" height="36" rx="7" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="100" y="188" text-anchor="middle" font-size="9" class="dg-mono">corp.company.com</text>
+
+          <rect x="200" y="166" width="120" height="36" rx="7" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="260" y="188" text-anchor="middle" font-size="9" class="dg-mono">dev.company.com</text>
+
+          <rect x="500" y="166" width="160" height="36" rx="7" fill="color-mix(in srgb, var(--accent-green) 10%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="580" y="188" text-anchor="middle" font-size="9" class="dg-mono">acquired-corp.com</text>
+
+          <text x="380" y="240" text-anchor="middle" font-size="9.5" class="dg-muted">One forest, two trees, three domains — the forest trust joins Tree 2 without requiring a shared DNS namespace</text>
+        </svg>
+        <div class="diagram-caption">
+          Forests are the real security boundary, not trees. Two trees with completely
+          unrelated DNS names can coexist in the same forest, sharing schema, configuration,
+          and Global Catalog, once a trust relationship joins them.
+        </div>
+      </div>
+
+      <p>
+        The <strong>Global Catalog</strong> introduced in Section 2.3 is what makes
+        multi-domain authentication actually work without every client needing detailed
+        topology knowledge. When a user in <code>corp.company.com</code> needs to access a
+        resource in <code>acquired-corp.com</code>, the flow runs through the trust path: the
+        user's own DC issues a TGT as usual, but when that user requests a service ticket for
+        a resource in the other domain, their DC returns a referral pointing toward the
+        target domain (rather than failing outright), the client follows that referral to a
+        DC in the target domain, and a service ticket is issued there using the forest trust
+        relationship as its authorization basis.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 14 · MULTI-DOMAIN AUTHENTICATION FLOW</div>
+        <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow8" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-blue)"/>
+            </marker>
+          </defs>
+          <rect x="20" y="14" width="150" height="36" rx="8" fill="color-mix(in srgb, var(--accent-blue) 12%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="95" y="37" text-anchor="middle" font-size="10.5" font-weight="700">User</text>
+
+          <rect x="220" y="14" width="180" height="36" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="310" y="37" text-anchor="middle" font-size="10" class="dg-mono">corp.company.com DC</text>
+
+          <rect x="450" y="14" width="190" height="36" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="545" y="37" text-anchor="middle" font-size="10" class="dg-mono">acquired-corp.com DC</text>
+
+          <rect x="680" y="14" width="60" height="36" rx="8" fill="color-mix(in srgb, var(--accent-green) 12%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="710" y="37" text-anchor="middle" font-size="9" font-weight="700">Svc</text>
+
+          <line x1="95" y1="50" x2="95" y2="250" stroke="var(--border)" stroke-width="1.3" stroke-dasharray="4,4"/>
+          <line x1="310" y1="50" x2="310" y2="250" stroke="var(--border)" stroke-width="1.3" stroke-dasharray="4,4"/>
+          <line x1="545" y1="50" x2="545" y2="250" stroke="var(--border)" stroke-width="1.3" stroke-dasharray="4,4"/>
+          <line x1="710" y1="50" x2="710" y2="250" stroke="var(--border)" stroke-width="1.3" stroke-dasharray="4,4"/>
+
+          <line x1="95" y1="80" x2="302" y2="80" stroke="var(--accent-blue)" stroke-width="1.4" marker-end="url(#arrow8)"/>
+          <text x="200" y="73" text-anchor="middle" font-size="8.5" font-weight="600">1. Request TGT</text>
+
+          <line x1="310" y1="120" x2="537" y2="120" stroke="var(--accent-amber)" stroke-width="1.4" marker-end="url(#arrow8)"/>
+          <text x="425" y="113" text-anchor="middle" font-size="8.5" font-weight="600">2. Referral (follows forest trust)</text>
+
+          <line x1="95" y1="160" x2="537" y2="160" stroke="var(--accent-blue)" stroke-width="1.4" marker-end="url(#arrow8)"/>
+          <text x="320" y="153" text-anchor="middle" font-size="8.5" font-weight="600">3. Get service ticket from target-domain DC</text>
+
+          <line x1="95" y1="200" x2="702" y2="200" stroke="var(--accent-green)" stroke-width="1.4" marker-end="url(#arrow8)"/>
+          <text x="400" y="193" text-anchor="middle" font-size="8.5" font-weight="600">4. Present service ticket to target service</text>
+
+          <text x="380" y="235" text-anchor="middle" font-size="9" class="dg-muted">The referral at step 2 is what lets the client traverse the trust without prior topology knowledge</text>
+        </svg>
+        <div class="diagram-caption">
+          The user's home domain never directly authorizes access to the foreign domain's
+          resource — it only points the client toward the right DC to ask. Authorization
+          itself happens entirely within the target domain, governed by the trust relationship.
+        </div>
+      </div>
+
+      <p>
+        Why do enterprises end up with sprawling, multi-forest structures in the first place?
+        Almost always the same three drivers: <strong>mergers and acquisitions</strong> (each
+        acquired company arrives with its own existing forest), <strong>regulatory
+        isolation</strong> (certain jurisdictions or business units require a hard
+        administrative boundary), and plain <strong>legacy architecture</strong> — decisions
+        made a decade ago by people no longer at the company, preserved because nobody has
+        had the budget or appetite to consolidate. Given your background, the M&amp;A driver
+        is likely the one you've lived through directly, and it's the one the use case below
+        focuses on.
+      </p>
+
+      <div class="callout callout-security">
+        <h4>🟣 SECURITY NOTE · SID History as a Post-M&amp;A Attack Vector</h4>
+        <p>
+          When a user account is migrated from an acquired company's domain into the parent
+          organization's domain, their original SID is frequently preserved in the
+          <code>sIDHistory</code> attribute specifically to maintain access to resources that
+          still check against the old SID rather than forcing an immediate, disruptive
+          re-permissioning effort. The risk: an attacker who compromises an account carrying
+          sIDHistory entries effectively inherits whatever access that old SID had — including,
+          in the worst case, Domain Admin equivalence, if the migrated account happened to be
+          privileged in the acquired company's original domain. SID history is exactly the
+          kind of leftover that outlives its original business justification. It should be
+          cleaned up as a deliberate step in every identity migration, not left indefinitely,
+          and audited on a recurring basis as part of routine access review.
+        </p>
+      </div>
+
+      <div class="usecase">
+        <span class="usecase-tag">🏢 ENTERPRISE USE CASE</span>
+        <p>
+          <strong>The scenario:</strong> Your company has just completed an acquisition. Both
+          companies run their own AD forest. The integration team is proposing a two-way
+          forest trust so employees from both sides can access shared resources during the
+          integration period.
+        </p>
+        <p>
+          <strong>The architecture decision:</strong> A two-way trust grants the broadest
+          access fastest, but it also means a compromise of either forest's security posture
+          — and you genuinely don't know the acquired company's security posture in the early
+          weeks — becomes a compromise risk for both. A one-way trust (parent trusts acquired
+          company's users, not the reverse) limits the blast radius to a single direction but
+          still depends entirely on the acquired forest's hygiene for everyone who's now
+          trusted. Federating instead via PingFederate — treating the acquired company's AD as
+          just another federated identity source, with no direct AD-to-AD trust at all — adds
+          integration work up front but keeps the two AD environments fully isolated from each
+          other's compromise risk, at the cost of a less seamless initial user experience.
+          <strong>The trade-off in practice:</strong> trust relationships are fast to stand up
+          and slow to unwind; federation is slower to stand up and far easier to tear down
+          cleanly once the acquired environment is either fully integrated or fully
+          decommissioned. Given that integration timelines routinely run 12–24 months,
+          federation is very often the more defensible starting position even though it's the
+          less convenient one on day one.
+        </p>
+      </div>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 10 MIN</span>
+        <p>
+          In your AD environment, check whether any forest or external trusts exist (Active
+          Directory Domains and Trusts console). For each one you find: what direction is it?
+          Is it transitive? When was it last reviewed, and by whom? Trust relationships that
+          have outlived the business reason they were created for are a quiet, persistent form
+          of security debt — and most environments have at least one nobody can fully explain
+          anymore.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="module section-anchor-spacer" data-stack-layers="directory,cloud,sso" id="s2-8">
+      <div class="module-divider">
+        <div class="module-num">2.8</div>
+        <h2>🔄 Hybrid Identity &amp; Directory Synchronization</h2>
+      </div>
+
+      <p>
+        <strong>Hybrid identity</strong> describes the now-default state of most enterprises:
+        Active Directory on-premises, Microsoft Entra ID in the cloud, and a synchronization
+        layer connecting them so that one set of identities can authenticate to both worlds.
+        That synchronization layer is <strong>Entra ID Connect</strong> (formerly Azure AD
+        Connect), and understanding precisely what it does — and what it deliberately doesn't
+        do — is the difference between a hybrid architecture that behaves predictably and one
+        that produces the kind of confusing, intermittent failures that eat entire afternoons
+        of troubleshooting.
+      </p>
+
+      <p>
+        Entra ID Connect runs on a configured sync cycle (commonly every 30 minutes by
+        default for delta syncs), pulling changes from on-prem AD and pushing them to Entra
+        ID according to attribute flow rules and any filtering scope you've defined — not
+        every OU or every attribute needs to sync, and most enterprises explicitly exclude
+        certain service accounts or legacy OUs from scope entirely. This is, by design,
+        <strong>not</strong> real-time. That sync interval is the single most operationally
+        significant fact in this entire section, because it's the root cause of nearly every
+        "why hasn't this change taken effect yet" hybrid-identity question you'll field.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 15 · HYBRID IDENTITY ARCHITECTURE</div>
+        <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow9" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/>
+            </marker>
+          </defs>
+          <rect x="20" y="10" width="320" height="260" rx="10" fill="color-mix(in srgb, var(--accent-blue) 6%, var(--surface))" stroke="var(--accent-blue)" stroke-dasharray="5,4"/>
+          <text x="180" y="32" text-anchor="middle" font-size="10.5" font-weight="700" class="dg-mono">ON-PREMISES</text>
+
+          <rect x="50" y="50" width="260" height="50" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="180" y="72" text-anchor="middle" font-size="10.5" font-weight="700">AD Domain Controllers</text>
+          <text x="180" y="88" text-anchor="middle" font-size="8" class="dg-muted">authoritative source</text>
+
+          <rect x="50" y="140" width="260" height="50" rx="8" fill="color-mix(in srgb, var(--accent-amber) 12%, var(--surface))" stroke="var(--accent-amber)"/>
+          <text x="180" y="162" text-anchor="middle" font-size="10.5" font-weight="700">Entra ID Connect</text>
+          <text x="180" y="178" text-anchor="middle" font-size="8" class="dg-muted">sync engine, ~30 min cycle</text>
+
+          <line x1="180" y1="100" x2="180" y2="138" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow9)"/>
+
+          <rect x="420" y="10" width="320" height="260" rx="10" fill="color-mix(in srgb, var(--accent-green) 6%, var(--surface))" stroke="var(--accent-green)" stroke-dasharray="5,4"/>
+          <text x="580" y="32" text-anchor="middle" font-size="10.5" font-weight="700" class="dg-mono">CLOUD</text>
+
+          <rect x="450" y="50" width="260" height="50" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="580" y="72" text-anchor="middle" font-size="10.5" font-weight="700">Microsoft Entra ID</text>
+          <text x="580" y="88" text-anchor="middle" font-size="8" class="dg-muted">cloud directory</text>
+
+          <rect x="450" y="140" width="260" height="50" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="580" y="162" text-anchor="middle" font-size="10.5" font-weight="700">M365 / Azure / SaaS apps</text>
+          <text x="580" y="178" text-anchor="middle" font-size="8" class="dg-muted">federated resources</text>
+
+          <line x1="580" y1="100" x2="580" y2="138" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow9)"/>
+
+          <line x1="310" y1="165" x2="448" y2="165" stroke="var(--accent-amber)" stroke-width="1.5" marker-end="url(#arrow9)"/>
+          <text x="380" y="222" text-anchor="middle" font-size="8.5" class="dg-muted">sync (one-way, scheduled)</text>
+
+          <text x="380" y="250" text-anchor="middle" font-size="9" class="dg-muted">Auth path varies by model: PHS / PTA validate against the synced hash or on-prem in real time; Federation routes the whole auth request on-prem</text>
+        </svg>
+        <div class="diagram-caption">
+          Identity data flows on a schedule; authentication requests, depending on which model
+          you've chosen, may or may not touch on-premises infrastructure at all in real time.
+          These are two separate architectural questions with two separate answers.
+        </div>
+      </div>
+
+      <p>
+        That authentication question — does a sign-in attempt actually touch on-prem
+        infrastructure, and if so how — comes down to a choice between three models. <strong>Password
+        Hash Sync (PHS)</strong> synchronizes a hash of the user's password hash (not the
+        plaintext, and not even the directly usable AD hash — a further-hashed version) to
+        Entra ID, which then validates sign-ins entirely in the cloud with no on-prem
+        dependency at authentication time; its main trade-off is that some highly regulated
+        organizations are uncomfortable with any password-derived material leaving on-premises
+        at all, even in this hashed form. <strong>Pass-through Authentication (PTA)</strong>
+        keeps password validation entirely on-premises — a lightweight agent receives the
+        validation request from Entra ID in real time and checks it against AD directly,
+        meaning no password material of any kind ever leaves on-prem — but this introduces a
+        genuine availability dependency: if every PTA agent is unreachable, cloud sign-in fails
+        even though Entra ID itself is healthy. <strong>Federation</strong>, using ADFS or
+        PingFederate as the actual identity provider for Entra ID, routes the entire
+        authentication request through on-premises infrastructure and gives you the richest
+        policy control of the three — at the cost of the most operational complexity, since
+        ADFS or PingFederate's availability now directly gates cloud authentication for every
+        federated user.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 16 · PHS VS PTA VS FEDERATION DECISION TREE</div>
+        <svg viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="240" height="220" rx="10" fill="color-mix(in srgb, var(--accent-blue) 8%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="130" y="34" text-anchor="middle" font-size="12" font-weight="700">PHS</text>
+          <g font-size="9" class="dg-muted">
+            <text x="26" y="58">+ No on-prem dependency</text>
+            <text x="26" y="74">+ Resilient to on-prem outage</text>
+            <text x="26" y="90">+ Simplest to operate</text>
+            <text x="26" y="114">– Hash material reaches cloud</text>
+            <text x="26" y="130">– Not real-time password check</text>
+          </g>
+
+          <rect x="260" y="10" width="240" height="220" rx="10" fill="color-mix(in srgb, var(--accent-amber) 8%, var(--surface))" stroke="var(--accent-amber)"/>
+          <text x="380" y="34" text-anchor="middle" font-size="12" font-weight="700">PTA</text>
+          <g font-size="9" class="dg-muted">
+            <text x="276" y="58">+ Password never leaves on-prem</text>
+            <text x="276" y="74">+ Real-time validation against AD</text>
+            <text x="276" y="90">+ Honors on-prem account lockout</text>
+            <text x="276" y="114">– On-prem dependency for</text>
+            <text x="276" y="130">&#160;&#160;cloud sign-in availability</text>
+          </g>
+
+          <rect x="510" y="10" width="240" height="220" rx="10" fill="color-mix(in srgb, var(--accent-green) 8%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="630" y="34" text-anchor="middle" font-size="12" font-weight="700">Federation</text>
+          <g font-size="9" class="dg-muted">
+            <text x="526" y="58">+ Richest policy control</text>
+            <text x="526" y="74">+ Reuses existing PingFederate</text>
+            <text x="526" y="90">&#160;&#160;investment</text>
+            <text x="526" y="114">– Highest operational complexity</text>
+            <text x="526" y="130">– IdP availability gates all</text>
+            <text x="526" y="146">&#160;&#160;cloud authentication</text>
+          </g>
+        </svg>
+        <div class="diagram-caption">
+          None of the three is universally correct — the right choice depends on regulatory
+          posture, existing infrastructure investment, and tolerance for an on-prem
+          availability dependency on cloud sign-in.
+        </div>
+      </div>
+
+      <p>
+        Two more concepts close the loop. <strong>Seamless SSO</strong> lets Entra ID use
+        Kerberos-based authentication from domain-joined machines to provide passwordless
+        cloud sign-in — the cloud equivalent of the Integrated Windows Authentication pattern
+        from Section 2.6. And <strong>write-back</strong> — password write-back specifically —
+        lets a password change made in the cloud (say, via Entra ID's self-service reset)
+        flow back down to on-premises AD, which is what makes self-service password reset
+        usable in a hybrid environment without creating a permanent password mismatch between
+        the two directories.
+      </p>
+
+      <div class="callout callout-cost">
+        <h4>🟠 ARCHITECTURE · Source of Authority Is the Decision That Matters Most</h4>
+        <p>
+          In any hybrid deployment, every single attribute needs an explicit, documented
+          answer to one question: which system is authoritative for it? If AD is authoritative
+          for job title but a manager updates that field directly in the HR system, which
+          value wins on the next sync? If a user resets their password through the Entra ID
+          portal and write-back isn't configured, what happens to their on-prem password — does
+          it silently diverge? Most hybrid deployments never write this down system by system,
+          attribute by attribute, and the result is exactly the kind of intermittent,
+          hard-to-reproduce data inconsistency that erodes trust in identity data across the
+          whole organization. This is one of the highest-leverage, lowest-cost architecture
+          documents you can produce, and most enterprises simply haven't done it.
+        </p>
+      </div>
+
+      <details class="deepdive">
+        <summary>🟣 Deep dive: What is the Entra ID Connect sync cycle, what triggers a delta sync vs a full sync, and why does a full sync during business hours cause a performance incident?</summary>
+        <div class="deepdive-body">
+          <p>
+            A <strong>delta sync</strong> only processes objects that have changed since the
+            last successful sync cycle — it's lightweight, runs frequently (every 30 minutes
+            by default), and is what handles the overwhelming majority of day-to-day changes:
+            password resets, attribute updates, new hires, terminations. A <strong>full
+            sync</strong> re-evaluates every single object in scope against the configured sync
+            rules from scratch, regardless of whether anything actually changed. Full syncs are
+            triggered deliberately — most commonly after a configuration change to sync rules,
+            filtering scope, or attribute flow mappings, since those changes need to be applied
+            retroactively to objects that were already synced under the old rules.
+          </p>
+          <p>
+            The performance risk is straightforward but easy to overlook: a full sync against
+            an enterprise with hundreds of thousands of objects is a meaningfully heavier
+            operation than a delta sync touching a few hundred changed objects, both on the
+            Entra ID Connect server itself and on the domain controllers it queries against.
+            Triggering one mid-business-day — often inadvertently, as a side effect of pushing
+            an unrelated configuration change — can produce a noticeable load spike on
+            authentication-path infrastructure at the worst possible time. The operational
+            practice this argues for is treating any change that could trigger a full sync with
+            the same change-window discipline you'd apply to a production database migration:
+            scheduled, off-peak, and communicated in advance — not pushed casually mid-morning.
+          </p>
+        </div>
+      </details>
+
+      <div class="usecase">
+        <span class="usecase-tag">🏢 ENTERPRISE USE CASE</span>
+        <p>
+          <strong>The scenario:</strong> An employee is terminated at 5:00pm. HR updates the
+          HR system immediately. The leaver process triggers at 5:15pm. The AD account is
+          disabled at 5:20pm. Entra ID Connect's next sync cycle runs at 5:48pm — at which
+          point Microsoft 365 access is revoked, and so is access to Salesforce, since it's
+          federated through Entra ID. But VPN access, governed by a separate RADIUS system
+          with no relationship to this sync pipeline at all, isn't revoked until the next
+          morning's batch job runs.
+        </p>
+        <p>
+          <strong>Mapping the gap:</strong> Notice what actually happened here — the AD
+          disable was fast (5 minutes from HR update to disable), the Entra ID-dependent
+          systems lagged by the sync interval (28 minutes), and the RADIUS-governed VPN access
+          lagged by up to 19 hours because nothing in this chain was actually wired to it at
+          all. This is the architecture lesson: a leaver process is only as fast as its
+          slowest-synced downstream system, and "the account is disabled in AD" is not the
+          same claim as "the user has lost all access everywhere." Closing this gap requires
+          either bringing VPN authentication onto the same real-time path as AD (rather than a
+          batch sync) or accepting the gap explicitly and documenting it as a known risk with
+          a defined maximum exposure window — but it cannot be left undocumented and assumed
+          away, which is how most organizations currently handle it.
+        </p>
+      </div>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 15 MIN</span>
+        <p>
+          Check your organization's Entra ID Connect sync cycle configuration. What's the
+          actual sync interval? Which attributes and OUs are in scope, and which are
+          explicitly excluded? Is password write-back enabled? Now pull your most recent
+          leaver case and measure the real gap — how long between AD deprovisioning and Entra
+          ID deprovisioning actually taking effect? Most teams have never measured this number
+          directly; you're about to have a real one.
+        </p>
+      </div>
+
+    </div>
+
+    <div class="module section-anchor-spacer" data-stack-layers="directory,sso,iga" id="s2-9">
+      <div class="module-divider">
+        <div class="module-num">2.9</div>
+        <h2>🪞 Virtual Directories &amp; Meta-Directories</h2>
+      </div>
+
+      <p>
+        By this point in the module you've seen enough of a typical enterprise's directory
+        landscape to recognize the problem this section addresses: identity data is rarely
+        sitting in one place. AD holds the bulk of it. The HR system is authoritative for
+        organizational data like job title and cost center. PingDirectory might hold consumer
+        or partner identities. A legacy LDAP directory nobody wants to touch still backs an
+        ERP system that's too expensive to migrate. Every application that needs a complete,
+        unified view of "who is this user" is left either querying multiple sources itself
+        — pushing that integration burden onto every app team — or relying on some
+        consolidation layer to present a single coherent view. Two fundamentally different
+        architectural approaches solve that consolidation problem, and the choice between
+        them is one of the more consequential decisions in directory architecture.
+      </p>
+
+      <p>
+        A <strong>Virtual Directory (VD)</strong> presents a unified view of identity data
+        drawn from multiple underlying sources without ever physically moving or copying that
+        data — it federates reads in real time, performing joins across sources at the moment
+        a query arrives. A <strong>Meta-Directory</strong> takes the opposite approach: it
+        physically aggregates identity data from multiple sources into one consolidated,
+        authoritative repository, via scheduled ETL or sync processes, and that consolidated
+        copy is what applications actually query.
+      </p>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 17 · VIRTUAL DIRECTORY ARCHITECTURE</div>
+        <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow10" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/>
+            </marker>
+          </defs>
+          <rect x="300" y="10" width="160" height="40" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="380" y="35" text-anchor="middle" font-size="10.5" font-weight="700">PingFederate</text>
+
+          <line x1="380" y1="50" x2="380" y2="78" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#arrow10)"/>
+          <text x="430" y="68" text-anchor="middle" font-size="7.5" class="dg-muted">unified LDAP query</text>
+
+          <rect x="220" y="82" width="320" height="50" rx="8" fill="color-mix(in srgb, var(--accent-blue) 14%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="380" y="103" text-anchor="middle" font-size="11" font-weight="700">Virtual Directory Layer</text>
+          <text x="380" y="119" text-anchor="middle" font-size="8" class="dg-muted">joins happen at query time — no data moved</text>
+
+          <line x1="290" y1="132" x2="120" y2="166" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="340" y1="132" x2="290" y2="166" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="420" y1="132" x2="470" y2="166" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="470" y1="132" x2="640" y2="166" stroke="var(--border)" stroke-width="1.2"/>
+
+          <rect x="40" y="166" width="160" height="50" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="120" y="195" text-anchor="middle" font-size="9.5">Active Directory</text>
+
+          <rect x="210" y="166" width="160" height="50" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="290" y="195" text-anchor="middle" font-size="9.5">PingDirectory</text>
+
+          <rect x="390" y="166" width="160" height="50" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="470" y="195" text-anchor="middle" font-size="9.5">HR System</text>
+
+          <rect x="560" y="166" width="160" height="50" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="640" y="195" text-anchor="middle" font-size="9.5">Legacy LDAP</text>
+
+          <text x="380" y="250" text-anchor="middle" font-size="9" class="dg-muted">Every query hits all relevant sources live — data is always current, but query latency includes every source's response time</text>
+        </svg>
+        <div class="diagram-caption">
+          The VD presents one logical LDAP interface to PingFederate while transparently
+          fanning each query out to whichever real sources hold the relevant data, then
+          joining the results before returning.
+        </div>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 18 · META-DIRECTORY ARCHITECTURE</div>
+        <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow11" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/>
+            </marker>
+          </defs>
+          <rect x="40" y="10" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="120" y="37" text-anchor="middle" font-size="9.5">Active Directory</text>
+
+          <rect x="210" y="10" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="290" y="37" text-anchor="middle" font-size="9.5">HR System</text>
+
+          <rect x="390" y="10" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="470" y="37" text-anchor="middle" font-size="9.5">Legacy LDAP</text>
+
+          <rect x="560" y="10" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="640" y="37" text-anchor="middle" font-size="9.5">PingDirectory</text>
+
+          <line x1="120" y1="54" x2="340" y2="92" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="290" y1="54" x2="360" y2="92" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="470" y1="54" x2="400" y2="92" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="640" y1="54" x2="420" y2="92" stroke="var(--border)" stroke-width="1.2"/>
+          <text x="380" y="78" text-anchor="middle" font-size="7.5" class="dg-muted">ETL / sync processes</text>
+
+          <rect x="240" y="96" width="280" height="50" rx="8" fill="color-mix(in srgb, var(--accent-amber) 14%, var(--surface))" stroke="var(--accent-amber)"/>
+          <text x="380" y="119" text-anchor="middle" font-size="11" font-weight="700">Meta-Directory</text>
+          <text x="380" y="135" text-anchor="middle" font-size="8" class="dg-muted">single consolidated, authoritative store</text>
+
+          <line x1="320" y1="146" x2="120" y2="184" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="360" y1="146" x2="320" y2="184" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="400" y1="146" x2="500" y2="184" stroke="var(--border)" stroke-width="1.2"/>
+          <line x1="440" y1="146" x2="680" y2="184" stroke="var(--border)" stroke-width="1.2"/>
+          <text x="380" y="170" text-anchor="middle" font-size="7.5" class="dg-muted">distribution / provisioning</text>
+
+          <rect x="40" y="184" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="120" y="210" text-anchor="middle" font-size="9.5">Applications</text>
+
+          <rect x="240" y="184" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="320" y="210" text-anchor="middle" font-size="9.5">Cloud IdP</text>
+
+          <rect x="420" y="184" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="500" y="202" text-anchor="middle" font-size="9.5">Saviynt</text>
+          <text x="500" y="217" text-anchor="middle" font-size="7.5" class="dg-muted">IGA</text>
+
+          <rect x="600" y="184" width="160" height="44" rx="7" fill="var(--surface)" stroke="var(--border)"/>
+          <text x="680" y="202" text-anchor="middle" font-size="9.5">CyberArk</text>
+          <text x="680" y="217" text-anchor="middle" font-size="7.5" class="dg-muted">PAM</text>
+
+          <text x="380" y="255" text-anchor="middle" font-size="9" class="dg-muted">Data is physically copied and reconciled on a schedule — faster reads downstream, but with inherent staleness risk</text>
+        </svg>
+        <div class="diagram-caption">
+          The meta-directory pattern trades real-time accuracy for downstream read
+          performance and simplicity — every consuming system queries one consolidated store
+          instead of fanning out to multiple sources itself.
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>Approach</th><th>How It Works</th><th>Data Freshness</th><th>Complexity</th><th>Best For</th><th>Risk</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Virtual Directory</strong></td>
+            <td>Real-time federated query across sources, joined at query time</td>
+            <td>Always current</td>
+            <td>Moderate — query-time joins must be designed carefully</td>
+            <td>Sources that can't tolerate any data duplication or lag</td>
+            <td>Query latency depends on the slowest underlying source</td>
+          </tr>
+          <tr>
+            <td><strong>Meta-Directory</strong></td>
+            <td>Scheduled ETL consolidates data into one authoritative store</td>
+            <td>As fresh as the last sync cycle</td>
+            <td>Higher — ETL pipelines, conflict resolution, reconciliation</td>
+            <td>High-volume read workloads needing fast, simple queries</td>
+            <td>Staleness between sync cycles; reconciliation conflicts</td>
+          </tr>
+          <tr>
+            <td><strong>SCIM Sync</strong></td>
+            <td>Standardized REST provisioning protocol pushes changes to targets</td>
+            <td>Near-real-time, event-driven</td>
+            <td>Low for standard cases — high if sources don't natively support SCIM</td>
+            <td>Modern SaaS app provisioning at the individual-change level</td>
+            <td>Limited to what the SCIM schema and target app actually support</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-concept">
+        <h4>🔵 CONCEPT · There Is No Universally Correct Answer Here</h4>
+        <p>
+          Resist the urge to pick a single "winning" pattern and apply it everywhere. A
+          virtual directory is the right call when data freshness is non-negotiable and the
+          underlying sources can handle live query load. A meta-directory is the right call
+          when downstream read performance matters more than perfect real-time accuracy, and
+          when you have the operational maturity to run an ETL pipeline well. SCIM sync earns
+          its place specifically for modern SaaS provisioning, where event-driven, per-change
+          updates fit the target system's own model better than either bulk pattern. Most
+          mature enterprises run more than one of these simultaneously, for different parts
+          of their identity landscape — and that's not architectural indecision, it's the
+          correct response to genuinely different requirements living side by side.
+        </p>
+      </div>
+
+      <div class="analogy blue">
+        <h4>🔵 ANALOGY · A Database View vs a Materialized View</h4>
+        <p>
+          You've used both of these patterns already in Java development, just not under
+          their identity-domain names. A database <strong>view</strong> shows you a joined
+          result computed at query time without storing it anywhere — always fresh, but with
+          query overhead paid on every read. A <strong>materialized view</strong> pre-computes
+          that same join once and stores the result — much faster reads, at the cost of
+          staleness until the next refresh. A virtual directory is exactly a view; a
+          meta-directory is exactly a materialized view. Same trade-off, same engineering
+          intuition you already carry — just applied to identity data instead of application
+          data.
+        </p>
+      </div>
+
+      <div class="lab">
+        <span class="lab-tag">✅ QUICK LAB — 20 MIN</span>
+        <p>
+          Map your own organization's identity data sources. For each commonly-used
+          attribute — email, manager, department, job title, group membership — identify
+          which system is actually authoritative for it: HR system? AD? PingDirectory?
+          Something else entirely? Draw the current data flow as you understand it. Then
+          identify where the same attribute exists in more than one system, potentially with
+          different values. That mismatch, wherever you find it, is your organization's
+          identity data quality risk — and most teams discover at least one during this
+          exercise.
+        </p>
+      </div>
+    </div>
+
+    <!-- WRAP-UP: CHEAT SHEET -->
+    <div class="module section-anchor-spacer" id="cheatsheet">
+      <div class="module-divider">
+        <h2 style="flex:1">📋 Architecture Cheat Sheet</h2>
+      </div>
+
+      <p>The eight ideas from this module worth carrying into every future directory conversation:</p>
+
+      <div class="cheat-grid">
+        <div class="cheat-item"><span class="cheat-num">1.</span>Directory ≠ Database — optimized for read-heavy, hierarchical workloads, not joins or reporting.</div>
+        <div class="cheat-item"><span class="cheat-num">2.</span>LDAP is a protocol, not a product — AD, PingDirectory, and OpenLDAP all speak it interchangeably.</div>
+        <div class="cheat-item"><span class="cheat-num">3.</span>AD is a platform: LDAP + Kerberos + DNS + Group Policy + Replication, tightly integrated.</div>
+        <div class="cheat-item"><span class="cheat-num">4.</span>Entra ID is not AD in the cloud — no LDAP, no Kerberos, flat namespace, multi-tenant by design.</div>
+        <div class="cheat-item"><span class="cheat-num">5.</span>Kerberos TGT theft = full domain compromise (Golden Ticket) — protect krbtgt above almost everything else.</div>
+        <div class="cheat-item"><span class="cheat-num">6.</span>Hybrid identity needs an explicit, documented source of authority for every synced attribute.</div>
+        <div class="cheat-item"><span class="cheat-num">7.</span>Forest trusts are permanent attack surface the moment they're created — audit them on a recurring schedule.</div>
+        <div class="cheat-item"><span class="cheat-num">8.</span>Virtual directory = real-time federation; meta-directory = consolidated store — the same trade-off as a view vs a materialized view.</div>
+      </div>
+    </div>
+
+    <!-- WRAP-UP: MIND MAP -->
+    <div class="module section-anchor-spacer" id="mindmap">
+      <div class="module-divider">
+        <h2 style="flex:1">🧠 Module 02 — Concept Map</h2>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diagram-title">DIAGRAM 19 · MODULE 02 CONCEPT MAP</div>
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg">
+          <rect x="280" y="6" width="200" height="50" rx="10" fill="color-mix(in srgb, var(--accent-primary) 18%, var(--surface))" stroke="var(--accent-primary)" stroke-width="1.6"/>
+          <text x="380" y="28" text-anchor="middle" font-size="11" font-weight="700">Identity Stores</text>
+          <text x="380" y="44" text-anchor="middle" font-size="11" font-weight="700">&amp; Directories</text>
+
+          <line x1="320" y1="56" x2="130" y2="96" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="380" y1="56" x2="380" y2="96" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="440" y1="56" x2="630" y2="96" stroke="var(--border)" stroke-width="1.3"/>
+          <line x1="320" y1="56" x2="130" y2="256" stroke="var(--border)" stroke-width="1.1" stroke-dasharray="3,3"/>
+          <line x1="380" y1="56" x2="380" y2="256" stroke="var(--border)" stroke-width="1.1" stroke-dasharray="3,3"/>
+          <line x1="440" y1="56" x2="630" y2="256" stroke="var(--border)" stroke-width="1.1" stroke-dasharray="3,3"/>
+
+          <rect x="20" y="96" width="220" height="140" rx="9" fill="color-mix(in srgb, var(--accent-blue) 8%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="130" y="118" text-anchor="middle" font-size="11" font-weight="700">LDAP Protocol</text>
+          <g font-size="9" class="dg-muted">
+            <text x="36" y="142">• Operations (Bind, Search...)</text>
+            <text x="36" y="160">• Filters &amp; referrals</text>
+            <text x="36" y="178">• Distinguished Names</text>
+            <text x="36" y="196">• LDAPS vs StartTLS</text>
+            <text x="36" y="214">• Connection pooling</text>
+          </g>
+
+          <rect x="270" y="96" width="220" height="140" rx="9" fill="color-mix(in srgb, var(--accent-blue) 8%, var(--surface))" stroke="var(--accent-blue)"/>
+          <text x="380" y="118" text-anchor="middle" font-size="11" font-weight="700">Active Directory</text>
+          <g font-size="9" class="dg-muted">
+            <text x="286" y="142">• Kerberos &amp; NTLM</text>
+            <text x="286" y="160">• Global Catalog</text>
+            <text x="286" y="178">• FSMO roles</text>
+            <text x="286" y="196">• Forests &amp; trusts</text>
+            <text x="286" y="214">• Replication &amp; lag</text>
+          </g>
+
+          <rect x="520" y="96" width="220" height="140" rx="9" fill="color-mix(in srgb, var(--accent-green) 8%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="630" y="118" text-anchor="middle" font-size="11" font-weight="700">Entra ID</text>
+          <g font-size="9" class="dg-muted">
+            <text x="536" y="142">• OIDC / OAuth / SAML</text>
+            <text x="536" y="160">• Conditional Access</text>
+            <text x="536" y="178">• Managed Identity</text>
+            <text x="536" y="196">• App Reg vs Enterprise App</text>
+            <text x="536" y="214">• Hybrid sync bridge</text>
+          </g>
+
+          <rect x="20" y="256" width="220" height="140" rx="9" fill="color-mix(in srgb, var(--accent-green) 8%, var(--surface))" stroke="var(--accent-green)"/>
+          <text x="130" y="278" text-anchor="middle" font-size="11" font-weight="700">PingDirectory</text>
+          <g font-size="9" class="dg-muted">
+            <text x="36" y="302">• REST / HTTP API</text>
+            <text x="36" y="320">• Multi-master replication</text>
+            <text x="36" y="338">• Consent management</text>
+            <text x="36" y="356">• PingFederate integration</text>
+            <text x="36" y="374">• Entry balancing</text>
+          </g>
+
+          <rect x="270" y="256" width="220" height="140" rx="9" fill="color-mix(in srgb, var(--accent-amber) 8%, var(--surface))" stroke="var(--accent-amber)"/>
+          <text x="380" y="278" text-anchor="middle" font-size="11" font-weight="700">Hybrid Identity</text>
+          <g font-size="9" class="dg-muted">
+            <text x="286" y="302">• PHS</text>
+            <text x="286" y="320">• PTA</text>
+            <text x="286" y="338">• Federation</text>
+            <text x="286" y="356">• Source of authority</text>
+            <text x="286" y="374">• Write-back &amp; sync latency</text>
+          </g>
+
+          <rect x="520" y="256" width="220" height="140" rx="9" fill="color-mix(in srgb, var(--accent-violet) 8%, var(--surface))" stroke="var(--accent-violet)"/>
+          <text x="630" y="278" text-anchor="middle" font-size="11" font-weight="700">Virtual / Meta</text>
+          <g font-size="9" class="dg-muted">
+            <text x="536" y="302">• Virtual Directory</text>
+            <text x="536" y="320">• Meta-Directory</text>
+            <text x="536" y="338">• SCIM sync</text>
+            <text x="536" y="356">• Source-of-truth conflicts</text>
+          </g>
+        </svg>
+        <div class="diagram-caption">
+          Six branches, one center: every directory product or pattern in this module exists
+          to answer the same underlying question — where does identity data actually live,
+          and how do other systems get a trustworthy view of it?
+        </div>
+      </div>
+    </div>
+
+    <!-- WRAP-UP: KNOWLEDGE CHECK -->
+    <div class="module section-anchor-spacer" id="knowledge-check">
+      <div class="module-divider">
+        <h2 style="flex:1">✅ Knowledge Check</h2>
+      </div>
+
+      <p>Five architect-level questions. These aren't recall questions — they require synthesizing concepts across multiple sections.</p>
+
+      <div class="qblock">
+        <span class="qtag">Q1</span>
+        Your enterprise has AD on-prem and Entra ID in the cloud connected via Entra ID
+        Connect. A leaver process runs at 5pm. What is your gap analysis of when access is
+        actually revoked across all connected systems — and what architectural controls close
+        those gaps?
+      </div>
+
+      <div class="qblock">
+        <span class="qtag">Q2</span>
+        A new application team wants to use PingDirectory as their user store via its REST
+        API rather than LDAP. What architectural considerations do you raise with them before
+        approving this integration pattern?
+      </div>
+
+      <div class="qblock">
+        <span class="qtag">Q3</span>
+        After an acquisition, your company has a two-way forest trust between the two AD
+        environments. The security team is uncomfortable but can't articulate why. Walk them
+        through the specific attack paths a two-way trust enables.
+      </div>
+
+      <div class="qblock">
+        <span class="qtag">Q4</span>
+        An application is experiencing intermittent authentication failures that correlate
+        with AD replication events. Explain the architecture of how AD replication lag causes
+        auth failures, and propose a fix.
+      </div>
+
+      <div class="qblock">
+        <span class="qtag">Q5</span>
+        Compare Password Hash Sync vs Pass-through Authentication vs Federation as hybrid
+        authentication models. Given a company that is highly regulated and cannot allow any
+        password material to leave on-premises, which model do you recommend and why?
+      </div>
+    </div>
+
+    <!-- WRAP-UP: ARCHITECT REVIEW -->
+    <div class="module section-anchor-spacer" id="architect-review">
+      <div class="module-divider">
+        <h2 style="flex:1">🏗️ Architect Review Questions</h2>
+      </div>
+
+      <p>
+        Three open-ended design problems, the kind you'd actually be handed in a Principal
+        or Staff-level architecture review. There's no single correct answer — the value is
+        in how rigorously you reason through the trade-offs.
+      </p>
+
+      <div class="qblock">
+        <span class="qtag">ARQ1</span>
+        Design a directory architecture for an enterprise that has 80,000 employees across 14
+        countries, has completed three acquisitions in the past two years — each arriving with
+        its own AD forest — and is moving 60% of its applications to Azure. What is your
+        target-state directory architecture, and what is the migration sequence to get there?
+      </div>
+
+      <div class="qblock">
+        <span class="qtag">ARQ2</span>
+        Your CTO wants to "move off Active Directory" entirely, onto Entra ID. Walk them
+        through what that actually means architecturally, what the real dependencies are, what
+        can realistically move and what can't, and what a defensible three-year timeline looks
+        like.
+      </div>
+
+      <div class="qblock">
+        <span class="qtag">ARQ3</span>
+        A penetration test has found that three servers in your environment have unconstrained
+        Kerberos delegation enabled. Explain the risk in concrete terms, what the remediation
+        steps are, and — just as importantly — what process change prevents this from
+        recurring across future deployments.
+      </div>
+    </div>
+
+    <!-- WRAP-UP: SCENARIO -->
+    <div class="module section-anchor-spacer" id="scenario">
+      <div class="module-divider">
+        <h2 style="flex:1">🏢 Real-World Scenario</h2>
+      </div>
+
+      <h3>The Directory Consolidation Project</h3>
+
+      <div class="scenario-meta">
+        <h4>Current State</h4>
+        <ul>
+          <li>3 AD forests, each remaining from a separate acquisition</li>
+          <li>PingDirectory as the primary user store for web applications</li>
+          <li>Entra ID for Microsoft 365, synced from only one of the three AD forests</li>
+          <li>A legacy LDAP directory backing a critical ERP system</li>
+          <li>Saviynt pointing at AD as its authoritative source for IGA</li>
+          <li>CyberArk managing service account credentials that live in AD</li>
+        </ul>
+      </div>
+
+      <div class="scenario-meta">
+        <h4>Situation</h4>
+        <p>
+          A newly arrived CISO wants a "single source of truth" for identity data within 12
+          months — a mandate stated in exactly those words, with no further specification of
+          what that means architecturally.
+        </p>
+        <h4>Constraints</h4>
+        <ul>
+          <li>Budget is limited — this is not a green-field rebuild</li>
+          <li>The ERP system's legacy LDAP directory cannot be migrated in this timeframe</li>
+          <li>Regulatory requirement: EU employee data must remain stored within the EU</li>
+        </ul>
+      </div>
+
+      <p>
+        <strong>The architecture decision</strong> is essentially the choice this module spent
+        Section 2.9 building toward: virtual directory, meta-directory, or full AD
+        consolidation — and the honest answer is that "single source of truth" as stated is an
+        aspiration, not a literal twelve-month deliverable, given the ERP constraint alone.
+      </p>
+
+      <p>
+        <strong>Trade-offs.</strong> Full AD consolidation (merging three forests into one)
+        delivers the cleanest long-term architecture and genuinely satisfies "single source of
+        truth" for the AD-resident data — but forest consolidation projects routinely run
+        18–36 months even when well-resourced, and this one explicitly isn't. It also does
+        nothing for the legacy ERP LDAP directory, which sits outside AD entirely and can't be
+        consolidated into it without an ERP migration nobody has budgeted. A meta-directory
+        approach can deliver a single consolidated read interface across all five sources
+        within twelve months, satisfying the CISO's stated requirement for application-facing
+        purposes — but it adds a new piece of infrastructure to operate, introduces sync-cycle
+        staleness, and still leaves the underlying three-forest AD sprawl unresolved
+        underneath it. A virtual directory delivers the same unified-view outcome with no data
+        duplication (directly relevant to the EU data residency constraint, since nothing
+        physically moves), but query performance becomes dependent on the slowest underlying
+        source — including, notably, that legacy ERP LDAP directory, which may not have been
+        built for production-grade query load from a new consuming layer.
+      </p>
+
+      <p>
+        <strong>Recommendation, with reasoning:</strong> a virtual directory layer, deployed
+        within the twelve-month window, fronting all five sources — including the legacy ERP
+        LDAP and all three AD forests — to deliver the CISO's "single source of truth"
+        outcome at the application-query layer without triggering a multi-year forest
+        consolidation project or a data residency violation. AD forest consolidation gets
+        proposed as a separate, explicitly longer-term initiative, decoupled from the CISO's
+        twelve-month deadline, justified on its own administrative-overhead and security-debt
+        merits rather than being forced to fit an unrealistic timeline. This sequencing — fast,
+        federated unification now; slower, structural consolidation later — satisfies the
+        literal ask within budget and constraints while being honest that "single source of
+        truth" at the data-storage layer is a multi-year outcome, not a twelve-month one.
+      </p>
+    </div>
+
+    <!-- WRAP-UP: BRIDGE -->
+    <div class="module section-anchor-spacer" id="bridge">
+      <div class="bridge-band">
+        <div class="bridge-half from">
+          <div class="bridge-label">✅ WHAT YOU BUILT · 🌅 ATLAS DAWN · MODULE 02</div>
+          <h3>Identity data has a home — and that home has architecture</h3>
+          <p>
+            You now know where identity actually lives. You can explain why a directory isn't
+            a database and what that trade-off buys an enterprise at scale. You understand AD
+            as an integrated platform rather than "LDAP with extra steps," and you can
+            articulate precisely how Entra ID differs from it rather than treating the two as
+            interchangeable. You know how Kerberos separates proving identity from accessing a
+            service, how trust propagates — or doesn't — across forest boundaries, how hybrid
+            sync creates a documented latency you can now actually measure, and when a virtual
+            directory beats a meta-directory for a given consolidation problem. Identity data
+            has a home. Now you know its floor plan.
+          </p>
+        </div>
+        <div class="bridge-half to">
+          <div class="bridge-label">⏭️ UP NEXT · 🔥 ATLAS EMBER · MODULE 03</div>
+          <h3>The language identity systems speak</h3>
+          <p>
+            You know where identity data lives. Module 03 teaches you the protocols that
+            move it, assert it, and prove it. OAuth 2.0, OIDC, SAML 2.0, JWT — not as
+            features you configure inside PingFederate, but as architectural systems with
+            deliberate design choices, real failure modes, and trade-offs you'll be reasoning
+            about for the rest of your career. The palette shifts from dawn blue to ember
+            amber for a reason: the foundations are set. Now we get to work. 🔥
+          </p>
+          <a href="module03.html" class="bridge-cta">Continue to Module 03: Protocols Deep Dive → 🔥</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ═══════════════════ DARK MODE TOGGLE ═══════════════════
+(function() {
+  const root = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const stored = localStorage.getItem('atlas-theme');
+  if (stored === 'dark') { root.classList.add('dark'); btn.textContent = '☀️'; }
+  btn.addEventListener('click', function() {
+    root.classList.toggle('dark');
+    const isDark = root.classList.contains('dark');
+    btn.textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('atlas-theme', isDark ? 'dark' : 'light');
+  });
+})();
+
+// ═══════════════════ MOBILE SIDEBAR TOGGLE ═══════════════════
+(function() {
+  const toggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('sidebar');
+  toggle.addEventListener('click', function() {
+    sidebar.classList.toggle('open');
+  });
+  sidebar.querySelectorAll('.nav-link').forEach(function(link) {
+    link.addEventListener('click', function() {
+      sidebar.classList.remove('open');
+    });
+  });
+})();
+
+// ═══════════════════ SCROLL PROGRESS BAR ═══════════════════
+(function() {
+  const bar = document.getElementById('progressBar');
+  window.addEventListener('scroll', function() {
+    const h = document.documentElement;
+    const scrollTop = h.scrollTop || document.body.scrollTop;
+    const scrollHeight = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+    const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    bar.style.width = pct + '%';
+  });
+})();
+
+// ═══════════════════ ACTIVE NAV LINK ON SCROLL ═══════════════════
+(function() {
+  const sections = document.querySelectorAll('.module[id], section[id]');
+  const links = document.querySelectorAll('.nav-link');
+  function setActive() {
+    let currentId = null;
+    sections.forEach(function(sec) {
+      const rect = sec.getBoundingClientRect();
+      if (rect.top <= 120 && rect.bottom > 120) currentId = sec.id;
+    });
+    links.forEach(function(link) {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + currentId);
+    });
+  }
+  window.addEventListener('scroll', setActive);
+  setActive();
+})();
+
+// ═══════════════════ IDENTITY STACK RAIL HIGHLIGHTING ═══════════════════
+(function() {
+  const sections = document.querySelectorAll('.module[data-stack-layers]');
+  const stackItems = document.querySelectorAll('.stack-item');
+  function setLit() {
+    let activeLayers = [];
+    sections.forEach(function(sec) {
+      const rect = sec.getBoundingClientRect();
+      if (rect.top <= 160 && rect.bottom > 160) {
+        activeLayers = sec.getAttribute('data-stack-layers').split(',');
+      }
+    });
+    stackItems.forEach(function(item) {
+      item.classList.toggle('lit', activeLayers.indexOf(item.getAttribute('data-layer')) !== -1);
+    });
+  }
+  window.addEventListener('scroll', setLit);
+  setLit();
+})();
+
+// ═══════════════════ SIDEBAR SEARCH (simple text filter) ═══════════════════
+(function() {
+  const input = document.getElementById('sidebarSearch');
+  input.addEventListener('input', function() {
+    const q = input.value.trim().toLowerCase();
+    if (!q) return;
+    const main = document.querySelector('.main');
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.textContent.toLowerCase().includes(q)) {
+        const target = node.parentElement.closest('.module, section');
+        if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
+      }
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
