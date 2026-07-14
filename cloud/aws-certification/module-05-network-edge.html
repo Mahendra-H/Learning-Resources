@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 05: Network & Edge Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root{
+  --grain-opacity:0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow:0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg:rgba(10,14,26,0.72);
+  --node-glow:rgba(76,134,255,0.28);
+  --overlay:rgba(4,6,14,0.6);
+  --grid-line:rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme:dark; }
+html[data-theme="light"]{
+  color-scheme:light;
+  --grain-opacity:0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow:0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg:rgba(246,247,251,0.72);
+  --node-glow:rgba(47,111,237,0.20);
+  --overlay:rgba(20,26,40,0.35);
+  --grid-line:rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+
+/* ── RESET & BASE ── */
+*,*::before,*::after{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth; background:var(--bg);}
+body{background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; transition:background .4s ease,color .4s ease; overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif; letter-spacing:-0.02em;}
+h2{font-weight:700;}
+h3{font-weight:600;}
+p{line-height:1.75; color:var(--text);}
+a{color:var(--accent);}
+code{font-family:'JetBrains Mono',monospace; font-size:0.87em; background:var(--surface-raised); padding:2px 7px; border-radius:5px;}
+
+/* ── GRAIN OVERLAY ── */
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity,0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── SCROLL PROGRESS ── */
+#scrollProgress{position:fixed; top:0; left:0; height:3px; width:0%; background:var(--c-infra); z-index:300; transition:width .08s linear;}
+
+/* ── NAV ── */
+nav{
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  background:var(--nav-bg); backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+  padding:0 40px; height:64px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.nav-brand{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); letter-spacing:0.08em; text-transform:uppercase;}
+.nav-brand span{color:var(--c-infra);}
+.nav-right{display:flex; align-items:center; gap:20px;}
+.nav-tag{font-family:'JetBrains Mono',monospace; font-size:11px; background:var(--c-infra-dim); color:var(--c-infra); padding:4px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:0.06em;}
+#themeToggle{background:var(--surface); border:1px solid var(--line); color:var(--text); padding:7px 16px; border-radius:8px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:11px; transition:border-color .2s ease;}
+#themeToggle:hover{border-color:var(--c-infra);}
+
+/* ── SIDE RAIL ── */
+.rail{position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px;}
+.rail-dot{width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease,transform .3s ease;}
+.rail-dot.active{background:var(--c-infra); border-color:var(--c-infra); transform:scale(1.3);}
+@media(max-width:900px){.rail{display:none;}}
+
+/* ── SCENES ── */
+.scene{min-height:100vh; padding:160px 40px; position:relative; background:var(--bg);}
+.scene-inner{max-width:840px; margin:0 auto; position:relative; z-index:2;}
+.scene-alt{background:var(--surface);}
+
+/* ── AMBIENT BLOBS ── */
+.ambient-blob{position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate;}
+@keyframes driftBlob{0%{transform:translate(0,0) scale(1);}50%{transform:translate(4%,-6%) scale(1.08);}100%{transform:translate(-5%,4%) scale(0.96);}}
+
+/* ── EYEBROW ── */
+.eyebrow{font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--c-infra); display:flex; align-items:center; gap:10px; margin-bottom:20px;}
+.eyebrow::before{content:''; display:inline-block; width:28px; height:1px; background:var(--c-infra);}
+
+/* ── KINETIC HEADINGS ── */
+.kw{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em;}
+.kw-inner{display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+
+/* ── REVEAL / STAGGER ── */
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .8s ease,transform .8s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+.stagger>*{opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease,transform .6s ease;}
+.stagger.in>*{opacity:1; transform:translateY(0) scale(1);}
+
+/* ── TITLE CARD ── */
+.title-card{min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden;}
+.title-card h2{font-size:clamp(2.2rem,7vw,5.4rem); line-height:1.1; font-weight:700;}
+.title-card p{color:rgba(244,246,251,0.6); margin-top:16px; font-size:1rem;}
+.scanbeam{position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg,transparent,rgba(34,211,199,0.14),transparent); animation:scanSweep 6s linear infinite;}
+@keyframes scanSweep{0%{top:-140px;}100%{top:100%;}}
+
+/* ── COMPARISON TABLE ── */
+.compare-table{width:100%; border-collapse:collapse; margin-top:28px; font-size:0.9rem;}
+.compare-table th,.compare-table td{padding:14px 18px; border:1px solid var(--line); text-align:left; vertical-align:top;}
+.compare-table thead th{background:var(--surface-raised); font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-infra);}
+.compare-table tbody tr:nth-child(even){background:var(--surface);}
+.compare-table td:first-child{font-weight:600; color:var(--text); white-space:nowrap;}
+.badge-yes{color:var(--green); font-weight:600;}
+.badge-no{color:var(--c-ir); font-weight:600;}
+.badge-partial{color:var(--amber); font-weight:600;}
+
+/* ── TILT CARDS ── */
+.tilt{transition:transform .25s ease,box-shadow .25s ease; will-change:transform; border-radius:16px;}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px; transition:border-color .2s ease,box-shadow .2s ease;}
+.card:hover{border-color:var(--c-infra-dim); box-shadow:0 0 0 1px var(--c-infra-dim),var(--shadow);}
+
+/* ── MENTOR ASIDE ── */
+.mentor-aside{background:var(--surface); border-left:3px solid var(--c-infra); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0;}
+.mentor-aside::before{content:'🛡️ MENTOR NOTE'; display:block; font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--c-infra); margin-bottom:8px;}
+.mentor-aside p{font-size:0.94rem; color:var(--text); line-height:1.7; font-style:italic;}
+
+/* ── INLINE NODE EXPAND ── */
+.mindnode{cursor:pointer; display:inline-flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 16px; font-size:0.9rem; font-weight:600; transition:border-color .2s ease,background .2s ease; margin:4px;}
+.mindnode:hover,.mindnode:focus{border-color:var(--c-infra); background:var(--c-infra-dim); outline:none;}
+.mindnode .nd-icon{font-size:1.1rem;}
+.node-info{max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease,opacity .3s ease,margin .3s ease; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:0;}
+.node-info.open{max-height:400px; opacity:1; margin-top:14px; padding:16px 20px;}
+
+/* ── DRAWER ── */
+.drawer-overlay{position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px);}
+.drawer-overlay.open{opacity:1; pointer-events:auto;}
+.drawer{position:fixed; top:0; right:0; height:100%; width:min(480px,92vw); background:var(--surface-raised); border-left:1px solid var(--line); z-index:201; padding:40px 36px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); box-shadow:-20px 0 60px rgba(0,0,0,0.35);}
+.drawer.open{transform:translateX(0);}
+.drawer-close{float:right; background:var(--surface); border:1px solid var(--line); color:var(--text); padding:6px 14px; border-radius:8px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:11px;}
+.drawer h3{font-size:1.4rem; margin-bottom:20px; color:var(--c-infra);}
+
+/* ── STAT CALLOUT ── */
+.stat-row{display:flex; gap:24px; flex-wrap:wrap; margin:32px 0;}
+.stat-box{flex:1; min-width:160px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px; text-align:center;}
+.stat-num{font-family:'Space Grotesk',sans-serif; font-size:2.6rem; font-weight:700; color:var(--c-infra); display:block;}
+.stat-label{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; margin-top:6px; display:block;}
+
+/* ── DISCUSSION FAQ ── */
+.discussion{display:flex; flex-direction:column; gap:22px; margin-top:36px;}
+.discussion-pair{display:flex; flex-direction:column; gap:10px;}
+.bubble{max-width:82%; padding:16px 20px; border-radius:18px; font-size:0.95rem; line-height:1.65;}
+.bubble-q{align-self:flex-start; background:var(--surface); border:1px solid var(--line); border-bottom-left-radius:4px; cursor:pointer; transition:border-color .2s ease; display:flex; flex-direction:column;}
+.bubble-q:hover{border-color:var(--c-infra);}
+.bubble-q .who{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--c-infra); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:flex; align-items:center; gap:6px;}
+.bubble-q .chev{margin-left:auto; transition:transform .25s ease; font-size:12px; color:var(--text-dim);}
+.discussion-pair.open .bubble-q .chev{transform:rotate(90deg); color:var(--c-infra);}
+.bubble-a{align-self:flex-end; background:var(--c-infra-dim); border-bottom-right-radius:4px; max-height:0; overflow:hidden; opacity:0; padding:0 20px; transition:max-height .45s ease,opacity .35s ease,padding .35s ease;}
+.discussion-pair.open .bubble-a{max-height:600px; opacity:1; padding:16px 20px;}
+.bubble-a .who{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--c-infra); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:block; text-align:right;}
+
+/* ── RESOURCE GRID ── */
+.resource-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:36px;}
+.resource-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; position:relative; transition:border-color .2s ease,transform .15s ease;}
+.resource-card:hover{border-color:var(--c-infra-dim); transform:translateY(-2px);}
+.resource-pill{position:absolute; top:20px; right:20px; font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px;}
+.resource-pill.free{background:var(--c-gov-dim); color:var(--green);}
+.resource-pill.paid{background:var(--c-detect-dim); color:var(--amber);}
+.resource-card h4{font-size:1rem; padding-right:70px; margin-bottom:8px;}
+.resource-card .source{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); margin-bottom:10px;}
+.resource-card p{font-size:0.88rem; color:var(--text-dim); line-height:1.6;}
+.resource-card a{display:inline-block; margin-top:14px; font-size:0.85rem; color:var(--c-infra); text-decoration:none; border-bottom:1px solid var(--c-infra-dim);}
+@media(max-width:720px){.resource-grid{grid-template-columns:1fr;}}
+
+/* ── MAGNETIC BUTTONS ── */
+.btn{display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border-radius:10px; font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer; transition:background .2s ease,border-color .2s ease,transform .15s ease; letter-spacing:0.04em; text-transform:uppercase; border:1px solid transparent;}
+.btn-primary{background:var(--c-infra); color:#0A0E1A; border-color:var(--c-infra);}
+.btn-primary:hover{opacity:0.88;}
+.btn-outline{background:transparent; color:var(--c-infra); border-color:var(--c-infra-dim);}
+.btn-outline:hover{border-color:var(--c-infra); background:var(--c-infra-dim);}
+
+/* ── SCENARIO / TRAP CARDS ── */
+.scenario-grid{display:grid; gap:16px; margin-top:28px;}
+.scenario-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+.scenario-header{padding:18px 22px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; transition:background .2s ease;}
+.scenario-header:hover{background:var(--surface-raised);}
+.scenario-header .s-title{font-weight:600; font-size:0.95rem;}
+.scenario-header .s-chev{font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; transition:transform .25s ease;}
+.scenario-card.open .s-chev{transform:rotate(90deg);}
+.scenario-body{max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease,opacity .3s ease,padding .3s ease; padding:0 22px;}
+.scenario-card.open .scenario-body{max-height:600px; opacity:1; padding:0 22px 20px;}
+.scenario-tag{display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 9px; border-radius:999px; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.06em;}
+.tag-sg{background:var(--c-iam-dim); color:var(--c-iam);}
+.tag-nacl{background:var(--c-infra-dim); color:var(--c-infra);}
+.tag-waf{background:var(--c-data-dim); color:var(--c-data);}
+.tag-shield{background:var(--c-detect-dim); color:var(--amber);}
+.tag-nfw{background:var(--c-gov-dim); color:var(--green);}
+.tag-dns{background:var(--c-ir-dim); color:var(--c-ir);}
+.tag-cf{background:var(--surface-raised); color:var(--text-dim); border:1px solid var(--line);}
+
+/* ── EXAM QUIZ ── */
+.quiz-question{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:28px; margin-bottom:20px;}
+.quiz-q-text{font-size:1rem; font-weight:500; margin-bottom:18px; line-height:1.6;}
+.quiz-options{display:flex; flex-direction:column; gap:10px;}
+.quiz-option{background:var(--surface-raised); border:1px solid var(--line); border-radius:10px; padding:12px 16px; cursor:pointer; font-size:0.92rem; transition:border-color .2s ease,background .2s ease; display:flex; align-items:flex-start; gap:10px;}
+.quiz-option:hover{border-color:var(--c-infra);}
+.quiz-option.selected{border-color:var(--c-infra); background:var(--c-infra-dim);}
+.quiz-option.correct{border-color:var(--green)!important; background:rgba(52,211,153,0.1)!important;}
+.quiz-option.wrong{border-color:var(--c-ir)!important; background:rgba(251,113,133,0.1)!important;}
+.quiz-option-key{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; min-width:22px; color:var(--text-dim); margin-top:2px;}
+.quiz-reveal{max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease,opacity .3s ease,margin .3s ease; border-top:1px solid var(--line); margin-top:0;}
+.quiz-reveal.show{max-height:300px; opacity:1; margin-top:18px; padding-top:16px;}
+.quiz-reveal p{font-size:0.88rem; color:var(--text-dim); line-height:1.65;}
+.quiz-reveal .verdict{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; text-transform:uppercase; margin-bottom:8px;}
+.verdict-correct{color:var(--green);}
+.verdict-wrong{color:var(--c-ir);}
+.score-board{background:var(--surface); border:1px solid var(--c-infra); border-radius:14px; padding:28px; text-align:center; margin-top:32px;}
+.score-board .score-num{font-size:3rem; font-weight:700; color:var(--c-infra); font-family:'Space Grotesk',sans-serif;}
+.score-board p{color:var(--text-dim); font-size:0.9rem; margin-top:8px;}
+
+/* ── TRAP GALLERY ── */
+.trap-card{background:var(--surface); border:1px solid var(--c-ir-dim); border-radius:14px; overflow:hidden; margin-bottom:18px;}
+.trap-header{padding:18px 22px; cursor:pointer; display:flex; align-items:center; gap:14px; transition:background .2s ease;}
+.trap-header:hover{background:var(--surface-raised);}
+.trap-icon{width:38px; height:38px; border-radius:10px; background:var(--c-ir-dim); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;}
+.trap-title{font-weight:600; font-size:0.95rem;}
+.trap-subtitle{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-dim); margin-top:3px;}
+.trap-body{max-height:0; overflow:hidden; opacity:0; transition:max-height .45s ease,opacity .3s ease,padding .3s ease; padding:0 22px; border-top:1px solid var(--line);}
+.trap-card.open .trap-body{max-height:500px; opacity:1; padding:18px 22px 22px;}
+.trap-chev{margin-left:auto; font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; transition:transform .25s ease;}
+.trap-card.open .trap-chev{transform:rotate(90deg);}
+
+/* ── DECISION TREE ── */
+.dtree-node{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 18px; text-align:center; cursor:pointer; font-size:0.9rem; transition:border-color .2s ease,background .2s ease; margin:6px;}
+.dtree-node:hover,.dtree-node:focus{border-color:var(--c-infra); background:var(--c-infra-dim); outline:none;}
+.dtree-node.leaf{border-color:var(--c-infra-dim); background:var(--c-infra-dim); cursor:default;}
+.dtree-node.leaf:hover{background:var(--c-infra-dim);}
+.dtree-branch{display:flex; align-items:flex-start; justify-content:center; gap:12px; flex-wrap:wrap; margin-top:12px;}
+.dtree-connector{text-align:center; color:var(--text-dim); font-size:1.2rem; margin:4px 0;}
+.dtree-step{display:none;}
+.dtree-step.active{display:block;}
+
+/* ── LAYER STACK ── */
+.layer-stack{display:flex; flex-direction:column; gap:12px; margin-top:28px;}
+.layer-item{display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 22px; cursor:pointer; transition:border-color .2s ease,background .2s ease;}
+.layer-item:hover,.layer-item:focus{border-color:var(--c-infra); outline:none;}
+.layer-num{font-family:'JetBrains Mono',monospace; font-size:11px; width:28px; height:28px; border-radius:50%; background:var(--c-infra-dim); color:var(--c-infra); display:flex; align-items:center; justify-content:center; font-weight:600; flex-shrink:0;}
+.layer-title{font-weight:600; font-size:0.95rem;}
+.layer-desc{font-size:0.85rem; color:var(--text-dim); margin-top:4px;}
+.layer-detail{max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease,opacity .3s ease,margin .3s ease; background:var(--c-infra-dim); border-radius:0 0 12px 12px; margin-top:0; border-top:1px solid var(--c-infra-dim);}
+.layer-item.open + .layer-detail{max-height:300px; opacity:1; margin-top:0; padding:14px 22px;}
+
+/* ── WHICH CONTROL ── */
+.wc-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:14px;}
+.wc-header{padding:18px 22px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
+.wc-header:hover{background:var(--surface-raised);}
+.wc-scenario{font-size:0.93rem; line-height:1.55; font-weight:500;}
+.wc-chev{font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; flex-shrink:0; margin-left:14px; transition:transform .25s ease;}
+.wc-card.open .wc-chev{transform:rotate(90deg);}
+.wc-answer{max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease,opacity .3s ease,padding .3s ease; padding:0 22px; border-top:1px solid var(--line);}
+.wc-card.open .wc-answer{max-height:300px; opacity:1; padding:14px 22px 20px;}
+.wc-answer .answer-label{font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:var(--c-infra); margin-bottom:8px; display:block;}
+
+/* ── OWASP TABLE ── */
+.owasp-table{width:100%; border-collapse:collapse; margin-top:24px; font-size:0.88rem;}
+.owasp-table th{background:var(--surface-raised); padding:12px 16px; border:1px solid var(--line); font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-infra); text-align:left;}
+.owasp-table td{padding:12px 16px; border:1px solid var(--line); vertical-align:top; line-height:1.5;}
+.owasp-table tr:nth-child(even) td{background:var(--surface);}
+.owasp-rank{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:var(--c-infra);}
+
+/* ── MODULE NAV ── */
+.module-nav{display:flex; justify-content:space-between; align-items:center; margin-top:60px; gap:20px; flex-wrap:wrap;}
+.module-nav a{display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:var(--c-infra); font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; border:1px solid var(--c-infra-dim); padding:10px 20px; border-radius:10px; transition:border-color .2s ease,background .2s ease;}
+.module-nav a:hover{background:var(--c-infra-dim); border-color:var(--c-infra);}
+
+/* ── FOOTER ── */
+footer{padding:60px 40px; background:var(--bg); color:var(--text-dim);}
+footer .inner{max-width:840px; margin:0 auto; border-top:1px solid var(--line); padding-top:40px;}
+footer p{font-size:0.85rem; line-height:1.7;}
+footer .footer-mono{font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--c-infra); margin-bottom:10px;}
+
+/* ── ACCESSIBILITY / REDUCED MOTION ── */
+@media(prefers-reduced-motion:reduce){*{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}}
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">SCS-C03 &mdash; <span>Module 05</span></div>
+  <div class="nav-right">
+    <span class="nav-tag">Domain 3 &bull; Infra Security</span>
+    <button id="themeToggle">☀ Light</button>
+  </div>
+</nav>
+
+<!-- SIDE RAIL -->
+<nav class="rail" id="sideRail" aria-label="Section navigator"></nav>
+
+<!-- HERO -->
+<section class="scene" id="s-hero" style="min-height:100vh; display:flex; align-items:center; background:var(--bg);">
+  <div class="ambient-blob" style="width:600px;height:600px;top:-120px;left:-180px;background:var(--c-infra);opacity:0.12;"></div>
+  <div class="ambient-blob" style="width:400px;height:400px;bottom:-60px;right:-100px;background:var(--c-iam);opacity:0.09;animation-delay:-14s;"></div>
+  <div class="scene-inner" style="padding-top:80px;">
+    <div class="eyebrow">Module 05 &bull; Domain 3 &bull; Infrastructure Security</div>
+    <h1 class="kinetic" style="font-size:clamp(2.2rem,6vw,4.2rem); line-height:1.12; margin-bottom:24px; font-weight:700;">Network &amp; Edge<br>Security</h1>
+    <p class="reveal" style="font-size:1.15rem; color:var(--text-dim); max-width:620px; line-height:1.75; margin-bottom:40px;">Modules 2 through 4 answered one question: <em>who</em> can do <em>what</em>. Every SCP, permission boundary, and federated identity we built assumed the request had already arrived at AWS. This module steps back to the layer before identity even enters the picture — the services standing at the edge of your infrastructure, deciding whether a packet gets anywhere near your resources at all.</p>
+    <div class="stat-row reveal stagger">
+      <div class="stat-box"><span class="stat-num" data-target="18" data-suffix="%">0%</span><span class="stat-label">Exam Weight (Domain 3)</span></div>
+      <div class="stat-box"><span class="stat-num" data-target="7" data-suffix=" Topics">0</span><span class="stat-label">Core Teaching Blocks</span></div>
+      <div class="stat-box"><span class="stat-num" data-target="150" data-suffix=" min">0</span><span class="stat-label">Estimated Study Time</span></div>
+    </div>
+    <div class="reveal" style="margin-top:36px; display:flex; gap:14px; flex-wrap:wrap;">
+      <a href="#s-sg-nacl" class="btn btn-primary magnetic">Start Learning ↓</a>
+      <a href="#s-exam" class="btn btn-outline magnetic">Jump to Exam Questions</a>
+    </div>
+  </div>
+</section>
+
+<!-- TITLE CARD 1 -->
+<section class="title-card" id="s-tc1" style="background:var(--card-bg);">
+  <div class="scanbeam"></div>
+  <div style="position:relative; z-index:2; padding:40px;">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:13px; letter-spacing:0.18em; color:var(--c-infra); text-transform:uppercase; margin-bottom:32px;">The first question every packet answers</div>
+    <h2 style="font-size:clamp(2.6rem,8vw,5.8rem); font-weight:700; color:var(--card-text); line-height:1.05;">STATEFUL.<br><span style="color:var(--c-infra);">STATELESS.</span></h2>
+    <p style="margin-top:24px; font-size:1.05rem; color:rgba(244,246,251,0.55); max-width:560px; line-height:1.7;">The exam will use these two words to separate correct answers from wrong ones. Let us make sure you never confuse them again.</p>
+  </div>
+</section>
+
+<!-- SCENE 1: SG vs NACL -->
+<section class="scene scene-alt" id="s-sg-nacl">
+  <div class="ambient-blob" style="width:500px;height:500px;top:-80px;right:-120px;background:var(--c-infra);opacity:0.1;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 01 &bull; Security Groups vs. NACLs</div>
+    <h2 class="kinetic">The Two Gatekeepers — and Why Both Exist</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">Every time a packet tries to reach an EC2 instance inside a VPC, it passes through exactly two network-layer filters: a <strong>Network Access Control List (NACL)</strong> at the subnet boundary, and a <strong>Security Group</strong> at the instance's Elastic Network Interface (ENI). They are not alternatives — they are <em>complementary</em>. Understanding the mechanical differences between them is the single most tested concept in this module, and arguably one of the most tested concepts across the entire SCS-C03 exam.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:36px;" class="stagger reveal">
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--c-infra); margin-bottom:10px;">Security Group</div>
+        <h3 style="font-size:1.15rem; margin-bottom:14px;">Stateful · ENI-level · Allow only</h3>
+        <ul style="padding-left:18px; font-size:0.9rem; line-height:1.9; color:var(--text-dim);">
+          <li>Attached to an instance's ENI (or RDS, ELB, etc.)</li>
+          <li><strong style="color:var(--text);">Stateful</strong>: return traffic is automatically allowed — if inbound is permitted, the corresponding outbound response flows freely</li>
+          <li>Only <strong style="color:var(--text);">allow rules</strong> exist — you cannot write a deny rule</li>
+          <li>All rules evaluated together as a <strong style="color:var(--text);">union</strong> (most permissive wins across attached groups)</li>
+          <li>Default: deny all inbound, allow all outbound</li>
+        </ul>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--c-infra); margin-bottom:10px;">NACL</div>
+        <h3 style="font-size:1.15rem; margin-bottom:14px;">Stateless · Subnet-level · Allow + Deny</h3>
+        <ul style="padding-left:18px; font-size:0.9rem; line-height:1.9; color:var(--text-dim);">
+          <li>Attached to a subnet — applies to all traffic crossing the subnet boundary</li>
+          <li><strong style="color:var(--text);">Stateless</strong>: return traffic is a separate, independent packet — must be explicitly allowed by an outbound rule</li>
+          <li>Supports both <strong style="color:var(--text);">allow AND deny rules</strong></li>
+          <li>Rules evaluated in <strong style="color:var(--text);">numbered order</strong> — first match wins, processing stops</li>
+          <li>Default (AWS-created): allow all in both directions. Custom default: deny all</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- PACKET WALK DIAGRAM -->
+    <div class="reveal" style="margin-top:48px;">
+      <h3 style="font-size:1.25rem; margin-bottom:8px;">Interactive Packet Walk</h3>
+      <p style="color:var(--text-dim); font-size:0.9rem; margin-bottom:24px;">Click each checkpoint to see exactly what gets evaluated — and why the return trip behaves differently.</p>
+
+      <!-- SVG packet walk -->
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px; overflow-x:auto;">
+        <svg viewBox="0 0 760 200" style="width:100%; min-width:520px; height:auto;" role="img" aria-label="Packet walk through NACL and Security Group layers">
+          <!-- Internet -->
+          <rect x="10" y="75" width="100" height="50" rx="10" fill="var(--surface-raised)" stroke="var(--line)" stroke-width="1.5"/>
+          <text x="60" y="97" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--text-dim)">INTERNET</text>
+          <text x="60" y="113" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--text-dim)">Client</text>
+          <!-- Arrow 1 -->
+          <line x1="110" y1="100" x2="170" y2="100" stroke="var(--c-infra)" stroke-width="2" marker-end="url(#arr)"/>
+          <text x="140" y="90" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--c-infra)">inbound</text>
+          <!-- NACL -->
+          <rect id="pw-nacl" x="170" y="60" width="120" height="80" rx="10" fill="var(--c-infra-dim)" stroke="var(--c-infra)" stroke-width="1.5" style="cursor:pointer;" tabindex="0" role="button" aria-label="NACL checkpoint"/>
+          <text x="230" y="93" text-anchor="middle" font-family="Space Grotesk" font-size="11" font-weight="600" fill="var(--c-infra)">NACL</text>
+          <text x="230" y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="var(--c-infra)">Subnet Boundary</text>
+          <text x="230" y="128" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="var(--c-infra)" opacity="0.7">Stateless · Allow+Deny</text>
+          <!-- Arrow 2 -->
+          <line x1="290" y1="100" x2="360" y2="100" stroke="var(--c-infra)" stroke-width="2" marker-end="url(#arr)"/>
+          <!-- SG -->
+          <rect id="pw-sg" x="360" y="60" width="120" height="80" rx="10" fill="var(--c-iam-dim)" stroke="var(--c-iam)" stroke-width="1.5" style="cursor:pointer;" tabindex="0" role="button" aria-label="Security Group checkpoint"/>
+          <text x="420" y="93" text-anchor="middle" font-family="Space Grotesk" font-size="11" font-weight="600" fill="var(--c-iam)">Security Group</text>
+          <text x="420" y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="8.5" fill="var(--c-iam)">ENI Boundary</text>
+          <text x="420" y="128" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="var(--c-iam)" opacity="0.7">Stateful · Allow only</text>
+          <!-- Arrow 3 -->
+          <line x1="480" y1="100" x2="550" y2="100" stroke="var(--green)" stroke-width="2" marker-end="url(#arr2)"/>
+          <!-- EC2 -->
+          <rect x="550" y="70" width="100" height="60" rx="10" fill="var(--c-gov-dim)" stroke="var(--green)" stroke-width="1.5"/>
+          <text x="600" y="97" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="var(--green)">EC2</text>
+          <text x="600" y="113" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="var(--green)" opacity="0.8">Instance</text>
+          <!-- Return arrow label -->
+          <text x="300" y="168" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="var(--amber)">↑ return path: SG auto-allows, NACL needs explicit outbound rule ↑</text>
+          <!-- Defs -->
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--c-infra)"/></marker>
+            <marker id="arr2" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--green)"/></marker>
+          </defs>
+        </svg>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; justify-content:center;">
+          <div class="mindnode" id="mn-nacl" tabindex="0" role="button" aria-label="NACL detail" onclick="toggleNode('ni-nacl')"><span class="nd-icon">🔷</span>NACL checkpoint detail</div>
+          <div class="mindnode" id="mn-sg" tabindex="0" role="button" aria-label="SG detail" onclick="toggleNode('ni-sg')"><span class="nd-icon">🔵</span>Security Group checkpoint detail</div>
+          <div class="mindnode" id="mn-return" tabindex="0" role="button" aria-label="Return traffic detail" onclick="toggleNode('ni-return')"><span class="nd-icon">↩️</span>Return trip — the key difference</div>
+        </div>
+        <div class="node-info" id="ni-nacl">
+          <strong style="color:var(--c-infra);">NACL — Subnet Boundary (Stateless)</strong>
+          <p style="margin-top:8px; font-size:0.9rem; line-height:1.65;">The inbound packet hits the NACL first. AWS evaluates rules in ascending rule number order and stops at the first match. If rule 100 allows TCP 443 from 0.0.0.0/0, the packet passes. If rule 90 explicitly denies 203.0.113.0/24, traffic from that range is dropped before it ever reaches the security group. This is the only place in the VPC stack where you can write an explicit <em>deny</em>. The NACL has no memory of this transaction — when the response travels back outbound, it will be checked against outbound rules as if it's a brand-new packet.</p>
+        </div>
+        <div class="node-info" id="ni-sg">
+          <strong style="color:var(--c-iam);">Security Group — ENI Boundary (Stateful)</strong>
+          <p style="margin-top:8px; font-size:0.9rem; line-height:1.65;">The packet next reaches the security group attached to the instance's ENI. AWS evaluates all attached security group rules together — there is no rule ordering, and the most permissive match wins. Crucially, there are only allow rules here. The SG tracks connection state: once it allows an inbound connection, it records that fact, and the corresponding return traffic is automatically allowed outbound without needing a separate outbound rule.</p>
+        </div>
+        <div class="node-info" id="ni-return">
+          <strong style="color:var(--amber);">Return Trip — The Stateful vs. Stateless Difference</strong>
+          <p style="margin-top:8px; font-size:0.9rem; line-height:1.65;">The response packet leaving the instance travels in reverse order: Security Group outbound → NACL outbound. The SG has already tracked the session state, so the outbound response flows automatically — no explicit outbound rule needed. The NACL, however, is completely stateless. It treats the response as a fresh packet and checks it against outbound rules. If your NACL allows inbound TCP 443 but has no outbound rule for the ephemeral port range (typically 1024–65535, the client's source port), the response will be silently dropped. This is the most common NACL misconfiguration on the exam.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mentor-aside reveal" style="margin-top:36px;">
+      <p>Here is the question the exam loves to embed: "The security team wants to ensure that no traffic from IP range 192.0.2.0/24 can ever reach instances in the private subnet, even if a misconfigured security group accidentally allows it." The answer is always a NACL deny rule — because security groups structurally cannot deny anything. The inability to write deny rules in security groups is not a bug; it is a deliberate design. But it means NACLs are the correct tool when you need a hard, irrevocable subnet-level block.</p>
+    </div>
+
+    <div class="reveal" style="margin-top:36px;">
+      <h3 style="font-size:1.1rem; margin-bottom:16px;">Production Scenario — Blocking a Known-Bad IP Range</h3>
+      <div class="card" style="border-color:var(--c-infra-dim);">
+        <p style="font-size:0.93rem; line-height:1.75;">Your SIEM detects that a botnet operating from the CIDR block <code>185.220.0.0/16</code> is probing your public subnet on port 22. You need to stop this at the network layer immediately, without modifying every instance's security group. The correct action: add an inbound NACL <strong>DENY</strong> rule for <code>185.220.0.0/16</code> with a rule number lower than your existing allow rules (e.g., rule 50 DENY before rule 100 ALLOW). This blocks all traffic from that range at the subnet boundary, across every instance in the subnet, instantly — regardless of any security group configuration. No security group modification needed, and no security group could have achieved the same result anyway.</p>
+      </div>
+    </div>
+
+    <table class="compare-table reveal" style="margin-top:36px;">
+      <thead><tr><th>Characteristic</th><th>Security Group</th><th>NACL</th></tr></thead>
+      <tbody>
+        <tr><td>Level of attachment</td><td>ENI (instance/resource)</td><td>Subnet</td></tr>
+        <tr><td>Statefulness</td><td class="badge-yes">Stateful — return auto-allowed</td><td class="badge-no">Stateless — both directions need rules</td></tr>
+        <tr><td>Rule types</td><td>Allow only</td><td>Allow AND Deny</td></tr>
+        <tr><td>Rule evaluation</td><td>All rules, union (most permissive)</td><td>Numbered order, first match wins</td></tr>
+        <tr><td>Can explicitly block a CIDR?</td><td class="badge-no">No</td><td class="badge-yes">Yes</td></tr>
+        <tr><td>Default (new VPC)</td><td>Deny all inbound, allow all outbound</td><td>Allow all (AWS default NACL)</td></tr>
+        <tr><td>Scope of effect</td><td>Only the attached resource</td><td>All resources in the subnet</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- TITLE CARD 2 -->
+<section class="title-card" id="s-tc2">
+  <div class="scanbeam"></div>
+  <div style="position:relative; z-index:2; padding:40px;">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.16em; color:var(--c-data); text-transform:uppercase; margin-bottom:28px;">When the attacker speaks HTTP</div>
+    <h2 style="color:var(--card-text);">YOUR NETWORK LAYER<br><span style="color:var(--c-data);">IS BLIND TO IT.</span></h2>
+    <p style="margin-top:20px; font-size:1rem; color:rgba(244,246,251,0.55); max-width:520px; line-height:1.7;">A SQL injection payload arrives on port 443. The NACL and security group see: "valid TCP packet, allowed port." WAF sees: "malicious query string, block." This is why Layer 7 exists as a separate control.</p>
+  </div>
+</section>
+
+<!-- SCENE 2: WAF -->
+<section class="scene" id="s-waf">
+  <div class="ambient-blob" style="width:450px;height:450px;top:-60px;left:-100px;background:var(--c-data);opacity:0.1;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 02 &bull; AWS WAF</div>
+    <h2 class="kinetic">Application-Layer Defense — What Packets Cannot Tell You</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">AWS WAF (Web Application Firewall) operates at Layer 7 — the application layer. Unlike security groups and NACLs, which examine IP addresses and ports, WAF can read the actual content of HTTP requests: headers, URI paths, query strings, request bodies, and even decoded payloads after WAF unwraps things like base64 encoding. This visibility is what makes WAF the right tool for web-application threats, and it explains why the network layer controls cannot be extended to handle them — a NACL simply has no concept of "this URL contains a SQL injection string."</p>
+
+    <div class="reveal" style="margin-top:36px;">
+      <h3 style="font-size:1.15rem; margin-bottom:16px;">Core Architecture: Web ACLs and Rules</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;" class="stagger">
+        <div class="card tilt">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--c-data); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Web ACL</div>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">The top-level container. A Web ACL contains an ordered list of rules and rule groups. Requests are evaluated against each rule in order; the first rule that matches determines the action (Allow, Block, Count, or CAPTCHA). A Web ACL is scoped to a specific AWS resource: CloudFront, ALB, API Gateway, or AppSync.</p>
+        </div>
+        <div class="card tilt">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--c-data); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Rules &amp; Rule Groups</div>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">A <strong style="color:var(--text);">rule</strong> is a single match statement + action. A <strong style="color:var(--text);">rule group</strong> is a reusable collection of rules. AWS Managed Rule Groups (e.g., <code>AWSManagedRulesCommonRuleSet</code>, <code>AWSManagedRulesSQLiRuleSet</code>) are maintained by AWS and cover OWASP Top 10 patterns. Customer-defined groups let you write your own matching logic.</p>
+        </div>
+        <div class="card tilt">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--amber); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Rate-Based Rules</div>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Block or flag IPs that send more than a defined number of requests in a 5-minute window. Essential for throttling brute-force login attempts, credential-stuffing attacks, and scrapers. Can be combined with geographic conditions: "block IPs from this country that also exceed 1,000 req/5 min."</p>
+        </div>
+        <div class="card tilt">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--c-data); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Geographic Match Rules</div>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Allow or block requests based on the country of origin of the requesting IP. Useful for services that are legally or commercially restricted to specific geographies. WAF uses IP geolocation data maintained by Amazon — you do not need to manage your own geolocation database.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:36px;">
+      <h3 style="font-size:1.1rem; margin-bottom:14px;">Where WAF Attaches</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+        <div style="background:var(--surface); border:1px solid var(--c-data-dim); border-radius:12px; padding:14px 20px; font-size:0.9rem;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--c-data); text-transform:uppercase; margin-bottom:6px;">CloudFront</div>
+          Global edge — protection before traffic enters your region
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--c-data-dim); border-radius:12px; padding:14px 20px; font-size:0.9rem;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--c-data); text-transform:uppercase; margin-bottom:6px;">ALB</div>
+          Regional — protects applications behind a load balancer
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--c-data-dim); border-radius:12px; padding:14px 20px; font-size:0.9rem;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--c-data); text-transform:uppercase; margin-bottom:6px;">API Gateway</div>
+          REST APIs — protect against malformed requests and injection
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--c-data-dim); border-radius:12px; padding:14px 20px; font-size:0.9rem;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--c-data); text-transform:uppercase; margin-bottom:6px;">AppSync</div>
+          GraphQL APIs — prevent query complexity attacks and injection
+        </div>
+      </div>
+    </div>
+
+    <div class="mentor-aside reveal" style="margin-top:36px;">
+      <p>The exam sometimes offers "add a WAF rule to block traffic from the malicious IP range" as an answer option. This is a plausible-looking trap. WAF is not the right tool for pure IP-range blocking — that is a NACL job, and it operates at Layer 3/4 before WAF even sees the traffic. WAF is the right tool when the threat is defined by <em>application-layer content</em>: a malicious query string, a particular user-agent string, or a request body that looks like a SQL injection. Use NACLs for CIDRs; use WAF for what packets say.</p>
+    </div>
+
+    <div class="reveal" style="margin-top:36px;">
+      <h3 style="font-size:1.1rem; margin-bottom:14px;">Production Scenario — WAF Rule Blocks Legitimate Traffic at Launch</h3>
+      <div class="card" style="border-color:var(--c-data-dim);">
+        <p style="font-size:0.93rem; line-height:1.75;">Your team enabled the <code>AWSManagedRulesCommonRuleSet</code> on your ALB WAF Web ACL and deployed to production on launch day. Within minutes, your customer support team reported that the account registration form was returning 403 errors for legitimate users. The culprit: the managed rule group was blocking requests where the form body exceeded the default size limit, triggering the <code>SizeRestrictions_BODY</code> rule. The fix: switch the rule action from Block to <strong>Count</strong> mode first — this lets you observe the rate of matches in CloudWatch without enforcing — then adjust the size constraint override or move that specific rule to a custom exclusion before switching back to Block. <em>Never enable a managed rule group directly in Block mode on a production endpoint without a Count-mode observation period first.</em></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 3: SHIELD -->
+<section class="scene scene-alt" id="s-shield">
+  <div class="ambient-blob" style="width:400px;height:400px;top:0;right:-80px;background:var(--amber);opacity:0.08;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 03 &bull; AWS Shield &amp; Shield Advanced</div>
+    <h2 class="kinetic">DDoS Protection — Layers, Cost, and When Standard Fails</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">Distributed Denial of Service (DDoS) attacks attempt to overwhelm your infrastructure with traffic volume, making it unavailable to legitimate users. AWS provides two tiers of DDoS protection that operate at different layers and with fundamentally different capabilities. Knowing when to recommend Shield Advanced versus Standard is a predictable exam scenario.</p>
+
+    <div class="reveal" style="margin-top:32px; display:grid; grid-template-columns:1fr 1fr; gap:20px;" class="stagger">
+      <div class="card tilt" style="border-color:var(--line);">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); margin-bottom:10px;">Shield Standard</div>
+        <h3 style="font-size:1.1rem; margin-bottom:12px; color:var(--text);">Automatic and Free</h3>
+        <ul style="padding-left:18px; font-size:0.9rem; line-height:1.9; color:var(--text-dim);">
+          <li>Automatically enabled for all AWS customers — zero configuration</li>
+          <li>Protects against Layer 3 (network) and Layer 4 (transport) attacks</li>
+          <li>Covers: UDP floods, SYN floods, reflection attacks</li>
+          <li>No DDoS Response Team access</li>
+          <li>No Layer 7 protection</li>
+          <li>No cost protection against scaling charges during an attack</li>
+        </ul>
+      </div>
+      <div class="card tilt" style="border-color:var(--amber); box-shadow:0 0 0 1px var(--c-detect-dim);">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--amber); margin-bottom:10px;">Shield Advanced</div>
+        <h3 style="font-size:1.1rem; margin-bottom:12px; color:var(--amber);">Paid — $3,000/month org-wide</h3>
+        <ul style="padding-left:18px; font-size:0.9rem; line-height:1.9; color:var(--text-dim);">
+          <li>Enables at the AWS account level, covers all supported resources</li>
+          <li>Layer 3 + Layer 4 + <strong style="color:var(--text);">Layer 7 application-layer protection</strong></li>
+          <li>Integrates with WAF — during an active attack, the DRT can automatically deploy WAF rules</li>
+          <li><strong style="color:var(--text);">DDoS Response Team (DRT)</strong> available 24/7 for attack response</li>
+          <li><strong style="color:var(--text);">Cost protection</strong> — AWS credits usage spikes caused by an attack</li>
+          <li>Near-real-time visibility in the Shield console, attack metrics, forensics</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:32px;">
+      <button class="btn btn-outline magnetic" id="openShieldDrawer">Explore Shield Standard vs. Advanced in depth →</button>
+    </div>
+
+    <div class="reveal" style="margin-top:36px;">
+      <h3 style="font-size:1.1rem; margin-bottom:14px;">When the Exam Expects Shield Advanced</h3>
+      <div class="card" style="border-left:3px solid var(--amber);">
+        <p style="font-size:0.93rem; line-height:1.75;">Any scenario describing a business-critical, internet-facing application that <em>must remain available during a DDoS attack</em> and requires 24/7 expert response or Layer 7 protection is a Shield Advanced scenario. If the question mentions cost protection, the DRT, or WAF integration during an active attack, the answer is Shield Advanced. Standard is the correct answer only when the question describes basic Layer 3/4 protection needs on a non-critical workload, or when "no additional cost" is an explicit constraint.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHIELD DRAWER -->
+<div class="drawer-overlay" id="shieldOverlay"></div>
+<div class="drawer" id="shieldDrawer" role="dialog" aria-label="Shield comparison detail">
+  <button class="drawer-close" id="closeShieldDrawer">✕ Close</button>
+  <h3>Shield: Standard vs. Advanced</h3>
+  <table class="compare-table" style="margin-top:8px;">
+    <thead><tr><th>Feature</th><th>Standard</th><th>Advanced</th></tr></thead>
+    <tbody>
+      <tr><td>Cost</td><td>Free</td><td>$3,000/month (org-wide)</td></tr>
+      <tr><td>Layer 3/4 Protection</td><td class="badge-yes">Yes</td><td class="badge-yes">Yes</td></tr>
+      <tr><td>Layer 7 Protection</td><td class="badge-no">No</td><td class="badge-yes">Yes (via WAF)</td></tr>
+      <tr><td>DDoS Response Team (DRT)</td><td class="badge-no">No</td><td class="badge-yes">24/7 access</td></tr>
+      <tr><td>WAF integration (auto rules)</td><td class="badge-no">No</td><td class="badge-yes">Yes — DRT deploys WAF rules during attack</td></tr>
+      <tr><td>Cost protection</td><td class="badge-no">No</td><td class="badge-yes">Credits scaling spikes from attacks</td></tr>
+      <tr><td>Attack visibility / metrics</td><td class="badge-partial">Basic (CloudWatch)</td><td class="badge-yes">Near-real-time Shield console + reports</td></tr>
+      <tr><td>Proactive engagement</td><td class="badge-no">No</td><td class="badge-yes">Yes (with Route 53 Health Checks)</td></tr>
+      <tr><td>Health-based detection</td><td class="badge-no">No</td><td class="badge-yes">Integrates with Route 53 health checks</td></tr>
+      <tr><td>Automatic</td><td class="badge-yes">Yes — zero config</td><td class="badge-no">Must be enabled explicitly</td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top:24px; background:var(--surface); border-radius:12px; padding:18px; border:1px solid var(--line);">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--amber); margin-bottom:8px;">Exam Trap</div>
+    <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">A question will describe a volumetric HTTP flood (Layer 7) against a web application that is "already using Shield Standard." The correct answer is NOT "add more capacity" — it is "upgrade to Shield Advanced," because Standard has zero Layer 7 visibility. HTTP floods that look like legitimate traffic are invisible to Standard.</p>
+  </div>
+</div>
+
+<!-- SCENE 4: CLOUDFRONT -->
+<section class="scene" id="s-cloudfront">
+  <div class="ambient-blob" style="width:380px;height:380px;bottom:0;left:-80px;background:var(--c-infra);opacity:0.09;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 04 &bull; CloudFront Security &amp; Edge</div>
+    <h2 class="kinetic">Terminating TLS at the Edge — and What That Changes</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">Amazon CloudFront is a global Content Delivery Network (CDN), but for security engineers, it is first and foremost an <strong>edge proxy</strong> — a service that intercepts all incoming requests, terminates HTTPS connections at the nearest AWS edge location, and forwards them to your origin over a separate, private connection. This architecture has profound security implications: attackers never connect directly to your origin. CloudFront absorbs the initial TLS handshake cost, applies WAF rules, and only forwards legitimate requests. Your origin S3 bucket or ALB can be locked down to accept traffic from CloudFront only.</p>
+
+    <div class="reveal" style="margin-top:36px; display:grid; grid-template-columns:1fr 1fr; gap:20px;" class="stagger">
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--c-infra); letter-spacing:0.08em; margin-bottom:8px;">Origin Access Control (OAC)</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">OAC is the modern replacement for the older Origin Access Identity (OAI). It restricts an S3 bucket to only accept requests that come from your specific CloudFront distribution, signed by CloudFront using AWS SigV4. The S3 bucket policy grants access only to the CloudFront service principal with the distribution's ARN. Direct S3 URL access is denied — the bucket is not publicly accessible.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--c-infra); letter-spacing:0.08em; margin-bottom:8px;">Security Headers at the Edge</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">CloudFront response headers policies let you attach HTTP security headers — HSTS (<code>Strict-Transport-Security</code>), <code>Content-Security-Policy</code>, <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code> — to every response at the edge, without modifying your origin application. This is the lowest-effort path to a consistent security header posture across a multi-origin architecture.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--amber); letter-spacing:0.08em; margin-bottom:8px;">TLS Termination and Threat Model</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">When TLS is terminated at the CloudFront edge, two distinct trust zones emerge: the public internet to the edge point (untrusted, TLS-encrypted), and the edge to your origin (private AWS backbone, separately encrypted). Your origin no longer needs to be exposed to the public internet. Your WAF rules see the decrypted application payload, which enables much richer inspection than at a point before TLS termination.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--c-infra); letter-spacing:0.08em; margin-bottom:8px;">Geo-Restriction</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">CloudFront's built-in geo-restriction (an allowlist or blocklist of countries) blocks requests before they reach your origin. Unlike WAF geographic match rules, CloudFront geo-restriction applies to the entire distribution and cannot be combined with other match conditions within the same rule. For more granular geo-based logic, WAF geographic match rules are the better tool.</p>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:32px;">
+      <h3 style="font-size:1.1rem; margin-bottom:14px;">Production Scenario — Securing an S3 Static Site</h3>
+      <div class="card" style="border-color:var(--c-infra-dim);">
+        <p style="font-size:0.93rem; line-height:1.75;">Your team is building a static site served from S3 via CloudFront. Without OAC, a user who discovers the S3 bucket name can bypass CloudFront entirely — including your WAF rules and geo-restrictions — by accessing the S3 website URL directly. The correct architecture: make the S3 bucket private (no public ACLs, no website hosting endpoint), configure OAC on the CloudFront distribution, update the S3 bucket policy to allow only <code>cloudfront.amazonaws.com</code> with the distribution ARN condition. Now the only path to content is through CloudFront, and all your edge security controls apply to every request.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 5: NETWORK FIREWALL -->
+<section class="scene scene-alt" id="s-nfw">
+  <div class="ambient-blob" style="width:420px;height:420px;top:-50px;right:-90px;background:var(--green);opacity:0.08;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 05 &bull; AWS Network Firewall</div>
+    <h2 class="kinetic">Deep Packet Inspection Inside Your VPC</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">AWS Network Firewall is a managed, stateful, Layer 3–7 firewall service deployed inside your VPC. It provides capabilities that security groups and NACLs fundamentally cannot: <strong>domain-name filtering</strong> (block all traffic to <code>*.malicious-domain.com</code>), <strong>intrusion prevention signatures</strong> (detect known exploit patterns in traffic flows), and <strong>protocol anomaly detection</strong>. Network Firewall is the answer when the question describes traffic inspection needs that go beyond what IP/port-based rules can achieve.</p>
+
+    <div class="reveal" style="margin-top:36px; display:grid; grid-template-columns:1fr 1fr; gap:16px;" class="stagger">
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--green); letter-spacing:0.08em; margin-bottom:8px;">Stateful Rule Groups</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Inspect traffic as part of a connection — can match on multi-packet context. Supports Suricata-compatible IPS rules for signature-based detection. Domain list rules (block all HTTP/HTTPS to a list of domain names) are a common SCS-C03 pattern.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--green); letter-spacing:0.08em; margin-bottom:8px;">Stateless Rule Groups</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Fast-path packet evaluation — IP, port, protocol matching (similar to NACLs but more flexible). Used to pass, drop, or forward to stateful engine. Evaluated first, in rule number order.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--green); letter-spacing:0.08em; margin-bottom:8px;">Deployment Architecture</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Network Firewall is deployed in a dedicated firewall subnet within your VPC. Traffic is routed to it via VPC route tables — typically in a centralized inspection VPC in a hub-and-spoke architecture, using Transit Gateway to route traffic from spoke VPCs through the central inspection point.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--green); letter-spacing:0.08em; margin-bottom:8px;">When to Use vs. SG/NACL</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Use SG and NACL for standard port/IP access control — they are lightweight and always on. Add Network Firewall when the requirement mentions domain filtering, IPS signatures, TLS inspection, or centralized network inspection across multiple VPCs or accounts.</p>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:36px;">
+      <h3 style="font-size:1.1rem; margin-bottom:14px;">Production Scenario — Blocking Exfiltration to C2 Domains</h3>
+      <div class="card" style="border-color:var(--c-gov-dim);">
+        <p style="font-size:0.93rem; line-height:1.75;">GuardDuty alerts you that an EC2 instance is communicating with a known command-and-control domain. You need to block all outbound DNS queries and HTTP/HTTPS connections to that domain class across your entire VPC fleet. NACLs cannot filter by domain name — they only understand IP addresses, and C2 operators rotate IPs rapidly. Network Firewall's domain list rule can block <code>*.known-bad-c2.com</code> regardless of the underlying IP, and the stateful engine can detect and block the HTTPS handshake to that domain even if the IP changes. Route 53 Resolver DNS Firewall would handle the DNS query layer; Network Firewall handles the connection layer — together they form a complete defense.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 6: DNS FIREWALL -->
+<section class="scene" id="s-dns">
+  <div class="ambient-blob" style="width:350px;height:350px;bottom:0;left:-60px;background:var(--c-ir);opacity:0.08;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 06 &bull; Route 53 Resolver DNS Firewall</div>
+    <h2 class="kinetic">Stop the Query Before the Connection</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">Route 53 Resolver DNS Firewall filters DNS queries made by resources inside your VPC — before any network connection is established. When an EC2 instance tries to resolve a known-malicious domain, DNS Firewall intercepts the query at the resolver layer, checks it against your domain block lists, and returns either NXDOMAIN (domain does not exist) or a custom response. The connection attempt never happens — there is no IP to block because no IP was ever returned.</p>
+
+    <div class="reveal" style="margin-top:32px; display:grid; grid-template-columns:1fr 1fr; gap:16px;" class="stagger">
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--c-ir); letter-spacing:0.08em; margin-bottom:8px;">Domain Lists</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">You maintain rule groups containing domain lists. AWS provides <strong>AWS-managed domain lists</strong>: <code>AmazonRoute53ResolverDNSFirewall-MalwareDomainList</code> and <code>AmazonRoute53ResolverDNSFirewall-BotnetDomainList</code> — updated automatically by Amazon threat intelligence. You can supplement with your own lists.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--c-ir); letter-spacing:0.08em; margin-bottom:8px;">Rule Actions</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);"><strong>BLOCK</strong> returns NXDOMAIN or a custom response. <strong>ALERT</strong> logs the query but allows resolution (good for detecting before enforcing). <strong>ALLOW</strong> can override a block list for trusted exceptions. Rules are evaluated in priority order.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--c-ir); letter-spacing:0.08em; margin-bottom:8px;">Fail-Open vs. Fail-Closed</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">If DNS Firewall cannot evaluate a query (service disruption), the VPC-level setting controls behavior: <strong>fail-open</strong> allows the query through (availability priority), <strong>fail-closed</strong> blocks it (security priority). The exam will ask you to reason about this trade-off for critical security workloads.</p>
+      </div>
+      <div class="card tilt">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; color:var(--c-ir); letter-spacing:0.08em; margin-bottom:8px;">VPC Association</div>
+        <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">A DNS Firewall rule group is associated with one or more VPCs. All DNS queries from resources in those VPCs pass through the firewall. This is centrally manageable through AWS Firewall Manager for multi-VPC and multi-account deployments.</p>
+      </div>
+    </div>
+
+    <div class="mentor-aside reveal" style="margin-top:36px;">
+      <p>A very common exam misconception: "If I already have AWS Network Firewall, do I also need DNS Firewall?" The answer is yes, and the distinction matters. Network Firewall sees traffic <em>after</em> DNS resolution — it can block a connection to a malicious IP or domain at the network layer. But if you have blocked the domain at the network layer and an attacker rotates to a new IP, your Network Firewall domain list may need updating. DNS Firewall blocks the query itself — no resolution means no IP means no connection attempt, regardless of what IP the domain points to. The two controls operate at different moments in the kill chain and are genuinely complementary, not redundant.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 7: OWASP -->
+<section class="scene scene-alt" id="s-owasp">
+  <div class="ambient-blob" style="width:360px;height:360px;top:-40px;right:-70px;background:var(--c-data);opacity:0.09;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 07 &bull; OWASP Top 10 &amp; AWS Controls</div>
+    <h2 class="kinetic">Mapping Threats to Services — The Exam Expects This</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">The SCS-C03 exam does not expect you to memorize the full OWASP Top 10 — but it does expect you to know which AWS service is the correct mitigation for each class of web-application threat. The table below maps the most commonly tested OWASP categories to their primary AWS control. Some threats are addressed at the edge (WAF), some at the application layer (not AWS's responsibility), and some by IAM and configuration services.</p>
+
+    <div class="reveal" style="margin-top:28px; overflow-x:auto;">
+      <table class="owasp-table">
+        <thead>
+          <tr>
+            <th>OWASP Category</th>
+            <th>Nature of Threat</th>
+            <th>Primary AWS Control</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="owasp-rank">A03</span> Injection<br>(SQLi, NoSQLi, OS cmd)</td>
+            <td>Malicious data in query/body interpreted as commands</td>
+            <td><strong>WAF</strong> — <code>AWSManagedRulesSQLiRuleSet</code></td>
+            <td>WAF detects and blocks known injection patterns. Parameterized queries (app code) are the root fix — WAF is a defense-in-depth layer, not a substitute.</td>
+          </tr>
+          <tr>
+            <td><span class="owasp-rank">A01</span> Broken Access Control</td>
+            <td>Users accessing resources beyond their permissions</td>
+            <td><strong>IAM policies, resource-based policies</strong>, application logic</td>
+            <td>Largely an application and IAM concern. WAF cannot fix broken authorization logic.</td>
+          </tr>
+          <tr>
+            <td><span class="owasp-rank">A07</span> Identification &amp; Authentication Failures</td>
+            <td>Weak creds, credential stuffing, brute force</td>
+            <td><strong>WAF rate-based rules</strong>, Cognito MFA, IAM MFA</td>
+            <td>WAF rate-based rules throttle brute-force login attempts. Cognito handles user pool auth with MFA enforcement.</td>
+          </tr>
+          <tr>
+            <td><span class="owasp-rank">A05</span> Security Misconfiguration</td>
+            <td>Default settings, exposed admin pages, overly permissive CORS</td>
+            <td><strong>AWS Config rules</strong>, Security Hub, WAF (block admin paths)</td>
+            <td>Config detects misconfigured resources; WAF can block access to <code>/admin</code> paths. Full coverage in Modules 9 and 12.</td>
+          </tr>
+          <tr>
+            <td><span class="owasp-rank">A02</span> Cryptographic Failures</td>
+            <td>Data in transit unencrypted, weak ciphers</td>
+            <td><strong>CloudFront HTTPS enforcement</strong>, ACM, ALB listener policy</td>
+            <td>CloudFront can enforce TLS minimum version and cipher suites. Full encryption coverage in Module 7.</td>
+          </tr>
+          <tr>
+            <td><span class="owasp-rank">A10</span> Server-Side Request Forgery (SSRF)</td>
+            <td>Server fetches attacker-controlled URL (e.g., to EC2 metadata endpoint)</td>
+            <td><strong>WAF</strong> — <code>AWSManagedRulesKnownBadInputsRuleSet</code> (SSRF patterns), IMDSv2</td>
+            <td>WAF blocks known SSRF payloads targeting metadata endpoints. IMDSv2 (PUT-based token) is the EC2 fix.</td>
+          </tr>
+          <tr>
+            <td><span class="owasp-rank">A08</span> Software and Data Integrity Failures</td>
+            <td>Insecure deserialization, untrusted pipeline artifacts</td>
+            <td><strong>CodeArtifact</strong>, S3 versioning + checksums, ECR image scanning</td>
+            <td>Largely a pipeline and supply-chain concern — not a WAF scenario.</td>
+          </tr>
+          <tr>
+            <td>DDoS / Volumetric Attacks</td>
+            <td>Traffic volume overwhelms capacity</td>
+            <td><strong>Shield Standard/Advanced</strong>, CloudFront absorption</td>
+            <td>Not in OWASP Top 10 but heavily tested. CloudFront absorbs traffic at edge; Shield provides volumetric protection; WAF handles application-layer floods.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mentor-aside reveal" style="margin-top:36px;">
+      <p>The exam uses "AWS WAF" as a distractor for threats it cannot actually fix. Broken access control (A01) is the world's most common web vulnerability and is entirely an application logic and IAM problem — WAF has zero visibility into whether a user has the right to access a particular business object. If a question says "fix broken access control," the answer is never WAF alone.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 8: EDGE DEFENSE IN DEPTH DIAGRAM -->
+<section class="scene" id="s-defense">
+  <div class="ambient-blob" style="width:500px;height:500px;top:-80px;left:-100px;background:var(--c-infra);opacity:0.1;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 08 &bull; Defense-in-Depth</div>
+    <h2 class="kinetic">The Layered Edge Stack — Every Control Has a Job</h2>
+
+    <p class="reveal" style="margin-top:24px; font-size:1.05rem; line-height:1.75;">Defense-in-depth means that no single control is trusted to stop every threat. Each layer handles the attacks its position and capabilities are suited for, and passes the remainder to the next layer inward. A request from the internet to your EC2 instance can pass through up to five distinct inspection points before it reaches your application code. Click each layer to see what it defends against and what it cannot do.</p>
+
+    <div class="layer-stack reveal" id="layerStack" style="margin-top:36px;">
+
+      <div class="layer-item" id="li-dns" tabindex="0" role="button" aria-label="DNS Firewall layer" onclick="toggleLayer('li-dns','ld-dns')">
+        <div class="layer-num">1</div>
+        <div>
+          <div class="layer-title">Route 53 Resolver DNS Firewall</div>
+          <div class="layer-desc">Outermost layer — stops malicious domain resolution before any connection exists</div>
+        </div>
+        <div style="margin-left:auto; font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;">› expand</div>
+      </div>
+      <div class="layer-detail" id="ld-dns">
+        <strong style="color:var(--c-ir);">Defends against:</strong> DNS-based C2 callbacks, malware domain resolution, data exfiltration via DNS tunneling.<br>
+        <strong style="color:var(--c-ir); margin-top:8px; display:block;">Cannot stop:</strong> Connections to malicious IPs that bypass DNS (hardcoded IPs in malware), or attacks that reach your network directly without a DNS lookup.<br>
+        <em style="font-size:0.85rem; color:var(--text-dim); margin-top:8px; display:block;">Key fact: operates at the resolver level — blocks the query, not the connection. The IP is never returned, so the connection cannot be initiated.</em>
+      </div>
+
+      <div class="layer-item" id="li-shield" tabindex="0" role="button" aria-label="Shield layer" onclick="toggleLayer('li-shield','ld-shield')">
+        <div class="layer-num">2</div>
+        <div>
+          <div class="layer-title">AWS Shield (Standard / Advanced)</div>
+          <div class="layer-desc">Absorbs volumetric DDoS before it reaches your infrastructure</div>
+        </div>
+        <div style="margin-left:auto; font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;">› expand</div>
+      </div>
+      <div class="layer-detail" id="ld-shield">
+        <strong style="color:var(--amber);">Defends against:</strong> UDP floods, SYN floods, reflection/amplification attacks (Standard); HTTP floods and application-layer DDoS (Advanced only).<br>
+        <strong style="color:var(--amber); margin-top:8px; display:block;">Cannot stop:</strong> Application-layer attacks with Standard. Sophisticated HTTPS floods that look like legitimate traffic require Advanced + WAF.<br>
+        <em style="font-size:0.85rem; color:var(--text-dim); margin-top:8px; display:block;">Key fact: Standard is automatic and free. Advanced requires explicit enablement and adds DRT access, cost protection, and WAF integration.</em>
+      </div>
+
+      <div class="layer-item" id="li-cf" tabindex="0" role="button" aria-label="CloudFront layer" onclick="toggleLayer('li-cf','ld-cf')">
+        <div class="layer-num">3</div>
+        <div>
+          <div class="layer-title">CloudFront + WAF</div>
+          <div class="layer-desc">Edge proxy with Layer 7 inspection — WAF sees decrypted HTTP content</div>
+        </div>
+        <div style="margin-left:auto; font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;">› expand</div>
+      </div>
+      <div class="layer-detail" id="ld-cf">
+        <strong style="color:var(--c-data);">Defends against:</strong> SQL injection, XSS, SSRF patterns, geographic threats, request-rate abuse, malicious user agents, path-based attacks.<br>
+        <strong style="color:var(--c-data); margin-top:8px; display:block;">Cannot stop:</strong> Threats within the TLS payload that WAF rules do not match. Cannot inspect encrypted traffic from origin to origin (E2E TLS with no termination).<br>
+        <em style="font-size:0.85rem; color:var(--text-dim); margin-top:8px; display:block;">Key fact: TLS termination at the edge means WAF can read the decrypted HTTP body. OAC ensures only CloudFront can reach your S3/ALB origin.</em>
+      </div>
+
+      <div class="layer-item" id="li-nfw" tabindex="0" role="button" aria-label="Network Firewall layer" onclick="toggleLayer('li-nfw','ld-nfw')">
+        <div class="layer-num">4</div>
+        <div>
+          <div class="layer-title">AWS Network Firewall</div>
+          <div class="layer-desc">VPC-level deep packet inspection — domain filtering, IPS signatures</div>
+        </div>
+        <div style="margin-left:auto; font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;">› expand</div>
+      </div>
+      <div class="layer-detail" id="ld-nfw">
+        <strong style="color:var(--green);">Defends against:</strong> East-west traffic threats (VPC-to-VPC), known exploit signatures, domain-based egress filtering, protocol anomalies.<br>
+        <strong style="color:var(--green); margin-top:8px; display:block;">Cannot stop:</strong> Encrypted HTTPS without TLS inspection enabled. DNS-level threats (that is DNS Firewall's job). WAF-type application logic threats.<br>
+        <em style="font-size:0.85rem; color:var(--text-dim); margin-top:8px; display:block;">Key fact: deployed inside a VPC in a dedicated subnet, controlled via route table manipulation to steer traffic through the inspection path.</em>
+      </div>
+
+      <div class="layer-item" id="li-sg" tabindex="0" role="button" aria-label="Security Group and NACL layer" onclick="toggleLayer('li-sg','ld-sg')">
+        <div class="layer-num">5</div>
+        <div>
+          <div class="layer-title">NACLs + Security Groups</div>
+          <div class="layer-desc">Innermost layer — subnet and ENI-level port/IP filtering</div>
+        </div>
+        <div style="margin-left:auto; font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;">› expand</div>
+      </div>
+      <div class="layer-detail" id="ld-sg">
+        <strong style="color:var(--c-infra);">Defends against:</strong> Unauthorized port access, unwanted source IPs, explicit CIDR blocks (NACL deny rules).<br>
+        <strong style="color:var(--c-infra); margin-top:8px; display:block;">Cannot stop:</strong> Application-layer attacks on allowed ports (WAF's job), domain-based threats, DDoS volume, sophisticated exploit payloads.<br>
+        <em style="font-size:0.85rem; color:var(--text-dim); margin-top:8px; display:block;">Key fact: NACLs can deny; security groups cannot. This layer is always active — it does not require routing changes like Network Firewall.</em>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 9: WAF DECISION TREE -->
+<section class="scene scene-alt" id="s-dtree">
+  <div class="ambient-blob" style="width:380px;height:380px;top:-40px;right:-80px;background:var(--c-data);opacity:0.09;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 09 &bull; Interactive Decision Tool</div>
+    <h2 class="kinetic">WAF Rule Decision Tree</h2>
+    <p class="reveal" style="margin-top:20px; font-size:1rem; line-height:1.75; color:var(--text-dim);">Work through the question to find the correct WAF rule type for your threat. Click each answer to navigate.</p>
+
+    <div class="reveal" style="margin-top:32px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:32px;" id="dtreeContainer">
+
+      <!-- Step 0 -->
+      <div class="dtree-step active" id="dt-0">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--c-infra); text-transform:uppercase; margin-bottom:16px;">Start Here</div>
+        <div class="dtree-node" style="cursor:default; background:var(--c-infra-dim); border-color:var(--c-infra); font-size:1rem; font-weight:600;">What is the nature of the threat you are mitigating?</div>
+        <div class="dtree-connector">↓</div>
+        <div class="dtree-branch">
+          <div class="dtree-node" onclick="showDT(1)" tabindex="0" role="button" aria-label="Application payload threat" onkeydown="if(event.key==='Enter')showDT(1)">🔍 Malicious application payload<br><small style="color:var(--text-dim);">(SQL injection, XSS, SSRF...)</small></div>
+          <div class="dtree-node" onclick="showDT(2)" tabindex="0" role="button" aria-label="Traffic volume threat" onkeydown="if(event.key==='Enter')showDT(2)">📈 Too many requests from one source<br><small style="color:var(--text-dim);">(brute force, scraping, abuse...)</small></div>
+          <div class="dtree-node" onclick="showDT(3)" tabindex="0" role="button" aria-label="Geographic threat" onkeydown="if(event.key==='Enter')showDT(3)">🌍 Geographic origin restriction<br><small style="color:var(--text-dim);">(block/allow by country)</small></div>
+          <div class="dtree-node" onclick="showDT(4)" tabindex="0" role="button" aria-label="IP reputation threat" onkeydown="if(event.key==='Enter')showDT(4)">🚫 Known-bad IP or IP reputation<br><small style="color:var(--text-dim);">(block specific IPs or reputation lists)</small></div>
+        </div>
+      </div>
+
+      <!-- Step 1: Application payload -->
+      <div class="dtree-step" id="dt-1">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--c-infra); text-transform:uppercase; margin-bottom:16px;">Malicious Application Payload</div>
+        <div class="dtree-node" style="cursor:default; background:var(--c-infra-dim); border-color:var(--c-infra);">Do you want AWS to maintain the detection rules, or write your own?</div>
+        <div class="dtree-connector">↓</div>
+        <div class="dtree-branch">
+          <div class="dtree-node" onclick="showDT(11)" tabindex="0" role="button" aria-label="AWS managed rules" onkeydown="if(event.key==='Enter')showDT(11)">🤖 AWS should manage the rules</div>
+          <div class="dtree-node" onclick="showDT(12)" tabindex="0" role="button" aria-label="Custom rules" onkeydown="if(event.key==='Enter')showDT(12)">✏️ I need custom matching logic</div>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+      <!-- Step 11: AWS Managed Rules -->
+      <div class="dtree-step" id="dt-11">
+        <div class="dtree-node leaf">
+          <strong style="color:var(--c-infra);">✅ AWS Managed Rule Groups</strong>
+        </div>
+        <div style="margin-top:18px; background:var(--c-infra-dim); border-radius:12px; padding:18px; font-size:0.9rem; line-height:1.7;">
+          <p><strong>Use:</strong> <code>AWSManagedRulesCommonRuleSet</code> for general OWASP Top 10 patterns. <code>AWSManagedRulesSQLiRuleSet</code> for SQL injection specifically. <code>AWSManagedRulesKnownBadInputsRuleSet</code> for SSRF, Log4J, and path traversal patterns.</p>
+          <p style="margin-top:10px;"><strong>Exam tip:</strong> AWS Managed Rules are updated automatically by Amazon. You do not write or maintain the individual rules. You can override individual rules within a group to Count instead of Block.</p>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+      <!-- Step 12: Custom Rules -->
+      <div class="dtree-step" id="dt-12">
+        <div class="dtree-node leaf">
+          <strong style="color:var(--c-infra);">✅ Custom Rule — String Match or Regex Statement</strong>
+        </div>
+        <div style="margin-top:18px; background:var(--c-infra-dim); border-radius:12px; padding:18px; font-size:0.9rem; line-height:1.7;">
+          <p>Write a WAF rule with a <strong>ByteMatchStatement</strong> (exact string match in headers, URI, query string, or body) or a <strong>RegexMatchStatement</strong> (regex pattern). Combine multiple conditions with AND/OR/NOT logic. Use label matching to chain rules.</p>
+          <p style="margin-top:10px;"><strong>Exam tip:</strong> Custom rules are the right answer when the threat pattern is unique to your application (e.g., block any request where a header contains your internal API key format).</p>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+      <!-- Step 2: Rate limiting -->
+      <div class="dtree-step" id="dt-2">
+        <div class="dtree-node leaf">
+          <strong style="color:var(--c-infra);">✅ Rate-Based Rule</strong>
+        </div>
+        <div style="margin-top:18px; background:var(--c-infra-dim); border-radius:12px; padding:18px; font-size:0.9rem; line-height:1.7;">
+          <p>Configure a <strong>Rate-Based Rule</strong> with a threshold (requests per 5-minute window) and an aggregation key (source IP is most common; you can also aggregate on a header value like <code>X-Forwarded-For</code>). Requests exceeding the threshold trigger the rule action (Block or CAPTCHA).</p>
+          <p style="margin-top:10px;"><strong>Combine with:</strong> A scope-down statement to apply the rate limit only to a specific path (e.g., <code>/login</code>) rather than all requests. This prevents legitimate high-volume API traffic from hitting the login rate limit.</p>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+      <!-- Step 3: Geographic -->
+      <div class="dtree-step" id="dt-3">
+        <div class="dtree-node leaf">
+          <strong style="color:var(--c-infra);">✅ Geographic Match Rule</strong>
+        </div>
+        <div style="margin-top:18px; background:var(--c-infra-dim); border-radius:12px; padding:18px; font-size:0.9rem; line-height:1.7;">
+          <p>Use a <strong>GeoMatchStatement</strong> to allow or block requests based on country code. WAF uses Amazon IP geolocation data. For allowlists, combine with a NOT statement: block all requests where country is NOT in your approved list.</p>
+          <p style="margin-top:10px;"><strong>vs. CloudFront geo-restriction:</strong> CloudFront geo-restriction applies to the whole distribution with no other conditions. WAF geographic match can be combined with other conditions (e.g., block this country AND this URI path). WAF is more flexible; CloudFront geo-restriction is simpler and cheaper for whole-distribution blocks.</p>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+      <!-- Step 4: IP reputation -->
+      <div class="dtree-step" id="dt-4">
+        <div class="dtree-node" style="cursor:default; background:var(--c-infra-dim); border-color:var(--c-infra);">Do you have a specific IP list, or do you want AWS threat-intelligence-based reputation filtering?</div>
+        <div class="dtree-connector">↓</div>
+        <div class="dtree-branch">
+          <div class="dtree-node" onclick="showDT(41)" tabindex="0" role="button" aria-label="IP set rule" onkeydown="if(event.key==='Enter')showDT(41)">📋 I have a specific list of IPs</div>
+          <div class="dtree-node" onclick="showDT(42)" tabindex="0" role="button" aria-label="Amazon IP reputation list" onkeydown="if(event.key==='Enter')showDT(42)">🔬 Use AWS threat intelligence</div>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+      <!-- Step 41: IP Set -->
+      <div class="dtree-step" id="dt-41">
+        <div class="dtree-node leaf"><strong style="color:var(--c-infra);">✅ IP Set + IPSetReferenceStatement</strong></div>
+        <div style="margin-top:18px; background:var(--c-infra-dim); border-radius:12px; padding:18px; font-size:0.9rem; line-height:1.7;">
+          <p>Create a WAF <strong>IP Set</strong> containing your CIDR ranges, then reference it in a rule. IP Sets support up to 10,000 addresses. For pure IP-range blocking at scale, a NACL deny rule is more efficient — but WAF IP Sets are correct when you need to combine IP matching with other WAF conditions.</p>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+      <!-- Step 42: Managed IP reputation -->
+      <div class="dtree-step" id="dt-42">
+        <div class="dtree-node leaf"><strong style="color:var(--c-infra);">✅ AWSManagedRulesAmazonIpReputationList</strong></div>
+        <div style="margin-top:18px; background:var(--c-infra-dim); border-radius:12px; padding:18px; font-size:0.9rem; line-height:1.7;">
+          <p>AWS maintains the <code>AWSManagedRulesAmazonIpReputationList</code> — a continuously updated blocklist of IPs associated with bots, scanners, and threat actors based on Amazon threat intelligence. Enable this rule group in your Web ACL for automatic coverage without managing your own IP lists.</p>
+        </div>
+        <button onclick="showDT(0)" class="btn btn-outline" style="margin-top:20px; font-size:11px; padding:8px 16px;">← Back to start</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 10: WHICH CONTROL STOPS THIS -->
+<section class="scene" id="s-which">
+  <div class="ambient-blob" style="width:400px;height:400px;bottom:-60px;right:-80px;background:var(--c-infra);opacity:0.1;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 10 &bull; Applied Reasoning Exercise</div>
+    <h2 class="kinetic">Which Control Stops This?</h2>
+    <p class="reveal" style="margin-top:20px; font-size:1rem; line-height:1.75; color:var(--text-dim);">Each scenario below describes a threat or filtering requirement. Click to reveal the correct AWS control and the reasoning behind it — the same logic the exam expects you to apply.</p>
+
+    <div class="reveal" style="margin-top:32px;" id="wcList">
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">An attacker is sending thousands of HTTP POST requests per minute to your login endpoint at <code>/auth/login</code>, attempting to brute-force user credentials. The requests come from rotating source IPs.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ WAF Rate-Based Rule (scoped to /auth/login path)</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">NACLs and security groups operate at Layer 3/4 — they see ports and IPs, not URL paths. Since IPs are rotating, a static IP block is ineffective. WAF rate-based rules can aggregate by IP across a 5-minute window and block once a threshold is crossed, with a scope-down statement limiting the rule to the login path only. Shield protects against volumetric floods but not application-layer credential stuffing.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">Your security team has identified a specific CIDR block (<code>203.0.113.0/24</code>) as the source of malicious SSH scanning. They need to ensure no traffic from this range can reach any instance in the private subnet, even if a misconfigured security group were to allow it.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ NACL Deny Rule</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Security groups structurally cannot deny — they have only allow rules. A NACL deny rule numbered below any existing allow rules enforces a hard block at the subnet boundary for ALL instances in the subnet, regardless of their security group configuration. This is the canonical "explicit deny" tool in the VPC network stack.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">A web application is receiving HTTP requests with query strings like <code>?id=1' OR '1'='1</code> that are classic SQL injection probes. You need to detect and block these at the edge before they reach the ALB.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ WAF — AWSManagedRulesSQLiRuleSet attached to the ALB or CloudFront</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">NACLs and security groups see only the TCP packet — they have no visibility into the HTTP query string. WAF operates at Layer 7 and can decode URL encoding, inspect query string values, and match against known SQL injection patterns maintained by the AWS Managed Rules team.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">A volumetric UDP flood is hitting your internet-facing Network Load Balancer with 10 Gbps of spoofed UDP traffic. The attack is overwhelmingthe NLB's connection capacity.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ AWS Shield (Standard for basic protection; Shield Advanced for full mitigation + DRT support)</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">This is a Layer 3/4 volumetric DDoS — exactly what Shield is built for. Shield Standard automatically mitigates common UDP floods. If the attack is sophisticated or business impact is critical, Shield Advanced provides the DRT, cost protection, and advanced detection. WAF operates at Layer 7 and has no visibility into UDP floods.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">A compromised EC2 instance in your VPC is attempting to resolve <code>update.malware-c2.net</code> — a known command-and-control domain — every 30 seconds. You need to stop the callback without modifying the instance.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ Route 53 Resolver DNS Firewall — domain block list</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">DNS Firewall intercepts the DNS query at the Route 53 Resolver level and returns NXDOMAIN. The instance never receives an IP address for the C2 domain, so the connection cannot be established. Network Firewall would also work at the connection layer, but DNS Firewall stops the threat earlier in the kill chain and does so without requiring routing changes.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">Your application serves users in the US and Canada only. Legal compliance requires that users from all other countries receive a 403 response. You want the simplest possible implementation with no custom rule logic.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ CloudFront Geo-Restriction (allowlist: US, CA)</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">CloudFront geo-restriction is the simplest solution when you need whole-distribution country filtering with no other conditions. WAF geographic match rules are the alternative if you need to combine geography with other match conditions, but they cost more and require a Web ACL. For a pure "allow only these countries" requirement, CloudFront geo-restriction is the right answer.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">Your security team needs to inspect all east-west traffic between microservices in different subnets of the same VPC for known exploit signatures and suspicious protocol behavior, without making changes to the individual service security groups.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ AWS Network Firewall with Suricata-compatible IPS rules</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">Network Firewall is the correct tool for deep packet inspection of VPC-internal (east-west) traffic. It deploys in a dedicated subnet and traffic is routed through it via VPC route tables — no changes to security groups needed. It can apply IPS signatures to detect known exploit patterns and flag protocol anomalies. NACLs only do IP/port matching; security groups are per-resource; neither can do signature-based detection.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">An EC2 instance needs to accept HTTPS traffic on port 443 from the public internet. The security group currently allows port 443 inbound from 0.0.0.0/0. Users are reporting that responses are being dropped intermittently after the connection is established.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ NACL — missing outbound rule for ephemeral port range (1024–65535)</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">The security group is stateful — its inbound allow on port 443 automatically permits return traffic outbound. But the NACL is stateless. If there is no outbound NACL rule allowing traffic on ephemeral ports (the client's source port, typically 1024–65535), the TCP response from the instance is silently dropped at the subnet boundary. The fix: add an outbound NACL rule allowing TCP 1024–65535 to 0.0.0.0/0.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">A user accesses your S3-hosted website directly via the S3 website URL, bypassing your CloudFront distribution. This means your WAF rules and geo-restrictions are not applied to that traffic.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ CloudFront Origin Access Control (OAC) + private S3 bucket</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">OAC restricts the S3 bucket to only accept requests from the CloudFront distribution (signed by CloudFront with SigV4). The S3 bucket policy grants <code>s3:GetObject</code> only to the CloudFront service principal with the specific distribution ARN. Direct S3 URL access returns 403. Now all requests must flow through CloudFront, ensuring WAF rules and geo-restrictions apply to every request.</p>
+        </div>
+      </div>
+
+      <div class="wc-card" onclick="toggleWC(this)">
+        <div class="wc-header">
+          <div class="wc-scenario">During a major product launch, your application experiences a large HTTP flood where each request appears individually legitimate (no obvious patterns, valid user agents, well-formed HTTP). Standard WAF rules are not blocking it. The attack is threatening availability.</div>
+          <span class="wc-chev">› Reveal answer</span>
+        </div>
+        <div class="wc-answer">
+          <span class="answer-label">✅ Shield Advanced + DRT engagement + WAF rate-based rules</span>
+          <p style="font-size:0.9rem; line-height:1.7; color:var(--text-dim);">A sophisticated Layer 7 HTTP flood where individual requests appear legitimate is precisely the scenario Shield Advanced exists for. The DDoS Response Team (DRT) can analyze traffic patterns and deploy targeted WAF rules during the attack — something Shield Standard cannot do. WAF rate-based rules are a first-line defense, but the DRT has access to broader traffic telemetry to craft attack-specific mitigations.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 11: PRODUCTION TRAP GALLERY -->
+<section class="scene scene-alt" id="s-traps">
+  <div class="ambient-blob" style="width:360px;height:360px;top:-40px;left:-70px;background:var(--c-ir);opacity:0.09;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 11 &bull; Production Trap Gallery</div>
+    <h2 class="kinetic">Six Ways Engineers Get This Wrong</h2>
+    <p class="reveal" style="margin-top:20px; font-size:1rem; line-height:1.75; color:var(--text-dim);">These are real failure modes — the kind of mistakes that appear in AWS post-incident reviews and in SCS-C03 exam distractors. Click each card to read the full vignette and the correct fix.</p>
+
+    <div class="reveal" style="margin-top:32px;">
+
+      <div class="trap-card" id="trap-0">
+        <div class="trap-header" onclick="toggleTrap('trap-0')">
+          <div class="trap-icon">🚫</div>
+          <div>
+            <div class="trap-title">The "Deny with a Security Group" Trap</div>
+            <div class="trap-subtitle">Security Group · Allow-only architecture</div>
+          </div>
+          <div class="trap-chev">›</div>
+        </div>
+        <div class="trap-body">
+          <p style="font-size:0.93rem; line-height:1.75;"><strong>Scenario:</strong> An engineer is tasked with blocking all traffic from a competitor's IP range from accessing the company's API. They open the EC2 security group and look for "deny" — but the option does not exist. Confused, they add the competitor's IP range to the inbound rules with... allow? No, that would do the opposite. They cannot find a way to do it in the console.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong>What went wrong:</strong> Security groups are allow-only. There is no deny rule type. Every IP range not explicitly in an allow rule is implicitly denied — but you cannot write a rule that says "deny this specific CIDR while allowing others." The architecture cannot express this requirement.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong style="color:var(--green);">Fix:</strong> Use a NACL deny rule. Add an inbound rule with a low rule number (e.g., rule 50) that explicitly denies the competitor CIDR, placed before any allow rules. NACLs are the correct tool when the requirement is an explicit block of a specific IP range, not a general "restrict to known sources" pattern.</p>
+        </div>
+      </div>
+
+      <div class="trap-card" id="trap-1">
+        <div class="trap-header" onclick="toggleTrap('trap-1')">
+          <div class="trap-icon">🔄</div>
+          <div>
+            <div class="trap-title">The Silent NACL Return-Traffic Drop</div>
+            <div class="trap-subtitle">NACL · Stateless ephemeral port misconfiguration</div>
+          </div>
+          <div class="trap-chev">›</div>
+        </div>
+        <div class="trap-body">
+          <p style="font-size:0.93rem; line-height:1.75;"><strong>Scenario:</strong> A new VPC subnet is configured with a custom NACL. The engineer adds inbound rule 100: allow TCP 443 from 0.0.0.0/0. Users can reach the web server — the TLS handshake completes — but then the connection dies. Intermittent, impossible to reproduce consistently, no application errors logged.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong>What went wrong:</strong> NACLs are stateless. The inbound allow for port 443 does not automatically allow the return TCP responses. The return packets use the client's ephemeral source port (1024–65535) as the destination. Without an outbound NACL rule allowing traffic to port 1024–65535, the TCP ACK and data packets silently vanish at the subnet boundary. The security group is stateful and would have allowed it — but the NACL runs first on the outbound path.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong style="color:var(--green);">Fix:</strong> Add outbound NACL rule 100: allow TCP ports 1024–65535 to 0.0.0.0/0. Every time you add an inbound NACL rule for a service, also add the matching outbound ephemeral port rule for return traffic.</p>
+        </div>
+      </div>
+
+      <div class="trap-card" id="trap-2">
+        <div class="trap-header" onclick="toggleTrap('trap-2')">
+          <div class="trap-icon">🔢</div>
+          <div>
+            <div class="trap-title">The NACL Rule-Order Mistake</div>
+            <div class="trap-subtitle">NACL · First-match evaluation pitfall</div>
+          </div>
+          <div class="trap-chev">›</div>
+        </div>
+        <div class="trap-body">
+          <p style="font-size:0.93rem; line-height:1.75;"><strong>Scenario:</strong> A security engineer adds a NACL deny rule for a known-malicious CIDR: rule number 200, deny. But traffic from that range continues to reach the instances. The engineer is baffled — the rule is right there in the console.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong>What went wrong:</strong> There was already an inbound rule numbered 100: allow all traffic from 0.0.0.0/0 (often left from initial setup). Since NACL rules are evaluated in ascending numeric order and processing stops at the first match, rule 100 (allow all) is matched before rule 200 (deny this CIDR) is ever evaluated. The deny rule is functionally dead.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong style="color:var(--green);">Fix:</strong> Give the deny rule a <em>lower</em> rule number than the allow rule it needs to override. Change the deny to rule 50 so it is evaluated first. This is why reviewing NACL rule numbers and ordering is critical — a deny placed after a broad allow is invisible.</p>
+        </div>
+      </div>
+
+      <div class="trap-card" id="trap-3">
+        <div class="trap-header" onclick="toggleTrap('trap-3')">
+          <div class="trap-icon">🛡️</div>
+          <div>
+            <div class="trap-title">Shield Standard vs. Layer 7 Attack</div>
+            <div class="trap-subtitle">Shield · Layer 7 blind spot</div>
+          </div>
+          <div class="trap-chev">›</div>
+        </div>
+        <div class="trap-body">
+          <p style="font-size:0.93rem; line-height:1.75;"><strong>Scenario:</strong> A fintech company runs a business-critical payment API. Their security lead says "we use AWS, so we have DDoS protection." During a competitor-sponsored attack, the API goes down under a slow HTTP POST flood — thousands of clients sending oversized JSON payloads, each individually valid, holding connections open and draining ALB connection capacity. CloudWatch shows no volumetric anomaly because packet-per-second rates look normal.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong>What went wrong:</strong> Shield Standard protects against Layer 3/4 volumetric attacks. An HTTP application-layer flood at Layer 7 — especially a slow, connection-exhausting variant — is completely invisible to Shield Standard. Standard has no HTTP awareness.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong style="color:var(--green);">Fix:</strong> Enable Shield Advanced. It provides Layer 7 attack detection, 24/7 DRT access, and integration with WAF to deploy targeted rules during an active attack. Also add WAF connection rate limits and body size restrictions to limit each connection's impact.</p>
+        </div>
+      </div>
+
+      <div class="trap-card" id="trap-4">
+        <div class="trap-header" onclick="toggleTrap('trap-4')">
+          <div class="trap-icon">🚀</div>
+          <div>
+            <div class="trap-title">WAF Blocks Legitimate Traffic at Launch</div>
+            <div class="trap-subtitle">WAF · Count mode vs. Block mode oversight</div>
+          </div>
+          <div class="trap-chev">›</div>
+        </div>
+        <div class="trap-body">
+          <p style="font-size:0.93rem; line-height:1.75;"><strong>Scenario:</strong> An engineering team enables the AWS Managed Rules Common Rule Set on their ALB WAF Web ACL with all rules set to Block mode and deploys to production. Within 10 minutes of launch, the customer support queue floods with "account creation is broken" reports. 403 responses are coming from the WAF.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong>What went wrong:</strong> The managed rule group contained the <code>SizeRestrictions_BODY</code> rule, which was blocking registration form submissions with avatars or large profile data. The team had not observed the rule group in Count mode first to identify false positives before enforcing.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong style="color:var(--green);">Fix:</strong> Always introduce a new WAF rule group or Web ACL in <strong>Count mode</strong> first. Monitor CloudWatch WAF metrics (<code>BlockedRequests</code>, <code>CountedRequests</code>, sampled requests in the console) for at least 24–72 hours of representative traffic before switching to Block mode. Identify and exclude rules that generate false positives using rule overrides.</p>
+        </div>
+      </div>
+
+      <div class="trap-card" id="trap-5">
+        <div class="trap-header" onclick="toggleTrap('trap-5')">
+          <div class="trap-icon">🔓</div>
+          <div>
+            <div class="trap-title">S3 Origin Accessible Without CloudFront</div>
+            <div class="trap-subtitle">CloudFront · OAC missing, WAF bypass</div>
+          </div>
+          <div class="trap-chev">›</div>
+        </div>
+        <div class="trap-body">
+          <p style="font-size:0.93rem; line-height:1.75;"><strong>Scenario:</strong> A team sets up CloudFront in front of their S3-hosted single-page app and attaches WAF with geo-restrictions. Six months later, a pen tester discovers that the S3 website endpoint URL is still publicly accessible — bypassing CloudFront, WAF, and all geo-restrictions entirely. Worse, the S3 bucket had public read enabled for the website configuration.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong>What went wrong:</strong> Origin Access Control was never configured. The S3 bucket remained publicly accessible via its website URL. Any client that knew (or guessed) the S3 URL could bypass all CloudFront security controls. This is a critically common oversight — CloudFront in front of S3 without OAC provides zero security for the origin itself.</p>
+          <p style="font-size:0.93rem; line-height:1.75; margin-top:12px;"><strong style="color:var(--green);">Fix:</strong> Enable OAC on the CloudFront distribution, update the S3 bucket policy to allow only the CloudFront service principal, disable public access on the bucket, and remove the S3 website endpoint. Also enable Block Public Access at the account and bucket level as a defense-in-depth control.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 12: MOCK EXAM -->
+<section class="scene" id="s-exam">
+  <div class="ambient-blob" style="width:420px;height:420px;top:-60px;left:-90px;background:var(--c-infra);opacity:0.1;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 12 &bull; Knowledge Check</div>
+    <h2 class="kinetic">Mock Exam — 12 SCS-C03 Style Questions</h2>
+    <p class="reveal" style="margin-top:20px; font-size:1rem; line-height:1.75; color:var(--text-dim);">Select your answer for each question, then click Reveal to see the explanation. Your score is tracked below.</p>
+
+    <div class="reveal" style="margin-top:32px;" id="quizContainer">
+
+      <!-- Q1 -->
+      <div class="quiz-question" data-correct="B">
+        <div class="quiz-q-text">1. A security engineer needs to ensure that no traffic from CIDR <code>198.51.100.0/24</code> can ever reach any EC2 instance in a private subnet, even if a security group is misconfigured to allow it. Which control achieves this?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Add an inbound security group deny rule for the CIDR range on all instances in the subnet</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Add an inbound NACL deny rule for the CIDR range with a rule number lower than any existing allow rules</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Create a WAF IP Set rule to block the CIDR range and attach it to the VPC</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Add a route table entry that routes the CIDR to a blackhole target</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: B</div>
+          <p>Security groups have no deny rules — only allow rules. A NACL deny rule explicitly blocks the CIDR at the subnet boundary, regardless of security group configuration. The deny must have a lower rule number than any existing allow rules (NACLs evaluate in ascending order, first match wins). WAF does not attach to VPCs and a route blackhole would break routing for all destinations, not just that source CIDR.</p>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="quiz-question" data-correct="C">
+        <div class="quiz-q-text">2. A company runs an internet-facing ALB. They have enabled an inbound NACL rule allowing TCP port 443 from 0.0.0.0/0, and the EC2 security group allows the same. Users report that HTTPS connections succeed initially but then hang and eventually time out. What is the most likely cause?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>The security group is missing an outbound rule for TCP 443</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>The NACL inbound rule is configured with the wrong protocol</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>The NACL is missing an outbound rule for ephemeral ports 1024–65535</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>The ALB requires a separate security group rule for return traffic</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: C</div>
+          <p>NACLs are stateless — return traffic must be explicitly allowed. The TCP response from the server goes back to the client's ephemeral source port (1024–65535). Without an outbound NACL rule allowing this port range, the response is dropped at the subnet boundary. The security group is stateful and handles return traffic automatically, but it does not override the NACL outbound check.</p>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="quiz-question" data-correct="D">
+        <div class="quiz-q-text">3. A web application is experiencing SQL injection attacks against its search endpoint. The engineering team needs to block known SQLi patterns without modifying the application code. Which combination of services achieves this with the least operational overhead?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Deploy a NACL deny rule matching known SQL syntax in packet payloads</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Configure AWS Network Firewall with custom Suricata rules matching SQL injection patterns</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Enable GuardDuty anomaly detection and configure automated remediation via Lambda</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Attach AWS WAF with the AWSManagedRulesSQLiRuleSet to the ALB or CloudFront distribution</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: D</div>
+          <p>NACLs operate at Layer 3/4 and cannot inspect HTTP payload content — SQL syntax in a query string is invisible to a NACL. Network Firewall with Suricata rules could technically work but has far more operational overhead than a managed WAF rule group. GuardDuty detects threats but does not block HTTP requests. WAF with the AWS Managed SQLi rule group provides automatic detection and blocking with minimal configuration.</p>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="quiz-question" data-correct="B">
+        <div class="quiz-q-text">4. A company's business-critical e-commerce site was taken offline by a sophisticated HTTP flood during peak shopping season. The attack used rotating source IPs and well-formed HTTP requests that bypassed existing WAF rules. Which AWS service addition would best prevent this in the future?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Enable AWS Shield Standard on the ALB</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Enable AWS Shield Advanced and engage the DDoS Response Team proactively</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Add additional EC2 instances behind the ALB to absorb attack traffic</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Deploy a NACL to rate-limit inbound requests at the subnet level</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: B</div>
+          <p>A sophisticated Layer 7 HTTP flood with rotating IPs that bypasses WAF rules is the exact scenario Shield Advanced addresses. Shield Standard has no Layer 7 visibility. The DRT can analyze attack patterns and deploy custom WAF mitigations during an active attack. Scaling EC2 absorbs some capacity but does not stop the attack. NACLs cannot rate-limit or inspect HTTP content.</p>
+        </div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="quiz-question" data-correct="A">
+        <div class="quiz-q-text">5. A security engineer wants to ensure that an S3 bucket used as a CloudFront origin is not directly accessible via the S3 URL, forcing all access through CloudFront (and its attached WAF). What is the correct approach using current AWS best practices?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Configure CloudFront Origin Access Control (OAC) and update the S3 bucket policy to allow only the CloudFront service principal for that distribution</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Configure a CloudFront Origin Access Identity (OAI) and set the bucket ACL to private</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Enable S3 Block Public Access and add a NACL to deny direct S3 traffic</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Set a bucket policy that denies all requests where the referer header is not set to the CloudFront domain</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: A</div>
+          <p>OAC is the current AWS best practice, replacing the older OAI method. OAC uses SigV4 signing so CloudFront authenticates to S3 on your behalf. The bucket policy restricts access to only the CloudFront service principal (aws:SourceArn matching the distribution ARN). OAI still works but is legacy. A referer-header check is easily spoofed. NACLs cannot protect S3 endpoints the same way.</p>
+        </div>
+      </div>
+
+      <!-- Q6 -->
+      <div class="quiz-question" data-correct="C">
+        <div class="quiz-q-text">6. An EC2 instance in a private subnet is attempting to connect to a known command-and-control domain. Which control stops this callback at the earliest point in the kill chain?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>AWS Network Firewall domain list blocking the C2 domain</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>A NACL outbound deny rule for the C2 server IP address</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Route 53 Resolver DNS Firewall domain block rule</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>A security group outbound rule removing access to port 443</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: C</div>
+          <p>DNS Firewall intercepts the DNS query before any IP address is returned — no connection can be established if the domain does not resolve. Network Firewall (A) blocks at the connection layer, which is still early but occurs after DNS resolution. A NACL IP deny (B) requires knowing the current IP — C2 operators rotate IPs. A security group removing port 443 (D) would break legitimate HTTPS traffic.</p>
+        </div>
+      </div>
+
+      <!-- Q7 -->
+      <div class="quiz-question" data-correct="D">
+        <div class="quiz-q-text">7. A WAF engineer has just enabled the AWSManagedRulesCommonRuleSet on a production ALB Web ACL in Block mode. Within minutes, legitimate customers report being unable to submit registration forms. What should the engineer do FIRST?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Remove the WAF Web ACL from the ALB immediately</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Disable all rules in the managed rule group one by one until the issue resolves</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Switch the entire Web ACL to Count mode and re-enable Block after reviewing all rules</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Set the specific offending rule(s) to Count mode using a rule group override, then investigate WAF sampled requests to identify the false positive rule</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: D</div>
+          <p>The correct immediate action is targeted: use a rule group override to set the specific blocking rule to Count (not the entire ACL). Check WAF sampled requests in the console or CloudWatch Logs to identify exactly which rule is matching legitimate requests. Removing the whole ACL (A) loses all protection. Switching the entire ACL to Count (C) is better than removing it but loses blocking for all other real threats. Disabling rules one-by-one (B) is slow and high-risk in production.</p>
+        </div>
+      </div>
+
+      <!-- Q8 -->
+      <div class="quiz-question" data-correct="B">
+        <div class="quiz-q-text">8. A company needs to inspect all traffic flowing between VPCs in a hub-and-spoke architecture for known exploit signatures, using centralized management. What is the recommended approach?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Deploy NACLs on every subnet in every spoke VPC with rules matching known exploit signatures</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Deploy AWS Network Firewall in a centralized inspection VPC and route inter-VPC traffic through it via Transit Gateway</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Attach AWS WAF to each VPC and configure Layer 7 rules for exploit detection</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Configure VPC Flow Logs for all VPCs and trigger Lambda functions to block traffic in real time</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: B</div>
+          <p>Network Firewall in a centralized inspection VPC, combined with Transit Gateway route tables that steer inter-VPC traffic through the inspection path, is the standard AWS architecture for centralized deep-packet inspection. NACLs cannot do signature matching. WAF does not attach to VPCs as a general traffic inspection point. VPC Flow Logs are metadata only — no payload inspection, no real-time blocking.</p>
+        </div>
+      </div>
+
+      <!-- Q9 -->
+      <div class="quiz-question" data-correct="A">
+        <div class="quiz-q-text">9. Which statement correctly describes the difference between Route 53 Resolver DNS Firewall and AWS Network Firewall in terms of where they intercept threats?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>DNS Firewall blocks domain resolution before a connection is attempted; Network Firewall inspects and blocks traffic after a connection is established</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>DNS Firewall operates at Layer 7; Network Firewall operates at Layer 3/4 only</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>DNS Firewall and Network Firewall are redundant — both block the same class of threats</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Network Firewall can block DNS queries; DNS Firewall can block established TCP connections</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: A</div>
+          <p>DNS Firewall operates at the resolver level — it intercepts the DNS query and prevents domain resolution, so no IP is returned and no connection can be initiated. Network Firewall inspects traffic that is already flowing (after DNS resolution has occurred and a connection is being established or maintained). They are complementary, not redundant — each stops threats at a different point in the kill chain.</p>
+        </div>
+      </div>
+
+      <!-- Q10 -->
+      <div class="quiz-question" data-correct="C">
+        <div class="quiz-q-text">10. A security team wants to add HTTP security headers (HSTS, X-Frame-Options, Content-Security-Policy) to all responses from a multi-origin CloudFront distribution without modifying any origin application code. What is the correct approach?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Create a WAF rule that injects security headers into HTTP responses</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Configure an AWS Lambda@Edge function to add response headers on every request</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Create a CloudFront Response Headers Policy and attach it to the distribution</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Configure the ALB to add security response headers via listener rules</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: C</div>
+          <p>CloudFront Response Headers Policies are the purpose-built, lowest-overhead way to add security headers at the edge. You define the header names and values in the policy and associate it with a CloudFront distribution or cache behavior. Lambda@Edge (B) could work but is far more complex and costly. WAF does not modify response headers. ALB header rules would only apply to traffic behind the ALB, not other origins.</p>
+        </div>
+      </div>
+
+      <!-- Q11 -->
+      <div class="quiz-question" data-correct="D">
+        <div class="quiz-q-text">11. A company's application uses an Application Load Balancer and has AWS WAF attached. They notice that all requests from a specific corporate office IP range are being blocked, even though those requests are legitimate. The WAF logs show the AWSManagedRulesAmazonIpReputationList is matching and blocking those IPs. What is the best remediation?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Remove the AWSManagedRulesAmazonIpReputationList rule group from the Web ACL</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Set the entire Web ACL to Count mode to stop blocking</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Add a NACL rule to allow the corporate IP range, which overrides WAF</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Add a WAF rule with higher priority (lower rule number) that explicitly allows the corporate IP set, placed before the managed rule group</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: D</div>
+          <p>WAF rules are evaluated in priority order. By adding an Allow rule with a lower rule number (higher priority) that matches the corporate IP Set, those requests are allowed before the reputation list rule is evaluated. WAF rule priority is controlled by the rule order in the Web ACL. Removing the rule group (A) loses all protection from that group. NACL allow rules do not override WAF — they operate at different layers and WAF still inspects allowed network traffic.</p>
+        </div>
+      </div>
+
+      <!-- Q12 -->
+      <div class="quiz-question" data-correct="B">
+        <div class="quiz-q-text">12. An organization must ensure that any DNS query resolution failure from Route 53 Resolver DNS Firewall does NOT allow queries to pass through to prevent malware callbacks during a service disruption. Which configuration achieves this?</div>
+        <div class="quiz-options">
+          <div class="quiz-option" data-opt="A" onclick="selectOpt(this)"><span class="quiz-option-key">A</span>Configure the DNS Firewall with fail-open mode at the VPC level</div>
+          <div class="quiz-option" data-opt="B" onclick="selectOpt(this)"><span class="quiz-option-key">B</span>Configure the DNS Firewall with fail-closed mode at the VPC level</div>
+          <div class="quiz-option" data-opt="C" onclick="selectOpt(this)"><span class="quiz-option-key">C</span>Enable Route 53 Resolver query logging and alert on failures</div>
+          <div class="quiz-option" data-opt="D" onclick="selectOpt(this)"><span class="quiz-option-key">D</span>Add a NACL rule to block DNS (UDP 53) traffic during disruptions</div>
+        </div>
+        <div class="quiz-reveal">
+          <div class="verdict verdict-correct">✓ Correct Answer: B</div>
+          <p>DNS Firewall's fail behavior is configurable per VPC. Fail-closed means that if the DNS Firewall service cannot evaluate a query, it blocks the query — prioritizing security over availability. Fail-open allows queries through if the service is disrupted — prioritizing availability. For security-critical workloads where malware callback prevention outweighs availability risk, fail-closed is the correct setting. Query logging (C) is observability, not enforcement.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="text-align:center; margin-top:28px;">
+      <button class="btn btn-primary magnetic" onclick="submitQuiz()">Calculate My Score</button>
+      <button class="btn btn-outline magnetic" onclick="resetQuiz()" style="margin-left:12px;">Reset Quiz</button>
+    </div>
+    <div class="score-board reveal" id="scoreBoard" style="display:none; margin-top:32px;">
+      <div class="score-num" id="scoreNum">0/12</div>
+      <p id="scoreMsg">Complete the quiz above to see your score.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- SCENE 13: FAQ -->
+<section class="scene scene-alt" id="s-faq">
+  <div class="ambient-blob" style="width:360px;height:360px;bottom:0;right:-60px;background:var(--c-infra);opacity:0.09;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 13 &bull; Discussion FAQ</div>
+    <h2 class="kinetic">Questions You Will Actually Have</h2>
+    <p class="reveal" style="margin-top:20px; font-size:1rem; color:var(--text-dim); line-height:1.75;">Click a question to see the answer. These are the questions that keep coming up — from students, from engineers, and on the exam.</p>
+
+    <div class="discussion reveal" style="margin-top:32px;">
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          If security groups are stateful and easier to manage, why would I ever need a NACL at all? Can I just use security groups for everything?
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          You need NACLs the moment you need to explicitly deny traffic from a specific source — something security groups fundamentally cannot do. Security groups are allow-only by design. If you have a known-malicious IP range, a compromised supplier network, or a legal requirement to block specific CIDR ranges, security groups cannot express that requirement. Also, NACLs apply to the entire subnet — useful when you want a consistent deny across all resources without touching each resource's security group. Think of security groups as the primary tool and NACLs as the tool you reach for specifically when you need an explicit deny or a subnet-wide control. Both are almost always deployed together in production VPCs.
+        </div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          WAF is at Layer 7 and blocks web attacks. Network Firewall also does deep inspection. Are they basically the same thing? When do I use one vs. the other?
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          They operate in very different positions and serve different traffic. WAF attaches to specific AWS services — CloudFront, ALB, API Gateway, AppSync — and inspects inbound HTTP/HTTPS requests to those services. It is purpose-built for web application protection: SQLi, XSS, rate limiting, geo-blocking. Network Firewall deploys inside your VPC and inspects arbitrary network traffic via route table steering — any protocol, any port, any direction including east-west (VPC-to-VPC). It uses IPS signatures (Suricata rules), domain lists, and protocol anomaly detection. Use WAF for your web-facing application attack surface; use Network Firewall for VPC-level traffic inspection, east-west security, and egress filtering. In a mature architecture, you would have both.
+        </div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          Does every application actually need Shield Advanced? The $3,000/month cost feels steep for most workloads.
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          Shield Standard is genuinely enough for many workloads — it handles the common volumetric Layer 3/4 attacks automatically and for free. Advanced is the right answer when three conditions align: the application is business-critical, it is directly internet-facing, and a DDoS event would cause significant financial or reputational damage. Think: payment processing, streaming platforms, large e-commerce properties during peak seasons, regulated financial services. At $3,000/month per organization (not per resource), the cost protection clause alone can justify it for workloads that could face massive EC2 auto-scaling charges during a traffic flood. For internal tools, dev environments, or low-traffic services, Standard is fine. On the exam, "business-critical internet-facing application" is the signal phrase for Shield Advanced.
+        </div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          I have Network Firewall blocking outbound connections to known-bad domains. Why do I still need DNS Firewall? Is not that redundant?
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          It is genuinely not redundant — they block at different points in the kill chain. Network Firewall sees a connection attempt and can block it. But by the time Network Firewall sees it, the DNS query has already resolved. If your DNS Firewall is not blocking, the EC2 instance has already received an IP address for the malicious domain. If the C2 operator rotates IPs and your Network Firewall domain list has not been updated, the new IP gets through. DNS Firewall blocks the query itself — no resolution means no IP means no connection attempt. Also consider DNS tunneling: malware that encodes C2 communication in DNS queries can bypass Network Firewall entirely because no TCP/UDP connection is made to the C2 server, only DNS packets to a resolver. DNS Firewall stops those queries before the tunnel is established. The two controls complement each other perfectly.
+        </div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          I enabled WAF with the Common Rule Set on my ALB and it blocked some legitimate user traffic. How do I find exactly which rule caused it?
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          The WAF console has a "Sampled requests" view under each Web ACL — it shows recent requests, which rule matched, and what the matching field was. For deeper investigation, enable WAF full logging to a Kinesis Data Firehose, S3, or CloudWatch Logs group. The log record includes the <code>terminatingRuleId</code> (the rule that made the final Allow/Block decision), the <code>httpRequest</code> details, and matched rule labels. Once you have identified the offending rule, go to the Web ACL rule group, open the rule group, and set that specific rule to Count mode via a rule action override — this keeps all other rules enforcing while you observe the false-positive rate. Then either add an exception (a custom allow rule with higher priority), tune the managed rule override, or contact AWS if you believe it is a genuine false positive in their managed list.
+        </div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          For the exam, when a scenario mentions OWASP and asks which AWS service mitigates it, is the answer always WAF?
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          WAF is the answer for OWASP categories that involve application-layer request content — injection (SQLi, XSS), SSRF patterns, and request-size or rate anomalies. But several OWASP categories are not WAF scenarios at all. Broken Access Control (A01, the top category) is an IAM and application authorization problem — WAF cannot determine if a user is authorized to access a specific business object. Cryptographic Failures (A02) are addressed by TLS enforcement, ACM, and KMS — not WAF. Security Misconfiguration (A05) is AWS Config and Security Hub territory. Software Integrity Failures (A08) are a supply-chain and pipeline problem. The exam will offer WAF as a distractor for these categories — knowing what WAF cannot see (authorization logic, encryption state, configuration state) is as important as knowing what it can.
+        </div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          What is the difference between CloudFront geo-restriction and WAF geographic match rules? Can they both do the same thing?
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          Both restrict traffic by country, but with different flexibility. CloudFront geo-restriction applies to the entire distribution — all paths, all behaviors — with a simple allowlist or blocklist of countries. It is built into CloudFront, requires no WAF, and is cheaper. WAF geographic match is more powerful: you can combine it with other conditions (block this country AND this URI path, or block all countries except these AND only if the user agent is suspicious). WAF geo-match lets you write nuanced, multi-condition rules. For a straightforward "this service is only for users in the UK" requirement, CloudFront geo-restriction is the simpler answer. For "block users from these countries accessing the /admin path only," WAF is the right tool. The exam will usually hint at which you need through the specificity of the requirement.
+        </div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q">
+          <span class="who">🧑‍💻 You ask <span class="chev">›</span></span>
+          A lot of these controls overlap. How do I think about which layer to put a control at when multiple controls could technically do the job?
+        </div>
+        <div class="bubble bubble-a">
+          <span class="who">🛡️ Your Mentor</span>
+          Apply the principle of blocking threats at the earliest point where the information to make the decision is available. DNS Firewall blocks before any connection — use it for known-bad domains. NACLs block before the security group — use them for hard CIDR denies. WAF blocks before the request reaches your origin — use it for application-layer threats. This ordering also determines cost and performance: stopping a threat at DNS is cheaper and faster than stopping it at the application layer. Defense-in-depth means you do not rely on any single layer — you apply appropriate controls at every layer, so a failure or bypass of one layer does not expose the whole stack. The exam loves scenarios where one layer fails (a misconfigured security group, a WAF false positive) and you must know which other layer would have caught it.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SCENE 14: RESOURCES -->
+<section class="scene" id="s-resources">
+  <div class="ambient-blob" style="width:380px;height:380px;top:-40px;left:-80px;background:var(--c-infra);opacity:0.1;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Scene 14 &bull; Study Resources</div>
+    <h2 class="kinetic">Go Deeper — Curated Resources</h2>
+    <p class="reveal" style="margin-top:20px; font-size:1rem; color:var(--text-dim); line-height:1.75;">Official AWS documentation (Free) and trusted third-party exam prep resources (Paid). All links go to real, current pages — no fabricated deep links.</p>
+
+    <div class="resource-grid reveal">
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS WAF Developer Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Complete reference for Web ACLs, rule groups, managed rule groups, rate-based rules, and IP sets. Covers the full WAF API and best practices for avoiding false positives.</p>
+        <a href="https://docs.aws.amazon.com/waf/latest/developerguide/waf-chapter.html" target="_blank" rel="noopener">Open Documentation →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>VPC Security Groups &amp; Network ACLs</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Authoritative AWS docs on security groups vs. NACLs — stateful vs. stateless mechanics, rule evaluation order, default NACL behavior, and best practices for layering both.</p>
+        <a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html" target="_blank" rel="noopener">Open Documentation →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Shield Developer Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Full reference for Shield Standard vs. Advanced, DDoS Response Team (DRT) engagement, cost protection, and health-based detection integration with Route 53.</p>
+        <a href="https://docs.aws.amazon.com/waf/latest/developerguide/shield-chapter.html" target="_blank" rel="noopener">Open Documentation →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Network Firewall Developer Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Covers deployment architecture (firewall subnets, route tables), stateless and stateful rule groups, Suricata-compatible IPS rules, and centralized inspection patterns with Transit Gateway.</p>
+        <a href="https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html" target="_blank" rel="noopener">Open Documentation →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>Route 53 Resolver DNS Firewall Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Domain list rule groups, AWS-managed domain lists (malware and botnet), fail-open vs. fail-closed configuration, Firewall Manager integration for multi-VPC deployment.</p>
+        <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall.html" target="_blank" rel="noopener">Open Documentation →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>CloudFront Origin Access Control</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Step-by-step guide to configuring OAC (the modern replacement for OAI), updating S3 bucket policies, and restricting S3 origins to CloudFront-only access.</p>
+        <a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html" target="_blank" rel="noopener">Open Documentation →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS DDoS Best Practices Whitepaper</h4>
+        <div class="source">aws.amazon.com/whitepapers</div>
+        <p>Comprehensive AWS whitepaper on DDoS-resilient reference architectures, layered defense strategy, Shield Advanced use cases, and WAF integration patterns. Directly relevant to SCS-C03.</p>
+        <a href="https://aws.amazon.com/whitepapers/aws-best-practices-for-ddos-resiliency/" target="_blank" rel="noopener">Read Whitepaper →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS re:Post — Network Security Q&amp;A</h4>
+        <div class="source">repost.aws</div>
+        <p>Community-driven Q&amp;A with AWS expert answers on real-world WAF, Shield, NACL, and Network Firewall questions. Great for edge cases and implementation nuances not covered in docs.</p>
+        <a href="https://repost.aws/tags/TAqzVYV5eWTkKjFxWO0bAjHA/aws-waf" target="_blank" rel="noopener">Browse Community →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Tutorials Dojo — SCS-C03 Practice Exams</h4>
+        <div class="source">tutorialsdojo.com</div>
+        <p>Jon Bonso practice exams widely regarded as the closest match to real SCS-C03 question style and difficulty. Includes timed exams, review mode, and per-domain score breakdown. Highly recommended for final exam prep.</p>
+        <a href="https://tutorialsdojo.com/courses/aws-certified-security-specialty-practice-exams/" target="_blank" rel="noopener">View Course →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Adrian Cantrill — AWS Security Specialty</h4>
+        <div class="source">learn.cantrill.io</div>
+        <p>Deep-dive video course with strong visual diagrams of network security architectures. Adrian covers WAF, Shield, Network Firewall, and VPC security with the same layered depth this module targets.</p>
+        <a href="https://learn.cantrill.io" target="_blank" rel="noopener">View Course →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Udemy — AWS Security Specialty by Stephane Maarek / Neal Davis</h4>
+        <div class="source">udemy.com</div>
+        <p>Popular video-based courses covering all SCS-C03 domains. Both instructors include hands-on labs and practice questions. Check Udemy for current availability and pricing.</p>
+        <a href="https://www.udemy.com/courses/search/?q=aws+security+specialty" target="_blank" rel="noopener">Search on Udemy →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>A Cloud Guru / Pluralsight — AWS Security</h4>
+        <div class="source">pluralsight.com</div>
+        <p>Structured learning paths for AWS Security Specialty with hands-on cloud labs. ACG labs let you practice WAF rule configuration, Shield setup, and VPC security in a live AWS environment.</p>
+        <a href="https://www.pluralsight.com/cloud-guru/courses/aws-certified-security-specialty-scs-c02" target="_blank" rel="noopener">View on Pluralsight →</a>
+      </div>
+
+    </div>
+
+    <!-- CLOSING BRIDGE -->
+    <div class="reveal" style="margin-top:60px; background:var(--surface); border:1px solid var(--c-infra-dim); border-radius:16px; padding:36px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--c-infra); margin-bottom:14px;">Next Up → Module 06</div>
+      <h3 style="font-size:1.3rem; margin-bottom:14px;">You have secured the perimeter — now for what lives behind it</h3>
+      <p style="font-size:0.95rem; line-height:1.75; color:var(--text-dim);">This module built the outermost layers of your AWS security architecture: DNS filtering, volumetric DDoS protection, edge WAF, deep-packet VPC inspection, and the network controls that sit closest to your instances. Every layer defends against a different threat class, and none is redundant.</p>
+      <p style="font-size:0.95rem; line-height:1.75; color:var(--text-dim); margin-top:14px;">Module 06 — <strong style="color:var(--text);">Workload, Compute &amp; Hybrid Connectivity Security</strong> — moves inward from the perimeter to the compute layer itself: hardening EC2 and container workloads, securing VPN and Direct Connect hybrid paths, and extending the trust boundary to on-premises environments. The network architecture you built here becomes the foundation everything in Module 06 sits behind.</p>
+      <div class="module-nav" style="margin-top:32px;">
+        <a href="module-04-federation.html">← Module 04: Federation &amp; Identity Center</a>
+        <a href="module-06-workload-hybrid.html">Module 06: Workload &amp; Hybrid Security →</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="inner">
+    <div class="footer-mono">SCS-C03 Self-Paced Course &bull; Module 05 of 15</div>
+    <p>AWS Certified Security – Specialty (SCS-C03) · Network &amp; Edge Security · Domain 3: Infrastructure Security (18%)</p>
+    <p style="margin-top:10px;">This module is part of a 16-module self-contained course. Content reflects AWS services as of the SCS-C03 exam launch (December 2025). AWS services evolve — always verify against current AWS documentation before implementation.</p>
+    <p style="margin-top:16px; font-size:0.8rem; opacity:0.6;">Not affiliated with or endorsed by Amazon Web Services. AWS, Amazon Web Services, and all related service names are trademarks of Amazon.com, Inc.</p>
+  </div>
+</footer>
+
+<script>
+// ── THEME TOGGLE ──
+(function(){
+  var html = document.documentElement;
+  html.style.colorScheme = html.getAttribute("data-theme") === "light" ? "light" : "dark";
+  document.getElementById("themeToggle").addEventListener("click", function(){
+    var next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    html.setAttribute("data-theme", next);
+    html.style.colorScheme = next;
+    this.textContent = next === "dark" ? "☀ Light" : "☾ Dark";
+  });
+})();
+
+// ── SCROLL PROGRESS ──
+function updateProgress(){
+  var h = document.documentElement;
+  var scrolled = h.scrollTop;
+  var height = h.scrollHeight - h.clientHeight;
+  document.getElementById("scrollProgress").style.width = (height > 0 ? (scrolled / height) * 100 : 0) + "%";
+}
+document.addEventListener("scroll", function(){ requestAnimationFrame(updateProgress); });
+
+// ── INTERSECTION OBSERVER: REVEAL + STAGGER ──
+var io = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+}, { threshold: 0.12 });
+document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+
+document.querySelectorAll(".stagger > *").forEach(function(el, i){
+  el.style.transitionDelay = (i * 90) + "ms";
+});
+var staggerIo = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".stagger").forEach(function(el){ staggerIo.observe(el); });
+
+// ── KINETIC HEADINGS ──
+function wrapKinetic(el, text){
+  var words = text.split(" ");
+  el.innerHTML = words.map(function(w, i){
+    return "<span class=\"kw\"><span class=\"kw-inner\" style=\"transition-delay:" + (i * 45) + "ms\">" + w + "</span></span>";
+  }).join(" ");
+}
+document.querySelectorAll("h2.kinetic").forEach(function(h){ wrapKinetic(h, h.textContent); });
+var kIo = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+}, { threshold: 0.35 });
+document.querySelectorAll("h2.kinetic").forEach(function(h){ kIo.observe(h); });
+
+// ── STAT COUNT-UP ──
+document.querySelectorAll(".stat-num").forEach(function(el){
+  new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(!entry.isIntersecting || el.dataset.done) return;
+      el.dataset.done = "1";
+      var target = parseInt(el.dataset.target, 10);
+      var suffix = el.dataset.suffix || "";
+      var prefix = el.dataset.prefix || "";
+      var start = performance.now();
+      var duration = 1100;
+      function tick(now){
+        var p = Math.min((now - start) / duration, 1);
+        el.textContent = prefix + Math.round((1 - Math.pow(1 - p, 3)) * target) + suffix;
+        if(p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  }, { threshold: 0.4 }).observe(el);
+});
+
+// ── TILT CARDS & MAGNETIC BUTTONS ──
+var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(!reduceMotion){
+  document.querySelectorAll(".tilt").forEach(function(card){
+    card.addEventListener("mousemove", function(e){
+      var rect = card.getBoundingClientRect();
+      var px = (e.clientX - rect.left) / rect.width - 0.5;
+      var py = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = "perspective(600px) rotateX(" + (py * -6) + "deg) rotateY(" + (px * 6) + "deg) translateY(-2px)";
+    });
+    card.addEventListener("mouseleave", function(){
+      card.style.transform = "perspective(600px) rotateX(0) rotateY(0)";
+    });
+  });
+  document.querySelectorAll(".magnetic").forEach(function(btn){
+    btn.addEventListener("mousemove", function(e){
+      var rect = btn.getBoundingClientRect();
+      var x = e.clientX - rect.left - rect.width / 2;
+      var y = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = "translate(" + (x * 0.18) + "px, " + (y * 0.35) + "px)";
+    });
+    btn.addEventListener("mouseleave", function(){ btn.style.transform = "translate(0,0)"; });
+  });
+}
+
+// ── INLINE NODE EXPAND ──
+function toggleNode(id){
+  var el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle("open");
+}
+document.querySelectorAll(".mindnode").forEach(function(nd){
+  nd.addEventListener("keydown", function(e){
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); nd.click(); }
+  });
+});
+
+// ── LAYER STACK TOGGLE ──
+function toggleLayer(itemId, detailId){
+  var item = document.getElementById(itemId);
+  var detail = document.getElementById(detailId);
+  if(!item || !detail) return;
+  var isOpen = item.classList.contains("open");
+  // close all
+  document.querySelectorAll(".layer-item").forEach(function(li){ li.classList.remove("open"); });
+  document.querySelectorAll(".layer-detail").forEach(function(ld){ ld.style.maxHeight = "0"; ld.style.opacity = "0"; ld.style.padding = "0 22px"; });
+  if(!isOpen){
+    item.classList.add("open");
+    detail.style.maxHeight = "300px";
+    detail.style.opacity = "1";
+    detail.style.padding = "14px 22px 18px";
+  }
+}
+document.querySelectorAll(".layer-item").forEach(function(li){
+  li.addEventListener("keydown", function(e){
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); li.click(); }
+  });
+});
+
+// ── SHIELD DRAWER ──
+document.getElementById("openShieldDrawer").addEventListener("click", function(){
+  document.getElementById("shieldDrawer").classList.add("open");
+  document.getElementById("shieldOverlay").classList.add("open");
+});
+document.getElementById("closeShieldDrawer").addEventListener("click", function(){
+  document.getElementById("shieldDrawer").classList.remove("open");
+  document.getElementById("shieldOverlay").classList.remove("open");
+});
+document.getElementById("shieldOverlay").addEventListener("click", function(){
+  document.getElementById("shieldDrawer").classList.remove("open");
+  this.classList.remove("open");
+});
+
+// ── DISCUSSION FAQ ──
+document.querySelectorAll(".discussion-pair").forEach(function(pair){
+  pair.querySelector(".bubble-q").addEventListener("click", function(){
+    pair.classList.toggle("open");
+  });
+});
+
+// ── SCENARIO CARDS (Which Control) ──
+function toggleWC(card){
+  var wasOpen = card.classList.contains("open");
+  document.querySelectorAll(".wc-card").forEach(function(c){ c.classList.remove("open"); });
+  if(!wasOpen) card.classList.add("open");
+}
+
+// ── TRAP CARDS ──
+function toggleTrap(id){
+  var card = document.getElementById(id);
+  if(!card) return;
+  card.classList.toggle("open");
+}
+
+// ── DECISION TREE ──
+function showDT(step){
+  document.querySelectorAll(".dtree-step").forEach(function(el){ el.classList.remove("active"); });
+  var target = document.getElementById("dt-" + step);
+  if(target) target.classList.add("active");
+}
+
+// ── QUIZ ──
+var quizState = {};
+
+function selectOpt(optEl){
+  var qEl = optEl.closest(".quiz-question");
+  if(qEl.dataset.answered) return;
+  qEl.querySelectorAll(".quiz-option").forEach(function(o){ o.classList.remove("selected"); });
+  optEl.classList.add("selected");
+  qEl.dataset.selected = optEl.dataset.opt;
+}
+
+function submitQuiz(){
+  var questions = document.querySelectorAll(".quiz-question");
+  var correct = 0;
+  var answered = 0;
+  questions.forEach(function(q){
+    var selected = q.dataset.selected;
+    var rightAnswer = q.dataset.correct;
+    if(!selected) return;
+    answered++;
+    q.dataset.answered = "1";
+    q.querySelectorAll(".quiz-option").forEach(function(opt){
+      if(opt.dataset.opt === rightAnswer) opt.classList.add("correct");
+      else if(opt.dataset.opt === selected && selected !== rightAnswer) opt.classList.add("wrong");
+    });
+    var reveal = q.querySelector(".quiz-reveal");
+    if(reveal) reveal.classList.add("show");
+    if(selected === rightAnswer) correct++;
+  });
+  var total = questions.length;
+  var sb = document.getElementById("scoreBoard");
+  sb.style.display = "block";
+  document.getElementById("scoreNum").textContent = correct + "/" + total;
+  var pct = Math.round((correct / total) * 100);
+  var msg = "";
+  if(pct >= 90) msg = "Excellent — you are exam-ready on this domain.";
+  else if(pct >= 75) msg = "Strong result. Review the questions you missed and you are on track.";
+  else if(pct >= 60) msg = "Good foundation. Re-read the scenes covering your missed questions.";
+  else msg = "Work through the teaching content again — focus on the stateful vs. stateless distinction and WAF vs. Shield scenarios.";
+  document.getElementById("scoreMsg").textContent = pct + "% correct — " + msg;
+  sb.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function resetQuiz(){
+  document.querySelectorAll(".quiz-question").forEach(function(q){
+    delete q.dataset.selected;
+    delete q.dataset.answered;
+    q.querySelectorAll(".quiz-option").forEach(function(o){
+      o.classList.remove("selected", "correct", "wrong");
+    });
+    var reveal = q.querySelector(".quiz-reveal");
+    if(reveal) reveal.classList.remove("show");
+  });
+  var sb = document.getElementById("scoreBoard");
+  sb.style.display = "none";
+}
+
+// ── SIDE RAIL NAVIGATION ──
+var scenes = [
+  { id: "s-hero",     label: "Intro" },
+  { id: "s-sg-nacl",  label: "SG vs NACL" },
+  { id: "s-waf",      label: "WAF" },
+  { id: "s-shield",   label: "Shield" },
+  { id: "s-cloudfront", label: "CloudFront" },
+  { id: "s-nfw",      label: "Network FW" },
+  { id: "s-dns",      label: "DNS FW" },
+  { id: "s-owasp",    label: "OWASP" },
+  { id: "s-defense",  label: "Defense-in-Depth" },
+  { id: "s-dtree",    label: "WAF Tree" },
+  { id: "s-which",    label: "Which Control" },
+  { id: "s-traps",    label: "Traps" },
+  { id: "s-exam",     label: "Exam" },
+  { id: "s-faq",      label: "FAQ" },
+  { id: "s-resources", label: "Resources" }
+];
+
+var rail = document.getElementById("sideRail");
+scenes.forEach(function(sc, idx){
+  var dot = document.createElement("div");
+  dot.className = "rail-dot";
+  dot.setAttribute("title", sc.label);
+  dot.setAttribute("tabindex", "0");
+  dot.setAttribute("role", "button");
+  dot.setAttribute("aria-label", "Go to: " + sc.label);
+  dot.addEventListener("click", function(){
+    var el = document.getElementById(sc.id);
+    if(el) el.scrollIntoView({ behavior: "smooth" });
+  });
+  dot.addEventListener("keydown", function(e){
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); dot.click(); }
+  });
+  rail.appendChild(dot);
+});
+
+var railIo = new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+    if(entry.isIntersecting){
+      var idx = scenes.findIndex(function(s){ return s.id === entry.target.id; });
+      if(idx >= 0){
+        rail.querySelectorAll(".rail-dot").forEach(function(d){ d.classList.remove("active"); });
+        var dots = rail.querySelectorAll(".rail-dot");
+        if(dots[idx]) dots[idx].classList.add("active");
+      }
+    }
+  });
+}, { threshold: 0.3 });
+
+scenes.forEach(function(sc){
+  var el = document.getElementById(sc.id);
+  if(el) railIo.observe(el);
+});
+</script>
+</body>
+</html>

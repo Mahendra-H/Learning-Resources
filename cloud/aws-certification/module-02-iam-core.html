@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 02: IAM Core: Policies, Roles & Trust</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — locked design system, copied exactly from Module 0
+   ============================================================ */
+:root{
+  --grain-opacity: 0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg: rgba(10,14,26,0.72);
+  --node-glow: rgba(76,134,255,0.28);
+  --overlay: rgba(4,6,14,0.6);
+  --grid-line: rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+  --red:#D9534F;
+}
+html[data-theme="dark"]{ color-scheme: dark; }
+html[data-theme="light"]{
+  color-scheme: light;
+  --grain-opacity: 0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow: 0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg: rgba(246,247,251,0.72);
+  --node-glow: rgba(47,111,237,0.20);
+  --overlay: rgba(20,26,40,0.35);
+  --grid-line: rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+  --red:#C4453F;
+}
+
+/* ============================================================
+   RESET + BASE — bug fix #1: every top-level surface declares
+   its own explicit background, never inherits from body alone
+   ============================================================ */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; background:var(--bg); scroll-padding-top:96px; }
+body{
+  background:var(--bg); color:var(--text); font-family:'Inter',sans-serif;
+  transition:background .4s ease, color .4s ease; overflow-x:hidden; margin:0;
+  font-size:16px; line-height:1.65;
+}
+img,svg{ max-width:100%; }
+::selection{ background:var(--accent); color:#fff; }
+
+h1,h2,h3,h4{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.02em; margin:0; color:var(--text); }
+h2{ font-weight:700; font-size:clamp(1.9rem, 4.2vw, 3.1rem); line-height:1.12; }
+h3{ font-weight:600; font-size:clamp(1.25rem, 2.4vw, 1.6rem); line-height:1.25; }
+p{ margin:0 0 1.1em; color:var(--text); }
+p.lead{ font-size:1.15rem; color:var(--text-dim); }
+strong{ color:var(--text); font-weight:600; }
+a{ color:var(--accent); }
+code, .mono{ font-family:'JetBrains Mono',monospace; }
+
+.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); overflow:hidden; }
+.scene-inner{ max-width:840px; margin:0 auto; position:relative; z-index:2; }
+.scene-inner.wide{ max-width:1040px; }
+footer{ padding:80px 40px 60px; background:var(--bg); color:var(--text-dim); position:relative; }
+
+/* Eyebrow label */
+.eyebrow{
+  display:inline-flex; align-items:center; gap:10px; font-family:'JetBrains Mono',monospace;
+  font-size:0.78rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--c-iam);
+  margin-bottom:22px; font-weight:500;
+}
+.eyebrow::before{ content:''; width:24px; height:1px; background:var(--c-iam); display:inline-block; }
+
+/* ============================================================
+   GRAIN OVERLAY — bug fix #2: no mix-blend-mode, ever
+   ============================================================ */
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity, 0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Scroll progress */
+#scrollProgress{ position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:300; transition:width .08s linear; }
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.topnav{
+  position:fixed; top:0; left:0; right:0; z-index:150;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 40px; background:var(--nav-bg); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.nav-id{ display:flex; align-items:center; gap:12px; }
+.nav-badge{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:0.08em; color:var(--c-iam); background:var(--c-iam-dim); padding:5px 10px; border-radius:6px; font-weight:500; }
+.nav-title{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:0.95rem; color:var(--text); }
+.nav-domain{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text-dim); display:none; }
+@media(min-width:720px){ .nav-domain{ display:inline; } }
+.nav-right{ display:flex; align-items:center; gap:14px; }
+
+.theme-toggle{
+  width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text);
+  transition:transform .5s cubic-bezier(.16,1,.3,1), background .3s ease;
+}
+.theme-toggle:hover{ background:var(--surface-raised); }
+.theme-toggle.spin{ transform:rotate(360deg); }
+.theme-toggle svg{ width:18px; height:18px; }
+
+/* ============================================================
+   RAIL NAV
+   ============================================================ */
+.rail{ position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px; }
+.rail-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease, transform .3s ease; padding:0; }
+.rail-dot.active{ background:var(--accent); border-color:var(--accent); transform:scale(1.3); }
+@media (max-width:900px){ .rail{display:none;} }
+
+/* ============================================================
+   AMBIENT BLOBS
+   ============================================================ */
+.ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
+@keyframes driftBlob{ 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(4%,-6%) scale(1.08);} 100%{transform:translate(-5%,4%) scale(0.96);} }
+
+/* ============================================================
+   KINETIC HEADINGS
+   ============================================================ */
+.kw{ display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em; }
+.kw-inner{ display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1); }
+.in .kw-inner{ transform:translateY(0); }
+
+/* ============================================================
+   TITLE CARDS
+   ============================================================ */
+.title-card{ min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; padding:40px; }
+.title-card h2{ font-size:clamp(2.2rem, 7vw, 5.4rem); line-height:1.1; font-weight:700; color:var(--card-text); }
+.title-card .tc-sub{ font-family:'JetBrains Mono',monospace; color:#7C8AB8; font-size:0.85rem; letter-spacing:0.1em; text-transform:uppercase; margin-top:24px; }
+.scanbeam{ position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg, transparent, rgba(76,134,255,0.14), transparent); animation:scanSweep 6s linear infinite; }
+@keyframes scanSweep{ 0%{top:-140px;} 100%{top:100%;} }
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+.reveal{ opacity:0; transform:translateY(28px); transition:opacity .8s ease, transform .8s ease; }
+.reveal.in{ opacity:1; transform:translateY(0); }
+.stagger > *{ opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease, transform .6s ease; }
+.stagger.in > *{ opacity:1; transform:translateY(0) scale(1); }
+
+/* ============================================================
+   DRAWER
+   ============================================================ */
+.drawer-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px); }
+.drawer-overlay.open{ opacity:1; pointer-events:auto; }
+.drawer{ position:fixed; top:0; right:0; height:100%; width:min(420px, 90vw); background:var(--surface-raised); border-left:1px solid var(--line); z-index:201; padding:36px 32px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); box-shadow:-20px 0 60px rgba(0,0,0,0.35); }
+.drawer.open{ transform:translateX(0); }
+.drawer-close{ width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; font-size:1.1rem; line-height:1; margin-bottom:20px; }
+.drawer h3{ margin-bottom:14px; }
+.drawer dl{ margin:0; }
+.drawer dt{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-iam); margin-top:20px; }
+.drawer dd{ margin:6px 0 0; color:var(--text-dim); font-size:0.94rem; }
+
+/* ============================================================
+   BOTTOM SHEET
+   ============================================================ */
+.bottom-sheet-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.bottom-sheet-overlay.open{ opacity:1; pointer-events:auto; }
+.bottom-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:201; background:var(--surface-raised); border-top:1px solid var(--line); border-radius:20px 20px 0 0; padding:32px 40px 40px; transform:translateY(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); max-width:760px; margin:0 auto; box-shadow:0 -20px 60px rgba(0,0,0,0.35); max-height:80vh; overflow-y:auto; }
+.bottom-sheet.open{ transform:translateY(0); }
+.sheet-close{ width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; font-size:1.1rem; line-height:1; float:right; }
+.sheet-step{ display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--line); align-items:flex-start; }
+.sheet-step:last-of-type{ border-bottom:none; }
+.sheet-step-num{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--text-dim); min-width:26px; padding-top:2px; }
+.sheet-step-body strong{ display:block; margin-bottom:3px; }
+.sheet-result{ margin-top:18px; padding:14px 18px; border-radius:10px; font-family:'JetBrains Mono',monospace; font-weight:500; font-size:0.95rem; }
+.sheet-result.allow{ background:rgba(52,211,153,0.12); color:var(--green); border:1px solid rgba(52,211,153,0.3); }
+.sheet-result.deny{ background:rgba(217,83,79,0.12); color:var(--red); border:1px solid rgba(217,83,79,0.3); }
+
+/* ============================================================
+   BUTTONS / CHIPS
+   ============================================================ */
+.btn{ font-family:'Inter',sans-serif; font-weight:600; font-size:0.9rem; padding:11px 22px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; transition:background .25s ease, border-color .25s ease, transform .2s ease; }
+.btn:hover{ border-color:var(--accent); }
+.btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn.primary:hover{ background:var(--accent-dim); }
+.btn:focus-visible, .rail-dot:focus-visible, .theme-toggle:focus-visible, .choice-btn:focus-visible, .cond-card:focus-visible, .json-key:focus-visible, .drawer-trigger:focus-visible, .flow-node:focus-visible, .faq-q:focus-visible, .act-item:focus-visible{
+  outline:2px solid var(--accent); outline-offset:3px;
+}
+.chip{ display:inline-flex; align-items:center; font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:0.04em; padding:4px 10px; border-radius:6px; background:var(--c-iam-dim); color:var(--c-iam); font-weight:500; }
+
+/* ============================================================
+   CODE BLOCKS (policy JSON)
+   ============================================================ */
+.code-label{ font-family:'JetBrains Mono',monospace; font-size:0.76rem; color:var(--text-dim); margin-bottom:8px; letter-spacing:0.02em; }
+.code-block{
+  font-family:'JetBrains Mono',monospace; font-size:0.86rem; line-height:1.65; background:var(--surface-raised);
+  border:1px solid var(--line); border-radius:12px; padding:20px 22px; overflow-x:auto; color:var(--text);
+  margin:0 0 20px;
+}
+.code-block .jk{ color:var(--c-iam); }
+.code-block .jv-allow{ color:var(--green); }
+.code-block .jv-deny{ color:var(--red); }
+.code-block .jv{ color:var(--amber); }
+.code-block .jc{ color:var(--text-dim); }
+
+/* ============================================================
+   CALLOUT / LAB / PRODUCTION-SCENARIO / TRAP components
+   ============================================================ */
+.callout{ border-left:3px solid var(--c-iam); background:var(--surface); border-radius:0 12px 12px 0; padding:20px 24px; margin:28px 0; }
+.callout-label{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-iam); margin-bottom:8px; font-weight:500; }
+.callout.trap{ border-left-color:var(--red); }
+.callout.trap .callout-label{ color:var(--red); }
+.callout.scenario{ border-left-color:var(--amber); }
+.callout.scenario .callout-label{ color:var(--amber); }
+.callout p:last-child{ margin-bottom:0; }
+
+.diagram-shell{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:32px; margin:32px 0; }
+.diagram-caption{ font-family:'JetBrains Mono',monospace; font-size:0.76rem; color:var(--text-dim); margin-top:16px; text-align:center; }
+
+/* ============================================================
+   COMPARISON TABLE
+   ============================================================ */
+.table-wrap{ overflow-x:auto; margin:32px 0; border-radius:14px; border:1px solid var(--line); }
+table.compare{ width:100%; border-collapse:collapse; min-width:640px; background:var(--surface); }
+table.compare th, table.compare td{ text-align:left; padding:14px 18px; border-bottom:1px solid var(--line); font-size:0.9rem; vertical-align:top; }
+table.compare th{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); background:var(--surface-raised); }
+table.compare td:first-child, table.compare th:first-child{ font-weight:600; color:var(--text); white-space:nowrap; }
+table.compare tr:last-child td{ border-bottom:none; }
+
+/* ============================================================
+   POLICY TYPE CARDS (drawer triggers)
+   ============================================================ */
+.type-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin:28px 0; }
+.type-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; cursor:pointer; text-align:left; transition:transform .35s cubic-bezier(.16,1,.3,1), border-color .3s ease; }
+.type-card:hover{ border-color:var(--c-iam); }
+.type-card h4{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.05rem; margin-bottom:8px; color:var(--text); }
+.type-card p{ font-size:0.86rem; color:var(--text-dim); margin-bottom:12px; }
+.type-card .drawer-trigger-label{ font-family:'JetBrains Mono',monospace; font-size:0.74rem; color:var(--c-iam); }
+
+/* ============================================================
+   FLOW DIAGRAM (SVG nodes)
+   ============================================================ */
+.flow-node rect{ fill:var(--surface); stroke:var(--line); stroke-width:1.5; transition:stroke .3s ease, fill .3s ease; }
+.flow-node text{ fill:var(--text); font-family:'Inter',sans-serif; }
+.flow-node .fn-title{ font-weight:600; font-size:13px; }
+.flow-node .fn-sub{ font-size:10.5px; fill:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+.flow-node:hover rect, .flow-node.active rect{ stroke:var(--c-iam); fill:var(--c-iam-dim); }
+.flow-arrow{ stroke:var(--line); stroke-width:1.5; fill:none; marker-end:url(#arrowhead); }
+.flow-desc{ display:none; padding:18px 20px; background:var(--surface-raised); border-radius:10px; margin-top:18px; border:1px solid var(--line); }
+.flow-desc.active{ display:block; }
+.flow-desc strong{ display:block; margin-bottom:6px; color:var(--c-iam); font-family:'JetBrains Mono',monospace; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+
+/* ============================================================
+   EVALUATOR CARDS
+   ============================================================ */
+.eval-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px 30px; margin-bottom:22px; }
+.eval-num{ font-family:'JetBrains Mono',monospace; font-size:0.74rem; color:var(--c-iam); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:14px; font-weight:500; }
+.eval-request{ background:var(--surface-raised); border-radius:10px; padding:14px 16px; margin:16px 0; font-size:0.92rem; }
+.eval-request strong{ color:var(--c-iam); }
+.eval-choices{ display:flex; gap:12px; margin:18px 0; }
+.choice-btn{ flex:1; font-family:'JetBrains Mono',monospace; font-weight:500; padding:12px; border-radius:10px; border:1px solid var(--line); background:var(--surface-raised); color:var(--text); cursor:pointer; transition:all .25s ease; text-transform:uppercase; font-size:0.82rem; letter-spacing:0.05em; }
+.choice-btn:hover{ border-color:var(--c-iam); }
+.choice-btn.picked-correct{ background:rgba(52,211,153,0.14); border-color:var(--green); color:var(--green); }
+.choice-btn.picked-wrong{ background:rgba(217,83,79,0.14); border-color:var(--red); color:var(--red); }
+.reveal-btn{ width:100%; font-family:'JetBrains Mono',monospace; font-size:0.82rem; padding:12px; border-radius:10px; border:1px dashed var(--line); background:transparent; color:var(--text-dim); cursor:pointer; transition:all .25s ease; }
+.reveal-btn:hover{ border-color:var(--c-iam); color:var(--c-iam); }
+
+/* ============================================================
+   CONDITION KEY CARDS
+   ============================================================ */
+.cond-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin:28px 0; }
+.cond-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 22px; cursor:pointer; text-align:left; width:100%; }
+.cond-card .cond-key{ font-family:'JetBrains Mono',monospace; font-size:0.86rem; color:var(--c-iam); font-weight:500; }
+.cond-card .cond-summary{ font-size:0.85rem; color:var(--text-dim); margin-top:8px; }
+.cond-detail{ display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+.cond-detail.open{ display:block; }
+.cond-detail pre{ margin:10px 0 0; }
+
+/* ============================================================
+   ACTION CHECKLIST (NotAction scene)
+   ============================================================ */
+.act-list{ margin:24px 0; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+.act-item{ display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); background:var(--surface); cursor:pointer; width:100%; text-align:left; font-family:'JetBrains Mono',monospace; font-size:0.88rem; color:var(--text); }
+.act-item:last-child{ border-bottom:none; }
+.act-item .act-verdict{ font-size:0.74rem; text-transform:uppercase; letter-spacing:0.05em; padding:4px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; opacity:0; transition:opacity .25s ease; }
+.act-item.checked .act-verdict{ opacity:1; }
+.act-item.checked .act-verdict.granted{ background:rgba(52,211,153,0.14); color:var(--green); }
+.act-item.checked .act-verdict.blocked{ background:rgba(217,83,79,0.14); color:var(--red); }
+.act-explain{ display:none; padding:0 20px 16px; font-family:'Inter',sans-serif; font-size:0.86rem; color:var(--text-dim); background:var(--surface); }
+.act-explain.open{ display:block; }
+
+/* ============================================================
+   TRAP GALLERY
+   ============================================================ */
+.trap-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; margin:28px 0; }
+.trap-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px; }
+.trap-card .trap-tag{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.07em; color:var(--red); margin-bottom:10px; display:block; }
+.trap-card h4{ font-family:'Space Grotesk',sans-serif; font-size:1.05rem; margin-bottom:14px; }
+.trap-row{ margin-bottom:10px; font-size:0.87rem; }
+.trap-row .trap-label{ font-family:'JetBrains Mono',monospace; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); display:block; margin-bottom:3px; }
+.trap-principle{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); font-size:0.85rem; color:var(--c-iam); }
+
+/* ============================================================
+   MOCK EXAM
+   ============================================================ */
+.exam-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; flex-wrap:wrap; gap:14px; }
+.score-tracker{ font-family:'JetBrains Mono',monospace; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 18px; font-size:0.9rem; }
+.score-tracker span{ color:var(--c-iam); font-weight:600; }
+.exam-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin-bottom:20px; }
+.exam-q-num{ font-family:'JetBrains Mono',monospace; font-size:0.74rem; color:var(--text-dim); margin-bottom:10px; }
+.exam-q-text{ font-size:1.02rem; font-weight:500; margin-bottom:18px; }
+.exam-options{ display:flex; flex-direction:column; gap:10px; }
+.exam-opt{ text-align:left; padding:13px 16px; border-radius:10px; border:1px solid var(--line); background:var(--surface-raised); color:var(--text); cursor:pointer; font-size:0.9rem; transition:all .2s ease; }
+.exam-opt:hover{ border-color:var(--c-iam); }
+.exam-opt.correct{ border-color:var(--green); background:rgba(52,211,153,0.1); color:var(--green); }
+.exam-opt.incorrect{ border-color:var(--red); background:rgba(217,83,79,0.1); color:var(--red); }
+.exam-explain{ display:none; margin-top:16px; padding:16px 18px; background:var(--surface-raised); border-radius:10px; font-size:0.87rem; color:var(--text-dim); border-left:3px solid var(--c-iam); }
+.exam-explain.open{ display:block; }
+
+/* ============================================================
+   FAQ ACCORDION
+   ============================================================ */
+.faq-item{ border-bottom:1px solid var(--line); }
+.faq-item:first-child{ border-top:1px solid var(--line); }
+.faq-q{ width:100%; text-align:left; background:none; border:none; padding:20px 4px; font-family:'Space Grotesk',sans-serif; font-size:1rem; font-weight:600; color:var(--text); cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.faq-q .faq-plus{ font-family:'JetBrains Mono',monospace; font-size:1.2rem; color:var(--c-iam); transition:transform .3s ease; flex-shrink:0; }
+.faq-item.open .faq-plus{ transform:rotate(45deg); }
+.faq-a{ display:none; padding:0 4px 22px; color:var(--text-dim); font-size:0.94rem; max-width:680px; }
+.faq-a.open{ display:block; }
+
+/* ============================================================
+   STAT COUNT-UP
+   ============================================================ */
+.stat-row{ display:flex; gap:40px; flex-wrap:wrap; margin-top:36px; }
+.stat{ font-family:'JetBrains Mono',monospace; }
+.stat-num{ font-size:2.4rem; font-weight:600; color:var(--c-iam); display:block; }
+.stat-label{ font-size:0.78rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; }
+
+/* ============================================================
+   BRIDGE / PREV-NEXT
+   ============================================================ */
+.bridge-card{ background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--c-iam); border-radius:0 14px 14px 0; padding:22px 26px; margin:28px 0; font-size:0.94rem; color:var(--text-dim); }
+.pn-nav{ display:flex; justify-content:space-between; gap:20px; max-width:840px; margin:0 auto 40px; flex-wrap:wrap; }
+.pn-link{ flex:1; min-width:220px; border:1px solid var(--line); border-radius:14px; padding:18px 22px; text-decoration:none; color:var(--text); background:var(--surface); transition:border-color .3s ease; }
+.pn-link:hover{ border-color:var(--c-iam); }
+.pn-link .pn-dir{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:6px; }
+.pn-link .pn-title{ font-family:'Space Grotesk',sans-serif; font-weight:600; }
+.pn-link.next{ text-align:right; }
+.footer-meta{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:0.76rem; }
+
+/* ============================================================
+   RESPONSIVE + REDUCED MOTION
+   ============================================================ */
+@media(max-width:720px){
+  .scene{ padding:120px 22px; }
+  .eval-choices{ flex-direction:column; }
+  .exam-header{ flex-direction:column; align-items:flex-start; }
+}
+.json-key{ cursor:pointer; color:var(--c-iam); border-bottom:1px dashed var(--accent-dim); padding-bottom:1px; }
+.json-key.active-key{ background:var(--c-iam-dim); border-radius:3px; border-bottom-color:transparent; }
+.pair-panel{ display:none; }
+.pair-panel.active{ display:block; }
+.pair-toggle-row{ display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+}
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress"></div>
+
+<nav class="topnav">
+  <div class="nav-id">
+    <span class="nav-badge">SCS-C03</span>
+    <span class="nav-title">Module 02 · IAM Core</span>
+    <span class="nav-domain">Domain 4 — Identity &amp; Access Management</span>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark theme">
+      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+  </div>
+</nav>
+
+<div class="rail" id="railNav" aria-label="Section navigation"></div>
+
+<main id="mainContent">
+<section class="scene" id="scene-users">
+  <div class="ambient-blob" style="width:440px;height:440px;top:-140px;right:-120px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="ambient-blob" style="width:320px;height:320px;bottom:60px;left:-140px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 01 — Identities &amp; Access</div>
+    <h2 class="kinetic reveal">Who Gets To Touch What</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">Module 1 drew the line of the shared responsibility model — you now know, cleanly, what AWS secures and what is yours. IAM is where that line becomes operational. Shared responsibility told you what you own. IAM is the mechanism you use to control who is allowed to touch it: every S3 bucket, every EC2 instance, every KMS key you are accountable for is only as protected as the identities and policies standing in front of it. This module makes that control mechanism concrete, mechanical, and testable.</p>
+    </div>
+
+    <div class="stat-row reveal">
+      <div class="stat"><span class="stat-num" data-target="20" data-suffix="%">0%</span><span class="stat-label">Largest exam domain</span></div>
+      <div class="stat"><span class="stat-num" data-target="150" data-suffix=" min">0 min</span><span class="stat-label">Estimated study time</span></div>
+      <div class="stat"><span class="stat-num" data-target="5">0</span><span class="stat-label">Core concepts, one policy engine</span></div>
+    </div>
+
+    <h3 class="reveal" style="margin-top:64px;">IAM users: long-term identity</h3>
+    <div class="reveal">
+      <p>An IAM user is a long-term identity: a named entity in your account with persistent credentials attached to it — a console password, and optionally one or two access keys for programmatic calls. A user represents something that exists indefinitely, the same way an employee badge exists until someone deactivates it. Under the hood, a user is really just an identity that IAM can attach policies to and that AWS can authenticate directly, with no handoff to another service required.</p>
+      <p>This is the core of why users are handled carefully on this exam: everything about a user's credentials is static until a human rotates or revokes it. If a user's access key leaks, that key stays valid — with whatever permissions the user carries — until someone notices and acts. There is no expiry working in your favor by default.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:44px;">IAM groups: not an identity</h3>
+    <div class="reveal">
+      <p>A group is not an identity, and this trips up more candidates than almost anything else in this domain. A group is purely a container for attaching policies to several users at once — a management convenience, nothing more. You cannot log in as a group. You cannot place a group in the Principal element of a trust policy and have it mean "anyone in this group." AWS will not let you assume a group, because there is no identity there to assume — only a bundle of policy attachments that happen to apply to whichever users are members. When a scenario question describes a group, read carefully for whether it is really asking about the users inside it.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:44px;">IAM roles: temporary by design</h3>
+    <div class="reveal">
+      <p>A role is the opposite of a user in exactly the way that matters most: it carries no permanent credentials at all. A role is an identity that something else — a person, an application, an AWS service — assumes temporarily. When a caller assumes a role, IAM does not hand over a static secret. The request goes to AWS STS, which checks the caller against the role's trust policy (the "who is allowed to become this role" half of the role) and, if that check passes, issues a temporary security credential: an access key ID, a secret access key, and a session token, bundled together and set to expire automatically — anywhere from 15 minutes up to 12 hours later, depending on how the role is configured.</p>
+      <p>Once that credential expires, it is simply gone. Nobody has to rotate it, revoke it, or remember it exists. This is the entire reason roles are the default answer on this exam for almost every access pattern — an EC2 instance calling S3, a Lambda function calling DynamoDB, one AWS account calling into another — because a credential that expires on its own is a credential that cannot quietly turn into a standing liability.</p>
+    </div>
+
+    <div class="diagram-shell reveal" id="assumeRoleFlow">
+      <svg viewBox="0 0 780 190" role="img" aria-label="Diagram of the AssumeRole flow from caller to temporary credentials">
+        <defs>
+          <marker id="arrowUsers" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="var(--line)"></path></marker>
+        </defs>
+        <path class="flow-arrow" d="M175,100 L205,100" marker-end="url(#arrowUsers)"></path>
+        <path class="flow-arrow" d="M390,100 L415,100" marker-end="url(#arrowUsers)"></path>
+        <path class="flow-arrow" d="M600,100 L625,100" marker-end="url(#arrowUsers)"></path>
+
+        <g class="flow-node active" data-step="caller" tabindex="0" role="button" aria-label="Step 1: Caller">
+          <rect x="10" y="55" width="165" height="90" rx="12"></rect>
+          <text x="92" y="95" text-anchor="middle" class="fn-title">Caller</text>
+          <text x="92" y="118" text-anchor="middle" class="fn-sub">App, user, or service</text>
+        </g>
+        <g class="flow-node" data-step="request" tabindex="0" role="button" aria-label="Step 2: sts AssumeRole request">
+          <rect x="207" y="55" width="183" height="90" rx="12"></rect>
+          <text x="298" y="95" text-anchor="middle" class="fn-title">sts:AssumeRole</text>
+          <text x="298" y="118" text-anchor="middle" class="fn-sub">Request to become the role</text>
+        </g>
+        <g class="flow-node" data-step="trust" tabindex="0" role="button" aria-label="Step 3: Trust policy check">
+          <rect x="417" y="55" width="183" height="90" rx="12"></rect>
+          <text x="508" y="95" text-anchor="middle" class="fn-title">Trust Policy Check</text>
+          <text x="508" y="118" text-anchor="middle" class="fn-sub">Does this caller qualify?</text>
+        </g>
+        <g class="flow-node" data-step="creds" tabindex="0" role="button" aria-label="Step 4: Temporary credentials issued">
+          <rect x="627" y="55" width="145" height="90" rx="12"></rect>
+          <text x="699" y="95" text-anchor="middle" class="fn-title">Temp Creds</text>
+          <text x="699" y="118" text-anchor="middle" class="fn-sub">Expires on its own</text>
+        </g>
+      </svg>
+
+      <div class="flow-desc active" data-step="caller"><strong>01 · Caller</strong>Could be a person in the console, an application calling the SDK, or another AWS service such as EC2 or Lambda acting on your behalf. Whatever it is, it does not already hold the permissions it is about to use.</div>
+      <div class="flow-desc" data-step="request"><strong>02 · sts:AssumeRole</strong>The caller sends a request to AWS Security Token Service naming the role it wants to become. This is a single API call — no credentials change hands yet, only a request.</div>
+      <div class="flow-desc" data-step="trust"><strong>03 · Trust Policy Check</strong>STS checks the role's trust policy: the list of principals allowed to assume this specific role. If the caller is not named there, directly or through a condition it satisfies, the request fails here, before any permissions are even considered.</div>
+      <div class="flow-desc" data-step="creds"><strong>04 · Temp Creds</strong>STS issues a temporary access key ID, secret access key, and session token, scoped to the role's permission policy and set to expire on a timer the role's configuration controls. When the clock runs out, the credential simply stops working — no revocation step required.</div>
+      <div class="diagram-caption">Click or tab through each step</div>
+    </div>
+
+    <div class="callout scenario reveal">
+      <div class="callout-label">Production scenario</div>
+      <p>A platform team configured a CI/CD deployment role with the maximum 12-hour session duration, reasoning that long-running pipelines occasionally needed the extra room and they did not want jobs failing mid-deploy from an expired credential. Months later, a compromised build agent's temporary credentials stayed valid for most of a workday before anyone noticed the anomaly — the same auto-expiry that makes roles safer by default had been configured away. The fix was not abandoning roles; it was matching session duration to the actual job length, not to the maximum the API allows.</p>
+    </div>
+
+    <div class="callout trap reveal">
+      <div class="callout-label">Common mistake</div>
+      <p>A surprising number of real-world IAM misconfigurations trace back to treating a group as if it were a principal. If a trust policy or resource policy ever references a group ARN as a Principal, that policy is broken — AWS will not evaluate it the way the author intended, because a group can neither be assumed nor authenticated as. On the exam this shows up as a scenario where access unexpectedly fails; the fix is almost always "reference the actual role or user, not the group."</p>
+    </div>
+
+    <div class="callout reveal">
+      <div class="callout-label">Exam angle</div>
+      <p>Expect direct tests of the mechanism, not just the vocabulary: which service issues temporary credentials (STS, not IAM itself), what a trust policy actually governs versus a permission policy, and why a long-lived access key is treated as something to minimize rather than something to forbid outright. If a question's correct answer involves "avoid storing static credentials," it is almost always steering you toward a role.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-policy-types">
+  <div class="ambient-blob" style="width:380px;height:380px;top:10%;right:-160px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 02 — Policy Types</div>
+    <h2 class="kinetic reveal">Four Ways To Grant The Same Permission</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">Every permission in AWS is granted by a policy, but "policy" is not one thing — it is four distinct mechanisms that differ in where they live, how they are reused, and what they are capable of. Picking the right one is a judgment the exam tests directly: not just "what is a resource-based policy" but "given this exact requirement, which of the four is the only correct tool."</p>
+    </div>
+
+    <div class="type-grid reveal">
+      <button class="type-card tilt" data-target="tpl-identity" aria-haspopup="dialog">
+        <h4>Identity-based</h4>
+        <p>Attached to a user, group, or role. Answers "what can this identity do?"</p>
+        <span class="drawer-trigger-label">View full breakdown →</span>
+      </button>
+      <button class="type-card tilt" data-target="tpl-resource" aria-haspopup="dialog">
+        <h4>Resource-based</h4>
+        <p>Attached to the resource itself. Answers "who can touch this?"</p>
+        <span class="drawer-trigger-label">View full breakdown →</span>
+      </button>
+      <button class="type-card tilt" data-target="tpl-inline" aria-haspopup="dialog">
+        <h4>Inline</h4>
+        <p>Embedded in exactly one identity. No reuse, no independent existence.</p>
+        <span class="drawer-trigger-label">View full breakdown →</span>
+      </button>
+      <button class="type-card tilt" data-target="tpl-managed" aria-haspopup="dialog">
+        <h4>Managed</h4>
+        <p>A standalone, reusable object. AWS-managed or customer-managed.</p>
+        <span class="drawer-trigger-label">View full breakdown →</span>
+      </button>
+    </div>
+
+    <div class="reveal">
+      <p>An <strong>identity-based policy</strong> attaches to a user, group, or role and answers one question: what can this identity do? It is the default mental model most engineers start with — permissions travel with the identity, wherever that identity goes. Identity-based policies can be inline or managed, and both are evaluated the same way: as part of the full set of policies attached to the identity making the request.</p>
+
+      <p>A <strong>resource-based policy</strong> attaches directly to the resource itself — an S3 bucket policy, a KMS key policy, an SQS queue policy, a Lambda resource policy — and answers the opposite question: who is allowed to touch this? This distinction matters most in one specific, exam-favorite scenario: granting a principal in another AWS account access to a resource in yours, without that account ever assuming a role of yours. A resource-based policy can name an external account or principal directly and grant access — it is the only one of the four policy types that can do this unassisted. Module 3 goes deep on the cross-account mechanics; for now, know that resource-based policies are attached to what is being protected, not to who is asking.</p>
+
+      <p>An <strong>inline policy</strong> is embedded directly inside a single identity — it has no independent existence, no ARN of its own, and no way to be attached to a second identity. Its defining trait is lifecycle: delete the identity, and its inline policy disappears with it, guaranteed. That guarantee is genuinely useful for a permission so specific to one role that reuse was never the point. The cost is that inline policies do not scale as a management pattern — the same permission duplicated as inline policies across a dozen roles becomes a dozen separate places to remember to update.</p>
+
+      <p>A <strong>managed policy</strong> is a standalone object with its own ARN, attachable to many identities at once. AWS-managed policies are written and maintained by AWS — convenient, but you cannot edit them, and their scope tends to run broader than a genuinely least-privilege policy should. Customer-managed policies are the version you own: attach the same policy to twenty roles, and updating it once updates all twenty. AWS keeps up to five previous versions of a customer-managed policy, so a bad edit is a rollback, not an incident — exactly the auditability that inline policies trade away.</p>
+    </div>
+
+    <div class="table-wrap reveal">
+      <table class="compare">
+        <thead>
+          <tr><th>Attribute</th><th>Identity-based</th><th>Resource-based</th><th>Inline</th><th>Managed</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reusability</td><td>Varies by sub-type</td><td>N/A — per resource</td><td>None</td><td>High</td></tr>
+          <tr><td>Auditability</td><td>Depends on sub-type</td><td>Per-resource, no central list</td><td>Visible per-identity only</td><td>Central &amp; versioned</td></tr>
+          <tr><td>Cross-account, alone</td><td>No</td><td>Yes, directly</td><td>No</td><td>No</td></tr>
+          <tr><td>Lifecycle</td><td>Persists / auto-deletes*</td><td>Deleted with resource</td><td>Auto-deletes with identity</td><td>Persists until detached</td></tr>
+          <tr><td>Typical use</td><td>General identity permissions</td><td>Resource access, cross-account</td><td>One-off, tightly scoped</td><td>Shared, audited permission sets</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="diagram-caption" style="text-align:left;">*Managed sub-type persists independently; inline sub-type auto-deletes with its identity.</p>
+
+    <div class="callout scenario reveal">
+      <div class="callout-label">Production scenario</div>
+      <p>A team standardized on inline policies for speed — no separate object to create, just attach permissions directly to each role as it was built. It worked fine until a security review needed to answer one question: which roles can call kms:Decrypt on the production signing key? Because the same permission had been copy-pasted into inline policies on eleven different roles over eight months, three of those copies were already stale, granting decrypt on a key ARN that had since been rotated out. A single customer-managed policy attached to all eleven roles would have made that inconsistency impossible: one edit, eleven roles updated at once.</p>
+    </div>
+
+    <div class="callout trap reveal">
+      <div class="callout-label">Common mistake</div>
+      <p>Do not assume a resource-based policy is always enough for cross-account access by itself. It is sufficient within the same account, and it is necessary for cross-account access — but depending on the service and the exact pattern in use, the calling account's own identity-based policy may still need to explicitly allow the action too. Treat this as a flag, not a full answer: Module 3 covers the cross-account evaluation rules in depth. For now, do not assume "a resource-based policy exists" automatically means "cross-account access works."</p>
+    </div>
+
+    <div class="callout reveal">
+      <div class="callout-label">Exam angle</div>
+      <p>The exam loves a plain-English requirement dressed up as a policy-type question: "a security engineer needs Account B to read objects in an Account A bucket, without Account B assuming a role." The only policy type on this list that can do that unassisted is a resource-based policy — everything else either cannot reach across the account boundary or requires a role assumption you were explicitly told not to use. When a question rules out role assumption by name, that is your signal.</p>
+    </div>
+  </div>
+</section>
+
+<div class="drawer-overlay" id="typeDrawerOverlay"></div>
+<div class="drawer" id="typeDrawer" role="dialog" aria-label="Policy type detail panel">
+  <button class="drawer-close" id="typeDrawerClose" aria-label="Close panel">×</button>
+  <div id="typeDrawerContent"></div>
+</div>
+
+<template id="tpl-identity">
+  <h3>Identity-based policy</h3>
+  <dl>
+    <dt>Reusability</dt><dd>Depends on sub-type: a managed identity-based policy is highly reusable across many identities; an inline identity-based policy is not reusable at all.</dd>
+    <dt>Auditability</dt><dd>The managed sub-type is centrally listable and versioned. The inline sub-type is visible per-identity but easy to lose track of at scale.</dd>
+    <dt>Cross-account capability</dt><dd>None on its own. It grants what the identity can do in general; reaching into another account still requires that account's resource-based policy or a role to assume.</dd>
+    <dt>Lifecycle</dt><dd>Managed: persists until explicitly detached and deleted. Inline: deleted automatically when its identity is deleted.</dd>
+    <dt>Typical use case</dt><dd>The default choice for "what can this application or engineer do" permissions.</dd>
+  </dl>
+</template>
+<template id="tpl-resource">
+  <h3>Resource-based policy</h3>
+  <dl>
+    <dt>Reusability</dt><dd>One policy per resource — it does not attach to identities at all, so "reuse" is not quite the right lens. It governs everyone who touches this one resource.</dd>
+    <dt>Auditability</dt><dd>Must be reviewed per-resource. There is no central "all resource policies" list the way managed policies have one, so drift across many buckets or keys is a real audit risk.</dd>
+    <dt>Cross-account capability</dt><dd>Yes, directly — the only policy type here that can grant an external account access without that account assuming a role.</dd>
+    <dt>Lifecycle</dt><dd>Tied to the resource; deleted when the resource is deleted.</dd>
+    <dt>Typical use case</dt><dd>Cross-account S3, KMS, or SQS access, and any "who can reach this specific resource" restriction, such as blocking non-TLS requests.</dd>
+  </dl>
+</template>
+<template id="tpl-inline">
+  <h3>Inline policy</h3>
+  <dl>
+    <dt>Reusability</dt><dd>None by design — one inline policy belongs to exactly one identity.</dd>
+    <dt>Auditability</dt><dd>Visible on the identity itself, but invisible to any "show every identity using this permission set" query, since there is no shared object to query.</dd>
+    <dt>Cross-account capability</dt><dd>None on its own.</dd>
+    <dt>Lifecycle</dt><dd>Deleted automatically when the identity is deleted — the one guarantee inline policies offer that managed policies do not.</dd>
+    <dt>Typical use case</dt><dd>A permission so specific to a single role that it should never accidentally end up reused elsewhere.</dd>
+  </dl>
+</template>
+<template id="tpl-managed">
+  <h3>Managed policy</h3>
+  <dl>
+    <dt>Reusability</dt><dd>High — attach the same policy ARN to as many identities as needed.</dd>
+    <dt>Auditability</dt><dd>Centrally listable and versioned (customer-managed keeps up to five prior versions), making "who has this permission" easy to answer.</dd>
+    <dt>Cross-account capability</dt><dd>None on its own; it is still fundamentally an identity-based mechanism.</dd>
+    <dt>Lifecycle</dt><dd>Persists independently of any identity; must be explicitly detached from all identities before it can be deleted.</dd>
+    <dt>Typical use case</dt><dd>Any permission set shared by more than one identity, or any permission you want a real change history for.</dd>
+  </dl>
+</template>
+
+<div class="title-card">
+  <div class="scanbeam"></div>
+  <h2 class="tc-kinetic" data-text="POLICIES DECIDE. EVALUATION LOGIC DECIDES THE REST."></h2>
+  <div class="tc-sub">Scene 03 — Evaluation Logic</div>
+</div>
+
+<section class="scene" id="scene-evaluation">
+  <div class="ambient-blob" style="width:400px;height:400px;top:0;left:-160px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 03 — Evaluation Logic</div>
+    <h2 class="kinetic reveal">How AWS Actually Decides</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">Every concept so far — users, roles, policy types — feeds into one mechanical process: how AWS actually decides whether a specific request is allowed. This is the single most exam-critical skill in this module, and arguably in the whole IAM domain. Get the evaluation order internalized as a reflex, not a lookup — the exam will hand you a stack of policies and one request, and expect you to reason to the correct answer without guessing.</p>
+    </div>
+
+    <div class="reveal">
+      <p>The order is fixed and it never changes. <strong>First</strong>, check for an explicit deny anywhere among every policy that applies to this request — identity-based, resource-based, and beyond. If any single statement explicitly denies the action, the request is denied, full stop, no matter how many other statements allow it. <strong>Second</strong>, if no explicit deny fired, check for an explicit allow anywhere among those same policies. If one exists, the request is allowed. <strong>Third</strong>, if neither an explicit deny nor an explicit allow matched anything, the request is denied anyway — this is the implicit deny, IAM's default-closed posture. Nothing has to actively block a request for it to fail; the absence of a matching Allow is enough on its own.</p>
+      <p>That third step is the one candidates most often get backwards. There is no "if unsure, allow" fallback anywhere in IAM. Silence is a denial. The exam frequently tests exactly this: a policy configuration where nothing explicitly denies the action in question, and the trap answer assumes that silence means it is allowed.</p>
+    </div>
+
+    <div class="diagram-shell reveal" id="evalLogicFlow">
+      <svg viewBox="0 0 780 190" role="img" aria-label="Diagram of the three-step IAM evaluation order">
+        <defs>
+          <marker id="arrowEval" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="var(--line)"></path></marker>
+        </defs>
+        <path class="flow-arrow" d="M270,100 L300,100" marker-end="url(#arrowEval)"></path>
+        <path class="flow-arrow" d="M540,100 L570,100" marker-end="url(#arrowEval)"></path>
+
+        <g class="flow-node active" data-step="deny" tabindex="0" role="button" aria-label="Step 1: explicit deny anywhere">
+          <rect x="10" y="50" width="260" height="100" rx="12"></rect>
+          <text x="140" y="92" text-anchor="middle" class="fn-title">Explicit Deny?</text>
+          <text x="140" y="115" text-anchor="middle" class="fn-sub">Anywhere, in any policy</text>
+        </g>
+        <g class="flow-node" data-step="allow" tabindex="0" role="button" aria-label="Step 2: explicit allow anywhere">
+          <rect x="302" y="50" width="238" height="100" rx="12"></rect>
+          <text x="421" y="92" text-anchor="middle" class="fn-title">Explicit Allow?</text>
+          <text x="421" y="115" text-anchor="middle" class="fn-sub">Only checked if step 1 is no</text>
+        </g>
+        <g class="flow-node" data-step="implicit" tabindex="0" role="button" aria-label="Step 3: implicit deny by default">
+          <rect x="572" y="50" width="200" height="100" rx="12"></rect>
+          <text x="672" y="92" text-anchor="middle" class="fn-title">Implicit Deny</text>
+          <text x="672" y="115" text-anchor="middle" class="fn-sub">The default, if neither fired</text>
+        </g>
+      </svg>
+
+      <div class="flow-desc active" data-step="deny"><strong>Step 1 · Explicit Deny</strong>Scan every applicable policy for any statement with Effect: Deny that matches this action, resource, and any conditions. Find one? The request is denied immediately — nothing after this step matters.</div>
+      <div class="flow-desc" data-step="allow"><strong>Step 2 · Explicit Allow</strong>No explicit deny fired. Now scan every applicable policy for any statement with Effect: Allow that matches. Find one? The request is allowed.</div>
+      <div class="flow-desc" data-step="implicit"><strong>Step 3 · Implicit Deny</strong>No explicit deny, and no explicit allow either. IAM defaults closed: this is an implicit deny. The request fails, even though nothing specifically said no.</div>
+      <div class="diagram-caption">Click or tab through each step</div>
+    </div>
+
+    <h3 class="reveal" style="margin-top:56px;">Reading a policy's anatomy</h3>
+    <div class="reveal">
+      <p>Click any highlighted key in the policy below to see what it actually controls.</p>
+      <div class="diagram-shell" id="annotatedJsonDiagram">
+        <div class="code-block"><pre style="margin:0;white-space:pre-wrap;">{
+  <span class="json-key" tabindex="0" role="button" data-callout="version" aria-label="Version key">"Version"</span>: "2012-10-17",
+  <span class="json-key" tabindex="0" role="button" data-callout="statement" aria-label="Statement key">"Statement"</span>: [
+    {
+      "Sid": "AllowS3ReadOnly",
+      <span class="json-key" tabindex="0" role="button" data-callout="effect" aria-label="Effect key">"Effect"</span>: <span class="jv-allow">"Allow"</span>,
+      <span class="json-key" tabindex="0" role="button" data-callout="action" aria-label="Action key">"Action"</span>: [<span class="jv">"s3:GetObject"</span>, <span class="jv">"s3:ListBucket"</span>],
+      <span class="json-key" tabindex="0" role="button" data-callout="resource" aria-label="Resource key">"Resource"</span>: [
+        <span class="jv">"arn:aws:s3:::reporting-data-prod/*"</span>,
+        <span class="jv">"arn:aws:s3:::reporting-data-prod"</span>
+      ],
+      <span class="json-key" tabindex="0" role="button" data-callout="condition" aria-label="Condition key">"Condition"</span>: {
+        "Bool": { <span class="jv">"aws:SecureTransport"</span>: "true" }
+      }
+    }
+  ]
+}</pre></div>
+        <div class="flow-desc active" data-step="version"><strong>Version</strong>Always "2012-10-17" in current practice — this is the policy language version, not a date you choose. An older version string exists but AWS documentation treats this one as the standard going forward.</div>
+        <div class="flow-desc" data-step="statement"><strong>Statement</strong>An array — a policy can contain many statements, each evaluated independently. Every statement in every applicable policy is checked; there is no early exit after the first match.</div>
+        <div class="flow-desc" data-step="effect"><strong>Effect</strong>Only two valid values: Allow or Deny. This single field decides whether the statement participates in step one (deny) or step two (allow) of the evaluation order above.</div>
+        <div class="flow-desc" data-step="action"><strong>Action</strong>The specific API operations this statement matches, in service:action format. Supports wildcards, such as s3:Get* or s3:*, to match a family of actions at once.</div>
+        <div class="flow-desc" data-step="resource"><strong>Resource</strong>The ARN or ARN pattern this statement applies to. A statement with a matching Action but a non-matching Resource simply does not fire for this request.</div>
+        <div class="flow-desc" data-step="condition"><strong>Condition</strong>Optional. If present, every condition in the block must be satisfied for the statement to apply. No Condition block means the statement applies unconditionally whenever Action and Resource match.</div>
+      </div>
+    </div>
+
+    <h3 class="reveal" style="margin-top:56px;">Same account: identity + resource policies combine</h3>
+    <div class="reveal">
+      <p>When both an identity-based policy and a resource-based policy could apply to the same request — the common case being an IAM user calling an S3 API against a bucket in the same account — AWS effectively takes the union of what each side grants, still subject to any explicit deny found anywhere in either. If the identity-based policy is silent on the action but the bucket policy grants it, the request is allowed: the resource-based policy alone was sufficient. If the identity-based policy grants it but the bucket policy explicitly denies it, the request is denied: the deny wins regardless of source. Neither policy has to carry the whole weight, but either one can be the thing that stops the request cold. Scene 04 walks through this pairing in detail.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:44px;">Multiple policies on one identity: full aggregate, not "last one wins"</h3>
+    <div class="reveal">
+      <p>It is common for a single identity to have several policies applying at once: two or three attached managed policies, an inline policy, and whatever policies are attached to every group that identity belongs to. AWS does not evaluate these in any particular order, and there is no such thing as "the most recently attached policy wins." Every applicable statement, from every applicable policy, is collected into one evaluation set and run through the same three-step logic together. A narrower policy does not override a broader one just because it was attached more recently, and an older policy does not get ignored just because a newer one exists. If you want a permission actually revoked, you have to remove or explicitly deny it — attaching a more restrictive policy alongside an existing permissive one does not shrink what the permissive one still grants.</p>
+    </div>
+
+    <div class="diagram-shell reveal">
+      <svg viewBox="0 0 700 300" role="img" aria-label="Diagram showing three attached policies aggregating into one effective permission set">
+        <defs>
+          <marker id="arrowAgg" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="var(--c-iam)"></path></marker>
+        </defs>
+        <rect x="15" y="20" width="200" height="72" rx="10" fill="var(--surface-raised)" stroke="var(--line)"></rect>
+        <text x="115" y="52" text-anchor="middle" class="fn-title" fill="var(--text)" font-family="Inter,sans-serif" font-weight="600" font-size="13">Managed Policy A</text>
+        <text x="115" y="72" text-anchor="middle" class="fn-sub" fill="var(--text-dim)" font-family="JetBrains Mono,monospace" font-size="10.5">Grants EC2 read</text>
+
+        <rect x="250" y="20" width="200" height="72" rx="10" fill="var(--surface-raised)" stroke="var(--line)"></rect>
+        <text x="350" y="52" text-anchor="middle" fill="var(--text)" font-family="Inter,sans-serif" font-weight="600" font-size="13">Managed Policy B</text>
+        <text x="350" y="72" text-anchor="middle" fill="var(--text-dim)" font-family="JetBrains Mono,monospace" font-size="10.5">Grants S3 read</text>
+
+        <rect x="485" y="20" width="200" height="72" rx="10" fill="var(--surface-raised)" stroke="var(--line)"></rect>
+        <text x="585" y="52" text-anchor="middle" fill="var(--text)" font-family="Inter,sans-serif" font-weight="600" font-size="13">Inline Policy</text>
+        <text x="585" y="72" text-anchor="middle" fill="var(--text-dim)" font-family="JetBrains Mono,monospace" font-size="10.5">Grants one DynamoDB action</text>
+
+        <path d="M115,92 L115,150 L350,150" stroke="var(--line)" stroke-width="1.5" fill="none"></path>
+        <path d="M350,92 L350,150" stroke="var(--line)" stroke-width="1.5" fill="none"></path>
+        <path d="M585,92 L585,150 L350,150" stroke="var(--line)" stroke-width="1.5" fill="none"></path>
+        <path d="M350,150 L350,178" stroke="var(--line)" stroke-width="1.5" fill="none" marker-end="url(#arrowAgg)"></path>
+        <circle cx="350" cy="150" r="4" fill="var(--c-iam)"></circle>
+
+        <rect x="90" y="182" width="520" height="98" rx="12" fill="var(--c-iam-dim)" stroke="var(--c-iam)"></rect>
+        <text x="350" y="222" text-anchor="middle" fill="var(--text)" font-family="Space Grotesk,sans-serif" font-weight="700" font-size="16">Effective Permission Set</text>
+        <text x="350" y="248" text-anchor="middle" fill="var(--text-dim)" font-family="JetBrains Mono,monospace" font-size="11">EC2 read + S3 read + one DynamoDB action</text>
+        <text x="350" y="266" text-anchor="middle" fill="var(--text-dim)" font-family="JetBrains Mono,monospace" font-size="11">— minus anything any policy explicitly denies</text>
+      </svg>
+      <div class="diagram-caption">Every attached policy contributes. Only an explicit Deny subtracts.</div>
+    </div>
+
+    <div class="reveal">
+      <p>Cross-account requests raise the bar: both the caller's own identity-based policy and the resource's resource-based policy generally need to independently allow the action, rather than either one being enough on its own. That is a meaningfully different rule from the same-account case above, and it is worth flagging now so it does not surprise you later — Module 3 is where you get the full mechanics, including how service control policies and permission boundaries factor into that cross-account picture.</p>
+    </div>
+
+    <div class="callout scenario reveal">
+      <div class="callout-label">Production scenario</div>
+      <p>A security engineer tightening access for a data-processing role removed a broad customer-managed policy that granted s3:* across every bucket, and attached a new, carefully scoped policy granting only the three actions the role actually used. The change looked complete in the console diff. Two weeks later, an audit found the role could still read objects from buckets far outside its scope — because a second, older customer-managed policy, attached back when the role was first created and never revisited, still granted broad S3 read access on its own. Attaching the new narrow policy did not remove what the forgotten one still granted; evaluation aggregates every attached policy, and no explicit deny existed to override it. The fix required detaching the stale policy directly, not just adding a better one beside it.</p>
+    </div>
+
+    <div class="callout trap reveal">
+      <div class="callout-label">Common mistake</div>
+      <p>"No matching statement" is not a neutral outcome — it is a denial, and the exam tests whether you remember that. Expect scenario questions where a request touches an action or resource that no attached policy mentions at all, in either direction. The correct answer is Deny, by implicit default, even though nothing in the policy set was written with that specific request in mind. If you catch yourself reasoning "nothing denies it, so it must be fine," stop — that is the trap.</p>
+    </div>
+
+    <div class="callout reveal">
+      <div class="callout-label">Exam angle</div>
+      <p>Multi-policy scenario questions are the signature format for this topic: you will be shown two or three policy snippets and one specific request, and asked to reason through all of them together. Work the three steps in strict order every time — scan everything for an explicit deny first, only then look for an explicit allow, and only conclude implicit deny if you genuinely found neither. Skipping straight to "does anything allow this" is how candidates miss a deny buried in the second or third policy.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-identity-resource">
+  <div class="ambient-blob" style="width:360px;height:360px;bottom:0;right:-140px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 04 — Identity + Resource, Same Account</div>
+    <h2 class="kinetic reveal">Two Policies, One Decision</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">Scene 03 established the rule in the abstract: same-account identity and resource-based policies combine, either one can grant, and any explicit deny anywhere still wins. This scene makes that concrete with the pairing the exam asks about most — an IAM identity and an S3 bucket policy, evaluated together against one request.</p>
+    </div>
+
+    <div class="diagram-shell reveal" id="pairToggle">
+      <div class="pair-toggle-row">
+        <button class="btn primary" data-pair="a">Case A — resource policy alone</button>
+        <button class="btn" data-pair="b">Case B — deny overrides admin</button>
+      </div>
+
+      <div class="pair-panel active" data-pair="a">
+        <div class="code-label">Identity-based policy — attached to role Analytics-Reader (silent on S3)</div>
+        <pre class="code-block" style="margin-bottom:16px;">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "dynamodb:Query",
+    "Resource": "*"
+  }]
+}</pre>
+        <div class="code-label">Resource-based policy — bucket "reporting-data-prod"</div>
+        <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Principal": { "AWS": "arn:aws:iam::111122223333:role/Analytics-Reader" },
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::reporting-data-prod/*"
+  }]
+}</pre>
+        <div class="eval-request"><strong>Request:</strong> Analytics-Reader calls s3:GetObject on reporting-data-prod</div>
+        <div class="sheet-result allow" style="display:inline-block;">Result: ALLOW — the bucket policy alone was enough</div>
+      </div>
+
+      <div class="pair-panel" data-pair="b">
+        <div class="code-label">Identity-based policy — attached to role Break-Glass-Admin</div>
+        <pre class="code-block" style="margin-bottom:16px;">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "*",
+    "Resource": "*"
+  }]
+}</pre>
+        <div class="code-label">Resource-based policy — bucket "reporting-data-prod"</div>
+        <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-deny">"Deny"</span>,
+    "Principal": "*",
+    "Action": "s3:*",
+    "Resource": "arn:aws:s3:::reporting-data-prod/*",
+    "Condition": { "Bool": { "aws:SecureTransport": "false" } }
+  }]
+}</pre>
+        <div class="eval-request"><strong>Request:</strong> Break-Glass-Admin calls s3:GetObject over plain HTTP</div>
+        <div class="sheet-result deny" style="display:inline-block;">Result: DENY — AdministratorAccess is not a rebuttal to an explicit deny</div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <p>In <strong>Case A</strong>, the role has no S3 permissions in its identity-based policy at all — nothing attached or inline mentions S3. The bucket's own policy explicitly names that role's ARN as a Principal and grants s3:GetObject, so the request succeeds. The identity-based policy's silence is not a deny; it simply has nothing to say about this action, so it does not participate in the outcome one way or the other. The resource-based policy, on its own, was sufficient — exactly the special power Scene 02 flagged: a resource-based policy can grant access without any identity-based policy backing it up, as long as everything stays inside one account.</p>
+      <p>In <strong>Case B</strong>, flip it. An administrator role carries full access by design. The bucket policy carries an explicit Deny for any request that does not arrive over TLS, and the administrator's request happens to come in over plain HTTP — so it is denied. Broad permissions elsewhere do not create an exception to an explicit deny anywhere in the evaluation. This surprises engineers constantly: "but they have AdministratorAccess" is not a rebuttal, because step one of the evaluation order never checks who is asking or how broad their other permissions are — only whether any applicable statement says Deny. A bucket-level deny protects the bucket from every principal touching it, admins included, unless that principal is explicitly carved out of the condition.</p>
+    </div>
+
+    <div class="callout scenario reveal">
+      <div class="callout-label">Production scenario</div>
+      <p>A finance team locked down a reporting bucket with a policy granting read access only to a specific analytics role, and assumed that was the complete access boundary. During an incident review, they discovered a completely unrelated administrator role could still list and read every object in the bucket — not because of any bucket policy grant, but because that administrator role's own identity-based policy carried AdministratorAccess, and the bucket policy never carried an explicit deny for anyone else. The team had reasoned entirely in resource-policy terms and forgotten that a same-account identity-based Allow needs no help from the resource at all; a short principal list on a bucket policy restricts who gets in through that policy, but it does nothing to block identities that already have their own broad Allow. The real fix was a bucket-level explicit deny scoped by principal, not a narrower resource-based allow.</p>
+    </div>
+
+    <div class="callout trap reveal">
+      <div class="callout-label">Common mistake</div>
+      <p>It is tempting to treat a bucket policy's principal list as a complete access boundary — "only these three roles are named here, so only these three can get in." That is false whenever any other identity's own identity-based policy already grants the action broadly. A resource-based policy narrows who can get in through itself; it does not, by existing, block access that a separate identity-based policy already grants elsewhere. The only way to make a resource-based policy an actual ceiling is to pair it with an explicit deny for everyone outside your intended list.</p>
+    </div>
+
+    <div class="callout reveal">
+      <div class="callout-label">Exam angle</div>
+      <p>Expect a two-policy exhibit: one identity-based snippet, one resource-based snippet, one request. Check both for an explicit deny first, across both documents, not just one, before you even look for an allow. Then check both for an allow. Same-account questions usually hinge on whether you remember that either side alone can grant, and that a deny on either side alone can block, regardless of what the other side says.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-conditions">
+  <div class="ambient-blob" style="width:400px;height:400px;top:5%;right:-160px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 05 — Condition Keys</div>
+    <h2 class="kinetic reveal">Making Allow And Deny Situational</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">Every policy so far has matched a request unconditionally: right action, right resource, done. Condition keys add a third gate — a specific circumstance that must also be true. They are what turns "this role can read this bucket" into "this role can read this bucket, but only from the corporate network, only with MFA, only over TLS." Six of them show up constantly on this exam; know what each restricts and, just as importantly, how a condition behaves differently depending on whether it sits on an Allow or a Deny.</p>
+    </div>
+
+    <div class="cond-grid reveal">
+      <button class="cond-card tilt" data-key="sourceip">
+        <div class="cond-key">aws:SourceIp</div>
+        <div class="cond-summary">Restricts a request by the caller's IP address or CIDR range.</div>
+        <div class="cond-detail">
+          <pre class="code-block" style="margin:0;">"Condition": {
+  "IpAddress": { "aws:SourceIp": "203.0.113.0/24" }
+}</pre>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:var(--text-dim);">Common on an Allow to restrict console or API access to a corporate network or VPN range. Use IpAddress to allow-list a range, NotIpAddress for the inverse.</p>
+        </div>
+      </button>
+
+      <button class="cond-card tilt" data-key="mfa">
+        <div class="cond-key">aws:MultiFactorAuthPresent</div>
+        <div class="cond-summary">True only if the caller's credentials were issued after an MFA challenge.</div>
+        <div class="cond-detail">
+          <pre class="code-block" style="margin:0;">"Condition": {
+  "Bool": { "aws:MultiFactorAuthPresent": "true" }
+}</pre>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:var(--text-dim);">The standard way to require MFA for a sensitive action like deleting a bucket or changing a policy. Frequently paired with Deny (checking for false) rather than used on an Allow directly.</p>
+        </div>
+      </button>
+
+      <button class="cond-card tilt" data-key="orgid">
+        <div class="cond-key">aws:PrincipalOrgID</div>
+        <div class="cond-summary">True if the caller belongs to a specific AWS Organizations org, from any member account.</div>
+        <div class="cond-detail">
+          <pre class="code-block" style="margin:0;">"Condition": {
+  "StringEquals": { "aws:PrincipalOrgID": "o-exampleorgid" }
+}</pre>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:var(--text-dim);">Lets a resource-based policy grant access to every account in your organization at once, without listing account IDs one by one, and without an update every time a new account joins.</p>
+        </div>
+      </button>
+
+      <button class="cond-card tilt" data-key="region">
+        <div class="cond-key">aws:RequestedRegion</div>
+        <div class="cond-summary">Restricts which AWS Region an API call can target.</div>
+        <div class="cond-detail">
+          <pre class="code-block" style="margin:0;">"Condition": {
+  "StringEquals": {
+    "aws:RequestedRegion": ["us-east-1","eu-west-1"]
+  }
+}</pre>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:var(--text-dim);">Common in a service control policy or identity-based policy to keep workloads inside approved Regions for data-residency or cost-control reasons.</p>
+        </div>
+      </button>
+
+      <button class="cond-card tilt" data-key="tls">
+        <div class="cond-key">aws:SecureTransport</div>
+        <div class="cond-summary">True only if the request arrived over HTTPS.</div>
+        <div class="cond-detail">
+          <pre class="code-block" style="margin:0;">"Condition": {
+  "Bool": { "aws:SecureTransport": "false" }
+}</pre>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:var(--text-dim);">Almost always paired with Deny, checking for false, to block any request that skipped TLS — the classic "enforce encryption in transit" bucket-policy statement.</p>
+        </div>
+      </button>
+
+      <button class="cond-card tilt" data-key="ptag">
+        <div class="cond-key">aws:PrincipalTag</div>
+        <div class="cond-summary">Restricts a request based on a tag attached to the calling principal.</div>
+        <div class="cond-detail">
+          <pre class="code-block" style="margin:0;">"Condition": {
+  "StringEquals": {
+    "aws:PrincipalTag/department": "finance"
+  }
+}</pre>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:var(--text-dim);">The building block of attribute-based access control: tag identities by attribute and write one policy that checks the tag, so new identities inherit correct access once tagged correctly.</p>
+        </div>
+      </button>
+    </div>
+    <p class="diagram-caption" style="text-align:left;">Click any card to expand the snippet and explanation.</p>
+
+    <h3 class="reveal" style="margin-top:56px;">The same condition means something different on Allow versus Deny</h3>
+    <div class="reveal">
+      <p>A condition behaves differently depending on which effect it is attached to, and this is one of the most frequently misread mechanics on the exam. On an <strong>Allow</strong>, a condition narrows the grant: the statement only allows the request if the condition evaluates true; if the condition is false, the Allow simply does not fire, and evaluation moves on to look elsewhere. On a <strong>Deny</strong>, a condition gates the block: the statement only denies the request if the condition evaluates true.</p>
+      <p>Here is the part that trips people up: if that condition evaluates false, the Deny does not fire either. It is not that the request becomes "safer" or "allowed instead" — the Deny statement is just inactive for this particular request, exactly the way an Allow with a false condition is inactive. Whether the request ultimately succeeds still depends on whether some other statement, somewhere else, explicitly allows it. A false condition on a Deny does not grant anything; it only means that specific Deny is not the one deciding this outcome.</p>
+    </div>
+
+    <div class="callout scenario reveal">
+      <div class="callout-label">Production scenario</div>
+      <p>A platform team added a Deny statement blocking any API call outside two approved Regions, aiming to keep a compliance-sensitive workload contained. The policy worked in every manual test. Weeks later, a global content-delivery integration silently stopped replicating data, and nobody connected it to the new policy at first — the replication job ran through a Lambda function whose IAM role picked up the same Region-restricting Deny, because the Deny had been attached at a level broad enough to cover every role in the account, not just the ones running the sensitive workload. The condition itself was correct; the blast radius of where it was attached was not.</p>
+    </div>
+
+    <div class="callout trap reveal">
+      <div class="callout-label">Common mistake</div>
+      <p>The single biggest trap in this scene: reading a false condition on a Deny as if it means "access is granted." It does not. A false condition on a Deny only means that particular statement is not the one blocking this request — the request's actual fate still depends entirely on whether some Allow, anywhere, matches it. Never treat an inactive Deny as a substitute for an actual Allow.</p>
+    </div>
+
+    <div class="callout reveal">
+      <div class="callout-label">Exam angle</div>
+      <p>Expect a policy with a conditioned Deny and a separate, unconditioned Allow, then a request that fails the condition. Trace it in order: the Deny does not fire (condition false), so step one passes clean; step two then finds the Allow, and the request succeeds. Candidates who stop reasoning the moment they see a Deny, without checking whether its condition actually matched, consistently pick the wrong answer here.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-notaction">
+  <div class="ambient-blob" style="width:400px;height:400px;bottom:-100px;left:-140px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 06 — The NotAction Trap</div>
+    <h2 class="kinetic reveal">Everything Except...</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">NotAction and NotResource look like scoping tools, and used carefully, they can be. Used carelessly, they are the fastest way to accidentally grant almost an entire AWS account. Both flip the usual logic: instead of listing what a statement matches, you list what it does not match, and the statement applies to everything else. That inversion is exactly where the trap lives.</p>
+    </div>
+
+    <div class="reveal">
+      <p><strong>NotAction</strong> matches every action except the ones listed. Paired with Effect: Deny, this is often genuinely useful and fairly safe — "deny everything except these approved actions" reads naturally and behaves the way you would expect. Paired with Effect: Allow, it becomes dangerous fast: "allow everything except these listed actions" grants the entire rest of the AWS action namespace, across every service, unless something else stops it. <strong>NotResource</strong> works the same way for resources — it matches every resource except the ones listed, and combined with Allow, it is just as capable of over-granting if the excluded list is short and the rest of the statement is broad.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:48px;">The exact trap policy, read two ways</h3>
+    <div class="reveal">
+      <div class="code-label">A real pattern that shows up in production more often than it should</div>
+      <pre class="code-block">{
+  "Effect": <span class="jv-allow">"Allow"</span>,
+  "NotAction": [<span class="jv">"iam:*"</span>, <span class="jv">"organizations:*"</span>],
+  "Resource": "*"
+}</pre>
+      <p>Read it the way its author probably intended: "block IAM and Organizations actions, allow the rest — feels restrictive." Now read it the way AWS actually evaluates it: this statement grants every action, in every AWS service, except the ones under the iam: and organizations: prefixes. The author was not wrong about what they excluded; they were wrong about the size of what they left in. Click through the checklist below the way an auditor would.</p>
+    </div>
+
+    <div class="act-list reveal" id="notActionChecklist">
+      <div class="act-row">
+        <button class="act-item" data-target="ax1"><span>s3:DeleteBucket</span><span class="act-verdict granted">Granted</span></button>
+        <div class="act-explain" id="ax1">Not under the iam: or organizations: prefix, so NotAction does not exclude it — the Allow applies in full.</div>
+      </div>
+      <div class="act-row">
+        <button class="act-item" data-target="ax2"><span>ec2:TerminateInstances</span><span class="act-verdict granted">Granted</span></button>
+        <div class="act-explain" id="ax2">Same reasoning: any ec2: action is untouched by this policy's exclusion list, so it is granted.</div>
+      </div>
+      <div class="act-row">
+        <button class="act-item" data-target="ax3"><span>kms:Decrypt</span><span class="act-verdict granted">Granted</span></button>
+        <div class="act-explain" id="ax3">Granted by this statement, and usable in practice on any key whose key policy also allows this principal — a second door this trap does not close.</div>
+      </div>
+      <div class="act-row">
+        <button class="act-item" data-target="ax4"><span>secretsmanager:GetSecretValue</span><span class="act-verdict granted">Granted</span></button>
+        <div class="act-explain" id="ax4">Granted. Every actual secret value in Secrets Manager is readable under this policy — likely far beyond what the author intended to leave open.</div>
+      </div>
+      <div class="act-row">
+        <button class="act-item" data-target="ax5"><span>iam:CreateUser</span><span class="act-verdict blocked">Blocked</span></button>
+        <div class="act-explain" id="ax5">Genuinely blocked — this falls under the excluded iam: prefix, exactly as the author intended.</div>
+      </div>
+      <div class="act-row">
+        <button class="act-item" data-target="ax6"><span>organizations:LeaveOrganization</span><span class="act-verdict blocked">Blocked</span></button>
+        <div class="act-explain" id="ax6">Also genuinely blocked, under the excluded organizations: prefix. The author's two exclusions work correctly; the problem is everything they did not think to exclude.</div>
+      </div>
+    </div>
+    <p class="diagram-caption" style="text-align:left;">Click each action to reveal the reasoning.</p>
+
+    <div class="reveal" style="margin-top:36px;">
+      <p>None of this makes NotAction inherently wrong. Paired with a tightly scoped Resource — not Resource: "*" — it can cleanly express "all S3 actions on this bucket except delete," which reads naturally and stays safely contained to one bucket regardless of which S3 actions AWS adds in the future. The trap is specifically the combination of NotAction, Effect: Allow, and a wildcard Resource together: that combination is what turns a seemingly narrow exclusion into an almost-unbounded grant. NotResource carries the identical risk in the other direction — Effect: Allow with a broad Action and a short NotResource list grants that action everywhere except the handful of resources named.</p>
+    </div>
+
+    <div class="callout scenario reveal">
+      <div class="callout-label">Production scenario</div>
+      <p>A platform team built an IAM role for a CI/CD pipeline and wrote what they believed was a safety-conscious policy: Allow, with NotAction excluding the IAM and Organizations namespaces, Resource set to *, reasoning that blocking identity and org management was the main risk to guard against. The pipeline ran for months without incident, which felt like validation. During a supply-chain security review, an engineer traced what the role could actually do and found it could read every secret in Secrets Manager, modify security group rules, decrypt data protected by every customer-managed KMS key the pipeline's principal was allowed to touch, and delete production S3 buckets outright — none of which the pipeline's actual job required. A compromised build step would have had nearly the same reach as a compromised administrator, just without IAM itself.</p>
+    </div>
+
+    <div class="callout trap reveal">
+      <div class="callout-label">Common mistake</div>
+      <p>Treat NotAction plus Effect: Allow plus a wildcard Resource as a specific, nameable anti-pattern, not just "a policy that happens to be broad." The moment you see all three together, the correct instinct is to ask what the full action namespace looks like minus the excluded prefixes — not to trust that the exclusion implies safety. If a policy "only" excludes one or two service prefixes, assume it grants the rest of the account until you have actually reasoned through what remains.</p>
+    </div>
+
+    <div class="callout reveal">
+      <div class="callout-label">Exam angle</div>
+      <p>Expect a question that shows a NotAction policy and asks whether a specific, unlisted action is permitted. Work it exactly like the checklist above: is this action under any excluded prefix? If not, and the Effect is Allow, it is granted — regardless of how dangerous that specific action is. The exam is testing whether you can mechanically evaluate NotAction rather than intuit "this looks restrictive so it must be fine."</p>
+    </div>
+  </div>
+</section>
+
+<div class="title-card">
+  <div class="scanbeam"></div>
+  <h2 class="tc-kinetic" data-text="STOP READING. START DECIDING."></h2>
+  <div class="tc-sub">Scene 07 — Policy Evaluator</div>
+</div>
+
+<section class="scene" id="scene-evaluator">
+  <div class="ambient-blob" style="width:420px;height:420px;top:-100px;right:-140px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner wide">
+    <div class="eyebrow reveal">Scene 07 — Policy Evaluator</div>
+    <h2 class="kinetic reveal">Now You Decide</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">Everything up to this point has been explanation. This is where you apply it. Each scenario below shows one or more policies and one specific request. Pick Allow or Deny before you look at the reasoning — that is the actual exam format, and guessing right for the wrong reason is a habit worth breaking now, in a scenario with no consequences, rather than during the real thing.</p>
+    </div>
+
+    <div class="eval-card reveal" data-answer="allow">
+      <div class="eval-num">Scenario 01 — Single policy, matching allow</div>
+      <div class="code-label">Identity-based policy — attached to role Support-ReadOnly</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "ec2:DescribeInstances",
+    "Resource": "*"
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Support-ReadOnly calls ec2:DescribeInstances</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-1">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-1">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No statement in the policy has Effect: Deny.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>Yes — the single statement matches both the action and the resource, with no condition to fail.</div></div>
+      <div class="sheet-result allow">Result: ALLOW</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="deny">
+      <div class="eval-num">Scenario 02 — No matching statement at all</div>
+      <div class="code-label">Identity-based policy — attached to role Support-ReadOnly (same role as Scenario 01)</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "ec2:DescribeInstances",
+    "Resource": "*"
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Support-ReadOnly calls ec2:TerminateInstances</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-2">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-2">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No — nothing in this policy mentions TerminateInstances, allow or deny.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>No — the only statement matches DescribeInstances specifically. It does not match this request, so it does not count as an allow here.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">03</div><div class="sheet-step-body"><strong>Implicit deny</strong>Neither an explicit deny nor an explicit allow matched. IAM defaults closed.</div></div>
+      <div class="sheet-result deny">Result: DENY (implicit)</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="allow">
+      <div class="eval-num">Scenario 03 — Two managed policies, aggregated</div>
+      <div class="code-label">Managed Policy A — attached to role Data-Pipeline</div>
+      <pre class="code-block">{
+  "Statement": [{ "Effect": <span class="jv-allow">"Allow"</span>, "Action": "ec2:Describe*", "Resource": "*" }]
+}</pre>
+      <div class="code-label">Managed Policy B — also attached to role Data-Pipeline</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "s3:PutObject",
+    "Resource": "arn:aws:s3:::pipeline-landing-zone/*"
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Data-Pipeline calls s3:PutObject on pipeline-landing-zone/incoming.csv</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-3">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-3">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No — neither attached policy contains a Deny.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>Yes — Policy B matches. Policy A does not need to grant S3 for this to work; both policies are evaluated together as one aggregate set.</div></div>
+      <div class="sheet-result allow">Result: ALLOW</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="deny">
+      <div class="eval-num">Scenario 04 — An explicit deny buried in a third policy</div>
+      <div class="code-label">Managed Policy A — attached to role Ops-Broad</div>
+      <pre class="code-block">{
+  "Statement": [{ "Effect": <span class="jv-allow">"Allow"</span>, "Action": "s3:*", "Resource": "*" }]
+}</pre>
+      <div class="code-label">Managed Policy B — also attached to role Ops-Broad</div>
+      <pre class="code-block">{
+  "Statement": [{ "Effect": <span class="jv-allow">"Allow"</span>, "Action": "ec2:*", "Resource": "*" }]
+}</pre>
+      <div class="code-label">Inline policy — also attached to role Ops-Broad</div>
+      <pre class="code-block">{
+  "Statement": [{ "Effect": <span class="jv-deny">"Deny"</span>, "Action": "s3:DeleteBucket", "Resource": "*" }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Ops-Broad calls s3:DeleteBucket</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-4">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-4">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>Yes — the inline policy explicitly denies s3:DeleteBucket. All three attached policies are scanned together, and this one statement is enough.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Stop here</strong>It does not matter that Policy A grants s3:* broadly. An explicit deny anywhere ends the evaluation immediately.</div></div>
+      <div class="sheet-result deny">Result: DENY</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="allow">
+      <div class="eval-num">Scenario 05 — Resource-based policy alone, same account</div>
+      <div class="code-label">Identity-based policy — attached to role Analytics-Svc (no S3 permissions)</div>
+      <pre class="code-block">{
+  "Statement": [{ "Effect": <span class="jv-allow">"Allow"</span>, "Action": "dynamodb:Query", "Resource": "*" }]
+}</pre>
+      <div class="code-label">Resource-based policy — bucket "shared-metrics" (same account)</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Principal": { "AWS": "arn:aws:iam::111122223333:role/Analytics-Svc" },
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::shared-metrics/*"
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Analytics-Svc calls s3:GetObject on shared-metrics/report.csv</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-5">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-5">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No, in either document.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>Yes — the bucket policy names this exact role and grants s3:GetObject. The identity-based policy's silence on S3 does not matter; same-account resource-based grants are sufficient on their own.</div></div>
+      <div class="sheet-result allow">Result: ALLOW</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="deny">
+      <div class="eval-num">Scenario 06 — Condition on Allow, condition fails</div>
+      <div class="code-label">Identity-based policy — attached to user Console-Admin</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "iam:DeleteUser",
+    "Resource": "*",
+    "Condition": { "Bool": { "aws:MultiFactorAuthPresent": "true" } }
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Console-Admin calls iam:DeleteUser; the session has no MFA present</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-6">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-6">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No Deny statement exists in this policy at all.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>The only Allow has a condition requiring MFA. This session has no MFA present, so the condition evaluates false — the statement does not fire, and does not count as a matching allow.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">03</div><div class="sheet-step-body"><strong>Implicit deny</strong>Neither an explicit deny nor a matching explicit allow exists. Denied by default — not because anything blocked it, but because nothing qualified to allow it.</div></div>
+      <div class="sheet-result deny">Result: DENY (implicit — the Allow simply never qualified)</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="allow">
+      <div class="eval-num">Scenario 07 — Condition on Allow, condition met</div>
+      <div class="code-label">Identity-based policy — attached to user Console-Admin (same policy as Scenario 06)</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "iam:DeleteUser",
+    "Resource": "*",
+    "Condition": { "Bool": { "aws:MultiFactorAuthPresent": "true" } }
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Console-Admin calls iam:DeleteUser; the session has MFA present</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-7">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-7">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>Yes — this time the MFA condition evaluates true, so the statement fires and matches.</div></div>
+      <div class="sheet-result allow">Result: ALLOW</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="allow">
+      <div class="eval-num">Scenario 08 — The NotAction trap, one specific action</div>
+      <div class="code-label">Identity-based policy — attached to role Build-Agent</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "NotAction": [<span class="jv">"iam:*"</span>, <span class="jv">"organizations:*"</span>],
+    "Resource": "*"
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Build-Agent calls kms:Decrypt (the key policy also permits this role)</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-8">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-8">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>Yes — kms:Decrypt is not under the excluded iam: or organizations: prefixes, so NotAction matches it, and the Effect is Allow.</div></div>
+      <div class="sheet-result allow">Result: ALLOW — this is the trap from Scene 06, applied</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="allow">
+      <div class="eval-num">Scenario 09 — Group-inherited policy plus a personal inline policy</div>
+      <div class="code-label">Managed policy attached to group "Engineers" (user Jordan is a member)</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::codebase-artifacts/*"
+  }]
+}</pre>
+      <div class="code-label">Managed policy attached to group "OnCallResponders" (Jordan is also a member)</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "cloudwatch:GetMetricData",
+    "Resource": "*"
+  }]
+}</pre>
+      <div class="code-label">Inline policy on user Jordan directly</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-allow">"Allow"</span>,
+    "Action": "sns:Publish",
+    "Resource": "arn:aws:sns:us-east-1:111122223333:incident-alerts"
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> Jordan calls cloudwatch:GetMetricData</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-9">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-9">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>No — none of the three policies, two group-inherited and one personal inline, contains a Deny.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>Yes — the OnCallResponders group policy matches. A group is not a principal, but the policies attached to a group a user belongs to are pulled into that user's evaluation set exactly like directly attached ones.</div></div>
+      <div class="sheet-result allow">Result: ALLOW</div>
+    </template>
+
+    <div class="eval-card reveal" data-answer="deny">
+      <div class="eval-num">Scenario 10 — A Deny whose condition never fires</div>
+      <div class="code-label">Identity-based policy — attached to role External-Reporting (no S3 permissions at all)</div>
+      <pre class="code-block">{
+  "Statement": [{ "Effect": <span class="jv-allow">"Allow"</span>, "Action": "logs:PutLogEvents", "Resource": "*" }]
+}</pre>
+      <div class="code-label">Resource-based policy — bucket "internal-only-bucket"</div>
+      <pre class="code-block">{
+  "Statement": [{
+    "Effect": <span class="jv-deny">"Deny"</span>,
+    "Principal": "*",
+    "Action": "s3:*",
+    "Resource": "arn:aws:s3:::internal-only-bucket/*",
+    "Condition": { "Bool": { "aws:SecureTransport": "false" } }
+  }]
+}</pre>
+      <div class="eval-request"><strong>Request:</strong> External-Reporting calls s3:GetObject on internal-only-bucket, over HTTPS</div>
+      <div class="eval-choices">
+        <button class="choice-btn" data-choice="allow">Allow</button>
+        <button class="choice-btn" data-choice="deny">Deny</button>
+      </div>
+      <button class="reveal-btn" data-target="tpl-eval-10">Reveal the evaluation</button>
+    </div>
+    <template id="tpl-eval-10">
+      <div class="sheet-step"><div class="sheet-step-num">01</div><div class="sheet-step-body"><strong>Explicit deny anywhere?</strong>Look closely — the bucket policy's Deny only fires when SecureTransport is false. This request used HTTPS, so SecureTransport is true, the condition evaluates false, and the Deny does not fire.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">02</div><div class="sheet-step-body"><strong>Explicit allow anywhere?</strong>No — the identity-based policy never mentions S3, and the bucket policy contains no Allow statement at all, only that one conditioned Deny.</div></div>
+      <div class="sheet-step"><div class="sheet-step-num">03</div><div class="sheet-step-body"><strong>Implicit deny</strong>Denied anyway — but not by the Deny statement above, which never activated. Nothing anywhere explicitly allowed this request.</div></div>
+      <div class="sheet-result deny">Result: DENY (implicit — the Deny above is a red herring here)</div>
+    </template>
+
+  </div>
+</section>
+
+<div class="bottom-sheet-overlay" id="evalSheetOverlay"></div>
+<div class="bottom-sheet" id="evalSheet" role="dialog" aria-label="Evaluation walkthrough">
+  <button class="sheet-close" id="evalSheetClose" aria-label="Close walkthrough">×</button>
+  <div style="clear:both;"></div>
+  <div id="evalSheetContent"></div>
+</div>
+
+<section class="scene" id="scene-trap-gallery">
+  <div class="ambient-blob" style="width:420px;height:420px;top:-80px;left:-160px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner wide">
+    <div class="eyebrow reveal">Scene 08 — Production Trap Gallery</div>
+    <h2 class="kinetic reveal">Six Ways This Actually Breaks</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <p class="lead">None of these are hypothetical shapes of failure — they are the recognizable pattern behind real incident reports, generalized. Each one traces back to a specific principle from this module. Read the setup, guess the fix before you get there, then check which rule from earlier would have caught it in review.</p>
+    </div>
+
+    <div class="trap-grid reveal">
+      <div class="trap-card tilt">
+        <span class="trap-tag">Roles vs. users</span>
+        <h4>The key that outlived its repository's privacy</h4>
+        <div class="trap-row"><span class="trap-label">Setup</span>A developer hardcoded an IAM user's access key into an application config file and pushed it to what they believed was a private repository.</div>
+        <div class="trap-row"><span class="trap-label">Assumed</span>The repository's visibility setting was correct, and even if it briefly wasn't, no one would notice in time.</div>
+        <div class="trap-row"><span class="trap-label">Actually happened</span>The repo flipped public during a settings migration. A credential-scanning bot found the key in under ten minutes and began enumerating S3 buckets before internal monitoring caught it.</div>
+        <div class="trap-row"><span class="trap-label">Fix</span>Rotate and revoke immediately; migrate the app to assume a role instead of holding static credentials; add pre-commit secret scanning.</div>
+        <div class="trap-principle">Principle: a long-lived key has no expiry working in your favor.</div>
+      </div>
+
+      <div class="trap-card tilt">
+        <span class="trap-tag">Policy types</span>
+        <h4>"The bucket policy grants it" was not the whole story</h4>
+        <div class="trap-row"><span class="trap-label">Setup</span>A team added a partner's account ID to a bucket policy as a Principal and considered the cross-account integration complete.</div>
+        <div class="trap-row"><span class="trap-label">Assumed</span>A resource-based grant is a resource-based grant — cross-account access should just work once the bucket policy says yes.</div>
+        <div class="trap-row"><span class="trap-label">Actually happened</span>The partner's calls failed with Access Denied. Their own identity-based policy also needed to explicitly allow the action; the bucket's generosity alone was not enough.</div>
+        <div class="trap-row"><span class="trap-label">Fix</span>Confirmed with the partner's IAM team that their calling identity's policy also explicitly allowed the action before signing off on the integration.</div>
+        <div class="trap-principle">Principle: resource-based access is necessary, not always sufficient, across accounts.</div>
+      </div>
+
+      <div class="trap-card tilt">
+        <span class="trap-tag">Evaluation logic</span>
+        <h4>A Deny that forgot its own exception</h4>
+        <div class="trap-row"><span class="trap-label">Setup</span>An engineer wrote a Deny meant to block a risky action for everyone except one break-glass admin role, intending to add an exclusion for it.</div>
+        <div class="trap-row"><span class="trap-label">Assumed</span>The intent was documented in a comment, so the exclusion would get added before the change shipped.</div>
+        <div class="trap-row"><span class="trap-label">Actually happened</span>The exclusion never made it into the policy itself. During an actual incident, the break-glass role hit the same Deny as everyone else — IAM evaluates what is written, not what was meant.</div>
+        <div class="trap-row"><span class="trap-label">Fix</span>Added an explicit principal exclusion to the Deny's condition and treated "intent in a comment" as incomplete work.</div>
+        <div class="trap-principle">Principle: an explicit deny wins regardless of who is asking, unless the policy itself says otherwise.</div>
+      </div>
+
+      <div class="trap-card tilt">
+        <span class="trap-tag">Condition keys</span>
+        <h4>An MFA requirement that automation can never satisfy</h4>
+        <div class="trap-row"><span class="trap-label">Setup</span>A team added a bucket policy Deny requiring MFA for any delete action, following standard guidance for sensitive data.</div>
+        <div class="trap-row"><span class="trap-label">Assumed</span>The policy would only ever affect human users clicking around in the console.</div>
+        <div class="trap-row"><span class="trap-label">Actually happened</span>A nightly cleanup Lambda, running under a role that structurally never carries an MFA context, started failing every delete call it made.</div>
+        <div class="trap-row"><span class="trap-label">Fix</span>Scoped the Deny to exclude the specific automation role by principal, rather than applying it to every caller uniformly.</div>
+        <div class="trap-principle">Principle: a condition-gated Deny applies to every principal touching the resource, human and machine alike.</div>
+      </div>
+
+      <div class="trap-card tilt">
+        <span class="trap-tag">NotResource</span>
+        <h4>Excluding one bucket, exposing every other one</h4>
+        <div class="trap-row"><span class="trap-label">Setup</span>A team wrote Effect: Allow, Action: s3:*, NotResource naming only their sensitive "legal-hold" bucket, intending to protect that one bucket.</div>
+        <div class="trap-row"><span class="trap-label">Assumed</span>Excluding the one sensitive bucket by name was enough to keep the role properly scoped.</div>
+        <div class="trap-row"><span class="trap-label">Actually happened</span>The role could act on every other bucket in the entire account, including an unrelated production backups bucket, because NotResource excluded only the named ARN, not "everything except the buckets this role should manage."</div>
+        <div class="trap-row"><span class="trap-label">Fix</span>Replaced the exclusion with an explicit, positive Resource list naming only the buckets the role should actually touch.</div>
+        <div class="trap-principle">Principle: NotResource, like NotAction, only restricts what it excludes — everything else in scope is still fully granted.</div>
+      </div>
+
+      <div class="trap-card tilt">
+        <span class="trap-tag">Groups</span>
+        <h4>A trust policy that referenced an identity that cannot be assumed</h4>
+        <div class="trap-row"><span class="trap-label">Setup</span>An engineer wanted "anyone on the Platform team" to assume a new role, and added the Platform IAM group's ARN to the role's trust policy Principal field.</div>
+        <div class="trap-row"><span class="trap-label">Assumed</span>Since the group already listed the right people, referencing it directly would save maintaining a separate list.</div>
+        <div class="trap-row"><span class="trap-label">Actually happened</span>Every assumption attempt failed. IAM does not accept a group as a principal at all — the trust policy was invalid from the moment it was written.</div>
+        <div class="trap-row"><span class="trap-label">Fix</span>Listed individual user or role ARNs directly, and considered a dedicated team role that individuals assume instead.</div>
+        <div class="trap-principle">Principle: a group is a policy-attachment container, not a principal — it cannot be assumed.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="title-card">
+  <div class="scanbeam"></div>
+  <h2 class="tc-kinetic" data-text="THIS IS WHAT THE EXAM ACTUALLY ASKS."></h2>
+  <div class="tc-sub">Scene 09 — Mock Exam</div>
+</div>
+
+<section class="scene" id="scene-mock-exam">
+  <div class="ambient-blob" style="width:400px;height:400px;bottom:-60px;right:-140px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner wide">
+    <div class="eyebrow reveal">Scene 09 — Knowledge Check</div>
+    <h2 class="kinetic reveal">Twelve Questions, Full Domain Range</h2>
+
+    <div class="exam-header reveal">
+      <p class="lead" style="margin:0;max-width:520px;">Original, SCS-C03-style questions covering everything in this module. Answer each once — the explanation reveals immediately either way.</p>
+      <div class="score-tracker">Score: <span id="examScoreValue">0 / 12</span></div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 01 of 12</div>
+      <div class="exam-q-text">When AWS evaluates multiple IAM policies that apply to a single request, which best describes the evaluation order?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">The most recently attached policy takes precedence over older ones.</button>
+        <button class="exam-opt" data-correct="true">An explicit deny anywhere overrides any explicit allow; without a deny, an explicit allow anywhere grants access; otherwise the request is denied by default.</button>
+        <button class="exam-opt" data-correct="false">Resource-based policies always override identity-based policies.</button>
+        <button class="exam-opt" data-correct="false">The most restrictive matching statement always wins, regardless of Effect.</button>
+      </div>
+      <div class="exam-explain">This is the fixed, three-step order this entire module builds on: explicit deny beats everything, an explicit allow (if no deny fired) grants the request, and silence defaults to deny.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 02 of 12</div>
+      <div class="exam-q-text">Which AWS service issues the temporary security credentials returned when a role is assumed?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">IAM directly</button>
+        <button class="exam-opt" data-correct="true">AWS STS (Security Token Service)</button>
+        <button class="exam-opt" data-correct="false">AWS Organizations</button>
+        <button class="exam-opt" data-correct="false">Amazon Cognito</button>
+      </div>
+      <div class="exam-explain">IAM defines the role and its trust policy, but AWS STS is the service that actually issues and expires the temporary access key, secret key, and session token.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 03 of 12</div>
+      <div class="exam-q-text">An application running on EC2 needs to write objects to S3. Per this module's guidance, what is the most appropriate way to grant that access?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Create an IAM user for the application and store its access key in the instance's environment variables.</button>
+        <button class="exam-opt" data-correct="true">Attach an IAM role (instance profile) to the EC2 instance with a scoped S3 policy.</button>
+        <button class="exam-opt" data-correct="false">Share the account root credentials with the application.</button>
+        <button class="exam-opt" data-correct="false">Add the application server's IP to an S3 bucket policy with no principal restriction.</button>
+      </div>
+      <div class="exam-explain">An EC2 instance role issues temporary, auto-expiring credentials to the application with no static secret to leak or rotate — the default answer for compute-to-service access on this exam.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 04 of 12</div>
+      <div class="exam-q-text">A security engineer needs to grant a principal in Account B read access to an S3 bucket in Account A, without Account B assuming any role in Account A. Which policy type makes this possible on its own?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">An inline identity-based policy in Account A</button>
+        <button class="exam-opt" data-correct="false">An AWS managed policy</button>
+        <button class="exam-opt" data-correct="true">A resource-based bucket policy in Account A</button>
+        <button class="exam-opt" data-correct="false">A service control policy in Account A</button>
+      </div>
+      <div class="exam-explain">A resource-based policy is the only policy type here that can name an external account's principal directly and grant access, without that account needing to assume a role.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 05 of 12</div>
+      <div class="exam-q-text">A permission set is currently duplicated as inline policies across 14 roles. A security review needs to update that permission set consistently across all 14 going forward. What is the best long-term fix?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Continue using inline policies but document the duplication in a wiki.</button>
+        <button class="exam-opt" data-correct="true">Convert the permission set into a single customer-managed policy and attach it to all 14 roles.</button>
+        <button class="exam-opt" data-correct="false">Convert the permission set into an AWS managed policy.</button>
+        <button class="exam-opt" data-correct="false">Move the permission set into a resource-based policy instead.</button>
+      </div>
+      <div class="exam-explain">A customer-managed policy is a single reusable, versioned object — one edit updates every attached role at once, and AWS keeps prior versions for rollback. AWS managed policies cannot be edited to fit a custom scope, and this is not a resource-based access problem.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 06 of 12</div>
+      <div class="exam-q-text">A role has two managed policies attached: one grants ec2:*, the other has no mention of S3. A separate inline policy on the same role explicitly denies s3:DeleteBucket. The role calls s3:DeleteBucket. What happens?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Allowed — ec2:* is unrelated and S3 silence means no rule applies.</button>
+        <button class="exam-opt" data-correct="true">Denied — the explicit deny in the inline policy applies regardless of the other policies.</button>
+        <button class="exam-opt" data-correct="false">Allowed — managed policies take precedence over inline policies.</button>
+        <button class="exam-opt" data-correct="false">Denied — two policies must agree before any action is allowed.</button>
+      </div>
+      <div class="exam-explain">All attached policies are evaluated together as one aggregate set. The explicit deny in the inline policy is found during step one and ends the evaluation immediately — precedence between policy types and "agreement" between policies are not how IAM works.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 07 of 12</div>
+      <div class="exam-q-text">A policy attaches a condition requiring aws:MultiFactorAuthPresent to be true on an Allow statement for a sensitive delete action. A request arrives from a session with no MFA present, and no Deny statement exists anywhere for this action. What is the result?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Allowed — there is no explicit deny anywhere.</button>
+        <button class="exam-opt" data-correct="true">Denied — the Allow's condition fails to match, leaving no explicit allow, so the request falls to implicit deny.</button>
+        <button class="exam-opt" data-correct="false">Allowed, but logged as a warning.</button>
+        <button class="exam-opt" data-correct="false">Denied — a failed condition counts as an explicit deny.</button>
+      </div>
+      <div class="exam-explain">A failed condition on an Allow just means that Allow does not fire — it is not a deny. With no explicit deny and no matching explicit allow, the result is implicit deny, exactly like a request with no relevant policy at all.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 08 of 12</div>
+      <div class="exam-q-text">A policy statement reads: Effect: Allow, NotAction: ["iam:*"], Resource: "*". Which of the following best describes what this statement grants?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Only iam: actions.</button>
+        <button class="exam-opt" data-correct="false">No actions at all — NotAction with Allow grants nothing.</button>
+        <button class="exam-opt" data-correct="true">Every action across every AWS service except those under the iam: prefix.</button>
+        <button class="exam-opt" data-correct="false">Only actions explicitly listed elsewhere in the same policy.</button>
+      </div>
+      <div class="exam-explain">NotAction matches everything except the listed prefix. Combined with Allow and a wildcard Resource, that statement grants the entire AWS action namespace outside of IAM — a far larger grant than the single excluded prefix suggests.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 09 of 12</div>
+      <div class="exam-q-text">A policy grants Effect: Allow, Action: s3:*, NotResource: arn:aws:s3:::finance-reports/*. A request targets s3://finance-reports/q3.pdf specifically. Under this statement alone, what happens?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Allowed — Action: s3:* covers every object.</button>
+        <button class="exam-opt" data-correct="true">This statement does not apply to that object, since it falls inside the excluded NotResource ARN — the outcome depends on whether any other statement allows it.</button>
+        <button class="exam-opt" data-correct="false">Denied outright by this statement.</button>
+        <button class="exam-opt" data-correct="false">Allowed, but only if a Condition block is also present.</button>
+      </div>
+      <div class="exam-explain">NotResource excludes the named ARN pattern from this statement's reach. The statement simply does not participate for that object — neither an allow nor a deny from this statement specifically; check the rest of the policy set for the real answer.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 10 of 12</div>
+      <div class="exam-q-text">A trust policy's Principal field is set to the ARN of an IAM group, intended to let every member of that group assume the role. What actually happens?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Every current and future member of the group can assume the role.</button>
+        <button class="exam-opt" data-correct="false">Only the group's current members can assume the role; new members are excluded automatically.</button>
+        <button class="exam-opt" data-correct="true">The configuration is invalid — a group cannot be referenced as a principal and cannot be assumed.</button>
+        <button class="exam-opt" data-correct="false">The role can be assumed only by the group's designated owner.</button>
+      </div>
+      <div class="exam-explain">Groups are permission-attachment containers, not identities. They cannot appear in a Principal field and cannot be assumed — this configuration simply does not work as intended.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 11 of 12</div>
+      <div class="exam-q-text">A third-party, on-premises tool has no native support for assuming an AWS role and must use a long-lived IAM user access key. What is the most appropriate compensating control?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Disable the access key entirely, since long-lived credentials are never acceptable.</button>
+        <button class="exam-opt" data-correct="false">Set key rotation to occur only if a breach is suspected.</button>
+        <button class="exam-opt" data-correct="true">Rotate the key on a defined schedule and monitor its last-used activity so it can be retired the moment it is no longer needed.</button>
+        <button class="exam-opt" data-correct="false">Share the same key across every tool that needs similar access, to reduce the number of keys to track.</button>
+      </div>
+      <div class="exam-explain">Access keys are not forbidden; the exam expects you to know the compensating control for the genuinely unavoidable case — scheduled rotation and active monitoring, not blanket prohibition or, worse, key sharing.</div>
+    </div>
+
+    <div class="exam-card reveal">
+      <div class="exam-q-num">Question 12 of 12</div>
+      <div class="exam-q-text">An identity-based policy grants a role s3:GetObject with no conditions. A bucket policy on the target bucket contains a Deny for s3:GetObject that applies only when the request does not use TLS. The role's request arrives over HTTPS. What is the result?</div>
+      <div class="exam-options">
+        <button class="exam-opt" data-correct="false">Denied — a Deny statement exists in the bucket policy.</button>
+        <button class="exam-opt" data-correct="true">Allowed — the Deny's condition evaluates false and never fires, leaving the identity-based Allow as the only applicable statement.</button>
+        <button class="exam-opt" data-correct="false">Denied — bucket policies always override identity-based policies.</button>
+        <button class="exam-opt" data-correct="false">Undetermined without knowing the bucket owner's account ID.</button>
+      </div>
+      <div class="exam-explain">The presence of a Deny statement does not automatically mean denial — its condition has to actually match. Here it does not, since the request is secure, so the Deny never fires, and the identity-based Allow is what decides the outcome.</div>
+    </div>
+
+  </div>
+</section>
+
+<section class="scene" id="scene-faq">
+  <div class="ambient-blob" style="width:360px;height:360px;top:10%;left:-140px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 10 — FAQ</div>
+    <h2 class="kinetic reveal">Questions This Module Actually Gets</h2>
+
+    <div class="reveal" style="margin-top:28px;">
+      <div class="faq-item">
+        <button class="faq-q"><span>If an explicit Deny always wins, why would anyone ever attach more than one policy?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">Because most permissions do not conflict — most of the time you are combining, not fighting. One policy handles baseline access, another handles a specific project's needs, a third might exist just to carve out one narrow exception. Deny-wins-always is a safety property, not a reason to cram everything into a single document. Splitting permissions across purpose-built policies is what keeps each one small enough to actually review.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>Why not just give everyone AdministratorAccess and save the headache?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">Because it defeats the entire purpose of an access-control system, and this exam builds directly on that principle. AdministratorAccess is not a convenience shortcut — it is a standing liability where every compromised credential, every mistaken click, and every insider risk carries the maximum possible blast radius. Least privilege is not about distrust; it is about making sure a mistake or a breach stays small enough to contain.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>Can a resource-based policy alone grant cross-account access, or do I always need a role too?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">It is sufficient within the same account, and it is necessary for cross-account access, but not always sufficient by itself — depending on the exact service and pattern, the calling account's own identity-based policy may still need to explicitly allow the action too. Treat this as the flag it was introduced as; Module 3 covers the full cross-account rules.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>What actually happens if no policy says anything about a given action?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">Implicit deny. Silence is not neutral in IAM — if nothing anywhere explicitly allows a request, it is denied, even though nothing specifically blocked it either. This is IAM's default-closed posture, and it is the single most commonly misread mechanic on this exam.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>Is NotAction ever the right choice, or should I avoid it entirely?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">It is a legitimate, even elegant tool when it is scoped tightly — "all S3 actions on this one bucket except delete" reads naturally and stays contained. The danger is specifically the combination of NotAction, Effect: Allow, and a wildcard Resource together. Scope the resource, and NotAction stops being a trap.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>Do access keys ever make sense, or should I never use them?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">Yes, when a system genuinely cannot assume a role — a script running outside AWS, an on-premises tool, certain third-party integrations. The guidance is not "never use them," it is "treat every one as a standing liability that needs an owner, a rotation schedule, and an expiration plan," because IAM will not provide any of that automatically the way a role does.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>Why can't I just add my team's IAM group as the Principal in a role's trust policy?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">Because a group is not an identity — it is a container for attaching policies to multiple users, and IAM has no mechanism to authenticate or assume "a group." The Principal field only accepts things IAM can actually verify identity for: users, roles, accounts, and AWS services. List the individual ARNs, or build a dedicated role for the team to assume instead.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span>How is an inline policy actually different from a customer-managed policy if they can grant the exact same permissions?</span><span class="faq-plus">+</span></button>
+        <div class="faq-a">Lifecycle and reusability, not capability — both can express identical permissions. An inline policy is welded to one identity and vanishes automatically when that identity is deleted, which is exactly the point for a permission that should never be reused. A customer-managed policy is a standalone, versioned object you can attach to many identities and update in one place. Pick based on whether you want that permission set to travel to other identities or die with this one.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-closing">
+  <div class="ambient-blob" style="width:440px;height:440px;top:0;right:-160px;background:radial-gradient(circle,var(--node-glow),transparent 70%);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow reveal">Scene 11 — What's Next</div>
+    <h2 class="kinetic reveal">Same Logic, One More Account</h2>
+
+    <div class="bridge-card reveal" style="margin-top:32px;">
+      <p style="margin-bottom:14px;">Every mechanic in this module was scoped to one account on purpose. You now know how a role gets its temporary credentials, which of the four policy types is the right tool for a given requirement, how to run the three-step evaluation order without guessing, how a condition changes meaning depending on which effect it rides on, and exactly how NotAction turns a short exclusion list into an enormous grant.</p>
+      <p style="margin-bottom:14px;">None of that changes in Module 3. What changes is the number of accounts involved. Cross-account trust policies, service control policies, resource control policies, and permission boundaries are not a new evaluation engine — they are additional layers that get folded into the same explicit-deny-then-explicit-allow-then-implicit-deny logic you just built into reflex. The two-policy exhibits get bigger. The stakes of an over-broad NotAction statement get bigger, because now it might reach across an account boundary instead of staying contained to one. But the underlying reasoning does not change: scan everything for a deny first, then for an allow, and never assume silence means yes.</p>
+      <p style="margin-bottom:0;">If Scenes 03 through 07 felt solid by the end of this module, Module 3 is going to feel like more of the same skill applied at a larger radius — not a new one.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+<div class="pn-nav reveal">
+  <a class="pn-link prev" href="module-01-foundations.html">
+    <span class="pn-dir">&larr; Previous</span>
+    <span class="pn-title">Module 01 — AWS Security Foundations &amp; Shared Responsibility</span>
+  </a>
+  <a class="pn-link next" href="module-03-iam-advanced.html">
+    <span class="pn-dir">Next &rarr;</span>
+    <span class="pn-title">Module 03 — IAM Advanced: Cross-Account, SCPs, RCPs &amp; Boundaries</span>
+  </a>
+</div>
+<div class="footer-meta">SCS-C03 Certification Course · Module 02 · Domain 4 — Identity &amp; Access Management</div>
+
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Theme toggle (bug fix #3: set color-scheme via JS) ---------- */
+  var html = document.documentElement;
+  html.style.colorScheme = html.getAttribute("data-theme") === "light" ? "light" : "dark";
+  var moonIcon = "<path d=\"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z\"></path>";
+  var sunIcon = "<circle cx=\"12\" cy=\"12\" r=\"4\"></circle><path d=\"M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41\"></path>";
+  var themeBtn = document.getElementById("themeToggle");
+  var themeIcon = document.getElementById("themeIconMoon");
+  function paintIcon(){
+    var theme = html.getAttribute("data-theme");
+    themeIcon.innerHTML = theme === "light" ? sunIcon : moonIcon;
+  }
+  paintIcon();
+  themeBtn.addEventListener("click", function(){
+    var current = html.getAttribute("data-theme");
+    var next = current === "light" ? "dark" : "light";
+    html.setAttribute("data-theme", next);
+    html.style.colorScheme = next;
+    paintIcon();
+    themeBtn.classList.add("spin");
+    setTimeout(function(){ themeBtn.classList.remove("spin"); }, 500);
+  });
+
+  /* ---------- Scroll progress ---------- */
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrolled = h.scrollTop;
+    var height = h.scrollHeight - h.clientHeight;
+    document.getElementById("scrollProgress").style.width = (height > 0 ? (scrolled / height) * 100 : 0) + "%";
+  }
+  document.addEventListener("scroll", function(){ requestAnimationFrame(updateProgress); });
+
+  /* ---------- Kinetic headings ---------- */
+  function wrapKinetic(el, text){
+    var words = text.split(" ");
+    el.innerHTML = words.map(function(w, i){
+      return "<span class=\"kw\"><span class=\"kw-inner\" style=\"transition-delay:" + (i * 45) + "ms\">" + w + "</span></span>";
+    }).join(" ");
+  }
+  document.querySelectorAll("h2.kinetic").forEach(function(h){ wrapKinetic(h, h.textContent); });
+  document.querySelectorAll(".tc-kinetic").forEach(function(h){ wrapKinetic(h, h.getAttribute("data-text") || h.textContent); });
+  var kineticIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.4 });
+  document.querySelectorAll("h2.kinetic, .tc-kinetic").forEach(function(h){ kineticIo.observe(h); });
+
+  /* ---------- Scroll reveal + stagger ---------- */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.15 });
+  document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+  document.querySelectorAll(".stagger").forEach(function(group){
+    Array.prototype.forEach.call(group.children, function(el, i){ el.style.transitionDelay = (i * 90) + "ms"; });
+    io.observe(group);
+  });
+
+  /* ---------- Tilt + magnetic (reduced-motion aware) ---------- */
+  if (!reduceMotion){
+    document.querySelectorAll(".tilt").forEach(function(card){
+      card.addEventListener("mousemove", function(e){
+        var rect = card.getBoundingClientRect();
+        var px = (e.clientX - rect.left) / rect.width - 0.5;
+        var py = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = "perspective(600px) rotateX(" + (py * -6) + "deg) rotateY(" + (px * 6) + "deg) translateY(-2px)";
+      });
+      card.addEventListener("mouseleave", function(){ card.style.transform = "perspective(600px) rotateX(0) rotateY(0)"; });
+    });
+  }
+
+  /* ---------- Stat count-up ---------- */
+  document.querySelectorAll(".stat-num").forEach(function(el){
+    new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (!entry.isIntersecting || el.dataset.done) return;
+        el.dataset.done = "1";
+        var target = parseInt(el.dataset.target, 10);
+        var start = performance.now(), duration = 1100;
+        function tick(now){
+          var p = Math.min((now-start)/duration,1);
+          el.textContent = (el.dataset.prefix||"") + Math.round((1-Math.pow(1-p,3))*target) + (el.dataset.suffix||"");
+          if(p<1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+    }, {threshold:0.4}).observe(el);
+  });
+
+/* ---------- Generic flow-diagram binder (reused across diagrams) ---------- */
+function bindFlowDiagram(containerId){
+  var container = document.getElementById(containerId);
+  if(!container) return;
+  var nodes = container.querySelectorAll(".flow-node");
+  var descs = container.querySelectorAll(".flow-desc");
+  function activate(step){
+    nodes.forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-step") === step); });
+    descs.forEach(function(d){ d.classList.toggle("active", d.getAttribute("data-step") === step); });
+  }
+  nodes.forEach(function(n){
+    n.addEventListener("click", function(){ activate(n.getAttribute("data-step")); });
+    n.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); activate(n.getAttribute("data-step")); }
+    });
+  });
+}
+bindFlowDiagram("assumeRoleFlow");
+
+/* ---------- Generic drawer binder (clones <template> nodes, never builds HTML from strings) ---------- */
+function bindDrawer(overlayId, drawerId, closeId, contentId, triggerSelector){
+  var overlay = document.getElementById(overlayId);
+  var drawer = document.getElementById(drawerId);
+  var closeBtn = document.getElementById(closeId);
+  var content = document.getElementById(contentId);
+  if(!overlay || !drawer) return;
+  function openWithTemplate(tplId){
+    var tpl = document.getElementById(tplId);
+    if(!tpl) return;
+    content.innerHTML = "";
+    content.appendChild(tpl.content.cloneNode(true));
+    drawer.classList.add("open");
+    overlay.classList.add("open");
+  }
+  function close(){ drawer.classList.remove("open"); overlay.classList.remove("open"); }
+  document.querySelectorAll(triggerSelector).forEach(function(btn){
+    btn.addEventListener("click", function(){ openWithTemplate(btn.getAttribute("data-target")); });
+  });
+  overlay.addEventListener("click", close);
+  closeBtn.addEventListener("click", close);
+}
+bindDrawer("typeDrawerOverlay","typeDrawer","typeDrawerClose","typeDrawerContent",".type-card");
+
+bindFlowDiagram("evalLogicFlow");
+
+/* ---------- JSON key callout binder (clickable keys reveal a matching .flow-desc panel) ---------- */
+function bindJsonCallouts(containerId){
+  var container = document.getElementById(containerId);
+  if(!container) return;
+  var keys = container.querySelectorAll(".json-key");
+  var descs = container.querySelectorAll(".flow-desc");
+  function activate(step){
+    keys.forEach(function(k){ k.classList.toggle("active-key", k.getAttribute("data-callout") === step); });
+    descs.forEach(function(d){ d.classList.toggle("active", d.getAttribute("data-step") === step); });
+  }
+  keys.forEach(function(k){
+    k.addEventListener("click", function(){ activate(k.getAttribute("data-callout")); });
+    k.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){ e.preventDefault(); activate(k.getAttribute("data-callout")); }
+    });
+  });
+}
+bindJsonCallouts("annotatedJsonDiagram");
+
+(function(){
+  var toggle = document.getElementById("pairToggle");
+  if(!toggle) return;
+  var btns = toggle.querySelectorAll("button[data-pair]");
+  var panels = toggle.querySelectorAll(".pair-panel");
+  btns.forEach(function(b){
+    b.addEventListener("click", function(){
+      var val = b.getAttribute("data-pair");
+      btns.forEach(function(x){ x.classList.toggle("primary", x === b); });
+      panels.forEach(function(p){ p.classList.toggle("active", p.getAttribute("data-pair") === val); });
+    });
+  });
+})();
+
+document.querySelectorAll(".cond-card").forEach(function(card){
+  card.addEventListener("click", function(){
+    var detail = card.querySelector(".cond-detail");
+    if(detail) detail.classList.toggle("open");
+  });
+});
+
+document.querySelectorAll("#notActionChecklist .act-item").forEach(function(item){
+  item.addEventListener("click", function(){
+    item.classList.toggle("checked");
+    var target = document.getElementById(item.getAttribute("data-target"));
+    if(target) target.classList.toggle("open");
+  });
+});
+
+function bindEvalCards(){
+  document.querySelectorAll(".eval-card").forEach(function(card){
+    var answer = card.getAttribute("data-answer");
+    var choiceBtns = card.querySelectorAll(".choice-btn");
+    choiceBtns.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var picked = btn.getAttribute("data-choice");
+        choiceBtns.forEach(function(b){ b.classList.remove("picked-correct","picked-wrong"); });
+        if(picked === answer){
+          btn.classList.add("picked-correct");
+        } else {
+          btn.classList.add("picked-wrong");
+          choiceBtns.forEach(function(b){ if(b.getAttribute("data-choice") === answer) b.classList.add("picked-correct"); });
+        }
+      });
+    });
+  });
+
+  var sheetOverlay = document.getElementById("evalSheetOverlay");
+  var sheet = document.getElementById("evalSheet");
+  var sheetContent = document.getElementById("evalSheetContent");
+  var sheetClose = document.getElementById("evalSheetClose");
+  if(!sheetOverlay || !sheet) return;
+  document.querySelectorAll(".reveal-btn[data-target]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var tpl = document.getElementById(btn.getAttribute("data-target"));
+      if(!tpl) return;
+      sheetContent.innerHTML = "";
+      sheetContent.appendChild(tpl.content.cloneNode(true));
+      sheet.classList.add("open");
+      sheetOverlay.classList.add("open");
+    });
+  });
+  function closeSheet(){ sheet.classList.remove("open"); sheetOverlay.classList.remove("open"); }
+  sheetOverlay.addEventListener("click", closeSheet);
+  if(sheetClose) sheetClose.addEventListener("click", closeSheet);
+}
+bindEvalCards();
+
+function bindMockExam(){
+  var scoreEl = document.getElementById("examScoreValue");
+  var correctCount = 0;
+  var cards = document.querySelectorAll(".exam-card");
+  cards.forEach(function(card){
+    var answered = false;
+    var opts = card.querySelectorAll(".exam-opt");
+    var explain = card.querySelector(".exam-explain");
+    opts.forEach(function(opt){
+      opt.addEventListener("click", function(){
+        if(answered) return;
+        answered = true;
+        var isCorrect = opt.getAttribute("data-correct") === "true";
+        opts.forEach(function(o){
+          if(o.getAttribute("data-correct") === "true"){ o.classList.add("correct"); }
+          else if(o === opt){ o.classList.add("incorrect"); }
+        });
+        if(explain) explain.classList.add("open");
+        if(isCorrect) correctCount++;
+        if(scoreEl) scoreEl.textContent = correctCount + " / " + cards.length;
+      });
+    });
+  });
+}
+bindMockExam();
+
+document.querySelectorAll(".faq-q").forEach(function(q){
+  q.addEventListener("click", function(){
+    var item = q.closest(".faq-item");
+    if(!item) return;
+    var answer = item.querySelector(".faq-a");
+    item.classList.toggle("open");
+    if(answer) answer.classList.toggle("open");
+  });
+});
+
+(function(){
+  var scenes = ["scene-users","scene-policy-types","scene-evaluation","scene-identity-resource","scene-conditions","scene-notaction","scene-evaluator","scene-trap-gallery","scene-mock-exam","scene-faq","scene-closing"];
+  var labels = ["Users, Groups & Roles","Policy Types","Evaluation Logic","Identity + Resource","Condition Keys","NotAction Trap","Policy Evaluator","Trap Gallery","Mock Exam","FAQ","What's Next"];
+  var rail = document.getElementById("railNav");
+  if(!rail) return;
+  var dots = [];
+  scenes.forEach(function(id, i){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var dot = document.createElement("button");
+    dot.className = "rail-dot";
+    dot.setAttribute("aria-label", labels[i] || id);
+    dot.setAttribute("data-target", id);
+    dot.addEventListener("click", function(){
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    rail.appendChild(dot);
+    dots.push({ id: id, el: el, dot: dot });
+  });
+  if(dots.length){ dots[0].dot.classList.add("active"); }
+
+  var railIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var match = null;
+      dots.forEach(function(d){ if(d.el === entry.target) match = d; });
+      if(!match) return;
+      if(entry.isIntersecting){
+        dots.forEach(function(d){ d.dot.classList.remove("active"); });
+        match.dot.classList.add("active");
+      }
+    });
+  }, { rootMargin: "-15% 0px -75% 0px", threshold: 0 });
+  dots.forEach(function(d){ railIo.observe(d.el); });
+})();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 03: IAM Advanced: Cross-Account, SCPs, RCPs &amp; Boundaries</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grain-opacity:0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow:0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg:rgba(10,14,26,0.72);
+  --node-glow:rgba(76,134,255,0.28);
+  --overlay:rgba(4,6,14,0.6);
+  --grid-line:rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+  --red:#FB7185;
+}
+html[data-theme="dark"]{ color-scheme:dark; }
+html[data-theme="light"]{
+  color-scheme:light;
+  --grain-opacity:0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow:0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg:rgba(246,247,251,0.72);
+  --node-glow:rgba(47,111,237,0.20);
+  --overlay:rgba(20,26,40,0.35);
+  --grid-line:rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+  --red:#D6335B;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;background:var(--bg);}
+body{background:var(--bg);color:var(--text);font-family:"Inter",sans-serif;transition:background .4s ease,color .4s ease;overflow-x:hidden;}
+@media(prefers-reduced-motion:reduce){*{animation-duration:0.001ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;}}
+
+/* GRAIN */
+#grainOverlay{position:fixed;inset:0;z-index:250;pointer-events:none;opacity:var(--grain-opacity,0.05);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 40px;display:flex;align-items:center;justify-content:space-between;background:var(--nav-bg);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);}
+.nav-brand{font-family:"JetBrains Mono",monospace;font-size:11.5px;letter-spacing:0.08em;color:var(--c-iam);text-transform:uppercase;}
+.nav-title{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:600;color:var(--text-dim);}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.nav-badge{font-family:"JetBrains Mono",monospace;font-size:10px;padding:4px 10px;border-radius:999px;border:1px solid var(--c-iam-dim);color:var(--c-iam);text-transform:uppercase;letter-spacing:0.06em;}
+.theme-toggle{background:var(--surface);border:1px solid var(--line);color:var(--text);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:border-color .2s ease;}
+.theme-toggle:hover{border-color:var(--accent);}
+
+/* RAIL */
+.rail{position:fixed;right:26px;top:50%;transform:translateY(-50%);z-index:90;display:flex;flex-direction:column;gap:14px;}
+.rail-dot{width:9px;height:9px;border-radius:50%;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .3s ease,transform .3s ease;}
+.rail-dot.active{background:var(--accent);border-color:var(--accent);transform:scale(1.3);}
+@media(max-width:900px){.rail{display:none;}}
+
+/* SCROLL PROGRESS */
+#scrollProgress{position:fixed;top:0;left:0;height:3px;width:0%;background:var(--accent);z-index:300;transition:width .08s linear;}
+
+/* SCENE */
+.scene{min-height:100vh;padding:160px 40px;position:relative;background:var(--bg);}
+.scene-inner{max-width:840px;margin:0 auto;position:relative;z-index:2;}
+
+/* TITLE CARD */
+.title-card{min-height:100vh;background:var(--card-bg);color:var(--card-text);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden;}
+.title-card h2{font-size:clamp(2.2rem,7vw,5.4rem);line-height:1.1;font-weight:700;font-family:"Space Grotesk",sans-serif;}
+.scanbeam{position:absolute;left:0;right:0;height:140px;top:-140px;background:linear-gradient(180deg,transparent,rgba(76,134,255,0.14),transparent);animation:scanSweep 6s linear infinite;}
+@keyframes scanSweep{0%{top:-140px;}100%{top:100%;}}
+.tc-sub{font-family:"JetBrains Mono",monospace;font-size:13px;color:rgba(237,241,251,0.5);text-transform:uppercase;letter-spacing:0.12em;margin-top:18px;}
+
+/* TYPOGRAPHY */
+h1,h2,h3{font-family:"Space Grotesk",sans-serif;}
+h1{font-size:clamp(2.4rem,6vw,4.2rem);font-weight:700;letter-spacing:-0.02em;line-height:1.1;}
+h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;letter-spacing:-0.02em;line-height:1.2;}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:-0.01em;}
+p{line-height:1.75;color:var(--text-dim);}
+.lead{font-size:1.12rem;color:var(--text);line-height:1.8;margin-bottom:28px;}
+code{font-family:"JetBrains Mono",monospace;background:var(--surface);padding:2px 7px;border-radius:5px;font-size:0.86em;color:var(--c-iam);}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 26px;overflow-x:auto;margin:24px 0;}
+pre code{background:none;padding:0;font-size:0.88rem;color:var(--text);}
+
+/* EYEBROW */
+.eyebrow{display:flex;align-items:center;gap:12px;font-family:"JetBrains Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--c-iam);margin-bottom:20px;}
+.eyebrow::before{content:"";width:24px;height:1px;background:var(--c-iam);}
+
+/* AMBIENT BLOBS */
+.ambient-blob{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:0.35;animation:driftBlob 34s ease-in-out infinite alternate;}
+@keyframes driftBlob{0%{transform:translate(0,0) scale(1);}50%{transform:translate(4%,-6%) scale(1.08);}100%{transform:translate(-5%,4%) scale(0.96);}}
+
+/* REVEAL + STAGGER */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s ease,transform .8s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
+.stagger>*{opacity:0;transform:translateY(18px) scale(.98);transition:opacity .6s ease,transform .6s ease;}
+.stagger.in>*{opacity:1;transform:translateY(0) scale(1);}
+
+/* KINETIC HEADINGS */
+.kw{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:0.08em;}
+.kw-inner{display:inline-block;transform:translateY(115%);transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+
+/* CARDS */
+.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:32px;}
+@media(max-width:680px){.card-grid{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px;transition:border-color .2s ease,transform .15s ease;}
+.card:hover{border-color:var(--c-iam-dim);}
+.card.tilt{transform-style:preserve-3d;}
+.card-icon{font-size:1.6rem;margin-bottom:14px;}
+.card h4{font-size:1.05rem;font-weight:600;margin-bottom:8px;}
+.card p{font-size:0.9rem;line-height:1.65;}
+.tag{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.07em;padding:3px 9px;border-radius:999px;margin-bottom:10px;}
+.tag-iam{background:var(--c-iam-dim);color:var(--c-iam);}
+.tag-warn{background:var(--c-detect-dim);color:var(--amber);}
+.tag-danger{background:var(--c-ir-dim);color:var(--c-ir);}
+.tag-good{background:var(--c-gov-dim);color:var(--green);}
+
+/* STAT NUMBERS */
+.stat-row{display:flex;gap:40px;flex-wrap:wrap;margin:36px 0;}
+.stat{display:flex;flex-direction:column;gap:4px;}
+.stat-num{font-family:"Space Grotesk",sans-serif;font-size:2.6rem;font-weight:700;color:var(--c-iam);line-height:1;}
+.stat-label{font-family:"JetBrains Mono",monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);}
+
+/* POLICY BOX */
+.policy-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:24px 0;}
+.policy-box-header{background:var(--surface-raised);padding:12px 20px;font-family:"JetBrains Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);border-bottom:1px solid var(--line);}
+.policy-box-body{padding:18px 20px;}
+.policy-line{font-family:"JetBrains Mono",monospace;font-size:0.83rem;line-height:1.9;}
+.pl-key{color:var(--c-iam);}
+.pl-str{color:var(--green);}
+.pl-deny{color:var(--red);}
+
+/* MENTOR ASIDE */
+.mentor-aside{background:var(--surface);border-left:3px solid var(--accent);border-radius:0 14px 14px 0;padding:18px 24px;margin:28px 0;}
+.mentor-aside::before{content:"MENTOR NOTE";display:block;font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--accent);margin-bottom:8px;}
+.mentor-aside p{font-size:0.94rem;color:var(--text);line-height:1.7;font-style:italic;}
+
+/* DIAGRAM SVG */
+.diagram-wrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;margin:28px 0;overflow-x:auto;}
+.diagram-wrap svg{display:block;margin:0 auto;}
+
+/* STEP LIST */
+.step-list{list-style:none;display:flex;flex-direction:column;gap:16px;margin:28px 0;}
+.step-item{display:flex;gap:16px;align-items:flex-start;}
+.step-num{min-width:32px;height:32px;border-radius:50%;background:var(--c-iam-dim);color:var(--c-iam);display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:500;flex-shrink:0;margin-top:2px;}
+.step-content{flex:1;}
+.step-content strong{display:block;font-size:0.97rem;margin-bottom:4px;color:var(--text);}
+.step-content p{font-size:0.88rem;color:var(--text-dim);line-height:1.6;margin:0;}
+
+/* DRAWER */
+.drawer-overlay{position:fixed;inset:0;background:var(--overlay);z-index:200;opacity:0;pointer-events:none;transition:opacity .35s ease;backdrop-filter:blur(2px);}
+.drawer-overlay.open{opacity:1;pointer-events:auto;}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(480px,90vw);background:var(--surface-raised);border-left:1px solid var(--line);z-index:201;padding:36px 32px;overflow-y:auto;transform:translateX(100%);transition:transform .4s cubic-bezier(.16,1,.3,1);box-shadow:-20px 0 60px rgba(0,0,0,0.35);}
+.drawer.open{transform:translateX(0);}
+.drawer-close{position:absolute;top:18px;right:18px;background:var(--surface);border:1px solid var(--line);color:var(--text);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.drawer h3{font-size:1.35rem;margin-bottom:6px;}
+.drawer-tag{font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;padding:3px 9px;border-radius:999px;margin-bottom:20px;display:inline-block;}
+.drawer-section{margin-bottom:22px;}
+.drawer-section h4{font-size:0.9rem;font-weight:600;color:var(--c-iam);margin-bottom:8px;font-family:"JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:0.06em;font-size:10.5px;}
+.drawer-section p,.drawer-section li{font-size:0.9rem;color:var(--text-dim);line-height:1.65;}
+.drawer-section ul{padding-left:18px;}
+.drawer-section li{margin-bottom:6px;}
+.mistake-box{background:var(--c-ir-dim);border:1px solid var(--c-ir);border-radius:10px;padding:14px 16px;margin-top:10px;}
+.mistake-box p{color:var(--c-ir);font-size:0.88rem;}
+
+/* COMPARISON CARDS */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:32px;}
+@media(max-width:720px){.comp-grid{grid-template-columns:1fr;}}
+.comp-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;cursor:pointer;transition:border-color .25s ease,transform .15s ease;position:relative;}
+.comp-card:hover{border-color:var(--accent-dim);transform:translateY(-3px);}
+.comp-card .cc-icon{font-size:2rem;margin-bottom:12px;}
+.comp-card h4{font-size:1rem;font-weight:600;margin-bottom:6px;}
+.comp-card p{font-size:0.86rem;color:var(--text-dim);line-height:1.6;margin:0;}
+.comp-card .cc-scope{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--text-dim);margin-top:12px;text-transform:uppercase;letter-spacing:0.06em;}
+.open-arrow{position:absolute;bottom:18px;right:18px;font-size:18px;color:var(--text-dim);transition:transform .25s ease,color .25s ease;}
+.comp-card:hover .open-arrow{transform:translateX(3px);color:var(--accent);}
+
+/* DECISION TREE NODES */
+.mindnode{cursor:pointer;}
+.node-info{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease,margin .3s ease;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:0;}
+.node-info.open{max-height:320px;opacity:1;margin-top:14px;padding:16px 20px;}
+.node-info p{font-size:0.88rem;color:var(--text-dim);line-height:1.65;margin:0;}
+
+/* THREE CEILINGS EXERCISE */
+.ceilings-grid{display:flex;flex-direction:column;gap:20px;margin-top:32px;}
+.ceiling-scenario{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.cs-header{padding:18px 22px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
+.cs-header:hover{background:var(--surface-raised);}
+.cs-num{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--c-iam);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;}
+.cs-title{font-size:0.97rem;font-weight:600;}
+.cs-chev{font-size:20px;color:var(--text-dim);transition:transform .3s ease;}
+.ceiling-scenario.open .cs-chev{transform:rotate(90deg);color:var(--accent);}
+.cs-body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.ceiling-scenario.open .cs-body{max-height:1000px;}
+.cs-inner{padding:0 22px 22px;}
+.cs-layers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0;}
+@media(max-width:620px){.cs-layers{grid-template-columns:1fr;}}
+.cs-layer{background:var(--surface-raised);border-radius:12px;padding:14px;}
+.cs-layer-label{font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;}
+.cs-layer-val{font-size:0.85rem;color:var(--text);}
+.cs-reveal-btn{display:inline-block;margin-top:12px;padding:9px 20px;background:var(--c-iam-dim);color:var(--c-iam);border:1px solid var(--accent-dim);border-radius:10px;cursor:pointer;font-size:0.88rem;font-weight:500;transition:background .2s ease;}
+.cs-reveal-btn:hover{background:var(--accent-dim);}
+.cs-result{margin-top:14px;display:none;border-radius:12px;padding:16px 20px;}
+.cs-result.allow{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);}
+.cs-result.deny{background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.3);}
+.cs-result-verdict{font-family:"Space Grotesk",sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px;}
+.cs-result.allow .cs-result-verdict{color:var(--green);}
+.cs-result.deny .cs-result-verdict{color:var(--red);}
+.cs-result-binding{font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim);margin-bottom:8px;}
+.cs-result p{font-size:0.88rem;color:var(--text-dim);margin:0;}
+
+/* TRAP GALLERY */
+.trap-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:32px;}
+@media(max-width:680px){.trap-grid{grid-template-columns:1fr;}}
+.trap-card{background:var(--surface);border:1px solid var(--c-ir-dim);border-radius:16px;padding:24px;transition:border-color .2s ease,transform .15s ease;}
+.trap-card:hover{border-color:var(--c-ir);transform:translateY(-2px);}
+.trap-num{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--c-ir);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.trap-card h4{font-size:1rem;font-weight:600;margin-bottom:10px;color:var(--text);}
+.trap-card p{font-size:0.88rem;color:var(--text-dim);line-height:1.65;margin-bottom:12px;}
+.trap-fix{background:rgba(52,211,153,0.08);border-left:3px solid var(--green);padding:10px 14px;border-radius:0 8px 8px 0;}
+.trap-fix p{font-size:0.85rem;color:var(--green);margin:0;}
+
+/* MOCK EXAM */
+.exam-questions{display:flex;flex-direction:column;gap:24px;margin-top:32px;}
+.exam-q{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;}
+.exam-q-num{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--c-iam);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.exam-q h4{font-size:0.97rem;font-weight:600;margin-bottom:16px;line-height:1.5;}
+.exam-opts{display:flex;flex-direction:column;gap:10px;}
+.exam-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:border-color .2s ease;font-size:0.9rem;text-align:left;}
+.exam-opt:hover{border-color:var(--accent-dim);}
+.exam-opt.correct{background:rgba(52,211,153,0.1);border-color:var(--green);color:var(--green);}
+.exam-opt.wrong{background:rgba(251,113,133,0.1);border-color:var(--red);color:var(--red);}
+.exam-opt.selected{border-color:var(--accent);}
+.opt-letter{font-family:"JetBrains Mono",monospace;font-size:11px;min-width:20px;font-weight:500;color:var(--text-dim);margin-top:1px;}
+.exam-explanation{display:none;margin-top:14px;padding:14px 16px;background:var(--surface-raised);border-radius:10px;font-size:0.88rem;color:var(--text-dim);line-height:1.65;border-left:3px solid var(--c-iam);}
+.exam-score-bar{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:28px;display:flex;align-items:center;gap:24px;}
+.score-circle{width:72px;height:72px;border-radius:50%;border:3px solid var(--c-iam);display:flex;align-items:center;justify-content:center;font-family:"Space Grotesk",sans-serif;font-size:1.4rem;font-weight:700;color:var(--c-iam);flex-shrink:0;}
+.score-info h4{font-size:1rem;font-weight:600;margin-bottom:4px;}
+.score-info p{font-size:0.88rem;color:var(--text-dim);margin:0;}
+
+/* DISCUSSION FAQ */
+.discussion{display:flex;flex-direction:column;gap:22px;margin-top:36px;}
+.discussion-pair{display:flex;flex-direction:column;gap:10px;}
+.bubble{max-width:82%;padding:16px 20px;border-radius:18px;font-size:0.95rem;line-height:1.65;}
+.bubble-q{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px;cursor:pointer;transition:border-color .2s ease;display:flex;flex-direction:column;}
+.bubble-q:hover{border-color:var(--accent);}
+.bubble-q .who{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.bubble-q .chev{margin-left:auto;transition:transform .25s ease;font-size:12px;color:var(--text-dim);}
+.discussion-pair.open .bubble-q .chev{transform:rotate(90deg);color:var(--accent);}
+.bubble-a{align-self:flex-end;background:var(--accent-dim);border-bottom-right-radius:4px;max-height:0;overflow:hidden;opacity:0;padding:0 20px;transition:max-height .45s ease,opacity .35s ease,padding .35s ease;}
+.discussion-pair.open .bubble-a{max-height:600px;opacity:1;padding:16px 20px;}
+.bubble-a .who{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--c-iam);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:block;text-align:right;}
+.bubble-a p{font-size:0.93rem;color:var(--text);}
+
+/* RESOURCES */
+.resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:36px;}
+@media(max-width:720px){.resource-grid{grid-template-columns:1fr;}}
+.resource-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;position:relative;transition:border-color .2s ease,transform .15s ease;}
+.resource-card:hover{border-color:var(--accent-dim);transform:translateY(-2px);}
+.resource-pill{position:absolute;top:20px;right:20px;font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;padding:4px 10px;border-radius:999px;}
+.resource-pill.free{background:var(--c-gov-dim);color:var(--green);}
+.resource-pill.paid{background:var(--c-detect-dim);color:var(--amber);}
+.resource-card h4{font-size:1rem;padding-right:70px;margin-bottom:8px;}
+.resource-card .source{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text-dim);margin-bottom:10px;}
+.resource-card p{font-size:0.88rem;color:var(--text-dim);line-height:1.6;}
+.resource-card a{display:inline-block;margin-top:14px;font-size:0.85rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-dim);}
+
+/* HIGHLIGHT BOX */
+.hl-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin:24px 0;}
+.hl-box.iam{border-left:3px solid var(--c-iam);}
+.hl-box.warn{border-left:3px solid var(--amber);}
+.hl-box.good{border-left:3px solid var(--green);}
+.hl-box h4{font-size:0.95rem;font-weight:600;margin-bottom:8px;}
+.hl-box p,.hl-box li{font-size:0.9rem;color:var(--text-dim);line-height:1.65;}
+.hl-box ul{padding-left:18px;}
+.hl-box li{margin-bottom:5px;}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--line);margin:48px 0;}
+
+/* FOOTER */
+footer{padding:60px 40px;background:var(--bg);color:var(--text-dim);}
+.footer-inner{max-width:840px;margin:0 auto;}
+.footer-nav{display:flex;gap:20px;margin-top:24px;flex-wrap:wrap;}
+.footer-nav a{font-size:0.9rem;color:var(--accent);text-decoration:none;padding:10px 22px;border:1px solid var(--accent-dim);border-radius:10px;transition:background .2s ease;}
+.footer-nav a:hover{background:var(--accent-dim);}
+.footer-meta{font-family:"JetBrains Mono",monospace;font-size:11px;margin-bottom:8px;}
+
+/* MAGNETIC BTN */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:12px;font-size:0.9rem;font-weight:600;cursor:pointer;border:none;transition:transform .15s ease;text-decoration:none;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--accent-dim);color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress"></div>
+
+<nav>
+  <span class="nav-brand">SCS-C03</span>
+  <span class="nav-title">Module 03 — IAM Advanced</span>
+  <div class="nav-right">
+    <span class="nav-badge">Domain 4 · 20%</span>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">☀️</button>
+  </div>
+</nav>
+
+<div class="rail" id="siteRail"></div>
+
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <button class="drawer-close" onclick="closeDrawer()" aria-label="Close drawer">×</button>
+  <div id="drawerContent"></div>
+</div>
+
+<!-- ===================== SCENE: INTRO / BRIDGE ===================== -->
+<section class="scene" id="s-intro">
+  <div class="ambient-blob" style="width:480px;height:480px;background:radial-gradient(circle,var(--c-iam),transparent 70%);top:-80px;left:-120px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Module 03 · IAM Advanced</div>
+    <h1 class="kinetic reveal">Cross-Account, SCPs, RCPs &amp; Permission Boundaries</h1>
+    <div class="stat-row reveal">
+      <div class="stat"><span class="stat-num" data-target="20" data-suffix="%">0%</span><span class="stat-label">Exam Weight</span></div>
+      <div class="stat"><span class="stat-num" data-target="3" data-suffix=" hrs">0 hrs</span><span class="stat-label">Study Time</span></div>
+      <div class="stat"><span class="stat-num" data-target="5">0</span><span class="stat-label">Core Mechanisms</span></div>
+      <div class="stat"><span class="stat-num" data-target="3">0</span><span class="stat-label">Permission Ceilings</span></div>
+    </div>
+    <div class="lead reveal">In Module 2, you mastered how IAM evaluates policies within a single account. That was the foundation. Now the scope expands: you are adding two more permission ceilings on top of everything you already know — organization-wide guardrails that govern entire fleets of accounts, per-identity caps that enable safe delegation, and a new resource-scoped defense that protects your data from principals that your organizational controls cannot even see.</div>
+    <p class="reveal">This is the most conceptually dense module in the IAM sequence. The four mechanisms you will learn here — cross-account roles, Service Control Policies, Resource Control Policies, and permission boundaries — each answer a fundamentally different question about access control. The exam tests whether you truly understand the distinctions between them, not just whether you can recite their definitions. By the end, you will be able to predict the effective permission for any identity given any combination of these controls — and that predictive ability is exactly what the SCS-C03 scenario questions demand.</p>
+    <div class="hl-box iam reveal" style="margin-top:32px;">
+      <h4>🎯 What you will be able to do after this module</h4>
+      <ul>
+        <li>Design a least-privilege, multi-account access pattern using cross-account roles correctly — trust policy, permission policy, and both sides of the assume-role transaction</li>
+        <li>Correctly distinguish SCP vs. RCP vs. permission boundary: what each governs, at what scope, and which specific gap each one closes</li>
+        <li>Predict the effective permission for an identity given an identity-based policy, a permission boundary, and an SCP acting simultaneously</li>
+        <li>Explain, with a concrete example, why RCPs were introduced even though SCPs already existed — the exact question the exam is likely to ask</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: CROSS-ACCOUNT ROLES ===================== -->
+<section class="scene" id="s-cross-account">
+  <div class="ambient-blob" style="width:400px;height:400px;background:radial-gradient(circle,var(--c-iam),transparent 70%);bottom:-60px;right:-100px;opacity:0.25;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Core Mechanism 1</div>
+    <h2 class="kinetic reveal">Cross-Account Roles</h2>
+    <p class="lead reveal">The safest, most operationally sound way to grant access across AWS account boundaries is through a role assumption — and understanding why requires unpacking two separate documents that serve two completely different purposes.</p>
+
+    <h3 class="reveal" style="margin-top:40px;">Trust policy vs. permission policy: two documents, two jobs</h3>
+    <p class="reveal" style="margin-top:12px;">Every IAM role has exactly two types of attached policy, and the exam will test whether you can keep them straight. The <strong>trust policy</strong> answers the question: <em>who is allowed to assume this role?</em> It is a resource-based policy attached to the role itself, and its Effect is almost always <code>Allow</code> with the action <code>sts:AssumeRole</code>. The <strong>permission policy</strong> — which is just an ordinary identity-based policy — answers the question: <em>what can the role do once it is assumed?</em> These are completely independent documents. A trust policy that opens the door to Account A's identities does not automatically let them do anything useful; they step into an empty room until you attach permission policies that give the role real capabilities.</p>
+    <p class="reveal">Here is the failure mode that shows up on the exam: an engineer creates a role in Account B, writes a trust policy allowing <code>arn:aws:iam::111111111111:root</code> (Account A), and calls it done. The assumption request from Account A still fails — not because the trust policy is wrong, but because the assuming principal in Account A does not have <code>sts:AssumeRole</code> permission in their own account's identity-based policy. Cross-account trust is bilateral: Account B says "I trust Account A," and Account A must say "this identity is allowed to assume that role." Both checks must pass independently.</p>
+
+    <div class="diagram-wrap reveal">
+      <svg viewBox="0 0 780 260" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" style="max-width:780px;">
+        <!-- Account A box -->
+        <rect x="20" y="60" width="190" height="140" rx="12" fill="var(--surface-raised)" stroke="var(--c-iam)" stroke-width="1.5"/>
+        <text x="115" y="87" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--c-iam)" letter-spacing="1">ACCOUNT A</text>
+        <text x="115" y="107" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--text-dim)">111111111111</text>
+        <rect x="48" y="118" width="134" height="56" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1"/>
+        <text x="115" y="138" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--text)">IAM Identity</text>
+        <text x="115" y="156" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--c-iam)">sts:AssumeRole ✓</text>
+        <text x="115" y="168" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--text-dim)">(in own policy)</text>
+
+        <!-- STS box center -->
+        <rect x="290" y="90" width="200" height="80" rx="12" fill="var(--surface-raised)" stroke="var(--amber)" stroke-width="1.5"/>
+        <text x="390" y="116" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--amber)" letter-spacing="1">AWS STS</text>
+        <text x="390" y="134" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="var(--text-dim)">1. Check trust policy (B)</text>
+        <text x="390" y="150" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="var(--text-dim)">2. Check assume permission (A)</text>
+        <text x="390" y="166" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="var(--green)">3. Issue temp credentials</text>
+
+        <!-- Account B box -->
+        <rect x="570" y="60" width="190" height="140" rx="12" fill="var(--surface-raised)" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="665" y="87" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--green)" letter-spacing="1">ACCOUNT B</text>
+        <text x="665" y="107" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--text-dim)">222222222222</text>
+        <rect x="598" y="118" width="134" height="56" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1"/>
+        <text x="665" y="138" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--text)">IAM Role</text>
+        <text x="665" y="155" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--c-iam)">Trust: Account A ✓</text>
+        <text x="665" y="168" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--green)">Permissions: s3:Get*</text>
+
+        <!-- Arrows -->
+        <path d="M210 130 L290 130" stroke="var(--c-iam)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="250" y="122" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="var(--c-iam)">AssumeRole</text>
+        <path d="M490 130 L570 130" stroke="var(--green)" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <text x="530" y="122" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="var(--green)">Temp creds</text>
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="var(--c-iam)"/></marker>
+          <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="var(--green)"/></marker>
+        </defs>
+        <!-- Labels -->
+        <text x="390" y="230" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--text-dim)">Both checks must pass. Trust policy alone is not enough — the assuming principal also needs permission in Account A.</text>
+      </svg>
+    </div>
+
+    <h3 class="reveal" style="margin-top:36px;">The STS:AssumeRole flow, step by step</h3>
+    <ul class="step-list reveal">
+      <li class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <strong>Request</strong>
+          <p>The principal in Account A calls <code>sts:AssumeRole</code> targeting the role ARN in Account B. This requires that the principal's own identity-based policy (or an attached permission boundary, if one exists) allows <code>sts:AssumeRole</code> on that specific role ARN.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <strong>Trust policy evaluation in Account B</strong>
+          <p>STS checks the role's trust policy. The Principal element must list the assuming entity — either the root of Account A (<code>arn:aws:iam::111111111111:root</code>, which allows any identity in A that has permission) or a specific user/role ARN. If the trust policy does not match, the assumption fails here regardless of what Account A says.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <strong>Temporary credential issuance</strong>
+          <p>If both checks pass, STS returns temporary security credentials: an access key ID, a secret access key, and a session token. These credentials are time-limited — the default session is one hour, maximum 12 hours for most roles — and they carry the role's own permission policies into the session.</p>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <strong>Credential expiry and rotation</strong>
+          <p>The session token has a hard expiry. When it expires, the application must re-assume the role to get fresh credentials. This is one of the strongest security properties of the cross-account role pattern: there are no long-lived credentials to rotate, audit, or accidentally commit to a repository.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="mentor-aside reveal">
+      <p>The single most common cross-account mistake I see in production is assuming the trust policy is all you need. People write a trust policy in Account B allowing Account A's root, then spend 20 minutes debugging why the CLI call is denied. Nine times out of ten, the developer in Account A does not have sts:AssumeRole in their own identity-based policy. The trust policy says "I trust you if you come knocking." The identity-based policy in Account A is the key that lets them knock in the first place. You need both.</p>
+    </div>
+
+    <h3 class="reveal">Production scenario: data lake access pattern</h3>
+    <p class="reveal">Your organization has a dedicated data account (Account B) that hosts the production S3 data lake. Analysts work in a separate analytics account (Account A). The pattern: create a role <code>DataLakeReadRole</code> in Account B with permission policies allowing <code>s3:GetObject</code> on the data lake bucket. Set the trust policy to allow specific analyst roles in Account A. In Account A, attach an inline policy to the analyst roles permitting <code>sts:AssumeRole</code> on the exact DataLakeReadRole ARN. Analysts call <code>aws sts assume-role</code>, get temporary credentials scoped to the data they need, and never hold any persistent credentials in Account B. Audit trails in Account B CloudTrail show the assumed-role session principal, giving you full attribution.</p>
+  </div>
+</section>
+
+<!-- ===================== TITLE CARD: SCPs ===================== -->
+<section class="title-card" id="tc-1">
+  <div class="scanbeam"></div>
+  <div style="position:relative;z-index:2;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(237,241,251,0.4);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:20px;">Core Mechanism 2</div>
+    <h2>SERVICE CONTROL<br>POLICIES.</h2>
+    <div class="tc-sub">They do not grant. They only constrain.</div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: SCPs ===================== -->
+<section class="scene" id="s-scps">
+  <div class="ambient-blob" style="width:460px;height:460px;background:radial-gradient(circle,var(--amber),transparent 70%);top:-80px;right:-100px;opacity:0.18;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Core Mechanism 2</div>
+    <h2 class="kinetic reveal">Service Control Policies</h2>
+    <p class="lead reveal">Service Control Policies are the most misunderstood control in AWS Organizations. The misunderstanding is almost always the same: people treat them as a way to grant permissions. They are not. An SCP is a guardrail — a ceiling — that determines the maximum permissions an identity in a member account can ever exercise, regardless of what that account's own IAM policies say.</p>
+
+    <h3 class="reveal" style="margin-top:36px;">The mental model that everything else builds on</h3>
+    <p class="reveal" style="margin-top:12px;">Imagine a room with a ceiling. The ceiling is the SCP. The identity-based policy inside that account is the person standing in the room, reaching upward. Even if the IAM policy says <code>"Effect":"Allow","Action":"*","Resource":"*"</code> — the broadest possible grant — the identity can only touch what the ceiling allows. If the SCP ceiling is at shoulder height, it does not matter that the IAM policy allows reaching the sky.</p>
+    <p class="reveal">This analogy has one more critical layer: the SCP ceiling applies to every identity in the account simultaneously, except the management account itself (which is never governed by SCPs — one of the key architectural reasons to keep the management account's blast radius as small as possible). Even the account root user is subject to SCPs attached to the account's OU or to the root of the organization. This is one of the very few controls in AWS that can restrict the root user of a member account.</p>
+
+    <div class="hl-box warn reveal">
+      <h4>⚠️ The SCP cardinal rule — commit this to memory</h4>
+      <p>An SCP with <code>"Effect":"Allow"</code> does not grant permissions. It merely does not deny them. An identity in an account needs both an SCP that does not deny the action AND its own identity-based policy that explicitly allows it. An SCP Allow with no matching identity-based Allow equals no access.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:36px;">FullAWSAccess and what changes when you modify it</h3>
+    <p class="reveal" style="margin-top:12px;">Every new account in an organization inherits a default SCP called <code>FullAWSAccess</code>. This SCP contains a single statement: <code>Allow *</code> on <code>*</code>. It does not grant anything — it simply means the ceiling is at the absolute maximum, and IAM policies within the account are the only governing layer. The moment you attach a custom SCP to an OU or account, AWS evaluates both the custom SCP and FullAWSAccess using the standard policy evaluation logic. If your custom SCP denies an action, that deny wins even if FullAWSAccess allows everything. Many organizations remove FullAWSAccess entirely when they start enforcing SCPs, replacing it with a more restrictive allow-list of approved actions.</p>
+
+    <h3 class="reveal" style="margin-top:36px;">How SCPs interact with identity-based policies — the intersection model</h3>
+    <p class="reveal" style="margin-top:12px;">The effective permissions for any identity in a member account are the intersection of what the SCP permits AND what the identity-based policy allows. Think of it as two overlapping circles: the SCP circle defines the available space; the IAM policy circle defines what the identity requests. Only the overlapping region results in access. If an SCP has an explicit <code>Deny</code> for an action, that action is denied for every identity in the account through every mechanism — there is no override, no escalation path, no way to carve out an exception within the member account. Only the management account or a delegated administrator with org-level access can modify the SCP.</p>
+
+    <div class="policy-box reveal">
+      <div class="policy-box-header">SCP: Region restriction — deny all actions outside approved regions</div>
+      <div class="policy-box-body">
+        <pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyNonApprovedRegions",
+      "Effect": "Deny",
+      "NotAction": [
+        "iam:*", "sts:*", "cloudfront:*",
+        "route53:*", "support:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": ["us-east-1", "eu-west-1"]
+        }
+      }
+    }
+  ]
+}</code></pre>
+      </div>
+    </div>
+    <p class="reveal">Note the use of <code>NotAction</code> here: global services like IAM, STS, CloudFront, and Route 53 are region-independent and would be broken if a region condition blocked them. This pattern — <code>Deny + NotAction + region condition</code> — is the correct way to implement region restriction in an SCP, and it appears regularly on the exam.</p>
+
+    <h3 class="reveal" style="margin-top:36px;">Common SCP patterns worth knowing for the exam</h3>
+    <div class="card-grid stagger reveal" style="margin-top:16px;">
+      <div class="card tilt">
+        <div class="tag tag-warn">Governance</div>
+        <h4>Prevent account from leaving the Organization</h4>
+        <p>Deny <code>organizations:LeaveOrganization</code> across all member accounts. Without this, a compromised account root could remove the account from the org, immediately escaping all SCP guardrails.</p>
+      </div>
+      <div class="card tilt">
+        <div class="tag tag-warn">Region control</div>
+        <h4>Region restriction</h4>
+        <p>Deny all service actions outside approved regions using <code>NotAction</code> + <code>StringNotEquals</code> on <code>aws:RequestedRegion</code>. Carve out global services with NotAction to avoid breaking IAM and STS.</p>
+      </div>
+      <div class="card tilt">
+        <div class="tag tag-warn">MFA enforcement</div>
+        <h4>Require MFA for sensitive actions</h4>
+        <p>Deny high-risk actions like <code>iam:DeleteUser</code> or <code>ec2:TerminateInstances</code> unless <code>aws:MultiFactorAuthPresent</code> is true. Useful for break-glass scenarios without full lockout.</p>
+      </div>
+      <div class="card tilt">
+        <div class="tag tag-warn">Blast radius</div>
+        <h4>Protect the logging infrastructure</h4>
+        <p>Deny <code>cloudtrail:StopLogging</code>, <code>cloudtrail:DeleteTrail</code>, and <code>config:DeleteConfigurationRecorder</code> in all accounts. An attacker who gains access cannot cover their tracks by disabling audit logging.</p>
+      </div>
+    </div>
+
+    <div class="mentor-aside reveal" style="margin-top:36px;">
+      <p>The most dangerous SCP mistake I have seen in production is a team that attached an SCP intending to restrict access, but wrote it as Allow-only statements thinking that equals a grant. Their member accounts looked like they had permissions, the IAM Console showed allows, yet every API call was denied because the SCP the team thought was granting access was actually just a ceiling — and the identities had no identity-based policy underneath it. An SCP Allow is invisible in the happy path: it just means the SCP is not blocking you. The IAM policy still has to do the actual allowing.</p>
+    </div>
+
+    <h3 class="reveal">Production scenario: protecting the logging baseline</h3>
+    <p class="reveal">A security team attaches the following SCP to the <em>root</em> of their organization: deny <code>cloudtrail:StopLogging</code>, <code>cloudtrail:DeleteTrail</code>, <code>config:DeleteConfigurationRecorder</code>, and <code>config:StopConfigurationRecorder</code> for all principals. Even if an attacker compromises the root credentials of a member account, they cannot disable the audit trail. Even if a legitimate administrator with full IAM Admin permissions in that account tries, the SCP blocks them. The only entity that can modify this guardrail is someone with access to the management account — which should be protected by hardware MFA, break-glass processes, and monitored continuously.</p>
+  </div>
+</section>
+
+<!-- ===================== TITLE CARD: RCPs ===================== -->
+<section class="title-card" id="tc-2">
+  <div class="scanbeam"></div>
+  <div style="position:relative;z-index:2;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(237,241,251,0.4);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:20px;">Core Mechanism 3</div>
+    <h2>RESOURCE CONTROL<br>POLICIES.</h2>
+    <div class="tc-sub">The gap SCPs cannot close.</div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: RCPs ===================== -->
+<section class="scene" id="s-rcps">
+  <div class="ambient-blob" style="width:440px;height:440px;background:radial-gradient(circle,var(--c-data),transparent 70%);bottom:-60px;left:-100px;opacity:0.20;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Core Mechanism 3 · New in SCS-C03</div>
+    <h2 class="kinetic reveal">Resource Control Policies</h2>
+    <p class="lead reveal">Resource Control Policies are new in the SCS-C03 exam, and they exist precisely because SCPs have a gap that cannot be patched by any combination of existing controls. Understanding that gap — and why RCPs close it — is the most likely new-content question on this version of the exam.</p>
+
+    <h3 class="reveal" style="margin-top:36px;">The gap SCPs cannot close</h3>
+    <p class="reveal" style="margin-top:12px;">SCPs govern identities that belong to your organization. When an IAM user in your org tries to do something, the SCP is in the evaluation chain. But consider this scenario: your S3 bucket has a bucket policy that says <code>"Principal":"*"</code> — anyone can read objects from it. An external AWS account outside your organization accesses that bucket. The external account's identities are not governed by your SCPs. Your SCPs say nothing about external principals. The bucket policy has already opened the door.</p>
+    <p class="reveal">Before RCPs, your options for preventing this were all bucket-level: keep the bucket policy locked down, enable S3 Block Public Access, use bucket policy conditions on <code>aws:PrincipalOrgID</code>. These work if applied correctly — but they require every bucket owner in every account across your entire organization to apply them consistently. One misconfigured bucket in one account breaks the security posture. You cannot enforce an org-wide guarantee about what happens to a resource at the organization level. That is the gap.</p>
+
+    <div class="hl-box good reveal">
+      <h4>The RCP insight: resource-scoped, not identity-scoped</h4>
+      <p>An SCP answers: "What can identities inside my organization do?" An RCP answers: "What can happen to this resource, regardless of who is trying to act on it — inside the organization, outside the organization, or even anonymous?" RCPs attach at the organization, OU, or account level in AWS Organizations and apply to every resource of a supported type within that scope, independently of the resource's own policy.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:36px;">Why this distinction matters for the exam</h3>
+    <p class="reveal" style="margin-top:12px;">The exam will present scenarios where an external principal — an identity from a different AWS account that is not part of your organization — is accessing (or attempting to access) a resource. SCPs do not apply to that external principal at all. If you try to use an SCP to block cross-account access from outside your org, you are applying the wrong tool. RCPs apply to the resource itself, so they govern all access — internal, external, cross-account, even service principals — regardless of origin.</p>
+    <p class="reveal">Think of it this way: an SCP is a control on the person walking through the door. An RCP is a lock on the door itself. If someone climbs through the window (an external principal), the person-control does nothing. The door lock — the RCP — still applies regardless of entry point.</p>
+
+    <div class="policy-box reveal">
+      <div class="policy-box-header">RCP: Enforce organization-boundary on all S3 buckets</div>
+      <div class="policy-box-body">
+        <pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EnforceOrgBoundary",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:PrincipalOrgID": "o-exampleorgid"
+        },
+        "BoolIfExists": {
+          "aws:PrincipalIsAWSService": "false"
+        }
+      }
+    }
+  ]
+}</code></pre>
+      </div>
+    </div>
+    <p class="reveal">This RCP, attached at the organization root, means no S3 bucket anywhere in the organization can ever be accessed by a principal outside the organization — regardless of what any bucket policy says. The <code>BoolIfExists</code> condition on <code>aws:PrincipalIsAWSService</code> carves out AWS service principals (like CloudFront or Lambda in the same account) that do not carry org context. This is the canonical org-boundary pattern that will appear on the exam.</p>
+
+    <h3 class="reveal" style="margin-top:36px;">Supported resource types and practical scope</h3>
+    <p class="reveal" style="margin-top:12px;">As of the SCS-C03 exam scope, RCPs support a targeted set of AWS resource types where cross-account exposure risk is highest: Amazon S3, AWS STS, AWS KMS, AWS Secrets Manager, and Amazon SQS. This list is worth knowing not just for completeness, but for what it reveals about design intent — these are the services most commonly misconfigured to allow broader access than intended, and the services where a per-resource misconfiguration in one account could expose sensitive data or credentials.</p>
+
+    <div class="hl-box warn reveal">
+      <h4>⚠️ Exam trap: Pre-2025 study resources will not cover RCPs</h4>
+      <p>RCPs were introduced after many popular SCS-C02 study guides and video courses were published. If you are using older material, RCPs will be missing entirely. Flag any resource in your study plan and check whether it explicitly covers RCPs — if it does not, supplement with the AWS Organizations RCP documentation directly.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================== SCENE: COMPARISON ===================== -->
+<section class="scene" id="s-comparison">
+  <div class="scene-inner">
+    <div class="eyebrow">Side by Side</div>
+    <h2 class="kinetic reveal">SCP vs. RCP vs. Permission Boundary</h2>
+    <p class="lead reveal">These three mechanisms are frequently confused with each other on the exam because they all constrain what an identity can do. The difference is in scope, directionality, and what gap each one specifically closes. Click any card to open the full breakdown.</p>
+
+    <div class="comp-grid stagger reveal">
+      <div class="comp-card" onclick="openDrawer('scp')" tabindex="0" role="button" aria-label="Open SCP detail drawer" onkeydown="if(event.key==='Enter'||event.key===' ')openDrawer('scp')">
+        <div class="cc-icon">🏛️</div>
+        <div class="tag tag-iam">SCP</div>
+        <h4>Service Control Policy</h4>
+        <p>Org-wide ceiling on what identities inside member accounts can ever do.</p>
+        <div class="cc-scope">Scope: Organization / OU / Account</div>
+        <span class="open-arrow">→</span>
+      </div>
+      <div class="comp-card" onclick="openDrawer('rcp')" tabindex="0" role="button" aria-label="Open RCP detail drawer" onkeydown="if(event.key==='Enter'||event.key===' ')openDrawer('rcp')">
+        <div class="cc-icon">🔒</div>
+        <div class="tag tag-good">RCP</div>
+        <h4>Resource Control Policy</h4>
+        <p>Resource-level guardrail protecting against any principal — inside or outside the org.</p>
+        <div class="cc-scope">Scope: Organization / OU / Account → Resources</div>
+        <span class="open-arrow">→</span>
+      </div>
+      <div class="comp-card" onclick="openDrawer('boundary')" tabindex="0" role="button" aria-label="Open Permission Boundary detail drawer" onkeydown="if(event.key==='Enter'||event.key===' ')openDrawer('boundary')">
+        <div class="cc-icon">⬜</div>
+        <div class="tag tag-warn">Boundary</div>
+        <h4>Permission Boundary</h4>
+        <p>Per-identity ceiling enabling safe delegated administration without escalation risk.</p>
+        <div class="cc-scope">Scope: Single IAM User or Role</div>
+        <span class="open-arrow">→</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <p class="reveal" style="font-size:0.92rem;color:var(--text-dim);">All three mechanisms share one property: they are ceilings, not grants. None of them can give an identity access it does not already have through an identity-based Allow. They can only restrict, never expand. This is the most important conceptual thread running through all three.</p>
+  </div>
+</section>
+
+<!-- ===================== SCENE: PERMISSION BOUNDARIES ===================== -->
+<section class="scene" id="s-boundaries">
+  <div class="ambient-blob" style="width:420px;height:420px;background:radial-gradient(circle,var(--c-iam),transparent 70%);top:-60px;left:-80px;opacity:0.22;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Core Mechanism 4</div>
+    <h2 class="kinetic reveal">Permission Boundaries</h2>
+    <p class="lead reveal">A permission boundary is a managed policy that you attach to a specific IAM user or role, setting an absolute ceiling on what that identity's own identity-based policies can ever grant it. Unlike an SCP — which applies org-wide to all identities in an account — a permission boundary is per-identity and is the tool that makes safe delegated administration possible.</p>
+
+    <h3 class="reveal" style="margin-top:36px;">What a permission boundary actually does</h3>
+    <p class="reveal" style="margin-top:12px;">Consider an IAM role for a Lambda function. That role has an identity-based policy saying <code>Allow: iam:*</code> (perhaps because the function needs to create execution roles). Normally, this would mean the function could create roles with any permissions — including <code>AdministratorAccess</code>. But if you attach a permission boundary to the role that allows only <code>s3:*</code> and <code>lambda:*</code>, then even though the identity-based policy says <code>iam:*</code>, the effective permissions are the intersection: nothing from <code>iam:*</code> makes it through, because the boundary does not include IAM actions. The function literally cannot create a role with IAM permissions, because the boundary ceiling is below IAM.</p>
+    <p class="reveal">The critical nuance: a permission boundary with no matching identity-based Allow still results in no access. A boundary is a ceiling, and just like an SCP, it does not grant. You could set a permission boundary of <code>Allow: *</code> on a role, and the role still has no permissions if there are no attached policies. The boundary defines the outer limit of what policies can grant, not what is actually granted.</p>
+
+    <h3 class="reveal" style="margin-top:36px;">The delegated administration use case — walked through concretely</h3>
+    <p class="reveal" style="margin-top:12px;">This is the canonical real-world use case for permission boundaries, and it is the scenario the exam almost certainly tests. Your platform team needs to let application teams self-service create IAM roles for their own Lambda functions. Without permission boundaries, giving a team permission to run <code>iam:CreateRole</code> means they can create a role with <code>AdministratorAccess</code> — effectively granting themselves full admin through a side door. This is privilege escalation, and it is a real attack vector.</p>
+    <p class="reveal">The solution: allow the application team to create roles, but require that every role they create has a specific managed policy set as its permission boundary. The platform team defines a managed policy — call it <code>AppTeamBoundary</code> — that allows only the service actions their applications legitimately need: <code>s3:GetObject</code>, <code>logs:PutLogEvents</code>, <code>xray:PutTraceSegments</code>, and so on. The application team can run <code>iam:CreateRole</code> and <code>iam:AttachRolePolicy</code> only when they also set the <code>AppTeamBoundary</code> as the permission boundary of the new role, enforced by a condition in their own policy:</p>
+
+    <div class="policy-box reveal">
+      <div class="policy-box-header">IAM Policy: Allow role creation only with required boundary</div>
+      <div class="policy-box-body">
+        <pre><code>{
+  "Effect": "Allow",
+  "Action": [
+    "iam:CreateRole",
+    "iam:PutRolePolicy",
+    "iam:AttachRolePolicy"
+  ],
+  "Resource": "*",
+  "Condition": {
+    "StringEquals": {
+      "iam:PermissionsBoundary":
+        "arn:aws:iam::123456789012:policy/AppTeamBoundary"
+    }
+  }
+}</code></pre>
+      </div>
+    </div>
+    <p class="reveal">This pattern is powerful: the application team has genuine self-service IAM capabilities, but they cannot create any role that exceeds the boundary the platform team defined. The boundary is the constraint that keeps delegation safe without requiring the platform team to approve every individual role creation manually.</p>
+
+    <div class="mentor-aside reveal">
+      <p>The permission boundary confusion I see most often is teams who think the boundary automatically limits what the identity can do. It does not — it limits what policies can grant. An identity with a very restrictive boundary but no attached identity-based policies still has zero permissions. And an identity with broad attached policies but an equally broad boundary still has exactly what those policies grant. The boundary only matters at the intersection point where policy grants something the boundary does not permit. Think of it as a safety valve, not a permission statement.</p>
+    </div>
+
+    <h3 class="reveal" style="margin-top:36px;">The three-ceiling evaluation model</h3>
+    <p class="reveal" style="margin-top:12px;">This is the model you must be able to apply to any scenario question. An identity's effective permissions are the intersection of all applicable ceilings simultaneously:</p>
+
+    <div class="diagram-wrap reveal">
+      <svg viewBox="0 0 720 280" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" style="max-width:720px;">
+        <!-- Three overlapping rectangles representing ceilings -->
+        <rect x="30" y="30" width="660" height="220" rx="16" fill="none" stroke="var(--amber)" stroke-width="2" stroke-dasharray="6,4"/>
+        <rect x="90" y="60" width="540" height="170" rx="14" fill="none" stroke="var(--c-iam)" stroke-width="2" stroke-dasharray="5,3"/>
+        <rect x="200" y="90" width="320" height="120" rx="12" fill="var(--c-iam-dim)" opacity="0.35" stroke="var(--green)" stroke-width="2"/>
+        <!-- Effective permissions zone -->
+        <rect x="260" y="108" width="200" height="84" rx="10" fill="var(--green)" opacity="0.18" stroke="var(--green)" stroke-width="1.5"/>
+        <text x="360" y="152" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" fill="var(--green)" font-weight="700">EFFECTIVE</text>
+        <text x="360" y="170" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="13" fill="var(--green)" font-weight="700">PERMISSION</text>
+        <!-- Labels -->
+        <text x="50" y="52" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--amber)" letter-spacing="1">SCP CEILING</text>
+        <text x="110" y="82" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--c-iam)" letter-spacing="1">PERMISSION BOUNDARY</text>
+        <text x="210" y="112" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--text-dim)" letter-spacing="1">IDENTITY-BASED POLICY</text>
+        <!-- Annotations -->
+        <text x="360" y="258" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--text-dim)">The lowest ceiling wins. Effective permissions = intersection of all three layers.</text>
+      </svg>
+    </div>
+
+    <p class="reveal">The key rule: for any given action to be allowed, it must pass through all three layers simultaneously. If any layer denies it — or if any layer simply does not permit it — the action is denied. An explicit <code>Deny</code> at any layer overrides any <code>Allow</code> at any other layer. The SCP ceiling and the boundary ceiling are independent from each other; neither knows about the other. Both apply in parallel, and the identity-based policy must be consistent with both.</p>
+
+    <div class="hl-box iam reveal">
+      <h4>Quick evaluation rule for scenario questions</h4>
+      <ul>
+        <li>Does an explicit <code>Deny</code> exist anywhere (SCP, resource policy, any policy)? → DENY, stop here</li>
+        <li>Does the SCP permit the action? → If no, DENY</li>
+        <li>Does the permission boundary permit the action? → If no, DENY</li>
+        <li>Does the identity-based policy explicitly Allow the action? → If no, DENY (default deny)</li>
+        <li>All three pass? → ALLOW</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: SESSION POLICIES ===================== -->
+<section class="scene" id="s-session">
+  <div class="scene-inner">
+    <div class="eyebrow">Core Mechanism 5</div>
+    <h2 class="kinetic reveal">Session Policies</h2>
+    <p class="lead reveal">Session policies are the fourth ceiling — passed inline at the moment of role assumption to further restrict, never expand, what the assumed role can do during that specific session. They are the mechanism that lets a single broad role serve many narrowly-scoped consumers without creating a separate role for each use case.</p>
+
+    <p class="reveal">When a principal calls <code>sts:AssumeRole</code>, they can pass an inline session policy as a JSON document alongside the request. This policy adds an additional constraint to the resulting temporary credentials: the session can only perform actions that the role's permission policies allow AND that the session policy allows. The session policy cannot expand beyond what the role already has — it can only restrict further.</p>
+
+    <div class="card-grid stagger reveal" style="margin-top:28px;">
+      <div class="card">
+        <div class="tag tag-good">Use Case</div>
+        <h4>Federation broker scoping sessions</h4>
+        <p>A central identity broker issues temporary credentials to different teams from a single broad <code>DataAnalyticsRole</code>. For Team A, the session policy restricts access to the <code>team-a-*</code> S3 prefix. For Team B, a different session policy restricts to <code>team-b-*</code>. One role, multiple scope-limited sessions — no role proliferation.</p>
+      </div>
+      <div class="card">
+        <div class="tag tag-danger">Exam Trap</div>
+        <h4>Session policies cannot expand permissions</h4>
+        <p>If the role has permission to <code>s3:GetObject</code> only, and you pass a session policy allowing <code>s3:*</code>, the effective permission is still only <code>s3:GetObject</code>. The session policy Allow on <code>s3:PutObject</code> has nothing to expand — the role itself does not allow it.</p>
+      </div>
+    </div>
+
+    <p class="reveal" style="margin-top:28px;">The evaluation logic for session policies follows the same intersection model: effective session permissions = intersection of (role permission policies) AND (session policy), subject to any applicable SCP and permission boundary. A session policy is a fourth ceiling stacked below the role, the boundary, and the SCP. For exam purposes, the important rule is that session policies narrow — they never grant anything not already available through the role.</p>
+  </div>
+</section>
+
+
+<!-- ===================== SCENE: DECISION TREE ===================== -->
+<section class="scene" id="s-decision-tree">
+  <div class="ambient-blob" style="width:380px;height:380px;background:radial-gradient(circle,var(--c-iam),transparent 70%);top:-40px;right:-80px;opacity:0.20;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Interactive Diagram</div>
+    <h2 class="kinetic reveal">Which Control Do I Need?</h2>
+    <p class="lead reveal">Use this decision tree when a scenario presents an access control requirement and asks you to identify the correct AWS mechanism. Click each decision node to reveal the reasoning behind it.</p>
+
+    <div class="diagram-wrap reveal" id="dtWrap">
+      <svg viewBox="0 0 740 560" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" style="max-width:740px;">
+        <!-- Root node -->
+        <rect x="245" y="20" width="250" height="54" rx="12" fill="var(--surface-raised)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="370" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="var(--text)" font-weight="600">Is the concern about an</text>
+        <!-- We split text manually -->
+      </svg>
+    </div>
+
+    <!-- Interactive tree using HTML -->
+    <div class="reveal" id="dtree" style="margin-top:8px;">
+      <!-- Node 0: root question -->
+      <div style="text-align:center;margin-bottom:24px;">
+        <div class="mindnode" onclick="toggleNode('n0')" tabindex="0" role="button" aria-label="Decision node: identity or resource" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('n0')" style="display:inline-block;background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:16px 28px;cursor:pointer;transition:border-color .2s ease;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Start Here</div>
+          <div style="font-size:1rem;font-weight:600;color:var(--text);">Are you controlling what an <em>identity can do</em>,<br>or what can happen to a <em>resource</em>?</div>
+        </div>
+        <div class="node-info" id="n0">
+          <p>This is the primary fork. <strong>Identity-side</strong> controls (SCP, permission boundary) govern what principals are allowed to do — they live in the evaluation chain when a principal makes a request. <strong>Resource-side</strong> controls (RCP, resource-based policies) govern access to a specific resource and can apply regardless of who the requesting principal is or where they come from.</p>
+        </div>
+      </div>
+
+      <!-- Branch: Identity side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
+        <div>
+          <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.06em;">Identity Side →</div>
+          <div class="mindnode" onclick="toggleNode('n1a')" tabindex="0" role="button" aria-label="Org-wide or single identity" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('n1a')" style="background:var(--surface);border:2px solid var(--c-iam);border-radius:14px;padding:14px 18px;cursor:pointer;margin-bottom:14px;">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text);">Is the restriction org-wide (all accounts / all identities in a scope)?</div>
+          </div>
+          <div class="node-info" id="n1a" style="margin-bottom:14px;">
+            <p>If you need to apply a restriction to every identity across an entire OU or your whole organization — regardless of what individual IAM policies say — that is the SCP use case. SCPs are attached at the org, OU, or account level in Organizations and apply to all principals in scope simultaneously.</p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div class="mindnode" onclick="toggleNode('n2a')" tabindex="0" role="button" aria-label="Use SCP" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('n2a')" style="background:var(--c-iam-dim);border:2px solid var(--c-iam);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:center;">
+                <div style="font-size:0.82rem;font-weight:600;color:var(--c-iam);">YES → Use SCP</div>
+              </div>
+              <div class="node-info" id="n2a">
+                <p><strong>Service Control Policy.</strong> Attach to the org root (all accounts), an OU (all accounts in that OU), or a specific account. Governs the ceiling for every identity in that scope.</p>
+              </div>
+            </div>
+            <div>
+              <div class="mindnode" onclick="toggleNode('n2b')" tabindex="0" role="button" aria-label="Use permission boundary" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('n2b')" style="background:var(--c-detect-dim);border:2px solid var(--amber);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:center;">
+                <div style="font-size:0.82rem;font-weight:600;color:var(--amber);">NO → Use Permission Boundary</div>
+              </div>
+              <div class="node-info" id="n2b">
+                <p><strong>Permission Boundary.</strong> Attach to a specific IAM user or role. Caps what that individual identity can ever be granted through its own policies. Essential for delegated administration scenarios.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Branch: Resource side -->
+        <div>
+          <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.06em;">Resource Side →</div>
+          <div class="mindnode" onclick="toggleNode('n1b')" tabindex="0" role="button" aria-label="Internal or external principal" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('n1b')" style="background:var(--surface);border:2px solid var(--green);border-radius:14px;padding:14px 18px;cursor:pointer;margin-bottom:14px;">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text);">Could the accessing principal be from outside your organization?</div>
+          </div>
+          <div class="node-info" id="n1b" style="margin-bottom:14px;">
+            <p>If the principal could be external — a different AWS account, an anonymous caller, or any entity not part of your AWS Organization — SCPs cannot help. SCPs only apply to identities that are members of your organization. You need a control that governs the resource regardless of who is requesting.</p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div class="mindnode" onclick="toggleNode('n2c')" tabindex="0" role="button" aria-label="Use RCP" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('n2c')" style="background:var(--c-gov-dim);border:2px solid var(--green);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:center;">
+                <div style="font-size:0.82rem;font-weight:600;color:var(--green);">YES → Use RCP</div>
+              </div>
+              <div class="node-info" id="n2c">
+                <p><strong>Resource Control Policy.</strong> Governs access to the resource regardless of principal origin. Blocks external accounts, anonymous callers, and cross-org access at the resource level. Applies to S3, KMS, Secrets Manager, STS, SQS.</p>
+              </div>
+            </div>
+            <div>
+              <div class="mindnode" onclick="toggleNode('n2d')" tabindex="0" role="button" aria-label="Use resource-based policy" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('n2d')" style="background:var(--c-data-dim);border:2px solid var(--c-data);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:center;">
+                <div style="font-size:0.82rem;font-weight:600;color:var(--c-data);">NO → Resource-based Policy</div>
+              </div>
+              <div class="node-info" id="n2d">
+                <p><strong>Resource-based Policy.</strong> For granting specific cross-account access (e.g., S3 bucket policy, KMS key policy, SNS topic policy). Governs who can access this resource and what they can do — but only enforced at that individual resource level.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: ORG MAP ===================== -->
+<section class="scene" id="s-org-map">
+  <div class="ambient-blob" style="width:400px;height:400px;background:radial-gradient(circle,var(--c-gov),transparent 70%);bottom:-60px;right:-80px;opacity:0.16;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Visual Model</div>
+    <h2 class="kinetic reveal">Where Controls Attach in an Organization</h2>
+    <p class="lead reveal">SCPs and RCPs attach at different points in the AWS Organizations hierarchy and cascade downward. Understanding where they attach — and what scope they cover — is essential for architecture questions. Click any node to see where that control applies and what it governs.</p>
+
+    <div class="diagram-wrap reveal">
+      <div id="orgMap" style="font-family:'Inter',sans-serif;">
+
+        <!-- Level 0: Management Account -->
+        <div style="text-align:center;margin-bottom:6px;">
+          <div class="mindnode" onclick="toggleNode('om0')" tabindex="0" role="button" aria-label="Management account node" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('om0')" style="display:inline-block;background:var(--surface-raised);border:2px solid var(--amber);border-radius:12px;padding:12px 22px;cursor:pointer;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:0.08em;">Management Account</div>
+            <div style="font-size:0.9rem;font-weight:600;margin-top:4px;">Root / Payer</div>
+            <div style="font-size:0.78rem;color:var(--text-dim);margin-top:2px;">NOT governed by SCPs</div>
+          </div>
+          <div class="node-info" id="om0" style="max-width:500px;margin:0 auto;">
+            <p>The management account is never governed by SCPs — SCPs only restrict member accounts. This is a critical architectural reason to keep the management account empty of workloads. An attacker who compromises the management account can bypass every SCP guardrail across the entire organization. RCPs, however, can be attached here and do apply to resources within the management account itself.</p>
+          </div>
+        </div>
+
+        <!-- Connector line -->
+        <div style="text-align:center;height:30px;"><div style="width:2px;height:30px;background:var(--line);margin:0 auto;"></div></div>
+
+        <!-- Level 1: Root -->
+        <div style="text-align:center;margin-bottom:6px;">
+          <div class="mindnode" onclick="toggleNode('om1')" tabindex="0" role="button" aria-label="Organization root node" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('om1')" style="display:inline-block;background:var(--surface-raised);border:2px solid var(--c-iam);border-radius:12px;padding:12px 22px;cursor:pointer;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--c-iam);text-transform:uppercase;letter-spacing:0.08em;">Organization Root</div>
+            <div style="font-size:0.9rem;font-weight:600;margin-top:4px;">r-xxxx</div>
+            <div style="font-size:0.78rem;color:var(--c-iam);margin-top:2px;">📋 SCP + RCP can attach here → all member accounts</div>
+          </div>
+          <div class="node-info" id="om1" style="max-width:500px;margin:0 auto;">
+            <p>Policies attached to the root apply to every member account in the organization. This is the right place for universal guardrails: deny leaving the org, require approved regions, protect CloudTrail, enforce the org-boundary RCP on S3. Everything attached here cascades to every OU and every account below.</p>
+          </div>
+        </div>
+
+        <div style="text-align:center;height:30px;"><div style="width:2px;height:30px;background:var(--line);margin:0 auto;"></div></div>
+
+        <!-- Level 2: OUs side by side -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:6px;">
+          <div style="text-align:center;">
+            <div class="mindnode" onclick="toggleNode('om2a')" tabindex="0" role="button" aria-label="Security OU node" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('om2a')" style="display:inline-block;background:var(--surface-raised);border:2px solid var(--c-iam);border-radius:12px;padding:12px 18px;cursor:pointer;width:100%;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--c-iam);text-transform:uppercase;letter-spacing:0.06em;">OU: Security</div>
+              <div style="font-size:0.88rem;font-weight:600;margin-top:4px;">Log Archive + Audit</div>
+              <div style="font-size:0.75rem;color:var(--c-iam);margin-top:2px;">📋 SCP: deny almost everything</div>
+            </div>
+            <div class="node-info" id="om2a">
+              <p>The Security OU typically contains Log Archive and Audit accounts. An SCP here denies virtually all actions except logging and security services — these accounts should be extremely locked down. Even if someone compromises a credential in these accounts, they can do almost nothing. RCPs protecting the S3 log buckets are also common here.</p>
+            </div>
+            <div style="height:20px;"><div style="width:2px;height:20px;background:var(--line);margin:0 auto;"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;">
+                <div style="font-size:0.75rem;font-weight:600;">Log Archive</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px;">Read-only S3</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;">
+                <div style="font-size:0.75rem;font-weight:600;">Audit</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px;">Config + Findings</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align:center;">
+            <div class="mindnode" onclick="toggleNode('om2b')" tabindex="0" role="button" aria-label="Workloads OU node" onkeydown="if(event.key==='Enter'||event.key===' ')toggleNode('om2b')" style="display:inline-block;background:var(--surface-raised);border:2px solid var(--c-iam);border-radius:12px;padding:12px 18px;cursor:pointer;width:100%;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--c-iam);text-transform:uppercase;letter-spacing:0.06em;">OU: Workloads</div>
+              <div style="font-size:0.88rem;font-weight:600;margin-top:4px;">Prod + Dev + Staging</div>
+              <div style="font-size:0.75rem;color:var(--c-iam);margin-top:2px;">📋 SCP: region + service controls</div>
+            </div>
+            <div class="node-info" id="om2b">
+              <p>Workload OUs typically have SCPs that restrict to approved regions, deny creation of unapproved services, and prevent disabling security controls. Dev OUs might have slightly more permissive SCPs than Prod OUs — both inherit any policies attached at the root, and add their own OU-specific restrictions on top.</p>
+            </div>
+            <div style="height:20px;"><div style="width:2px;height:20px;background:var(--line);margin:0 auto;"></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;">
+                <div style="font-size:0.75rem;font-weight:600;">Prod</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px;">Strict SCPs</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;">
+                <div style="font-size:0.75rem;font-weight:600;">Staging</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px;">Moderate SCPs</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;">
+                <div style="font-size:0.75rem;font-weight:600;">Dev</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:3px;">Relaxed SCPs</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RCP annotation -->
+        <div style="margin-top:28px;background:var(--surface);border:1px solid var(--c-gov-dim);border-left:3px solid var(--green);border-radius:0 12px 12px 0;padding:14px 18px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">RCP Scope</div>
+          <p style="font-size:0.88rem;color:var(--text-dim);margin:0;">RCPs attached at the root cascade to all supported resources (S3, KMS, STS, Secrets Manager, SQS) in all member accounts. They can also be attached at the OU or account level for more granular control. Unlike SCPs, RCPs affect the resource regardless of whether the requesting principal is inside or outside the organization.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================== TITLE CARD: THREE CEILINGS ===================== -->
+<section class="title-card" id="tc-3">
+  <div class="scanbeam"></div>
+  <div style="position:relative;z-index:2;">
+    <h2>THREE CEILINGS.<br>ONE EFFECTIVE PERMISSION.</h2>
+    <div class="tc-sub">Can you predict which ceiling binds?</div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: THREE CEILINGS EXERCISE ===================== -->
+<section class="scene" id="s-three-ceilings">
+  <div class="scene-inner">
+    <div class="eyebrow">Interactive Exercise</div>
+    <h2 class="kinetic reveal">The Three Ceilings Evaluator</h2>
+    <p class="lead reveal">Each scenario below presents an IAM identity with a specific identity-based policy, a permission boundary, and (in some cases) an SCP. Your task: predict whether the action is allowed or denied, and identify which ceiling is the binding constraint. Reveal the reasoning after you have made your prediction.</p>
+
+    <div class="ceilings-grid reveal" id="ceilingsGrid">
+      <!-- Scenarios rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: PRODUCTION TRAPS ===================== -->
+<section class="scene" id="s-traps">
+  <div class="ambient-blob" style="width:380px;height:380px;background:radial-gradient(circle,var(--c-ir),transparent 70%);top:-60px;right:-80px;opacity:0.16;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Field Experience</div>
+    <h2 class="kinetic reveal">Production Trap Gallery</h2>
+    <p class="lead reveal">These are the real-world failure modes that cost teams hours of debugging — and the exact scenarios the exam uses to distinguish candidates who truly understand these mechanisms from those who have only memorized definitions.</p>
+
+    <div class="trap-grid stagger reveal">
+
+      <div class="trap-card">
+        <div class="trap-num">Trap 01 · Cross-Account Trust</div>
+        <h4>The one-sided trust policy</h4>
+        <p>Team creates a role in Account B with a trust policy allowing Account A's root. They test from the CLI and get AccessDenied. The error message says "not authorized to perform sts:AssumeRole" — which they interpret as a trust policy problem. They spend 30 minutes rechecking the trust policy, which is perfectly correct.</p>
+        <div class="trap-fix"><p><strong>Root cause:</strong> The IAM user in Account A does not have sts:AssumeRole in their own identity-based policy. The trust policy is necessary but not sufficient — the assuming principal needs permission on their own side too. Both sides of the trust relationship require explicit authorization.</p></div>
+      </div>
+
+      <div class="trap-card">
+        <div class="trap-num">Trap 02 · SCP Collateral Damage</div>
+        <h4>The SCP that silently broke CI/CD</h4>
+        <p>Security team attaches a well-intentioned SCP denying all IAM actions to workload accounts, intending to prevent privilege escalation. Two days later, the CI/CD pipeline that creates Lambda execution roles starts failing. The pipeline's error logs just show IAM permission denied — with no mention of SCPs.</p>
+        <div class="trap-fix"><p><strong>Root cause:</strong> SCPs do not appear in CloudTrail as the denying entity — the denial looks like a standard IAM permission error. Always test SCPs in a sandbox OU first. Use IAM Access Analyzer and the policy simulator to model SCP impact before attaching to production OUs.</p></div>
+      </div>
+
+      <div class="trap-card">
+        <div class="trap-num">Trap 03 · Boundary Forgotten</div>
+        <h4>The permission boundary that was never enforced</h4>
+        <p>Platform team defines a delegated admin pattern: app teams can create IAM roles, but only with the AppTeamBoundary attached. The enforcement condition is in the platform team's policy. Six months later, a team member with direct IAM Admin rights (not going through the delegated pattern) creates a role without the boundary. The new role has AdministratorAccess.</p>
+        <div class="trap-fix"><p><strong>Root cause:</strong> The enforcement condition only applies when creating roles through the delegated mechanism. Direct IAM Admin rights bypass the entire pattern. Permission boundaries must be enforced through SCPs (deny CreateRole unless boundary is set) to be universally applied — not just through the delegated policy.</p></div>
+      </div>
+
+      <div class="trap-card">
+        <div class="trap-num">Trap 04 · The RCP Gap</div>
+        <h4>The S3 bucket SCP could not protect</h4>
+        <p>Pre-SCS-C03 organization has SCPs blocking all external S3 access. A developer in the organization creates an S3 bucket, adds a bucket policy with Principal:"*" for a third-party vendor integration. The vendor accesses the bucket freely. The SCP did not fire.</p>
+        <div class="trap-fix"><p><strong>Root cause:</strong> SCPs govern what identities inside the organization can do. The third-party vendor is an external principal — outside the organization — and SCPs do not apply to them at all. The bucket policy opened the door, and there was no RCP to close it regardless of who was knocking. This exact gap is why RCPs were introduced.</p></div>
+      </div>
+
+      <div class="trap-card">
+        <div class="trap-num">Trap 05 · SCP as Grant</div>
+        <h4>The team that expected an SCP to give them access</h4>
+        <p>A newly onboarded cloud team is told their OU has an SCP allowing s3:* actions. They create IAM users, assume a role, and cannot access any S3 buckets. They escalate to the cloud team: "The SCP allows S3 — why are we denied?" The SCP was correct; they were not.</p>
+        <div class="trap-fix"><p><strong>Root cause:</strong> SCPs do not grant permissions. An SCP allowing s3:* simply means S3 is not blocked at the org level. The identities still need their own identity-based policies that explicitly Allow the S3 actions. The SCP is a ceiling; the IAM policies are what actually reach up toward it.</p></div>
+      </div>
+
+      <div class="trap-card">
+        <div class="trap-num">Trap 06 · Session Policy Expansion</div>
+        <h4>The session policy that could not expand the role</h4>
+        <p>A developer assumes a role that has permission to s3:GetObject on a specific bucket. They pass a session policy including s3:PutObject and s3:DeleteObject, expecting to unlock those capabilities for their session. Their writes are still denied.</p>
+        <div class="trap-fix"><p><strong>Root cause:</strong> Session policies can only narrow — never expand — what a role already has. The effective session permissions are the intersection of the role's permissions AND the session policy. Since the role did not have s3:PutObject, there is nothing for the session policy to unlock. Session policies add a fourth ceiling; they cannot raise the role's existing ceiling.</p></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================== SCENE: MOCK EXAM ===================== -->
+<section class="scene" id="s-exam">
+  <div class="scene-inner">
+    <div class="eyebrow">Knowledge Check</div>
+    <h2 class="kinetic reveal">Mock Exam — 12 Questions</h2>
+    <p class="lead reveal">SCS-C03-style scenario questions covering this module's full range. Select your answer and reveal the reasoning. Your score updates as you go.</p>
+
+    <div class="exam-score-bar reveal">
+      <div class="score-circle" id="scoreCircle">0/12</div>
+      <div class="score-info">
+        <h4>Your Score</h4>
+        <p id="scoreText">Answer questions to build your score. Target: 10 or more correct for exam readiness on this domain.</p>
+      </div>
+    </div>
+
+    <div class="exam-questions reveal" id="examQuestions">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: FAQ ===================== -->
+<section class="scene" id="s-faq">
+  <div class="ambient-blob" style="width:360px;height:360px;background:radial-gradient(circle,var(--c-iam),transparent 70%);bottom:-40px;left:-80px;opacity:0.18;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Discussion</div>
+    <h2 class="kinetic reveal">Frequently Asked — Honestly Answered</h2>
+    <p class="lead reveal">The questions that come up most often when engineers are working through this material — including the one everyone eventually asks about why we need both SCPs and permission boundaries.</p>
+
+    <div class="discussion reveal" id="faqContainer">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================== SCENE: RESOURCES ===================== -->
+<section class="scene" id="s-resources">
+  <div class="scene-inner">
+    <div class="eyebrow">Study Resources</div>
+    <h2 class="kinetic reveal">What to Study Next</h2>
+    <p class="lead reveal">Curated resources for this module's topics — SCPs, RCPs, permission boundaries, and cross-account access patterns. RCPs are new enough that many resources pre-dating 2025 will not cover them; those are flagged below.</p>
+
+    <div class="resource-grid stagger reveal" id="resourceGrid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SCENE: CLOSING BRIDGE ===================== -->
+<section class="scene" id="s-closing">
+  <div class="ambient-blob" style="width:460px;height:460px;background:radial-gradient(circle,var(--c-iam),transparent 70%);top:-60px;right:-100px;opacity:0.22;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Module Complete</div>
+    <h2 class="kinetic reveal">What You Have Built</h2>
+    <p class="lead reveal">You now have the full mental model for multi-account access control in AWS — the most tested IAM domain on the SCS-C03 exam. You can reason from first principles about any combination of these mechanisms, and you can predict effective permissions without guessing.</p>
+    <p class="reveal">You understand that cross-account access requires bilateral authorization: trust in the destination account, and permission to assume in the source account. You know that SCPs are ceilings, not grants, and that an SCP Allow with no matching IAM policy is silent — it does nothing. You understand why RCPs exist even though SCPs already did: SCPs govern identities inside your organization; RCPs govern what happens to a resource regardless of who is asking. And you can apply permission boundaries to enable safe delegation without opening privilege escalation paths.</p>
+    <p class="reveal" style="margin-top:18px;">The next module — <strong>Module 04: Federation, Identity Center &amp; Temporary Credentials</strong> — takes everything you just learned about cross-account roles and temporary credentials and extends it to real human identity. How do your engineers, analysts, and contractors actually get federated access to AWS without ever holding a long-lived credential? How does AWS IAM Identity Center orchestrate that at scale across a multi-account organization? Module 4 is the human side of everything mechanical you just mastered here.</p>
+
+    <div class="hl-box good reveal" style="margin-top:36px;">
+      <h4>Cross-cutting threads you advanced in this module</h4>
+      <ul>
+        <li><strong>Least privilege</strong> — reinforced at scale: SCPs, RCPs, and permission boundaries all express least privilege at different layers and scopes</li>
+        <li><strong>Multi-account architecture</strong> — first introduced here: the OU/root/account hierarchy, where controls attach, and how they cascade</li>
+        <li><strong>Blast radius minimization</strong> — first introduced here: SCPs on the management account, permission boundaries to contain delegation, RCPs to prevent data exfiltration regardless of misconfigured policies</li>
+      </ul>
+    </div>
+
+    <div class="footer-nav reveal" style="margin-top:40px;">
+      <a href="module-02-iam-core.html">← Module 02: IAM Core</a>
+      <a href="module-04-federation.html">Module 04: Federation & Identity Center →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-meta">SCS-C03 Certification Course · Module 03 of 16</div>
+    <p style="font-size:0.88rem;">IAM Advanced: Cross-Account, SCPs, RCPs &amp; Permission Boundaries · Domain 4 — Identity and Access Management (20%)</p>
+    <div class="footer-nav">
+      <a href="module-02-iam-core.html">← Module 02: IAM Core</a>
+      <a href="module-04-federation.html">Module 04: Federation →</a>
+    </div>
+    <p style="margin-top:24px;font-size:0.8rem;color:var(--text-dim);">AWS Certified Security — Specialty (SCS-C03) · Study Material</p>
+  </div>
+</footer>
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+(function(){
+
+// ---- Theme toggle (bug fix #3) ----
+var html = document.documentElement;
+html.style.colorScheme = html.getAttribute("data-theme") === "light" ? "light" : "dark";
+var themeBtn = document.getElementById("themeToggle");
+if(themeBtn){
+  themeBtn.addEventListener("click", function(){
+    var cur = html.getAttribute("data-theme");
+    var next = cur === "dark" ? "light" : "dark";
+    html.setAttribute("data-theme", next);
+    html.style.colorScheme = next;
+    themeBtn.textContent = next === "dark" ? "☀️" : "🌙";
+  });
+}
+
+// ---- Scroll progress ----
+function updateProgress(){
+  var h = document.documentElement;
+  var scrolled = h.scrollTop;
+  var height = h.scrollHeight - h.clientHeight;
+  var el = document.getElementById("scrollProgress");
+  if(el) el.style.width = (height > 0 ? (scrolled/height)*100 : 0) + "%";
+}
+document.addEventListener("scroll", function(){ requestAnimationFrame(updateProgress); });
+
+// ---- Kinetic headings ----
+function wrapKinetic(el, text){
+  var words = text.split(" ");
+  el.innerHTML = words.map(function(w,i){
+    return "<span class=\"kw\"><span class=\"kw-inner\" style=\"transition-delay:"+(i*45)+"ms\">"+w+"</span></span>";
+  }).join(" ");
+}
+document.querySelectorAll("h2.kinetic").forEach(function(h){ wrapKinetic(h, h.textContent); });
+var kineticIo = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+}, { threshold:0.4 });
+document.querySelectorAll("h2.kinetic").forEach(function(h){ kineticIo.observe(h); });
+
+// ---- Scroll reveal ----
+var io = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+}, { threshold:0.15 });
+document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+document.querySelectorAll(".stagger > *").forEach(function(el,i){ el.style.transitionDelay = (i*90)+"ms"; });
+
+// ---- Tilt + magnetic (reduced motion check) ----
+var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(!reduceMotion){
+  document.querySelectorAll(".tilt").forEach(function(card){
+    card.addEventListener("mousemove", function(e){
+      var rect = card.getBoundingClientRect();
+      var px = (e.clientX - rect.left)/rect.width - 0.5;
+      var py = (e.clientY - rect.top)/rect.height - 0.5;
+      card.style.transform = "perspective(600px) rotateX("+(py*-6)+"deg) rotateY("+(px*6)+"deg) translateY(-2px)";
+    });
+    card.addEventListener("mouseleave", function(){ card.style.transform = "perspective(600px) rotateX(0) rotateY(0)"; });
+  });
+}
+
+// ---- Stat count-up ----
+document.querySelectorAll(".stat-num").forEach(function(el){
+  new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(!entry.isIntersecting || el.dataset.done) return;
+      el.dataset.done = "1";
+      var target = parseInt(el.dataset.target, 10);
+      var prefix = el.dataset.prefix || "";
+      var suffix = el.dataset.suffix || "";
+      var start = performance.now(), duration = 1100;
+      function tick(now){
+        var p = Math.min((now-start)/duration, 1);
+        el.textContent = prefix + Math.round((1-Math.pow(1-p,3))*target) + suffix;
+        if(p<1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  }, {threshold:0.4}).observe(el);
+});
+
+// ---- Discussion FAQ ----
+document.querySelectorAll(".discussion-pair").forEach(function(pair){
+  var q = pair.querySelector(".bubble-q");
+  if(q) q.addEventListener("click", function(){ pair.classList.toggle("open"); });
+});
+
+// ---- Drawer data ----
+var drawerData = {
+  scp: {
+    title: "Service Control Policy (SCP)",
+    tag: "Org-Level Identity Ceiling",
+    tagClass: "tag-iam",
+    sections: [
+      { head: "Scope", body: "Applied at the AWS Organizations level: root (all member accounts), an Organizational Unit (all accounts in that OU), or a specific member account. Never applies to the management account." },
+      { head: "What it can restrict", body: "Any AWS API action available to identities inside the member accounts it governs. Can use explicit Deny or define an allow-list (effectively denying everything else)." },
+      { head: "What it cannot do", body: "Grant permissions. An SCP Allow does not give access — it only removes a blocker. An identity still needs an explicit Allow in its own identity-based policy. SCPs also cannot restrict the management account, resource-based policy grants to external principals, or actions taken by AWS service principals." },
+      { head: "Realistic example", body: "Deny cloudtrail:StopLogging and cloudtrail:DeleteTrail at the org root. Every identity in every member account — including account root users — cannot disable the audit trail, regardless of what their IAM policies say." },
+      { head: "Common exam mistake", body: "Candidates treat an SCP Allow as a permission grant. If a scenario shows only an SCP (no identity-based policy) and asks if an action is allowed — the answer is denied. SCPs cannot stand alone as a grant mechanism." }
+    ],
+    mistake: "Treating SCP Allow as a grant. An SCP that allows s3:* means s3 is not blocked — it does not mean any identity has s3 access."
+  },
+  rcp: {
+    title: "Resource Control Policy (RCP)",
+    tag: "Resource-Level Guardrail",
+    tagClass: "tag-good",
+    sections: [
+      { head: "Scope", body: "Applied in AWS Organizations — root, OU, or account — but applies to specific supported resource types (S3, KMS, Secrets Manager, STS, SQS) within those accounts, not to identities." },
+      { head: "What it can restrict", body: "Actions on supported resources, regardless of who the requesting principal is. This includes identities inside the org, identities outside the org, anonymous principals, and even cross-account service principals. The RCP governs the resource itself." },
+      { head: "What it cannot do", body: "Govern resources it does not support (non-listed services). Cannot grant permissions either — like SCPs, RCPs are ceilings only. An RCP does not replace resource-based policies; it adds a floor beneath them that even the resource owner cannot override within the org scope." },
+      { head: "Realistic example", body: "Deny s3:* from any principal whose PrincipalOrgID is not your org ID, with a carve-out for AWS service principals. Attached at the org root, this guarantees no S3 bucket anywhere in the org can ever be accessed externally — even if a developer writes a bucket policy with Principal:*." },
+      { head: "Common exam mistake", body: "Trying to use an SCP to protect a resource from external (cross-org) principals. SCPs cannot reach outside your organization. RCPs are the only org-level control that governs access from external principals." }
+    ],
+    mistake: "Using an SCP to block external principal access. SCPs do not apply to principals outside your organization. Only RCPs govern the resource regardless of principal origin."
+  },
+  boundary: {
+    title: "Permission Boundary",
+    tag: "Per-Identity Ceiling",
+    tagClass: "tag-warn",
+    sections: [
+      { head: "Scope", body: "Attached to a specific IAM user or role only. Does not apply org-wide or to other identities. Caps what that single identity's own identity-based policies can ever grant it." },
+      { head: "What it can restrict", body: "The effective permissions of the attached identity. If a boundary allows only s3:* and the identity-based policy allows iam:*, the identity cannot perform any IAM actions — the boundary is the binding ceiling." },
+      { head: "What it cannot do", body: "Grant permissions. A very broad boundary (Allow:*) on an identity with no attached policies still results in zero effective permissions. Boundaries are ceilings, not grants. Cannot protect resources from external access (that is RCP territory)." },
+      { head: "Realistic example", body: "Application teams can self-service create IAM roles for Lambda, but every role they create must have AppTeamBoundary as its permission boundary. The condition is enforced via iam:PermissionsBoundary in the delegating policy. Teams get genuine self-service without privilege escalation risk." },
+      { head: "Common exam mistake", body: "Confusing permission boundaries with SCPs. SCPs apply to all identities in an account; boundaries apply to one identity. SCPs cannot be set per-identity. Boundaries cannot be set per-account or per-org. Different tools, different scopes." }
+    ],
+    mistake: "Assuming a permission boundary grants permissions. If an identity has a boundary of Allow:* and no attached IAM policies, it has zero effective permissions. The boundary is a maximum ceiling, not an allocation."
+  }
+};
+
+// ---- Drawer open/close ----
+function openDrawer(key){
+  var data = drawerData[key];
+  if(!data) return;
+  var content = document.getElementById("drawerContent");
+  var html = "<h3>"+data.title+"</h3>";
+  html += "<span class=\"drawer-tag "+data.tagClass+"\">"+data.tag+"</span>";
+  data.sections.forEach(function(s){
+    html += "<div class=\"drawer-section\"><h4>"+s.head+"</h4><p>"+s.body+"</p></div>";
+  });
+  html += "<div class=\"drawer-section mistake-box\"><h4>Common Exam Mistake</h4><p>"+data.mistake+"</p></div>";
+  content.innerHTML = html;
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("drawerOverlay").classList.add("open");
+  document.getElementById("drawer").setAttribute("aria-hidden","false");
+}
+window.openDrawer = openDrawer;
+
+function closeDrawer(){
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("drawerOverlay").classList.remove("open");
+}
+window.closeDrawer = closeDrawer;
+
+// ---- Decision tree node toggle ----
+function toggleNode(id){
+  var el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle("open");
+}
+window.toggleNode = toggleNode;
+
+// ---- Three Ceilings Scenarios ----
+var scenarios = [
+  {
+    title: "All three ceilings permit the action",
+    identity: "Allow: s3:GetObject on arn:aws:s3:::my-bucket/*",
+    boundary: "Allow: s3:* on *",
+    scp: "Allow: * (FullAWSAccess — no restrictions)",
+    action: "s3:GetObject on my-bucket/report.pdf",
+    result: "allow",
+    verdict: "ALLOW",
+    binding: "No binding ceiling — all three layers permit this action",
+    explanation: "The SCP ceiling (FullAWSAccess) does not restrict s3:GetObject. The boundary allows all S3 actions. The identity-based policy explicitly allows s3:GetObject on the target resource. All three ceilings are cleared. Effective permission: Allow."
+  },
+  {
+    title: "SCP explicit Deny overrides all IAM Allows",
+    identity: "Allow: s3:* on * (including s3:DeleteBucket)",
+    boundary: "Allow: s3:* on *",
+    scp: "Deny: s3:DeleteBucket on * (explicit SCP deny)",
+    action: "s3:DeleteBucket on my-critical-bucket",
+    result: "deny",
+    verdict: "DENY — SCP is the binding ceiling",
+    binding: "SCP explicit Deny",
+    explanation: "An explicit Deny in the SCP overrides any Allow anywhere in the evaluation chain. Even though the identity-based policy and permission boundary both allow s3:DeleteBucket, the SCP Deny is absolute. No amount of IAM policy modification within the account can override an explicit SCP Deny."
+  },
+  {
+    title: "Permission boundary is the binding ceiling",
+    identity: "Allow: ec2:* on * (all EC2 actions)",
+    boundary: "Allow: s3:* on * only (no EC2 actions)",
+    scp: "Allow: * (FullAWSAccess — no restrictions)",
+    action: "ec2:DescribeInstances",
+    result: "deny",
+    verdict: "DENY — Permission boundary is the binding ceiling",
+    binding: "Permission boundary does not include ec2:DescribeInstances",
+    explanation: "The SCP does not restrict EC2 actions. The identity-based policy allows all EC2. But the permission boundary only allows S3 actions — EC2 is not in the boundary at all. The effective permission for ec2:DescribeInstances is Deny, because the boundary ceiling is below the request. The boundary is the lowest ceiling for this action."
+  },
+  {
+    title: "Identity-based policy is the binding factor",
+    identity: "Allow: s3:GetObject only (no PutObject)",
+    boundary: "Allow: s3:* on * (all S3 actions)",
+    scp: "Allow: * (FullAWSAccess — no restrictions)",
+    action: "s3:PutObject on my-bucket/new-file.txt",
+    result: "deny",
+    verdict: "DENY — No Allow in the identity-based policy",
+    binding: "Identity-based policy does not include s3:PutObject",
+    explanation: "Neither the SCP nor the permission boundary restricts s3:PutObject — both would permit it. But the identity-based policy only allows s3:GetObject. There is no explicit Allow for s3:PutObject, and the default is Deny. The SCP and boundary ceilings are irrelevant when the identity-based policy does not reach up to them."
+  },
+  {
+    title: "Permission boundary with no matching identity-based Allow",
+    identity: "No policies attached (empty)",
+    boundary: "Allow: s3:* on * (broad boundary)",
+    scp: "Allow: * (FullAWSAccess — no restrictions)",
+    action: "s3:ListBuckets",
+    result: "deny",
+    verdict: "DENY — Permission boundary does not grant access",
+    binding: "No identity-based Allow — boundary is a ceiling, not a grant",
+    explanation: "This is the canonical boundary misunderstanding. The permission boundary allows s3:*, and the SCP allows everything. But the identity has no attached identity-based policies. A boundary only caps what policies can grant — it cannot grant anything by itself. With no identity-based Allow, the default is Deny regardless of how permissive the boundary is."
+  },
+  {
+    title: "Session policy narrows below the role",
+    identity: "Role allows: s3:GetObject, s3:PutObject, s3:DeleteObject",
+    boundary: "No boundary attached",
+    scp: "Allow: * (FullAWSAccess)",
+    action: "s3:DeleteObject — but session policy was passed with Allow: s3:GetObject only",
+    result: "deny",
+    verdict: "DENY — Session policy is the binding ceiling for this session",
+    binding: "Session policy (passed at AssumeRole time) does not include s3:DeleteObject",
+    explanation: "When a session policy is passed at AssumeRole time, it adds a fourth ceiling: effective session permissions = intersection of (role permissions) AND (session policy). The role allows s3:DeleteObject, but the session policy passed at assumption time only allows s3:GetObject. That fourth ceiling binds — this session cannot delete objects even though the underlying role can."
+  },
+  {
+    title: "SCP allow-list approach — action not on the list",
+    identity: "Allow: eks:CreateCluster (wants to create a Kubernetes cluster)",
+    boundary: "Allow: * on *",
+    scp: "Allow-list SCP: allows only ec2:*, s3:*, rds:* (EKS not listed)",
+    action: "eks:CreateCluster",
+    result: "deny",
+    verdict: "DENY — SCP allow-list does not include EKS",
+    binding: "SCP is the binding ceiling — EKS is not on the approved-service list",
+    explanation: "In an allow-list SCP approach (where FullAWSAccess is removed and replaced with a custom Allow), any action not explicitly listed in the SCP is implicitly denied. The identity-based policy allows eks:CreateCluster, and the boundary permits it, but neither matters — the SCP ceiling does not include EKS. This is a common pattern for service-restriction in regulated environments."
+  },
+  {
+    title: "MFA condition in SCP — MFA not present",
+    identity: "Allow: iam:DeleteUser on *",
+    boundary: "Allow: iam:* on *",
+    scp: "Deny: iam:DeleteUser unless aws:MultiFactorAuthPresent is true",
+    action: "iam:DeleteUser — called from CLI without MFA session",
+    result: "deny",
+    verdict: "DENY — SCP MFA condition not satisfied",
+    binding: "SCP conditional Deny fires because MFA is not present in the session",
+    explanation: "The SCP uses a conditional Deny: if iam:DeleteUser is called and aws:MultiFactorAuthPresent is not true, Deny. The CLI session does not have MFA — so the condition fires, and the SCP Deny overrides every Allow in the identity-based policy and boundary. To perform this action, the user must assume a role with an MFA-authenticated session."
+  },
+  {
+    title: "Cross-account: trust policy exists but no assume permission in Account A",
+    identity: "IAM User in Account A — no sts:AssumeRole in their identity policy",
+    boundary: "No boundary",
+    scp: "Allow: * on both accounts",
+    action: "sts:AssumeRole targeting Role in Account B",
+    result: "deny",
+    verdict: "DENY — Missing sts:AssumeRole permission in Account A",
+    binding: "Identity-based policy in Account A does not allow sts:AssumeRole",
+    explanation: "Cross-account trust is bilateral. Account B has a trust policy allowing Account A root — that is correct. But the IAM user in Account A needs sts:AssumeRole in their own identity-based policy, and they do not have it. The SCPs on both accounts permit everything. The trust policy in Account B is correct. The gap is the missing sts:AssumeRole grant on the user in Account A."
+  },
+  {
+    title: "RCP blocks external access despite open bucket policy",
+    identity: "External AWS account (outside the organization) trying s3:GetObject",
+    boundary: "N/A — external principal",
+    scp: "N/A — SCP does not apply to external principals",
+    action: "s3:GetObject on bucket-with-open-policy (bucket policy allows Principal:*)",
+    result: "deny",
+    verdict: "DENY — RCP blocks external principal regardless of bucket policy",
+    binding: "RCP denies all s3 actions from principals outside the org",
+    explanation: "The bucket policy says Principal:* — anyone can read. An SCP cannot help here because SCPs only govern identities inside the organization. But an RCP attached at the org root denies s3:* from any principal whose PrincipalOrgID is not the organization ID. The external principal does not pass that condition. The RCP closes the gap that the SCP and the bucket policy cannot close together."
+  }
+];
+
+function buildCeilings(){
+  var grid = document.getElementById("ceilingsGrid");
+  if(!grid) return;
+  var html = "";
+  scenarios.forEach(function(sc, idx){
+    var num = idx+1;
+    var isSCP = sc.scp.indexOf("N/A") < 0;
+    var isBoundary = sc.boundary.indexOf("N/A") < 0 && sc.boundary !== "No boundary" && sc.boundary !== "No boundary attached";
+    html += "<div class=\"ceiling-scenario\" id=\"cs"+num+"\">";
+    html += "<div class=\"cs-header\" onclick=\"toggleScenario("+num+")\">";
+    html += "<div><div class=\"cs-num\">Scenario "+num+"</div><div class=\"cs-title\">"+sc.title+"</div></div>";
+    html += "<span class=\"cs-chev\">›</span></div>";
+    html += "<div class=\"cs-body\"><div class=\"cs-inner\">";
+    html += "<div class=\"cs-layers\">";
+    html += "<div class=\"cs-layer\"><div class=\"cs-layer-label\" style=\"color:var(--amber);\">SCP Ceiling</div><div class=\"cs-layer-val\">"+sc.scp+"</div></div>";
+    html += "<div class=\"cs-layer\"><div class=\"cs-layer-label\" style=\"color:var(--c-iam);\">Permission Boundary</div><div class=\"cs-layer-val\">"+sc.boundary+"</div></div>";
+    html += "<div class=\"cs-layer\"><div class=\"cs-layer-label\" style=\"color:var(--green);\">Identity-Based Policy</div><div class=\"cs-layer-val\">"+sc.identity+"</div></div>";
+    html += "</div>";
+    html += "<div style=\"font-size:0.9rem;margin-bottom:14px;\"><strong>Action attempted:</strong> <code>"+sc.action+"</code></div>";
+    html += "<button class=\"cs-reveal-btn\" onclick=\"revealScenario("+num+",event)\">Reveal reasoning</button>";
+    html += "<div class=\"cs-result "+sc.result+"\" id=\"csr"+num+"\">";
+    html += "<div class=\"cs-result-verdict\">"+sc.verdict+"</div>";
+    html += "<div class=\"cs-result-binding\">Binding constraint: "+sc.binding+"</div>";
+    html += "<p>"+sc.explanation+"</p>";
+    html += "</div>";
+    html += "</div></div></div>";
+  });
+  grid.innerHTML = html;
+}
+
+function toggleScenario(num){
+  var el = document.getElementById("cs"+num);
+  if(el) el.classList.toggle("open");
+}
+window.toggleScenario = toggleScenario;
+
+function revealScenario(num, e){
+  e.stopPropagation();
+  var res = document.getElementById("csr"+num);
+  if(res) res.style.display = "block";
+}
+window.revealScenario = revealScenario;
+
+buildCeilings();
+
+// ---- Mock Exam ----
+var examData = [
+  {
+    q: "A security engineer needs to prevent all IAM users and roles in an AWS Organization member account from disabling AWS CloudTrail, even if they have administrator-level IAM policies. Which approach achieves this goal?",
+    opts: ["Attach an IAM permission boundary to every IAM role in the account denying cloudtrail:StopLogging","Create a CloudTrail event selector that ignores stop-logging events","Attach a Service Control Policy to the account or its parent OU with an explicit Deny on cloudtrail:StopLogging","Configure AWS Config with a rule that re-enables CloudTrail if it is stopped"],
+    correct: 2,
+    explanation: "An SCP with an explicit Deny on cloudtrail:StopLogging overrides any Allow in the account's IAM policies, including Administrator-level policies. The SCP applies to every identity in the account including the root user (of member accounts). An IAM permission boundary (A) would need to be applied to every identity individually and cannot protect against future roles. CloudTrail event selectors (B) are a logging filter, not an access control. AWS Config (D) is detective and corrective — it would detect the change after it happened, not prevent it."
+  },
+  {
+    q: "An organization's S3 buckets are frequently misconfigured by developers who set bucket policies with Principal:* allowing public read access. The security team wants to guarantee no S3 bucket in any account can ever serve data to principals outside the organization, regardless of individual bucket policies. What is the most effective control?",
+    opts: ["Attach an SCP denying s3:PutBucketPolicy to all member accounts","Enable S3 Block Public Access at the organization level","Attach a Resource Control Policy (RCP) with a Deny for s3:* from principals whose PrincipalOrgID is not the org ID","Create an AWS Config rule triggering automated remediation on any bucket policy change"],
+    correct: 2,
+    explanation: "An RCP governs access to S3 resources regardless of who the requesting principal is — including external accounts outside the organization. Even if a developer writes a bucket policy with Principal:*, the RCP Deny fires for any principal not in the organization. An SCP (A) would prevent bucket policy modification but not protect against external access if policies already exist. S3 Block Public Access (B) blocks anonymous/public access but not authenticated external AWS accounts. AWS Config (D) is corrective after the fact, not preventive."
+  },
+  {
+    q: "A developer in Account A (ID: 111111111111) attempts to assume a role in Account B (ID: 222222222222). The role in Account B has a trust policy with Principal: arn:aws:iam::111111111111:root. The assumption fails with an AccessDenied error. What is the most likely cause?",
+    opts: ["The trust policy should reference the specific user ARN, not the account root","The developer's IAM identity in Account A does not have sts:AssumeRole permission in their own identity-based policy","The role in Account B does not have permission policies attached","Cross-account role assumption requires AWS Organizations to be enabled"],
+    correct: 1,
+    explanation: "Cross-account trust is bilateral. The trust policy in Account B (allowing Account A root) is the correct format — using the root ARN means any identity in Account A can assume the role IF they have explicit permission to do so. The developer needs sts:AssumeRole in their own identity-based policy in Account A. This is the most common cross-account failure mode. Option A is incorrect — using the root ARN is valid and common. Option C would cause a different error (successful assumption with no permissions). Option D is incorrect — Organizations is not required for cross-account role assumption."
+  },
+  {
+    q: "An IAM role has an identity-based policy allowing iam:CreateRole on *. A permission boundary is attached to this role allowing only s3:* and lambda:* actions. What is the effective permission for iam:CreateRole?",
+    opts: ["Allow — the identity-based policy explicitly allows it","Deny — the permission boundary does not include IAM actions","Allow — the boundary must be more restrictive than the identity policy to take effect","Deny — permission boundaries always block IAM actions to prevent privilege escalation"],
+    correct: 1,
+    explanation: "The effective permission is the intersection of the identity-based policy AND the permission boundary. The identity-based policy allows iam:CreateRole, but the permission boundary only allows s3:* and lambda:* — it does not include iam:* or iam:CreateRole. The boundary is the binding ceiling for this action: Deny. Option A ignores the boundary. Option C is incorrect — the boundary takes effect regardless of relative restrictiveness; it is always evaluated. Option D is a misconception — boundaries do not categorically block IAM actions; they block whatever is not in the boundary, whatever that may be."
+  },
+  {
+    q: "A principal calls sts:AssumeRole and passes an inline session policy that includes Allow: s3:* and Allow: iam:CreateRole. The assumed role itself only has Allow: s3:GetObject in its permission policies. What is the effective permission for iam:CreateRole in this session?",
+    opts: ["Allow — the session policy explicitly allows it","Deny — session policies cannot include IAM actions","Deny — session policies can only narrow what the role already permits, and the role does not allow iam:CreateRole","Allow — session policies override the role's permission policies for the duration of the session"],
+    correct: 2,
+    explanation: "Session policies can only restrict further — they cannot expand beyond what the role's own permission policies allow. The effective session permissions equal the intersection of (role permissions) AND (session policy). The role only allows s3:GetObject. Even though the session policy allows iam:CreateRole, there is nothing in the role to expand. The session policy Allow on iam:CreateRole has no effect because the underlying role does not permit it. This is a fundamental property of session policies: they add a ceiling, never a grant."
+  },
+  {
+    q: "A new member account is added to an AWS Organization. No custom SCPs have been attached. Which statement about the account's SCP posture is correct?",
+    opts: ["The account has no SCPs and all actions are explicitly allowed by IAM policies only","The account inherits FullAWSAccess from the organization root, which means all IAM actions in the account are granted","The account inherits FullAWSAccess from the organization root, which means there is no SCP ceiling restricting IAM policies in the account","The management account's SCPs automatically apply to the new member account"],
+    correct: 2,
+    explanation: "A new member account inherits FullAWSAccess — the default SCP containing Allow:* on *. This does not grant any permissions. It means the SCP ceiling is at maximum, and individual IAM policies within the account are the only governing layer. Option B contains the cardinal SCP error: FullAWSAccess is not a grant. Option A incorrectly states there are no SCPs — the FullAWSAccess SCP is always present. Option D is incorrect — management account SCPs do not automatically transfer; policies must be explicitly attached."
+  },
+  {
+    q: "An organization wants to implement delegated IAM administration: an application team can create IAM roles for their Lambda functions, but cannot create roles with more permissions than a pre-defined set. What is the correct mechanism?",
+    opts: ["Attach an SCP to the application team account limiting which IAM actions they can use","Create a permission boundary policy and require the team to attach it to every role they create, enforced by a condition in their own IAM policy","Use IAM Access Analyzer to flag any roles with excess permissions after creation","Create a Service Catalog portfolio with pre-approved IAM role templates"],
+    correct: 1,
+    explanation: "This is the canonical delegated administration pattern for permission boundaries. The platform team defines a managed policy (the boundary) and gives the app team permission to create roles only when iam:PermissionsBoundary in the request equals the required boundary ARN — enforced as a condition in the delegating policy. Any role the team creates is automatically capped by the boundary. SCPs (A) would restrict IAM actions org-wide and too broadly. Access Analyzer (C) is detective, not preventive. Service Catalog (D) is a governance approach but does not prevent the team from creating roles outside the catalog."
+  },
+  {
+    q: "Which of the following statements about Resource Control Policies (RCPs) is correct?",
+    opts: ["RCPs apply to all AWS services and all resource types in an account","RCPs can grant permissions to external principals that resource-based policies cannot","RCPs apply to a specific set of supported resource types (including S3, KMS, STS, Secrets Manager, SQS) and govern access regardless of the requesting principal's organization membership","RCPs replace the need for resource-based policies by centralizing all resource access control at the org level"],
+    correct: 2,
+    explanation: "RCPs apply to a targeted set of supported resource types and govern access from any principal — inside the org, outside the org, anonymous, or cross-account service principals. They do not apply to all services (A). They cannot grant permissions; like SCPs, they are ceilings only (B). They do not replace resource-based policies — resource-based policies grant access, and RCPs constrain the ceiling beneath which that access must fall (D). The key distinguishing property of RCPs versus SCPs is that RCPs govern by resource, not by principal identity membership in the organization."
+  },
+  {
+    q: "A company attaches an SCP to the organization root that uses an explicit Deny with NotAction for IAM, STS, CloudFront, Route 53, and Support, with a StringNotEquals condition on aws:RequestedRegion for any region other than us-east-1. An IAM user in a member account attempts to create an S3 bucket in eu-west-2. What happens?",
+    opts: ["The S3 bucket creation succeeds because IAM is in the NotAction list","The S3 bucket creation succeeds because eu-west-2 is an approved region","The S3 bucket creation fails because s3:CreateBucket is not in the NotAction list and eu-west-2 is not the approved region","The S3 bucket creation fails because the SCP replaces all IAM policies in the account"],
+    correct: 2,
+    explanation: "The SCP uses Deny + NotAction + region condition. s3:CreateBucket is NOT in the NotAction exclusion list (which only excludes global services like IAM, STS, CloudFront, Route53, Support). eu-west-2 is not us-east-1. The condition fires: this is a non-excluded action in a non-approved region, so the SCP Deny applies. The s3:CreateBucket call is denied regardless of the user's IAM policies. Option A is incorrect — IAM being in NotAction means IAM actions are excluded from the deny, not S3 actions. Option D is incorrect — SCPs do not replace IAM policies."
+  },
+  {
+    q: "What is the scope difference between an SCP and a permission boundary when both are present on an IAM role?",
+    opts: ["The SCP applies to all roles in the account; the boundary applies only to the specific role it is attached to","Both apply to all roles in the account — SCPs at the org level and boundaries at the account level","The SCP applies only to the role it is attached to; the boundary applies to the whole account","SCPs and permission boundaries are equivalent and only one needs to be configured"],
+    correct: 0,
+    explanation: "This is the core scope distinction. An SCP applies to all identities in the accounts it governs — you cannot target an SCP at one specific role. A permission boundary is attached to exactly one IAM user or role and governs only that identity. Both can be simultaneously in effect: the SCP defines the org-level ceiling for all identities in the account, and the boundary defines the per-identity ceiling for the one role it is attached to. Both ceilings apply to that specific role simultaneously — it must pass through both."
+  },
+  {
+    q: "A security team wants to ensure that the management account in their AWS Organization is kept free of workloads and is used only for organizational management tasks. From a security architecture perspective, which of the following best explains why this is critical?",
+    opts: ["The management account is subject to stricter SCPs than member accounts","SCPs do not apply to the management account, meaning any identity there has no org-level ceiling — compromising the management account bypasses all SCP guardrails","The management account cannot have CloudTrail enabled, so workloads there cannot be audited","RCPs do not apply to any resources in the management account"],
+    correct: 1,
+    explanation: "SCPs never apply to the management account — it is explicitly excluded from SCP governance. An attacker who compromises any identity in the management account faces no SCP guardrails at all, which means they can take actions that are blocked for everyone in every member account. They could modify SCPs, dissolve OUs, move accounts, or take other organization-level actions that override every control you have built. Keeping the management account empty of workloads minimizes its blast radius. CloudTrail can be enabled in the management account (C is incorrect). RCPs do apply to management account resources (D is incorrect)."
+  },
+  {
+    q: "An engineer reports that their identity can perform s3:GetObject on a bucket in the same account. The account has a custom SCP that does not mention S3 at all (it only restricts EC2 actions). The engineer has an identity-based policy allowing s3:GetObject. No permission boundary is attached. What is the expected result?",
+    opts: ["Deny — the SCP must explicitly Allow s3:GetObject for access to be granted","Allow — the SCP does not restrict s3:GetObject, and the identity-based policy grants it","Deny — absence of S3 in the SCP implicitly denies all S3 actions","Allow — permission boundaries are required only for cross-account access, and there is none here"],
+    correct: 1,
+    explanation: "If the SCP does not mention s3:GetObject — neither Allowing nor Denying it — the SCP is not a blocker for that action. Remember FullAWSAccess is still present and allows everything unless explicitly overridden. The SCP only restricts EC2, so S3 is unaffected. The identity-based policy grants s3:GetObject. No permission boundary is attached, so there is no additional ceiling. Result: Allow. Option A represents the SCP-as-grant misconception. An SCP must explicitly Allow something only when FullAWSAccess has been removed and replaced with a restrictive allow-list. Option C is incorrect — absence of an action in an SCP that still has FullAWSAccess attached does not implicitly deny it."
+  }
+];
+
+var examScore = 0;
+var examAnswered = 0;
+
+function buildExam(){
+  var container = document.getElementById("examQuestions");
+  if(!container) return;
+  var html = "";
+  examData.forEach(function(q, idx){
+    var num = idx+1;
+    html += "<div class=\"exam-q\" id=\"eq"+num+"\">";
+    html += "<div class=\"exam-q-num\">Question "+num+" of 12</div>";
+    html += "<h4>"+q.q+"</h4>";
+    html += "<div class=\"exam-opts\">";
+    var letters = ["A","B","C","D"];
+    q.opts.forEach(function(opt, oi){
+      html += "<button class=\"exam-opt\" onclick=\"selectExamOpt("+num+","+oi+")\" data-qnum=\""+num+"\" data-oi=\""+oi+"\" aria-label=\"Option "+letters[oi]+": "+opt+"\">";
+      html += "<span class=\"opt-letter\">"+letters[oi]+"</span><span>"+opt+"</span></button>";
+    });
+    html += "</div>";
+    html += "<div class=\"exam-explanation\" id=\"ee"+num+"\">"+q.explanation+"</div>";
+    html += "</div>";
+  });
+  container.innerHTML = html;
+}
+
+function selectExamOpt(qnum, oi){
+  var qdata = examData[qnum-1];
+  var qEl = document.getElementById("eq"+qnum);
+  if(!qEl) return;
+  var btns = qEl.querySelectorAll(".exam-opt");
+  var alreadyAnswered = qEl.dataset.answered;
+  if(alreadyAnswered) return;
+  qEl.dataset.answered = "1";
+  examAnswered++;
+  btns.forEach(function(btn, bidx){
+    btn.disabled = true;
+    if(bidx === qdata.correct){
+      btn.classList.add("correct");
+    } else if(bidx === oi && oi !== qdata.correct){
+      btn.classList.add("wrong");
+    }
+  });
+  var correct = oi === qdata.correct;
+  if(correct) examScore++;
+  var expEl = document.getElementById("ee"+qnum);
+  if(expEl) expEl.style.display = "block";
+  updateScore();
+}
+window.selectExamOpt = selectExamOpt;
+
+function updateScore(){
+  var circle = document.getElementById("scoreCircle");
+  var txt = document.getElementById("scoreText");
+  if(circle) circle.textContent = examScore+"/"+examAnswered;
+  if(txt){
+    var pct = examAnswered > 0 ? Math.round((examScore/examAnswered)*100) : 0;
+    if(pct >= 83) txt.textContent = "Excellent — you are well above the exam pass threshold for this domain. "+examAnswered+" of 12 answered.";
+    else if(pct >= 65) txt.textContent = "Good progress — review the questions you missed and revisit those concepts. "+examAnswered+" of 12 answered.";
+    else txt.textContent = "Keep going — re-read the teaching sections for any topics where you lost points. "+examAnswered+" of 12 answered.";
+  }
+}
+
+buildExam();
+
+// ---- FAQ Data ----
+var faqData = [
+  {
+    q: "Why do we need both SCPs and permission boundaries? Is that not redundant?",
+    a: "They answer different questions, which is why you need both. An SCP is an org-level control applied to all identities in an account simultaneously — you cannot target it at one specific role. A permission boundary is per-identity and cannot be set at the org or account level. The canonical scenario where you need both: you have an org-wide SCP preventing all IAM actions outside approved regions (good for everyone). But you also have a platform team that needs to create Lambda execution roles — and you want to ensure those roles cannot have more than specific service permissions. The boundary governs just those roles, while the SCP governs the whole account. Same ceiling concept, completely different targeting scope."
+  },
+  {
+    q: "Can an SCP ever grant permissions? Like, can I use an SCP to give an account access to a service?",
+    a: "No. This is the cardinal SCP rule. An SCP with Effect Allow does not grant anything. It merely means the SCP is not blocking that action — the identity still needs its own identity-based policy with an explicit Allow. If you attach an SCP that says Allow s3:* and remove all IAM policies from an identity, that identity has zero effective permissions. The SCP Allow is invisible in the success path — it only matters when it is missing (which would block access). Think of it this way: the SCP defines the room the identity is allowed to work in. The IAM policy is what the identity can actually reach inside that room."
+  },
+  {
+    q: "If there is no permission boundary attached to a role at all, does that mean it has unlimited permissions?",
+    a: "No — if no permission boundary is attached, the boundary layer simply does not exist as a constraint. The effective permissions are then governed by the identity-based policies and any applicable SCPs. This is the default for most roles. You only attach a permission boundary when you specifically want to cap what policies can grant a particular identity — typically in delegated administration scenarios. Absence of a boundary is not the same as a maximally-permissive boundary; it just means that ceiling is not in play. The SCP ceiling still applies regardless."
+  },
+  {
+    q: "If I attach an RCP to my organization, will it also block my own organization principals from accessing those resources?",
+    a: "Yes — and this is an important design consideration. An RCP applies to all access to the governed resource, including from principals inside your own organization. A common RCP pattern uses a condition: Deny if PrincipalOrgID does not equal your org ID — which means your own org principals pass through and only external principals are denied. But if you write an RCP with a Deny that does not carve out your own org, you can accidentally block your own services. Always test RCPs carefully and use the PrincipalOrgID condition to scope the denial to external principals only, unless you specifically intend to restrict internal access as well."
+  },
+  {
+    q: "What is the difference between a resource-based policy on an S3 bucket and an RCP?",
+    a: "A resource-based policy (like an S3 bucket policy) is attached to one specific resource and is managed by the resource owner. It governs who can access that specific bucket and what they can do. An RCP is attached at the AWS Organizations level and governs all resources of supported types across multiple accounts — it is a policy about policies. An RCP defines the envelope within which all resource-based policies must operate. If an RCP denies s3:* from external principals, no bucket policy anywhere in scope can override that — the RCP is a ceiling the bucket policy cannot exceed. They complement each other: the RCP sets the org-wide floor of protection; the bucket policy grants the specific access within that protected envelope."
+  },
+  {
+    q: "Can a session policy expand what a role is allowed to do?",
+    a: "No — and this is a specific exam trap. A session policy passed at AssumeRole time can only narrow what the role permits for that session. The effective session permissions are the intersection of the role's permission policies AND the session policy. If the role allows s3:GetObject only, passing a session policy with Allow s3:* does nothing — the role cannot give the session s3:PutObject because the role itself does not have it. The session policy can never reach above the role. This is the fundamental property: session policies narrow, never expand."
+  },
+  {
+    q: "Does the trust policy in Account B check anything about the assuming principal's permissions in Account A?",
+    a: "No — and this is a subtle but important distinction. The trust policy in Account B only controls who is allowed to present themselves to assume the role. It does not reach into Account A and verify whether the presenting identity actually has sts:AssumeRole permission. That check happens on Account A's side, independently: when the identity in Account A calls sts:AssumeRole, IAM in Account A evaluates whether that identity has permission to make that call. Both checks are independent. Account B says who it trusts; Account A says who can knock. Neither knows about the other's decision — they just both have to say yes."
+  },
+  {
+    q: "The exam keeps showing me scenarios with multiple controls at once. What is the fastest way to evaluate them?",
+    a: "Apply this rule in order: First, does any explicit Deny exist anywhere — in an SCP, a resource policy, any identity policy? If yes, stop — the answer is Deny regardless of everything else. Second, is there an SCP that restricts this action? If the action is not permitted by the effective SCPs, the answer is Deny. Third, is there a permission boundary, and does it permit this action? If not, Deny. Fourth, does the identity-based policy have an explicit Allow for this action? If not, the default is Deny. Only if you clear all four gates — no explicit Deny anywhere, SCP permits it, boundary permits it, identity-based policy allows it — is the effective permission Allow. Apply the gates in order and you will solve every scenario question on the exam."
+  }
+];
+
+function buildFAQ(){
+  var container = document.getElementById("faqContainer");
+  if(!container) return;
+  var html = "";
+  faqData.forEach(function(pair, idx){
+    html += "<div class=\"discussion-pair\" id=\"faqp"+idx+"\">";
+    html += "<div class=\"bubble bubble-q\" onclick=\"toggleFaq("+idx+")\"><span class=\"who\">🧑‍💻 You ask <span class=\"chev\">›</span></span>"+pair.q+"</div>";
+    html += "<div class=\"bubble bubble-a\"><span class=\"who\">🛡️ Your Mentor</span><p>"+pair.a+"</p></div>";
+    html += "</div>";
+  });
+  container.innerHTML = html;
+}
+
+function toggleFaq(idx){
+  var pair = document.getElementById("faqp"+idx);
+  if(pair) pair.classList.toggle("open");
+}
+window.toggleFaq = toggleFaq;
+
+buildFAQ();
+
+// ---- Resources ----
+var resourceData = [
+  { title:"AWS Organizations SCP Documentation", source:"AWS Documentation", tag:"free", desc:"The canonical reference for Service Control Policies: syntax, evaluation logic, FullAWSAccess behavior, and inheritance rules. The primary source for exam-accurate SCP content.", url:"https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html" },
+  { title:"Resource Control Policies (RCPs) User Guide", source:"AWS Documentation", tag:"free", desc:"Official RCP documentation covering supported resource types, policy syntax, and the key distinctions from SCPs. This covers new SCS-C03 content not present in older study materials.", url:"https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html" },
+  { title:"IAM Permission Boundaries Documentation", source:"AWS Documentation", tag:"free", desc:"The definitive guide to permission boundaries: how they interact with identity-based policies, the delegation pattern, and evaluation logic. Includes worked examples for the delegated admin scenario.", url:"https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html" },
+  { title:"Using IAM Roles for Cross-Account Access", source:"AWS Documentation", tag:"free", desc:"Step-by-step coverage of cross-account role setup: trust policy syntax, the dual-authorization requirement, and temporary credential lifecycle. Essential for the cross-account mechanics tested in Domain 4.", url:"https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html" },
+  { title:"AWS Security Best Practices Whitepaper", source:"AWS Whitepapers", tag:"free", desc:"Covers multi-account governance, SCP design patterns for the security baseline, and the recommended OU structure for regulated environments. Directly relevant to the governance scenarios in this module.", url:"https://aws.amazon.com/whitepapers/security-best-practices/" },
+  { title:"SCS-C03 Practice Exam Questions", source:"Tutorials Dojo — tutorialsdojo.com", tag:"paid", desc:"Tutorials Dojo is one of the most exam-accurate practice question banks for AWS Security Specialty. Their SCS-C03 questions explicitly cover RCPs and the new content areas added for this exam version.", url:"https://tutorialsdojo.com" },
+  { title:"AWS Security Specialty Course", source:"Adrian Cantrill — learn.cantrill.io", tag:"paid", desc:"Adrian Cantrill's AWS Security Specialty course is known for deep conceptual teaching rather than pattern-matching. Strong coverage of the IAM domain, including SCP mechanics and multi-account design.", url:"https://learn.cantrill.io" },
+  { title:"AWS Security Specialty Course (Udemy)", source:"Stephane Maarek / Neal Davis — udemy.com", tag:"paid", desc:"Multiple well-reviewed SCS-C03 courses available on Udemy. Check course update dates carefully — courses updated after Dec 2025 are more likely to include RCP coverage for the SCS-C03 exam.", url:"https://www.udemy.com" },
+  { title:"IAM Policy Evaluation Logic (Visual Guide)", source:"AWS Documentation", tag:"free", desc:"The official policy evaluation flowchart showing how AWS evaluates SCPs, permission boundaries, identity-based policies, and resource-based policies in sequence. Print this and memorize it.", url:"https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html" },
+  { title:"AWS Security Specialty Practice Tests", source:"A Cloud Guru / Pluralsight — pluralsight.com", tag:"paid", desc:"Pluralsight (A Cloud Guru) offers SCS-C03 practice tests with detailed explanations. Useful for volume practice across all six domains, with particular depth in IAM and detection domains.", url:"https://www.pluralsight.com" },
+  { title:"AWS Skill Builder: Security Learning Plan", source:"AWS Skill Builder — skillbuilder.aws", tag:"free", desc:"The official AWS-curated learning path for the Security Specialty exam. Includes free digital training modules directly covering IAM advanced topics, SCPs, and governance patterns.", url:"https://skillbuilder.aws" },
+  { title:"AWS Organizations Best Practices", source:"AWS Documentation", tag:"free", desc:"Multi-account architecture guidance including OU design, management account hygiene, and where to attach SCPs vs. RCPs for maximum coverage. Directly tested in Module 3 and Module 12 content.", url:"https://docs.aws.amazon.com/organizations/latest/userguide/orgs_best-practices.html" }
+];
+
+function buildResources(){
+  var grid = document.getElementById("resourceGrid");
+  if(!grid) return;
+  var html = "";
+  resourceData.forEach(function(r){
+    html += "<div class=\"resource-card\">";
+    html += "<span class=\"resource-pill "+r.tag+"\">"+r.tag+"</span>";
+    html += "<h4>"+r.title+"</h4>";
+    html += "<div class=\"source\">"+r.source+"</div>";
+    html += "<p>"+r.desc+"</p>";
+    html += "<a href=\""+r.url+"\" target=\"_blank\" rel=\"noopener\">Open resource →</a>";
+    html += "</div>";
+  });
+  grid.innerHTML = html;
+}
+
+buildResources();
+
+// ---- Side Rail ----
+var railSections = [
+  {id:"s-intro",label:"Introduction"},
+  {id:"s-cross-account",label:"Cross-Account Roles"},
+  {id:"tc-1",label:"SCPs Intro"},
+  {id:"s-scps",label:"Service Control Policies"},
+  {id:"tc-2",label:"RCPs Intro"},
+  {id:"s-rcps",label:"Resource Control Policies"},
+  {id:"s-comparison",label:"Comparison"},
+  {id:"s-boundaries",label:"Permission Boundaries"},
+  {id:"s-session",label:"Session Policies"},
+  {id:"s-decision-tree",label:"Decision Tree"},
+  {id:"s-org-map",label:"Org Map"},
+  {id:"tc-3",label:"Three Ceilings Intro"},
+  {id:"s-three-ceilings",label:"Three Ceilings"},
+  {id:"s-traps",label:"Production Traps"},
+  {id:"s-exam",label:"Mock Exam"},
+  {id:"s-faq",label:"FAQ"},
+  {id:"s-resources",label:"Resources"},
+  {id:"s-closing",label:"Closing"}
+];
+
+var rail = document.getElementById("siteRail");
+if(rail){
+  railSections.forEach(function(sec){
+    var dot = document.createElement("button");
+    dot.className = "rail-dot";
+    dot.setAttribute("aria-label","Jump to "+sec.label);
+    dot.setAttribute("title",sec.label);
+    dot.addEventListener("click", function(){
+      var target = document.getElementById(sec.id);
+      if(target) target.scrollIntoView({behavior:"smooth"});
+    });
+    dot.dataset.target = sec.id;
+    rail.appendChild(dot);
+  });
+
+  var railIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        rail.querySelectorAll(".rail-dot").forEach(function(d){ d.classList.remove("active"); });
+        var active = rail.querySelector("[data-target='"+e.target.id+"']");
+        if(active) active.classList.add("active");
+      }
+    });
+  }, {threshold:0.3});
+
+  railSections.forEach(function(sec){
+    var el = document.getElementById(sec.id);
+    if(el) railIo.observe(el);
+  });
+}
+
+})();
+</script>
+</body>
+</html>

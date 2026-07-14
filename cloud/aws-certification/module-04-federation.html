@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 04: Federation, Identity Center & Temporary Credentials</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grain-opacity: 0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg: rgba(10,14,26,0.72);
+  --node-glow: rgba(76,134,255,0.28);
+  --overlay: rgba(4,6,14,0.6);
+  --grid-line: rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme: dark; }
+html[data-theme="light"]{
+  color-scheme: light;
+  --grain-opacity: 0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow: 0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg: rgba(246,247,251,0.72);
+  --node-glow: rgba(47,111,237,0.20);
+  --overlay: rgba(20,26,40,0.35);
+  --grid-line: rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+
+/* Bug fix #1 — explicit backgrounds everywhere */
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth; background:var(--bg);}
+body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden;}
+.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); }
+footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); }
+
+/* Bug fix #2 — grain overlay, no mix-blend-mode */
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity, 0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Typography */
+h1,h2,h3{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; }
+h1,h2{ font-weight:700; }
+h3{ font-weight:600; }
+.mono{ font-family:'JetBrains Mono', monospace; }
+.eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.14em; color:var(--c-iam); display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.eyebrow::before{ content:''; width:28px; height:1px; background:var(--c-iam); display:inline-block; }
+.scene-col{ max-width:840px; margin:0 auto; position:relative; z-index:2; }
+.scene p{ font-size:1.02rem; line-height:1.75; color:var(--text); margin-bottom:18px; }
+.scene p.dim{ color:var(--text-dim); }
+h2.kinetic{ font-size:clamp(1.8rem, 4vw, 2.6rem); margin-bottom:26px; line-height:1.15; }
+h3{ font-size:1.25rem; margin:30px 0 14px; color:var(--text); }
+
+/* Ambient blobs */
+.ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
+@keyframes driftBlob{ 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(4%,-6%) scale(1.08);} 100%{transform:translate(-5%,4%) scale(0.96);} }
+
+/* Kinetic word-mask headings */
+.kw{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em;}
+.kw-inner{display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+
+/* Title card interstitials */
+.title-card{ min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; }
+.title-card h2{ font-size:clamp(2.2rem, 7vw, 5.4rem); line-height:1.1; font-weight:700; }
+.title-card .tc-sub{ margin-top:22px; font-family:'JetBrains Mono', monospace; font-size:13px; letter-spacing:0.1em; color:#8B93A7; text-transform:uppercase; }
+.scanbeam{ position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg, transparent, rgba(76,134,255,0.14), transparent); animation:scanSweep 6s linear infinite; }
+@keyframes scanSweep{ 0%{top:-140px;} 100%{top:100%;} }
+
+/* Scroll-reveal + stagger */
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .8s ease, transform .8s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+.stagger > *{opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease, transform .6s ease;}
+.stagger.in > *{opacity:1; transform:translateY(0) scale(1);}
+
+/* Nav */
+nav.topnav{ position:fixed; top:0; left:0; right:0; z-index:280; background:var(--nav-bg); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); padding:16px 40px; display:flex; align-items:center; justify-content:space-between; }
+.nav-brand{ font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; }
+.nav-brand b{ color:var(--c-iam); }
+.theme-btn{ background:var(--surface); border:1px solid var(--line); color:var(--text); border-radius:999px; width:38px; height:38px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:border-color .2s ease; }
+.theme-btn:hover{ border-color:var(--accent); }
+
+/* Scroll progress bar handled inline in body markup */
+
+/* Side rail scene navigator */
+.rail{ position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px; }
+.rail-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease, transform .3s ease; }
+.rail-dot.active{ background:var(--accent); border-color:var(--accent); transform:scale(1.3); }
+@media (max-width:900px){ .rail{display:none;} }
+
+/* Sliding drawer / bottom sheet */
+.drawer-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px); }
+.drawer-overlay.open{ opacity:1; pointer-events:auto; }
+.drawer{ position:fixed; top:0; right:0; height:100%; width:min(420px, 90vw); background:var(--surface-raised); border-left:1px solid var(--line); z-index:201; padding:36px 32px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); box-shadow:-20px 0 60px rgba(0,0,0,0.35); }
+.drawer.open{ transform:translateX(0); }
+.bottom-sheet-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.bottom-sheet-overlay.open{ opacity:1; pointer-events:auto; }
+.bottom-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:201; background:var(--surface-raised); border-top:1px solid var(--line); border-radius:20px 20px 0 0; padding:32px 40px 40px; transform:translateY(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); max-width:760px; margin:0 auto; box-shadow:0 -20px 60px rgba(0,0,0,0.35); }
+.bottom-sheet.open{ transform:translateY(0); }
+.drawer-close, .sheet-close{ position:absolute; top:18px; right:22px; background:none; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; }
+
+/* Mentor Aside */
+.mentor-aside{ background:var(--surface); border-left:3px solid var(--accent); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0; }
+.mentor-aside::before{ content:'🛡️ MENTOR NOTE'; display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--accent); margin-bottom:8px; }
+.mentor-aside p{ font-size:0.94rem; color:var(--text); line-height:1.7; font-style:italic; margin-bottom:0; }
+
+/* Inline expand diagram node */
+.mindnode{ cursor:pointer; }
+.node-info{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:0; }
+.node-info.open{ max-height:320px; opacity:1; margin-top:14px; padding:16px 20px; }
+
+/* Discussion-style FAQ */
+.discussion{ display:flex; flex-direction:column; gap:22px; margin-top:36px; }
+.discussion-pair{ display:flex; flex-direction:column; gap:10px; }
+.bubble{ max-width:82%; padding:16px 20px; border-radius:18px; font-size:0.95rem; line-height:1.65; }
+.bubble-q{ align-self:flex-start; background:var(--surface); border:1px solid var(--line); border-bottom-left-radius:4px; cursor:pointer; transition:border-color .2s ease; display:flex; flex-direction:column; }
+.bubble-q:hover{ border-color:var(--accent); }
+.bubble-q .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.bubble-q .chev{ margin-left:auto; transition:transform .25s ease; font-size:12px; color:var(--text-dim); }
+.discussion-pair.open .bubble-q .chev{ transform:rotate(90deg); color:var(--accent); }
+.bubble-a{ align-self:flex-end; background:var(--accent-dim); border-bottom-right-radius:4px; max-height:0; overflow:hidden; opacity:0; padding:0 20px; transition:max-height .45s ease, opacity .35s ease, padding .35s ease; }
+.discussion-pair.open .bubble-a{ max-height:600px; opacity:1; padding:16px 20px; }
+.bubble-a .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--c-iam); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:block; text-align:right; }
+
+/* Resources */
+.resource-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:36px; }
+.resource-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; position:relative; transition:border-color .2s ease, transform .15s ease; }
+.resource-card:hover{ border-color:var(--accent-dim); transform:translateY(-2px); }
+.resource-pill{ position:absolute; top:20px; right:20px; font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px; }
+.resource-pill.free{ background:var(--c-gov-dim); color:var(--green); }
+.resource-pill.paid{ background:var(--c-detect-dim); color:var(--amber); }
+.resource-card h4{ font-size:1rem; padding-right:70px; margin-bottom:8px; font-family:'Space Grotesk',sans-serif; }
+.resource-card .source{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+.resource-card p{ font-size:0.88rem; color:var(--text-dim); line-height:1.6; margin-bottom:0; }
+.resource-card a{ display:inline-block; margin-top:14px; font-size:0.85rem; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+@media (max-width:720px){ .resource-grid{grid-template-columns:1fr;} }
+
+/* Stat count-up */
+.stat-row{ display:flex; gap:40px; flex-wrap:wrap; margin:34px 0; }
+.stat-num{ font-family:'Space Grotesk',sans-serif; font-size:2.4rem; font-weight:700; color:var(--c-iam); }
+.stat-label{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; }
+
+/* ---- Module-04-specific component CSS ---- */
+
+/* Production scenario callout */
+.scenario{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 26px; margin:24px 0; }
+.scenario .tag{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--c-infra); margin-bottom:10px; display:block; }
+.scenario p{ margin-bottom:0; }
+
+/* Trap callout */
+.trap-inline{ border:1px solid var(--c-detect-dim); background:var(--c-detect-dim); border-radius:12px; padding:16px 20px; margin:22px 0; }
+.trap-inline .tag{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--amber); margin-bottom:8px; display:block; }
+.trap-inline p{ margin-bottom:0; color:var(--text); }
+html[data-theme="dark"] .trap-inline p{ color:#F4F6FB; }
+
+/* Exam-angle callout */
+.exam-angle{ border-left:3px solid var(--c-ir); background:var(--surface); border-radius:0 12px 12px 0; padding:16px 20px; margin:22px 0; }
+.exam-angle .tag{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--c-ir); margin-bottom:8px; display:block; }
+.exam-angle p{ margin-bottom:0; }
+
+/* Comparison table */
+.cmp-table-wrap{ overflow-x:auto; margin:30px 0; border:1px solid var(--line); border-radius:14px; }
+table.cmp-table{ width:100%; border-collapse:collapse; min-width:640px; }
+table.cmp-table th, table.cmp-table td{ padding:14px 18px; text-align:left; font-size:0.92rem; border-bottom:1px solid var(--line); }
+table.cmp-table th{ font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); background:var(--surface); }
+table.cmp-table td{ color:var(--text); background:var(--bg); }
+table.cmp-table tr:last-child td{ border-bottom:none; }
+table.cmp-table td.hl{ color:var(--c-iam); font-family:'JetBrains Mono',monospace; font-weight:500; }
+
+/* Federation flow diagram */
+.flow-diagram{ margin:36px 0; display:flex; flex-direction:column; gap:0; }
+.flow-step{ display:flex; align-items:flex-start; gap:18px; padding:18px 0; position:relative; }
+.flow-step:not(:last-child)::after{ content:''; position:absolute; left:23px; top:56px; bottom:-18px; width:2px; background:var(--line); }
+.flow-num{ flex-shrink:0; width:46px; height:46px; border-radius:50%; background:var(--c-iam-dim); color:var(--c-iam); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:15px; z-index:1; }
+.flow-body{ flex:1; }
+.flow-body h4{ font-family:'Space Grotesk',sans-serif; font-size:1.02rem; margin-bottom:6px; }
+.flow-body p{ font-size:0.92rem; color:var(--text-dim); margin-bottom:0; }
+
+/* STS token lifecycle timeline */
+.timeline{ position:relative; margin:40px 0; padding:30px 0; }
+.timeline-track{ position:relative; height:6px; background:var(--line); border-radius:3px; }
+.timeline-fill{ position:absolute; left:0; top:0; height:100%; background:var(--c-iam); border-radius:3px; }
+.timeline-fill.chained{ background:var(--c-detect); }
+.timeline-marks{ display:flex; justify-content:space-between; margin-top:14px; }
+.timeline-mark{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-dim); text-align:center; cursor:pointer; }
+.timeline-mark:hover{ color:var(--accent); }
+.timeline-row{ margin-bottom:34px; }
+.timeline-label{ font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:10px; }
+
+/* Before/After external ID diagram */
+.ba-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:32px 0; }
+.ba-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px; cursor:pointer; transition:border-color .2s ease; }
+.ba-card:hover{ border-color:var(--accent-dim); }
+.ba-card.vuln{ border-color:var(--c-ir-dim); }
+.ba-card.fixed{ border-color:var(--c-gov-dim); }
+.ba-card h4{ font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:14px; }
+.ba-card.vuln h4{ color:var(--c-ir); }
+.ba-card.fixed h4{ color:var(--c-gov); }
+.ba-diagram{ display:flex; flex-direction:column; gap:10px; font-size:0.85rem; }
+.ba-node{ background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px 14px; }
+.ba-detail{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease; }
+.ba-card.open .ba-detail{ max-height:400px; opacity:1; margin-top:14px; }
+@media (max-width:720px){ .ba-grid{grid-template-columns:1fr;} }
+
+/* Exercise scenarios (Which AssumeRole Call?) */
+.exercise-list{ display:flex; flex-direction:column; gap:16px; margin-top:30px; }
+.exercise-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+.exercise-num{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--c-iam); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; }
+.exercise-scenario{ font-size:0.96rem; line-height:1.65; margin-bottom:14px; }
+.exercise-reveal-btn{ background:var(--accent-dim); color:var(--accent); border:none; border-radius:8px; padding:9px 16px; font-family:'JetBrains Mono',monospace; font-size:11.5px; cursor:pointer; text-transform:uppercase; letter-spacing:0.05em; }
+.exercise-answer{ max-height:0; overflow:hidden; opacity:0; transition:max-height .45s ease, opacity .35s ease; margin-top:0; }
+.exercise-card.open .exercise-answer{ max-height:600px; opacity:1; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+.exercise-answer .verdict{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--green); margin-bottom:8px; display:block; }
+.exercise-answer p{ font-size:0.9rem; color:var(--text-dim); margin-bottom:0; }
+
+/* Trap gallery */
+.trap-gallery{ display:grid; grid-template-columns:repeat(2,1fr); gap:20px; margin-top:32px; }
+.trap-card{ background:var(--surface); border:1px solid var(--c-detect-dim); border-radius:14px; padding:22px; }
+.trap-card .trap-icon{ font-size:22px; margin-bottom:10px; display:block; }
+.trap-card h4{ font-family:'Space Grotesk',sans-serif; font-size:1rem; margin-bottom:10px; color:var(--amber); }
+.trap-card p{ font-size:0.88rem; color:var(--text-dim); line-height:1.6; margin-bottom:0; }
+@media (max-width:720px){ .trap-gallery{grid-template-columns:1fr;} }
+
+/* Mock exam */
+.exam-progress{ display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; padding:16px 22px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.exam-progress .score{ font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text-dim); }
+.exam-progress .score b{ color:var(--green); }
+.exam-q{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px; margin-bottom:18px; }
+.exam-q .qnum{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; }
+.exam-q .qtext{ font-size:0.98rem; line-height:1.6; margin-bottom:16px; }
+.exam-opts{ display:flex; flex-direction:column; gap:10px; }
+.exam-opt{ text-align:left; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:12px 16px; font-size:0.9rem; color:var(--text); cursor:pointer; transition:border-color .2s ease; font-family:'Inter',sans-serif; }
+.exam-opt:hover{ border-color:var(--accent-dim); }
+.exam-opt.correct{ border-color:var(--green); background:var(--c-gov-dim); }
+.exam-opt.incorrect{ border-color:var(--c-ir); background:var(--c-ir-dim); }
+.exam-q .explain{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease; font-size:0.88rem; color:var(--text-dim); line-height:1.6; }
+.exam-q.answered .explain{ max-height:300px; opacity:1; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+
+/* Prev/next footer nav */
+.pn-nav{ display:flex; justify-content:space-between; gap:20px; margin-top:40px; }
+.pn-link{ flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 22px; text-decoration:none; color:var(--text); transition:border-color .2s ease; }
+.pn-link:hover{ border-color:var(--accent); }
+.pn-link .dir{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:block; }
+.pn-link.next{ text-align:right; }
+
+@media (max-width:720px){
+  .scene{ padding:120px 24px; }
+  nav.topnav{ padding:14px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
+</style>
+</head>
+
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress" style="position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:300; transition:width .08s linear;"></div>
+
+<nav class="topnav">
+  <div class="nav-brand">SCS-C03 · <b>MODULE 04</b> · Federation &amp; Identity Center</div>
+  <button class="theme-btn" id="themeToggle" aria-label="Toggle light and dark theme">🌙</button>
+</nav>
+
+<div class="rail" id="sceneRail" aria-hidden="true"></div>
+
+<!-- SCENE: Opening Bridge -->
+<section class="scene" id="scene-bridge" data-rail-label="Bridge">
+  <div class="ambient-blob" style="width:520px; height:520px; background:var(--c-iam); top:-120px; left:-160px;"></div>
+  <div class="scene-col">
+    <div class="eyebrow reveal">CONTINUING FROM MODULE 3</div>
+    <h2 class="kinetic reveal">From policy mechanics to human identity</h2>
+    <p class="reveal">Module 3 gave you the machinery: cross-account roles, service control policies, resource control policies, permission boundaries. All of it was mechanical — policy documents, trust relationships, guardrails wired between accounts. None of it, on its own, answered a much more human question: <em>how does an actual person get in?</em></p>
+    <p class="reveal">That's what this module is about. This is where the policy-level controls you just spent three-plus hours mastering finally meet a real identity — an engineer badging into their laptop, authenticating once against a corporate directory, and walking away with scoped, temporary, expiring access across an entire AWS Organization, without a single long-lived access key ever touching their machine. Federation, IAM Identity Center, and AWS STS are the three pieces that make that possible, and Domain 4 (worth 20% of this exam — the single largest domain) leans on all three heavily.</p>
+    <div class="stat-row">
+      <div><div class="stat-num" data-target="20" data-suffix="%">0%</div><div class="stat-label">Domain 4 weighting</div></div>
+      <div><div class="stat-num" data-target="2">0</div><div class="stat-label">Hours, this module</div></div>
+      <div><div class="stat-num" data-target="5">0</div><div class="stat-label">Core topics</div></div>
+    </div>
+    <div class="mentor-aside reveal">
+      <p>You've already spent five-plus years living inside OAuth 2.0, SAML, and Spring Security trust chains — so I'm not going to re-teach you what a signed assertion or a JWT is. What I <em>am</em> going to spend real time on is where AWS bolts its own machinery onto those standards, because that seam — not the standards themselves — is where this exam actually tests you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: Federation Fundamentals -->
+<section class="scene" id="scene-fundamentals" data-rail-label="Fundamentals">
+  <div class="scene-col">
+    <div class="eyebrow reveal">TOPIC 1 — FEDERATION FUNDAMENTALS</div>
+    <h2 class="kinetic reveal">Two standards, one AWS entry point: STS</h2>
+    <p class="reveal">AWS supports federated identity through exactly two standards, and — per the calibration in this module's intro — I'll keep the standards themselves brief, since you already know this territory:</p>
+    <ul class="reveal" style="margin:0 0 20px 22px; line-height:1.9; color:var(--text);">
+      <li><strong>SAML 2.0</strong> — an identity provider (Okta, Azure AD, on-prem ADFS) authenticates the user and hands back a signed XML assertion asserting who they are and what attributes/groups they carry.</li>
+      <li><strong>OIDC</strong> — a layer on top of OAuth 2.0. The identity provider (a public IdP like Google, or a workload identity provider like Cognito or EKS's OIDC endpoint) hands back a signed JWT, an ID token asserting identity claims.</li>
+    </ul>
+    <p class="reveal">What's actually AWS-specific is <strong>where that assertion or token plugs into IAM</strong>. Neither SAML nor OIDC has any native concept of an "AWS role." AWS closes that gap with two purpose-built STS API calls:</p>
+    <div class="scenario reveal">
+      <span class="tag">AWS-Specific Plumbing</span>
+      <p><code class="mono">sts:AssumeRoleWithSAML</code> takes the base64-encoded SAML assertion and a role ARN + SAML provider ARN, validates the assertion's signature against the IAM SAML identity provider resource you registered, and — if the trust policy's conditions match — issues temporary credentials. <code class="mono">sts:AssumeRoleWithWebIdentity</code> does the equivalent for an OIDC JWT: it validates the token's signature against the registered OIDC provider (or delegates that validation to Cognito Identity Pools) and issues temporary credentials the same way.</p>
+    </div>
+    <h3>Web identity federation vs. enterprise SAML federation</h3>
+    <p>The two paths solve different populations of caller:</p>
+    <ul style="margin:0 0 10px 22px; line-height:1.9; color:var(--text);">
+      <li><strong>Web/mobile identity federation</strong> (Cognito, or a raw OIDC provider like Google or Facebook) — for consumer-facing apps and mobile clients where the "identity" is an end user of your product, often unauthenticated by any corporate directory at all.</li>
+      <li><strong>Enterprise SAML federation</strong> (Okta, Azure AD, on-prem ADFS) — for workforce access: employees who already exist in a corporate directory and need access to internal AWS resources under that same identity.</li>
+    </ul>
+    <div class="exam-angle reveal">
+      <span class="tag">Exam Angle</span>
+      <p>The exam loves describing an identity-provider setup in a scenario and asking which STS call fits. The tell is always the provider type, not the use case wording: SAML IdP in the description → <code class="mono">AssumeRoleWithSAML</code>. OIDC/JWT-issuing provider (Cognito, Google, GitHub Actions OIDC, EKS service account) → <code class="mono">AssumeRoleWithWebIdentity</code>. We'll drill this explicitly in the exercise later in this module.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TITLE CARD -->
+<section class="title-card">
+  <div class="scanbeam"></div>
+  <h2 class="kinetic">ONE LOGIN.<br>EVERY ACCOUNT.</h2>
+  <div class="tc-sub">IAM Identity Center</div>
+</section>
+
+<!-- SCENE: IAM Identity Center -->
+<section class="scene" id="scene-identity-center" data-rail-label="Identity Center">
+  <div class="ambient-blob" style="width:460px; height:460px; background:var(--c-iam); bottom:-100px; right:-140px;"></div>
+  <div class="scene-col">
+    <div class="eyebrow reveal">TOPIC 2 — IAM IDENTITY CENTER</div>
+    <h2 class="kinetic reveal">AWS's own identity layer, sitting in front of Organizations</h2>
+    <p class="reveal">This is where the real study time for this module goes, so let's be precise. <strong>IAM Identity Center</strong> (formerly AWS SSO) is AWS's own identity provider layer that sits in front of an AWS Organization, giving you one place to manage workforce access to every member account — and, optionally, to SAML-enabled cloud applications outside AWS entirely (Salesforce, Box, and similar). It can be backed by its own built-in directory, or connected to an external identity source: Azure AD / Entra ID, Okta, Google Workspace, or an on-prem Active Directory via AD Connector.</p>
+    <p class="reveal">Think of it as the piece that finally answers the question Module 3's cross-account roles couldn't: <em>who is actually allowed to assume any of these roles, and how do they prove it once, centrally?</em> Identity Center is that "once, centrally."</p>
+
+    <h3>Permission sets — the mechanism that actually provisions access</h3>
+    <p>A <strong>permission set</strong> is a named, reusable template of IAM policies (managed, customer-managed, or inline) that Identity Center provisions automatically as an actual IAM role into every member account you assign it to. You never hand-write the trust policy, never manually create the role in each account, and never manage a fleet of per-account SAML identity providers yourself — Identity Center's underlying service does all of that provisioning and keeps it in sync as accounts join or leave the assignment.</p>
+    <div class="exam-angle reveal">
+      <span class="tag">Exam Angle</span>
+      <p>This is exactly why the exam favors Identity Center as the AWS-recommended pattern over hand-rolling per-account SAML federation yourself: hand-rolled federation means manually registering a SAML IdP resource and writing a trust policy in every single account, one at a time, with no centralized lifecycle management. Permission sets collapse that into one definition, assigned centrally.</p>
+    </div>
+
+    <h3>Multi-account access from a single login</h3>
+    <p>Once a user authenticates to Identity Center — against its own directory or your external IdP behind the scenes — they land on the AWS access portal and see every account/permission-set combination they've been assigned. Selecting one triggers an <code class="mono">AssumeRole</code> under the hood into that account's provisioned role, handing them temporary credentials for exactly that scope. One authentication event, arbitrarily many downstream account/role combinations, zero long-lived per-account credentials anywhere in the chain.</p>
+
+    <div class="scenario reveal">
+      <span class="tag">Production Scenario</span>
+      <p>A 40-person platform team spans a landing zone with 30+ member accounts (dev, staging, prod × multiple business units). Before Identity Center: onboarding a new engineer meant manually federating them into every account they'd touch, or worse, minting IAM users with long-lived keys per account. With Identity Center: the engineer is added to two or three permission-set assignments — say, <code class="mono">ReadOnlyAccess</code> across all dev/staging accounts and <code class="mono">PowerUserAccess</code> scoped to their one owned service's prod account — and every downstream role, in every account, provisions itself automatically. Offboarding is a single deactivation, not a 30-account cleanup sweep.</p>
+    </div>
+
+    <h3>How this relates to Organizations and the landing zone</h3>
+    <p>Identity Center has a hard prerequisite: it requires an AWS Organization to exist, because permission-set assignments are made against Organizations' account structure — you're assigning "this permission set, to this user or group, in these accounts," and Identity Center needs Organizations' account inventory to resolve that. This ties it directly back to the multi-account architecture thread from Module 3 and the landing-zone concepts from Module 1: Identity Center is the identity plane sitting on top of the account structure those modules established.</p>
+
+    <div class="mentor-aside reveal">
+      <p>If you're picturing this as "just SSO," widen the frame a little. In an enterprise landing zone, Identity Center isn't a login convenience layer bolted on afterward — it's usually the very first thing provisioned alongside Organizations itself, because every downstream account's access model gets designed around permission sets from day one. It's less "add SSO later" and more "this is the access control plane."</p>
+    </div>
+
+    <h3>Federation flow: standard vs. Identity Center</h3>
+    <div class="cmp-table-wrap reveal">
+      <table class="cmp-table">
+        <thead><tr><th>Aspect</th><th>Hand-rolled SAML federation</th><th>IAM Identity Center</th></tr></thead>
+        <tbody>
+          <tr><td>IdP registration</td><td>Manual, per account (IAM SAML provider resource)</td><td class="hl">Centralized, once</td></tr>
+          <tr><td>Role provisioning</td><td>Manual, per account</td><td class="hl">Automatic via permission sets</td></tr>
+          <tr><td>Multi-account UX</td><td>Separate login/assertion per account</td><td class="hl">Single portal, all assignments visible</td></tr>
+          <tr><td>Lifecycle management</td><td>Manual cleanup per account</td><td class="hl">Managed centrally</td></tr>
+          <tr><td>Requires Organizations</td><td>No</td><td class="hl">Yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: STS Temporary Credentials -->
+<section class="scene" id="scene-sts" data-rail-label="STS Mechanics">
+  <div class="scene-col">
+    <div class="eyebrow reveal">TOPIC 3 — STS TEMPORARY CREDENTIALS</div>
+    <h2 class="kinetic reveal">Three API calls, one shared mechanism</h2>
+    <p class="reveal">Everything in this module funnels through AWS Security Token Service. There are three calls worth being precise about, because the exam distinguishes them by <em>what identity each one trusts as input</em>:</p>
+    <div class="cmp-table-wrap reveal">
+      <table class="cmp-table">
+        <thead><tr><th>Call</th><th>Trusts as input</th><th>Typical caller</th></tr></thead>
+        <tbody>
+          <tr><td class="hl">AssumeRole</td><td>An existing IAM principal (user or role) in the same or a trusted AWS account</td><td>Cross-account access, Identity Center's internal role assumption</td></tr>
+          <tr><td class="hl">AssumeRoleWithSAML</td><td>A signed SAML 2.0 assertion from a registered SAML IdP</td><td>Enterprise workforce federation (Okta, Azure AD, ADFS)</td></tr>
+          <tr><td class="hl">AssumeRoleWithWebIdentity</td><td>A signed OIDC JWT from a registered OIDC provider</td><td>Mobile/web apps (Cognito, Google), CI/CD workload identity (GitHub Actions, EKS)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What's actually inside a temporary credential</h3>
+    <p>A long-lived IAM user access key is two values: an access key ID and a secret access key. A temporary credential from STS is <strong>three</strong> values, and all three are required together: an access key ID, a secret access key, and a <strong>session token</strong>. Every signed request made with temporary credentials must include that session token — it's what lets AWS validate that the credential came from a legitimate, still-live STS session rather than a standalone long-lived key, and it's what AWS checks against the session's expiry and any session policies attached at assumption time.</p>
+
+    <h3>Session duration: the least-privilege lever</h3>
+    <p>Every IAM role has a <strong>maximum session duration</strong> configurable from 1 hour up to 12 hours (default 1 hour if unset). The caller can request any duration up to that configured maximum via the <code class="mono">DurationSeconds</code> parameter; STS will not honor a request for longer than the role's configured ceiling.</p>
+    <div class="exam-angle reveal">
+      <span class="tag">Exam Angle</span>
+      <p>A longer session duration is not automatically "safer" or even necessarily more convenient once you weigh the least-privilege cost: a 12-hour credential that leaks (logged accidentally, cached in a CI artifact, left in a shell history) gives an attacker a 12-hour window, versus a 1-hour credential's much narrower blast radius. The exam expects you to default toward the <em>shortest</em> duration that the workflow actually needs, not the longest one available.</p>
+    </div>
+
+    <h3>Token lifecycle</h3>
+    <p>Below is the lifecycle of a temporary credential from issuance to expiry — click any marker for detail. Note the second row: a <strong>chained</strong> assumption (covered fully in the next topic) is capped at a shorter maximum than a direct one.</p>
+
+    <div class="timeline reveal">
+      <div class="timeline-row">
+        <div class="timeline-label">Direct AssumeRole* — up to 12h configurable max</div>
+        <div class="timeline-track"><div class="timeline-fill" style="width:100%"></div></div>
+        <div class="timeline-marks">
+          <div class="timeline-mark" data-detail="Issuance: STS validates the caller's identity (IAM principal, SAML assertion, or OIDC token) against the role's trust policy, then mints an access key ID, secret key, and session token.">Issuance</div>
+          <div class="timeline-mark" data-detail="Active window: every signed API call during this window must include the session token. Session policies and the role's permission policy are both enforced on every call.">Active window</div>
+          <div class="timeline-mark" data-detail="Expiry: at the configured DurationSeconds mark, the credential stops working entirely — there is no grace period. The caller must re-assume the role from scratch.">Expiry</div>
+        </div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-label">Chained AssumeRole — capped at 1 hour maximum, regardless of either role's configured max</div>
+        <div class="timeline-track"><div class="timeline-fill chained" style="width:32%"></div></div>
+        <div class="timeline-marks">
+          <div class="timeline-mark" data-detail="Issuance: the caller is already using temporary credentials from a first AssumeRole, and uses those to call AssumeRole again into a second role.">Issuance (chained)</div>
+          <div class="timeline-mark" data-detail="Active window: identical mechanics to a direct assumption, but the clock is much shorter.">Active window</div>
+          <div class="timeline-mark" data-detail="Hard cap: 1 hour maximum, full stop — even if both roles individually allow up to 12 hours. This is a distinct, non-negotiable ceiling that only applies to chained sessions.">1h hard cap</div>
+        </div>
+      </div>
+      <p class="dim" style="font-size:0.82rem; margin-top:6px;">*<code class="mono">AssumeRoleWithSAML</code> and <code class="mono">AssumeRoleWithWebIdentity</code> follow the same direct-assumption duration rules shown on the top row.</p>
+    </div>
+
+    <div class="scenario reveal">
+      <span class="tag">Production Scenario</span>
+      <p>A federated engineer signs in through Identity Center and lands with a 4-hour session (the permission set's configured max). Mid-shift, a script they're running needs to call a Lambda that itself assumes a second role to reach into another account. That Lambda's assumed session — because it's chained on top of the engineer's already-temporary credentials — is capped at 1 hour, regardless of what either role's own configuration says. If that Lambda has a long-running job scheduled to take 90 minutes, it will fail mid-execution when the chained session expires — a very real production gotcha, not just an exam trivia point.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: AssumeRole Chains -->
+<section class="scene" id="scene-chains" data-rail-label="Role Chaining">
+  <div class="ambient-blob" style="width:440px; height:440px; background:var(--c-detect); top:-80px; right:-140px;"></div>
+  <div class="scene-col">
+    <div class="eyebrow reveal">TOPIC 4 — ASSUMEROLE CHAINS</div>
+    <h2 class="kinetic reveal">Assuming a role with a role you already assumed</h2>
+    <p class="reveal"><strong>Role chaining</strong> is simple to state and easy to get wrong operationally: you assume Role A, and then — using Role A's own temporary credentials, not your original identity — you call <code class="mono">AssumeRole</code> again to assume Role B. That second hop is the "chain."</p>
+    <p class="reveal">You already saw the number that matters in the timeline above: a chained session is capped at <strong>1 hour maximum</strong>, no matter what either role's own <code class="mono">MaxSessionDuration</code> is configured to. If Role A allows 12 hours and Role B allows 12 hours, the chained session assuming B from A's credentials still cannot exceed 1 hour. This is a deliberate, hard-coded ceiling in STS — not a configurable setting you can raise.</p>
+
+    <h3>Why the exam tests this limit specifically</h3>
+    <p>It's one of the most concrete, unambiguous facts in this whole domain — there's no interpretation required, just a number to know — which makes it a favorite for scenario questions that describe a multi-hop automation pipeline and ask "how long will this session actually last?" The trap is assuming the answer is whatever the more generous of the two roles' configured maximums is. It isn't. It's 1 hour, full stop, the moment a second hop is involved.</p>
+
+    <div class="trap-inline reveal">
+      <span class="tag">Common Mistake</span>
+      <p>Designing a cross-account automation pipeline (Account A → assume Role in Account B → assume Role in Account C) and configuring both roles for a generous 8-hour <code class="mono">MaxSessionDuration</code>, assuming the pipeline gets 8 hours to run. It gets 1 hour from the moment the second assumption happens, because that second hop is chained on top of the first.</p>
+    </div>
+
+    <div class="scenario reveal">
+      <span class="tag">Production Scenario</span>
+      <p>A data pipeline in a shared-services account assumes a role into a partner account to read from an S3 bucket, then — from that assumed session — assumes a third role into a downstream analytics account to write results. The whole job is expected to take 2 hours. It fails silently at the 1-hour mark on the second hop because nobody accounted for the chained-session cap; the fix is redesigning the flow so the long-running work happens under the <em>first</em> assumption (direct, up to 12h) rather than nesting a second hop inside it.</p>
+    </div>
+    <div class="exam-angle reveal">
+      <span class="tag">Exam Angle</span>
+      <p>If a question describes any scenario where credentials from one <code class="mono">AssumeRole</code> call are used to make a second <code class="mono">AssumeRole</code> call, treat "1 hour" as the answer to any session-duration question about that second hop — regardless of what duration values appear elsewhere in the question.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: External ID -->
+<section class="scene" id="scene-external-id" data-rail-label="External ID">
+  <div class="scene-col">
+    <div class="eyebrow reveal">TOPIC 5 — EXTERNAL ID FOR THIRD-PARTY ACCESS</div>
+    <h2 class="kinetic reveal">Closing the confused deputy gap</h2>
+    <p class="reveal">Here's the concrete version of the confused deputy problem, stated the way it actually shows up in production: a third party — a SaaS monitoring vendor, an external auditor — needs read access into your account. You create a role and hand them its ARN so their system can call <code class="mono">AssumeRole</code> into it. So far, straightforward cross-account access.</p>
+    <p class="reveal">The problem: that vendor almost certainly serves <em>other customers</em> too, from the same multi-tenant system. If that system's trust policy on your role only restricts <em>who the vendor's account is</em> (the principal), it has no way to distinguish "assume this role on behalf of Customer A" from "assume this role on behalf of Customer B" — both requests originate from the same vendor AWS account. If another one of the vendor's customers can guess or obtain <em>your</em> role ARN (role ARNs aren't secret — they often appear in IAM console screenshots, support tickets, or logs), they could potentially trick the vendor's own system into assuming a role in <strong>your</strong> account instead of theirs, because the vendor's system is the "confused deputy" acting on a request it can't fully verify belongs to the right tenant.</p>
+
+    <h3>The fix: <code class="mono">sts:ExternalId</code></h3>
+    <p>An <strong>external ID</strong> is a string — a shared secret unique to your specific engagement with that third party — added as a condition in your role's trust policy: <code class="mono">"Condition": {"StringEquals": {"sts:ExternalId": "your-unique-value"}}</code>. The third party's system must now present that exact value on every <code class="mono">AssumeRole</code> call. Since each of the vendor's customers gets a <em>different</em> external ID value tied to their own engagement, even if another customer somehow obtains your role ARN, their <code class="mono">AssumeRole</code> call won't carry your external ID — and the assumption fails.</p>
+
+    <div class="exam-angle reveal">
+      <span class="tag">Exam Angle</span>
+      <p>The exam frequently tests a subtle distinction: external ID is <strong>not authentication</strong> and is not a secret credential on its own — it's a confused-deputy mitigation layered on top of the trust policy's principal restriction, not a replacement for it. The principal condition still must correctly scope which AWS account can even attempt the assumption; external ID only prevents that already-correct principal's system from being tricked into acting on the wrong tenant's behalf.</p>
+    </div>
+
+    <h3>Before / after: click each card</h3>
+    <div class="ba-grid">
+      <div class="ba-card vuln" tabindex="0" role="button" aria-label="Show vulnerability detail">
+        <h4>⚠ Without External ID</h4>
+        <div class="ba-diagram">
+          <div class="ba-node">Vendor's multi-tenant system (shared across all their customers)</div>
+          <div class="ba-node">Trust policy: Principal = Vendor's AWS account only</div>
+          <div class="ba-node">Any customer who obtains your role ARN can trigger an assumption into <strong>your</strong> account</div>
+        </div>
+        <div class="ba-detail">
+          <p style="font-size:0.86rem; color:var(--text-dim); line-height:1.6;">The trust policy correctly restricts the <em>principal</em> to the vendor's AWS account — that part is fine. But it has no way to verify <em>which of the vendor's customers</em> is behind a given request. If Customer B's environment (accidentally or maliciously) references your role ARN instead of their own, the vendor's system — trusted by your account purely on the basis of its account ID — will happily assume into your account on Customer B's behalf.</p>
+        </div>
+      </div>
+      <div class="ba-card fixed" tabindex="0" role="button" aria-label="Show fix detail">
+        <h4>✓ With External ID</h4>
+        <div class="ba-diagram">
+          <div class="ba-node">Vendor's multi-tenant system, same shared account</div>
+          <div class="ba-node">Trust policy: Principal = Vendor's account <strong>AND</strong> sts:ExternalId = your unique value</div>
+          <div class="ba-node">Only requests carrying your specific external ID succeed</div>
+        </div>
+        <div class="ba-detail">
+          <p style="font-size:0.86rem; color:var(--text-dim); line-height:1.6;">The vendor's system now must supply your unique external ID alongside the principal on every assumption attempt. Because each customer's engagement gets a distinct external ID, Customer B's request — even referencing your role ARN — carries Customer B's external ID, not yours, and the trust policy condition fails the assumption before it ever succeeds.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario reveal">
+      <span class="tag">Worked Example — Trust Policy</span>
+      <p style="margin-bottom:14px;">A SaaS monitoring vendor (account <code class="mono">111122223333</code>) requests read-only access to your account for dashboarding. Your role's trust policy:</p>
+      <pre class="mono" style="background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:16px 20px; overflow-x:auto; font-size:0.82rem; line-height:1.6;">{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "AWS": "arn:aws:iam::111122223333:root" },
+    "Action": "sts:AssumeRole",
+    "Condition": {
+      "StringEquals": {
+        "sts:ExternalId": "monitoring-vendor-acct-9f21c7"
+      }
+    }
+  }]
+}</pre>
+      <p style="margin-top:14px;">The vendor's monitoring system stores <code class="mono">monitoring-vendor-acct-9f21c7</code> against your specific customer record and supplies it on every <code class="mono">AssumeRole</code> call targeting your account — a value no other customer of theirs possesses.</p>
+    </div>
+
+    <div class="trap-inline reveal">
+      <span class="tag">Common Mistake</span>
+      <p>Treating the external ID itself as sensitive the way a password is, and rotating it frequently or trying to keep it fully secret from the vendor. It's meant to be shared with (and stored by) the third party as part of onboarding — its job is uniqueness per engagement, not secrecy from the party you're sharing it with.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: Federation Flow Diagram -->
+<section class="scene" id="scene-flow-diagram" data-rail-label="Flow Diagram">
+  <div class="scene-col">
+    <div class="eyebrow reveal">INTERACTIVE — FEDERATION FLOW</div>
+    <h2 class="kinetic reveal">The full path, step by step</h2>
+    <p class="reveal">Click any step below to expand what's actually happening at that hop — this is the same flow whether the identity provider is a SAML IdP or an OIDC provider; only the assertion/token format and the STS call differ.</p>
+
+    <div class="flow-diagram reveal">
+      <div class="flow-step mindnode" tabindex="0" role="button" aria-label="Step 1 detail: identity provider authentication" data-target="flow-1">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <h4>User authenticates against the identity provider</h4>
+          <p>Corporate directory (Okta, Azure AD, ADFS) or public/workload OIDC provider (Cognito, Google, GitHub Actions).</p>
+          <div class="node-info" id="flow-1"><p style="margin-bottom:0; font-size:0.88rem; color:var(--text-dim);">This step is entirely outside AWS. The IdP validates credentials (password, MFA, device posture — whatever that IdP enforces) using its own mechanisms. AWS has no visibility into this step at all; it only ever sees the output.</p></div>
+        </div>
+      </div>
+      <div class="flow-step mindnode" tabindex="0" role="button" aria-label="Step 2 detail: assertion or token issuance" data-target="flow-2">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <h4>IdP issues a signed assertion or token</h4>
+          <p>SAML: a signed XML assertion. OIDC: a signed JWT ID token.</p>
+          <div class="node-info" id="flow-2"><p style="margin-bottom:0; font-size:0.88rem; color:var(--text-dim);">Both are cryptographically signed by the IdP's private key. AWS will later validate that signature against the public key/metadata registered when you created the IAM SAML or OIDC identity provider resource — this is what lets AWS trust the assertion without ever talking to the IdP directly at request time.</p></div>
+        </div>
+      </div>
+      <div class="flow-step mindnode" tabindex="0" role="button" aria-label="Step 3 detail: STS call" data-target="flow-3">
+        <div class="flow-num">3</div>
+        <div class="flow-body">
+          <h4>Client calls the matching STS API</h4>
+          <p><code class="mono">AssumeRoleWithSAML</code> for a SAML assertion, or <code class="mono">AssumeRoleWithWebIdentity</code> for an OIDC JWT — plus the target role ARN.</p>
+          <div class="node-info" id="flow-3"><p style="margin-bottom:0; font-size:0.88rem; color:var(--text-dim);">STS validates the signature, checks the role's trust policy conditions (audience, subject, any custom conditions like external ID), and — only if everything matches — proceeds to the next step.</p></div>
+        </div>
+      </div>
+      <div class="flow-step mindnode" tabindex="0" role="button" aria-label="Step 4 detail: temporary credentials issued" data-target="flow-4">
+        <div class="flow-num">4</div>
+        <div class="flow-body">
+          <h4>STS issues temporary credentials</h4>
+          <p>Access key ID + secret access key + session token, valid up to the role's configured max session duration.</p>
+          <div class="node-info" id="flow-4"><p style="margin-bottom:0; font-size:0.88rem; color:var(--text-dim);">No IAM user, no long-lived key pair was ever created or touched anywhere in this flow. The identity that "exists" in AWS for the duration of this session is entirely the assumed role, scoped by whatever permission policy is attached to it.</p></div>
+        </div>
+      </div>
+      <div class="flow-step mindnode" tabindex="0" role="button" aria-label="Step 5 detail: AWS access" data-target="flow-5">
+        <div class="flow-num">5</div>
+        <div class="flow-body">
+          <h4>Client signs AWS API calls with the temporary credentials</h4>
+          <p>Every request includes the session token; access is scoped to exactly the assumed role's permissions until expiry.</p>
+          <div class="node-info" id="flow-5"><p style="margin-bottom:0; font-size:0.88rem; color:var(--text-dim);">CloudTrail logs every one of these calls under the assumed role's session identity — visible as <code class="mono">AssumedRole</code> in the event, with the session name tying individual actions back to the specific federated session that made them.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: Which AssumeRole Call Exercise -->
+<section class="scene" id="scene-exercise" data-rail-label="Exercise">
+  <div class="scene-col">
+    <div class="eyebrow reveal">EXERCISE — WHICH ASSUMEROLE CALL?</div>
+    <h2 class="kinetic reveal">Eight identity setups. Pick the right STS call.</h2>
+    <p class="reveal">Read each scenario, decide which STS API call and trust policy elements fit, then click to reveal the reasoning.</p>
+
+    <div class="exercise-list reveal">
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 1</div>
+        <p class="exercise-scenario">A global enterprise uses Azure AD as its corporate directory. Employees need to access AWS resources under their existing corporate identity, with group-based role mapping.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ AssumeRoleWithSAML (or IAM Identity Center with Azure AD as the external identity source)</span><p>Azure AD is a SAML 2.0 identity provider in this context. If Identity Center is in play, it handles the SAML exchange internally; if federating directly, the client calls <code class="mono">AssumeRoleWithSAML</code> with the assertion Azure AD issued.</p></div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 2</div>
+        <p class="exercise-scenario">A consumer mobile app lets users sign in with their Google account, then needs to read/write to a DynamoDB table scoped per-user.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ AssumeRoleWithWebIdentity (typically via Cognito Identity Pools)</span><p>Google is an OIDC provider issuing a JWT. Cognito Identity Pools wrap this exchange and call <code class="mono">AssumeRoleWithWebIdentity</code> on the mobile client's behalf, commonly with per-user scoping via policy variables like <code class="mono">cognito-identity.amazonaws.com:sub</code>.</p></div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 3</div>
+        <p class="exercise-scenario">A CI/CD pipeline running in GitHub Actions needs to deploy to an AWS account without storing any long-lived AWS access keys as repo secrets.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ AssumeRoleWithWebIdentity</span><p>GitHub Actions exposes an OIDC token per workflow run. Registering GitHub's OIDC provider in IAM and writing a trust policy conditioned on the repo/branch subject claim lets the pipeline call <code class="mono">AssumeRoleWithWebIdentity</code> with zero stored credentials.</p></div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 4</div>
+        <p class="exercise-scenario">A Lambda function, already executing under its own IAM execution role, needs to reach into a partner account to read from an S3 bucket there.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ AssumeRole (this is role chaining if the Lambda's own execution role was itself assumed via another mechanism)</span><p>The Lambda already holds an IAM principal (its execution role). Reaching cross-account from an existing IAM principal — not a SAML/OIDC assertion — is the plain <code class="mono">AssumeRole</code> call. Remember: if this Lambda's own role was itself the product of an earlier assumption, the resulting session inherits the 1-hour chained cap.</p></div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 5</div>
+        <p class="exercise-scenario">An on-prem Active Directory environment, federated via ADFS, needs workforce access to 15 AWS accounts in an Organization, with centralized lifecycle management.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ IAM Identity Center, with ADFS/AD as the external identity source (SAML under the hood)</span><p>ADFS speaks SAML, but the "15 accounts, centrally managed" requirement is the giveaway for Identity Center over hand-rolled per-account <code class="mono">AssumeRoleWithSAML</code> federation — permission sets solve the multi-account provisioning problem that raw SAML federation doesn't.</p></div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 6</div>
+        <p class="exercise-scenario">A third-party SaaS security scanner needs read-only access into your account to run compliance checks, and you're worried about the confused deputy problem given they serve many customers.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ AssumeRole, with an sts:ExternalId condition in the trust policy</span><p>This is a same-mechanism-as-cross-account (<code class="mono">AssumeRole</code>) case, but the multi-tenant confused-deputy risk means the trust policy must include a unique external ID condition alongside the principal restriction.</p></div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 7</div>
+        <p class="exercise-scenario">An EKS pod needs to call S3 directly using a Kubernetes service account, without node-level IAM credentials being shared across all pods on that node.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ AssumeRoleWithWebIdentity (IAM Roles for Service Accounts / IRSA)</span><p>EKS's built-in OIDC provider issues a token per service account. IRSA registers that OIDC provider in IAM and maps a service account to a role, resulting in <code class="mono">AssumeRoleWithWebIdentity</code> calls scoped per-pod rather than per-node.</p></div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-num">Scenario 8</div>
+        <p class="exercise-scenario">A batch job assumes Role A in a shared-services account, and — using Role A's resulting credentials — needs to assume Role B in a downstream analytics account for a job expected to run 3 hours.</p>
+        <button class="exercise-reveal-btn">Reveal reasoning</button>
+        <div class="exercise-answer"><span class="verdict">✓ AssumeRole (chained) — but the 3-hour job will fail; redesign needed</span><p>This is textbook role chaining, capped at 1 hour regardless of either role's configured maximum. A 3-hour job structured this way is a design flaw, not just an API choice — the long-running work needs to happen under a direct (non-chained) assumption instead.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: Production Trap Gallery -->
+<section class="scene" id="scene-traps" data-rail-label="Trap Gallery">
+  <div class="scene-col">
+    <div class="eyebrow reveal">PRODUCTION TRAP GALLERY</div>
+    <h2 class="kinetic reveal">Six ways this goes wrong in real environments</h2>
+    <p class="reveal">Not exam trivia — these are the shapes of real incidents and real outages.</p>
+
+    <div class="trap-gallery reveal">
+      <div class="trap-card">
+        <span class="trap-icon">🔓</span>
+        <h4>The missing external ID</h4>
+        <p>A third-party monitoring vendor's trust policy was scoped only to their AWS account principal. Another one of the vendor's customers, testing their own integration, accidentally referenced the wrong role ARN — which happened to belong to a different customer entirely — and the vendor's system happily assumed into the wrong account. No external ID meant nothing stopped it.</p>
+      </div>
+      <div class="trap-card">
+        <span class="trap-icon">📛</span>
+        <h4>The over-broad permission set</h4>
+        <p>A permission set meant for "read-only dashboard access" was built from AWS's <code class="mono">PowerUserAccess</code> managed policy because it was faster than writing a scoped custom policy, then assigned across 20+ accounts. Every engineer with dashboard access could now also modify most resources in every one of those accounts.</p>
+      </div>
+      <div class="trap-card">
+        <span class="trap-icon">⏱️</span>
+        <h4>The chained-session pipeline that hit its cap mid-run</h4>
+        <p>A data pipeline chained two role assumptions to reach a downstream account, expecting the job's full 4-hour runtime to be covered. It silently failed at the 1-hour chained-session cap, mid-transfer, with partial data written and no alert configured for STS expiry-related failures.</p>
+      </div>
+      <div class="trap-card">
+        <span class="trap-icon">🗝️</span>
+        <h4>Long-lived keys kept "just in case" alongside federation</h4>
+        <p>A team fully migrated to Identity Center for day-to-day access but left a handful of IAM users with long-lived access keys active "for emergencies." One of those keys, unused and unrotated for over a year, was the credential that ultimately leaked in a public repo — the exact long-lived-credential risk federation was supposed to eliminate.</p>
+      </div>
+      <div class="trap-card">
+        <span class="trap-icon">🌐</span>
+        <h4>Wrong STS call for the IdP type</h4>
+        <p>An engineer configured <code class="mono">AssumeRoleWithSAML</code> for a workload that was actually authenticating via an OIDC JWT from a CI system, because "SAML" and "federation" had become synonymous in the team's vocabulary. The trust policy's condition keys were mismatched to the wrong assertion format and every assumption failed until someone traced it back to the IdP type itself.</p>
+      </div>
+      <div class="trap-card">
+        <span class="trap-icon">🧩</span>
+        <h4>Orphaned permission set assignments after an org restructure</h4>
+        <p>When a business unit was carved out into its own sub-OU, several permission set assignments referencing the old account structure were never cleaned up. Contractors who should have lost access when their engagement ended retained a live, provisioned role in accounts nobody was actively reviewing anymore.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: Mock Exam -->
+<section class="scene" id="scene-exam" data-rail-label="Mock Exam">
+  <div class="scene-col">
+    <div class="eyebrow reveal">MOCK EXAM — KNOWLEDGE CHECK</div>
+    <h2 class="kinetic reveal">11 original SCS-C03-style questions</h2>
+    <p class="reveal">Answer each, then read the reasoning regardless of whether you got it right — that's where the retained learning actually happens.</p>
+
+    <div class="exam-progress reveal">
+      <div class="mono" style="font-size:12px; color:var(--text-dim);">MODULE 04 KNOWLEDGE CHECK</div>
+      <div class="score">Score: <b><span id="examScore">0</span>/<span id="examTotal">11</span></b></div>
+    </div>
+
+    <div id="examContainer" class="reveal">
+      <!-- Q1 -->
+      <div class="exam-q" data-correct="1">
+        <div class="qnum">Question 1 of 11</div>
+        <div class="qtext">A company's workforce authenticates via Azure AD and needs role-based access to 25 AWS accounts in an Organization, with centralized assignment management. What is the AWS-recommended approach?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">Register Azure AD as a SAML IdP separately in each of the 25 accounts</button>
+          <button class="exam-opt" data-idx="1">Use IAM Identity Center with Azure AD as the external identity source and assign permission sets</button>
+          <button class="exam-opt" data-idx="2">Create long-lived IAM users per employee in each account</button>
+          <button class="exam-opt" data-idx="3">Use AssumeRoleWithWebIdentity since Azure AD supports OIDC</button>
+        </div>
+        <div class="explain">Identity Center centralizes both the identity source connection and permission-set-based provisioning across all Organization accounts — exactly the AWS-recommended pattern for multi-account workforce access at this scale.</div>
+      </div>
+      <!-- Q2 -->
+      <div class="exam-q" data-correct="2">
+        <div class="qnum">Question 2 of 11</div>
+        <div class="qtext">A mobile app authenticates users via Google Sign-In and needs scoped, per-user access to a DynamoDB table. Which STS call is used under the hood?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">AssumeRole</button>
+          <button class="exam-opt" data-idx="1">AssumeRoleWithSAML</button>
+          <button class="exam-opt" data-idx="2">AssumeRoleWithWebIdentity</button>
+          <button class="exam-opt" data-idx="3">GetFederationToken exclusively, with no AssumeRole involved</button>
+        </div>
+        <div class="explain">Google issues an OIDC JWT. Cognito Identity Pools (or direct integration) exchange that token via AssumeRoleWithWebIdentity for temporary, per-user-scoped credentials.</div>
+      </div>
+      <!-- Q3 -->
+      <div class="exam-q" data-correct="1">
+        <div class="qnum">Question 3 of 11</div>
+        <div class="qtext">A role's MaxSessionDuration is configured to 8 hours. A caller assumes this role, then — using the resulting temporary credentials — assumes a second role also configured for 8 hours. What is the maximum duration of the second session?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">8 hours, matching the second role's configuration</button>
+          <button class="exam-opt" data-idx="1">1 hour, because it is a chained assumption</button>
+          <button class="exam-opt" data-idx="2">16 hours, combining both roles' allowances</button>
+          <button class="exam-opt" data-idx="3">12 hours, the account-wide STS maximum</button>
+        </div>
+        <div class="explain">Chained AssumeRole sessions are hard-capped at 1 hour regardless of either role's own configured MaxSessionDuration.</div>
+      </div>
+      <!-- Q4 -->
+      <div class="exam-q" data-correct="0">
+        <div class="qnum">Question 4 of 11</div>
+        <div class="qtext">What does a temporary credential from STS contain that a long-lived IAM user access key pair does not?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">A session token</button>
+          <button class="exam-opt" data-idx="1">A password</button>
+          <button class="exam-opt" data-idx="2">A certificate</button>
+          <button class="exam-opt" data-idx="3">A MFA device serial number</button>
+        </div>
+        <div class="explain">Temporary credentials consist of an access key ID, secret access key, and session token — three values, all required together on every signed request.</div>
+      </div>
+      <!-- Q5 -->
+      <div class="exam-q" data-correct="2">
+        <div class="qnum">Question 5 of 11</div>
+        <div class="qtext">A SaaS vendor serving many customers requests a role ARN in your account for read-only monitoring access. What single addition to the trust policy most directly mitigates the confused deputy risk?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">Requiring MFA on the AssumeRole call</button>
+          <button class="exam-opt" data-idx="1">Shortening the role's MaxSessionDuration</button>
+          <button class="exam-opt" data-idx="2">Adding an sts:ExternalId condition unique to your engagement</button>
+          <button class="exam-opt" data-idx="3">Restricting the trust policy to a specific IP range</button>
+        </div>
+        <div class="explain">External ID is the purpose-built mitigation for the confused deputy problem in multi-tenant third-party access scenarios — it lets the vendor's system distinguish which customer a given assumption request is actually for.</div>
+      </div>
+      <!-- Q6 -->
+      <div class="exam-q" data-correct="1">
+        <div class="qnum">Question 6 of 11</div>
+        <div class="qtext">True or false: sts:ExternalId functions as an authentication credential on its own, separate from the trust policy's principal restriction.</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">True — it fully replaces the need for a principal condition</button>
+          <button class="exam-opt" data-idx="1">False — it is a confused-deputy mitigation layered on top of the principal restriction, not a replacement for it</button>
+        </div>
+        <div class="explain">The principal condition still does the work of restricting which AWS account can attempt the assumption; external ID only prevents that correctly-scoped principal's system from acting on the wrong tenant's behalf.</div>
+      </div>
+      <!-- Q7 -->
+      <div class="exam-q" data-correct="3">
+        <div class="qnum">Question 7 of 11</div>
+        <div class="qtext">Which AWS service must already exist as a prerequisite for deploying IAM Identity Center?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">AWS Control Tower</button>
+          <button class="exam-opt" data-idx="1">Amazon Cognito</button>
+          <button class="exam-opt" data-idx="2">AWS Directory Service</button>
+          <button class="exam-opt" data-idx="3">AWS Organizations</button>
+        </div>
+        <div class="explain">Identity Center's permission-set assignments are made against an Organization's account structure, making Organizations a hard prerequisite. Control Tower is commonly used alongside it but is not itself required.</div>
+      </div>
+      <!-- Q8 -->
+      <div class="exam-q" data-correct="0">
+        <div class="qnum">Question 8 of 11</div>
+        <div class="qtext">What does an IAM Identity Center permission set actually provision into each assigned member account?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">An IAM role, automatically created and kept in sync</button>
+          <button class="exam-opt" data-idx="1">A new IAM user per assigned employee</button>
+          <button class="exam-opt" data-idx="2">A SAML identity provider resource, manually per account</button>
+          <button class="exam-opt" data-idx="3">A Cognito user pool</button>
+        </div>
+        <div class="explain">A permission set is provisioned as an actual IAM role in every member account it's assigned to, eliminating manual per-account role creation and trust policy management.</div>
+      </div>
+      <!-- Q9 -->
+      <div class="exam-q" data-correct="2">
+        <div class="qnum">Question 9 of 11</div>
+        <div class="qtext">An EKS pod uses IAM Roles for Service Accounts (IRSA) to reach S3. Which STS API is invoked under the hood?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">AssumeRole</button>
+          <button class="exam-opt" data-idx="1">AssumeRoleWithSAML</button>
+          <button class="exam-opt" data-idx="2">AssumeRoleWithWebIdentity</button>
+          <button class="exam-opt" data-idx="3">GetSessionToken</button>
+        </div>
+        <div class="explain">EKS's built-in OIDC provider issues per-service-account tokens; IRSA maps those to roles via AssumeRoleWithWebIdentity.</div>
+      </div>
+      <!-- Q10 -->
+      <div class="exam-q" data-correct="1">
+        <div class="qnum">Question 10 of 11</div>
+        <div class="qtext">From a least-privilege standpoint, what is the main risk of defaulting every role to a 12-hour MaxSessionDuration "for convenience"?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">STS will reject session durations that long</button>
+          <button class="exam-opt" data-idx="1">A leaked or cached credential remains usable for a much longer window</button>
+          <button class="exam-opt" data-idx="2">It forces the use of role chaining</button>
+          <button class="exam-opt" data-idx="3">It disables CloudTrail logging for that role's sessions</button>
+        </div>
+        <div class="explain">Longer session durations widen the blast radius of any credential exposure — the same session token remains valid and usable for the full duration, regardless of how it was obtained by an attacker.</div>
+      </div>
+      <!-- Q11 -->
+      <div class="exam-q" data-correct="0">
+        <div class="qnum">Question 11 of 11</div>
+        <div class="qtext">A company's on-prem ADFS environment issues SAML assertions for workforce access to a single AWS account, with no plans for multi-account expansion. Which STS call directly consumes that assertion?</div>
+        <div class="exam-opts">
+          <button class="exam-opt" data-idx="0">AssumeRoleWithSAML</button>
+          <button class="exam-opt" data-idx="1">AssumeRoleWithWebIdentity</button>
+          <button class="exam-opt" data-idx="2">AssumeRole</button>
+          <button class="exam-opt" data-idx="3">GetFederationToken</button>
+        </div>
+        <div class="explain">ADFS issues a SAML 2.0 assertion; the client calls AssumeRoleWithSAML directly with that assertion and the target role ARN. Identity Center becomes the better choice once multi-account scale enters the picture, but isn't required here.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: FAQ -->
+<section class="scene" id="scene-faq" data-rail-label="FAQ">
+  <div class="scene-col">
+    <div class="eyebrow reveal">DISCUSSION — FREQUENTLY ASKED</div>
+    <h2 class="kinetic reveal">Questions this module tends to raise</h2>
+
+    <div class="discussion reveal">
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>I already know SAML and OIDC cold from my Spring Security work. What's actually AWS-specific here that I don't already know?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Everything past the assertion or token itself. The standards don't change — a SAML assertion is a SAML assertion whether it's headed for AWS or your own Spring Security resource server. What's new is: the IAM SAML/OIDC identity provider resource you register to hold the trust relationship, the two purpose-built STS calls (AssumeRoleWithSAML / AssumeRoleWithWebIdentity) that consume the assertion or token, the trust-policy condition syntax those calls check against, session duration mechanics including the chained-session cap, and Identity Center's permission-set abstraction on top of all of it. None of that exists in generic SAML/OIDC — it's the AWS-side plumbing, and it's what this module spent its depth on.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Is IAM Identity Center basically just "AWS SSO with a new name," or did something actually change?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Functionally, yes — it's the renamed, expanded successor to AWS SSO, and if you've used AWS SSO before, the mental model transfers directly. For exam purposes, always use "IAM Identity Center" — SCS-C03 questions will use the current name.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Can I just always use AssumeRole for everything and skip the SAML/WebIdentity variants?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>No — AssumeRole only works when the caller already holds an IAM principal (a user or role) in an account trusted by the target role's trust policy. A SAML assertion or OIDC JWT isn't an IAM principal; STS needs the SAML- or WebIdentity-specific call to validate that external assertion's signature and translate it into a session. They're not interchangeable.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Does the 1-hour chained session cap apply to Identity Center logins too, since a user's console session technically involves an AssumeRole under the hood?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>No — the Identity Center login itself is a direct assumption (the permission set's configured max applies, up to 12 hours), not a chain. The cap only bites once a session that was itself obtained via AssumeRole is used to call AssumeRole again for a second hop — that's specifically what "chained" means.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>If external ID isn't secret, what actually stops someone malicious from just guessing it?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>It should still be treated as not-easily-guessable — a long, random, unique string, not "customer-123." It's shared with the specific third party as part of onboarding rather than published publicly, and combined with the principal restriction, an attacker would need both the correct account principal and the correct external ID string. It's a defense-in-depth layer, not a public value, just not one relied on as the sole line of defense the way a password would be.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Why would anyone still hand-roll per-account SAML federation instead of using Identity Center?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Mostly single-account setups, or environments not using AWS Organizations at all (Identity Center requires it). Some legacy environments predate Identity Center's maturity and haven't migrated. But for any greenfield multi-account workforce access design today, the exam — and honestly, real architecture reviews — expect Identity Center as the default answer.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>What's the practical difference between session duration and the role's trust policy conditions, for exam purposes?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Trust policy conditions (principal, external ID, SAML/OIDC audience and subject claims) determine <em>whether</em> the assumption is allowed to happen at all. Session duration determines <em>how long</em> the resulting credential remains valid once it's already been issued. They're evaluated at completely different points — conditions at assumption time, duration as a property of the already-granted session — and exam questions sometimes blend them to see if you keep the two straight.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: Resources -->
+<section class="scene" id="scene-resources" data-rail-label="Resources">
+  <div class="scene-col">
+    <div class="eyebrow reveal">CURATED RESOURCES</div>
+    <h2 class="kinetic reveal">Go deeper on Identity Center, STS &amp; federation</h2>
+
+    <div class="resource-grid reveal">
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>IAM Identity Center User Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>The canonical reference for permission sets, identity source configuration, and multi-account assignments.</p>
+        <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS STS API Reference</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Exact parameters and behavior for AssumeRole, AssumeRoleWithSAML, and AssumeRoleWithWebIdentity.</p>
+        <a href="https://docs.aws.amazon.com/STS/latest/APIReference/welcome.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>Temporary Security Credentials in IAM</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>How temporary credentials work, session duration limits, and role chaining behavior in detail.</p>
+        <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>How to Use External ID When Granting Access</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>AWS's own writeup of the confused deputy problem and the external ID mitigation, with worked trust policy examples.</p>
+        <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>About SAML 2.0-Based Federation</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>AWS's own explanation of how SAML assertions map onto IAM identity providers and AssumeRoleWithSAML.</p>
+        <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_saml.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>IAM Roles for Service Accounts (IRSA)</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>EKS's OIDC-based identity federation for pods, useful context for the AssumeRoleWithWebIdentity workload pattern.</p>
+        <a href="https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Skill Builder — Identity Federation</h4>
+        <div class="source">skillbuilder.aws</div>
+        <p>Official AWS training content covering federation patterns across the security specialty curriculum.</p>
+        <a href="https://skillbuilder.aws" target="_blank" rel="noopener">Browse courses →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>re:Post — IAM Identity Center Q&amp;A</h4>
+        <div class="source">repost.aws</div>
+        <p>Community and AWS-staff-answered questions covering real Identity Center configuration edge cases.</p>
+        <a href="https://repost.aws/tags/TAdyN0YOwWRSWKIQ8Nnrg_9A/aws-iam-identity-center" target="_blank" rel="noopener">Browse re:Post →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Tutorials Dojo — SCS-C03 Practice Exams</h4>
+        <div class="source">tutorialsdojo.com</div>
+        <p>Widely used scenario-heavy practice questions covering federation, STS, and Identity Center in exam format.</p>
+        <a href="https://tutorialsdojo.com" target="_blank" rel="noopener">Visit site →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Adrian Cantrill — AWS Security Specialty</h4>
+        <div class="source">learn.cantrill.io</div>
+        <p>Deep-dive video course with hands-on labs covering federation, Identity Center, and STS mechanics in depth.</p>
+        <a href="https://learn.cantrill.io" target="_blank" rel="noopener">Visit site →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Stéphane Maarek — AWS Security Specialty Course</h4>
+        <div class="source">udemy.com</div>
+        <p>Comprehensive video coverage of Domain 4's IAM, federation, and Identity Center content.</p>
+        <a href="https://www.udemy.com" target="_blank" rel="noopener">Visit site →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCENE: Closing Bridge -->
+<section class="scene" id="scene-closing" data-rail-label="Closing">
+  <div class="ambient-blob" style="width:480px; height:480px; background:var(--c-infra); bottom:-120px; left:-160px;"></div>
+  <div class="scene-col">
+    <div class="eyebrow reveal">LOOKING AHEAD</div>
+    <h2 class="kinetic reveal">Who → what's next</h2>
+    <p class="reveal">You've now fully covered <strong>who</strong> can do what — federation, Identity Center, temporary credentials, role chaining, and third-party access secured with external ID round out the identity side of Domain 4. Between this module and Modules 2 and 3, you have the complete IAM picture: policies, trust, boundaries, and now human and workload identity itself.</p>
+    <p class="reveal">Module 5 shifts the question entirely: next is <strong>what stands between an attacker and your infrastructure in the first place</strong> — Network &amp; Edge Security, moving from Domain 4 into Domain 3. It's the course's first major domain shift, and a genuinely different mental model from everything you've built so far.</p>
+    <div class="mentor-aside reveal">
+      <p>Before you move on, make sure you can say — out loud, without checking your notes — the difference between AssumeRoleWithSAML and AssumeRoleWithWebIdentity, why a chained session caps at 1 hour, and what external ID actually prevents. Those three are the highest-yield exam facts in this entire module.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="scene-col" style="max-width:840px; margin:0 auto;">
+    <div class="pn-nav">
+      <a class="pn-link prev" href="module-03-iam-advanced.html">
+        <span class="dir">← Previous</span>
+        Module 03 — IAM Advanced: Cross-Account, SCPs, RCPs &amp; Boundaries
+      </a>
+      <a class="pn-link next" href="module-05-network-edge.html">
+        <span class="dir">Next →</span>
+        Module 05 — Network &amp; Edge Security
+      </a>
+    </div>
+    <p class="mono" style="font-size:11px; margin-top:40px; text-align:center; color:var(--text-dim);">SCS-C03 SELF-PACED COURSE · MODULE 04 OF 16 · DOMAIN 4 — IDENTITY AND ACCESS MANAGEMENT</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---- Theme toggle (Bug fix #3) ---- */
+  var html = document.documentElement;
+  var themeBtn = document.getElementById("themeToggle");
+  html.style.colorScheme = html.getAttribute("data-theme") === "light" ? "light" : "dark";
+  function applyThemeIcon(){ themeBtn.textContent = html.getAttribute("data-theme") === "light" ? "☀️" : "🌙"; }
+  applyThemeIcon();
+  themeBtn.addEventListener("click", function(){
+    var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+    html.setAttribute("data-theme", next);
+    html.style.colorScheme = next;
+    applyThemeIcon();
+  });
+
+  /* ---- Kinetic word-mask headings ---- */
+  function wrapKinetic(el, text){
+    var words = text.split(" ");
+    el.innerHTML = words.map(function(w, i){
+      return '<span class="kw"><span class="kw-inner" style="transition-delay:' + (i * 45) + 'ms">' + w + "</span></span>";
+    }).join(" ");
+  }
+  document.querySelectorAll("h2.kinetic").forEach(function(h){ wrapKinetic(h, h.textContent); });
+  var kineticIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.4 });
+  document.querySelectorAll("h2.kinetic").forEach(function(h){ kineticIo.observe(h); });
+
+  /* ---- Scroll-reveal + stagger ---- */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.15 });
+  document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+  document.querySelectorAll(".stagger > *").forEach(function(el, i){ el.style.transitionDelay = (i * 90) + "ms"; });
+
+  /* ---- Scroll progress bar ---- */
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrolled = h.scrollTop;
+    var height = h.scrollHeight - h.clientHeight;
+    document.getElementById("scrollProgress").style.width = (height > 0 ? (scrolled / height) * 100 : 0) + "%";
+  }
+  document.addEventListener("scroll", function(){ requestAnimationFrame(updateProgress); });
+
+  /* ---- Tilt-on-hover cards + magnetic buttons ---- */
+  if (!reduceMotion){
+    document.querySelectorAll(".tilt").forEach(function(card){
+      card.addEventListener("mousemove", function(e){
+        var rect = card.getBoundingClientRect();
+        var px = (e.clientX - rect.left) / rect.width - 0.5;
+        var py = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = "perspective(600px) rotateX(" + (py * -6) + "deg) rotateY(" + (px * 6) + "deg) translateY(-2px)";
+      });
+      card.addEventListener("mouseleave", function(){ card.style.transform = "perspective(600px) rotateX(0) rotateY(0)"; });
+    });
+    document.querySelectorAll(".magnetic").forEach(function(btn){
+      btn.addEventListener("mousemove", function(e){
+        var rect = btn.getBoundingClientRect();
+        var x = e.clientX - rect.left - rect.width / 2;
+        var y = e.clientY - rect.top - rect.height / 2;
+        btn.style.transform = "translate(" + (x * 0.18) + "px, " + (y * 0.35) + "px)";
+      });
+      btn.addEventListener("mouseleave", function(){ btn.style.transform = "translate(0,0)"; });
+    });
+  }
+
+  /* ---- Stat count-up ---- */
+  document.querySelectorAll(".stat-num").forEach(function(el){
+    new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (!entry.isIntersecting || el.dataset.done) return;
+        el.dataset.done = "1";
+        var target = parseInt(el.dataset.target, 10);
+        var start = performance.now(), duration = 1100;
+        function tick(now){
+          var p = Math.min((now - start) / duration, 1);
+          el.textContent = (el.dataset.prefix || "") + Math.round((1 - Math.pow(1 - p, 3)) * target) + (el.dataset.suffix || "");
+          if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.4 }).observe(el);
+  });
+
+  /* ---- Inline expand diagram nodes (federation flow steps) ---- */
+  document.querySelectorAll(".mindnode").forEach(function(node){
+    function toggle(){
+      var targetId = node.getAttribute("data-target");
+      var info = document.getElementById(targetId);
+      if (info) info.classList.toggle("open");
+    }
+    node.addEventListener("click", toggle);
+    node.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); }
+    });
+  });
+
+  /* ---- Timeline marker detail via bottom sheet ---- */
+  var sheetOverlay = document.createElement("div");
+  sheetOverlay.className = "bottom-sheet-overlay";
+  sheetOverlay.id = "sheetOverlay";
+  var sheet = document.createElement("div");
+  sheet.className = "bottom-sheet";
+  sheet.id = "tokenSheet";
+  sheet.innerHTML = '<button class="sheet-close" id="sheetClose" aria-label="Close detail">✕</button><h4 style="font-family:\'Space Grotesk\',sans-serif; margin-bottom:12px;" id="sheetTitle">Detail</h4><p style="font-size:0.92rem; line-height:1.7; color:var(--text-dim);" id="sheetBody"></p>';
+  document.body.appendChild(sheetOverlay);
+  document.body.appendChild(sheet);
+  function openSheet(title, body){
+    document.getElementById("sheetTitle").textContent = title;
+    document.getElementById("sheetBody").textContent = body;
+    sheetOverlay.classList.add("open");
+    sheet.classList.add("open");
+  }
+  function closeSheet(){ sheetOverlay.classList.remove("open"); sheet.classList.remove("open"); }
+  document.getElementById("sheetClose").addEventListener("click", closeSheet);
+  sheetOverlay.addEventListener("click", closeSheet);
+  document.querySelectorAll(".timeline-mark").forEach(function(mark){
+    mark.setAttribute("tabindex", "0");
+    mark.setAttribute("role", "button");
+    function openIt(){ openSheet(mark.textContent, mark.getAttribute("data-detail")); }
+    mark.addEventListener("click", openIt);
+    mark.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openIt(); } });
+  });
+
+  /* ---- Before/After external ID cards ---- */
+  document.querySelectorAll(".ba-card").forEach(function(card){
+    function toggle(){ card.classList.toggle("open"); }
+    card.addEventListener("click", toggle);
+    card.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); } });
+  });
+
+  /* ---- Discussion FAQ toggle ---- */
+  document.querySelectorAll(".discussion-pair").forEach(function(pair){
+    pair.querySelector(".bubble-q").addEventListener("click", function(){ pair.classList.toggle("open"); });
+  });
+
+  /* ---- Exercise card reveal ---- */
+  document.querySelectorAll(".exercise-card").forEach(function(card){
+    var btn = card.querySelector(".exercise-reveal-btn");
+    btn.addEventListener("click", function(){
+      card.classList.toggle("open");
+      btn.textContent = card.classList.contains("open") ? "Hide reasoning" : "Reveal reasoning";
+    });
+  });
+
+  /* ---- Mock exam scoring ---- */
+  var score = 0;
+  var scoreEl = document.getElementById("examScore");
+  document.querySelectorAll(".exam-q").forEach(function(q){
+    var correctIdx = parseInt(q.getAttribute("data-correct"), 10);
+    var opts = q.querySelectorAll(".exam-opt");
+    opts.forEach(function(opt){
+      opt.addEventListener("click", function(){
+        if (q.classList.contains("answered")) return;
+        var chosenIdx = parseInt(opt.getAttribute("data-idx"), 10);
+        opts.forEach(function(o){
+          var oIdx = parseInt(o.getAttribute("data-idx"), 10);
+          if (oIdx === correctIdx) o.classList.add("correct");
+          else if (o === opt) o.classList.add("incorrect");
+        });
+        q.classList.add("answered");
+        if (chosenIdx === correctIdx){
+          score++;
+          scoreEl.textContent = score;
+        }
+      });
+    });
+  });
+
+  /* ---- Side rail scene navigator (added last, per build order) ---- */
+  var scenes = Array.prototype.slice.call(document.querySelectorAll(".scene, .title-card"));
+  var rail = document.getElementById("sceneRail");
+  scenes.forEach(function(scene, i){
+    var dot = document.createElement("div");
+    dot.className = "rail-dot";
+    dot.setAttribute("tabindex", "0");
+    dot.setAttribute("role", "button");
+    dot.setAttribute("aria-label", "Jump to " + (scene.dataset.railLabel || ("section " + (i + 1))));
+    dot.dataset.sceneId = scene.id || ("scene-idx-" + i);
+    if (!scene.id) scene.id = dot.dataset.sceneId;
+    function jump(){ document.getElementById(scene.id).scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" }); }
+    dot.addEventListener("click", jump);
+    dot.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); jump(); } });
+    rail.appendChild(dot);
+  });
+  var railDots = Array.prototype.slice.call(rail.querySelectorAll(".rail-dot"));
+  var railIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var idx = scenes.indexOf(entry.target);
+      if (idx === -1) return;
+      if (entry.isIntersecting){
+        railDots.forEach(function(d){ d.classList.remove("active"); });
+        railDots[idx].classList.add("active");
+      }
+    });
+  }, { threshold: 0.5 });
+  scenes.forEach(function(scene){ railIo.observe(scene); });
+
+})();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 07: Encryption Foundations: KMS, Key Policies & Grants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grain-opacity: 0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#A78BFA;
+  --accent-dim:#3B2E6B;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg: rgba(10,14,26,0.72);
+  --node-glow: rgba(167,139,250,0.28);
+  --overlay: rgba(4,6,14,0.6);
+  --grid-line: rgba(167,139,250,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme: dark; }
+html[data-theme="light"]{
+  color-scheme: light;
+  --grain-opacity: 0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#6D4FE0;
+  --accent-dim:#E6E0FB;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow: 0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg: rgba(246,247,251,0.72);
+  --node-glow: rgba(109,79,224,0.20);
+  --overlay: rgba(20,26,40,0.35);
+  --grid-line: rgba(109,79,224,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth; background:var(--bg); scroll-padding-top:90px;}
+body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden;}
+h1,h2,h3{font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em;}
+h2{font-weight:700; font-size:clamp(1.8rem, 4.5vw, 3rem);}
+h3{font-weight:600; font-size:1.35rem;}
+p{font-size:1.02rem; line-height:1.75; color:var(--text-dim);}
+.mono{font-family:'JetBrains Mono', monospace;}
+a{color:var(--accent);}
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity, 0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#scrollProgress{ position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:300; transition:width .08s linear; }
+nav.topnav{ position:fixed; top:0; left:0; right:0; z-index:280; background:var(--nav-bg); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); padding:14px 32px; display:flex; align-items:center; justify-content:space-between; }
+.brand{ font-family:'JetBrains Mono', monospace; font-size:12.5px; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; }
+.brand strong{ color:var(--text); }
+.nav-right{ display:flex; align-items:center; gap:16px; }
+.domain-tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; padding:5px 12px; border-radius:999px; background:var(--c-data-dim); color:var(--c-data); }
+#themeToggle{ background:var(--surface); border:1px solid var(--line); color:var(--text); border-radius:10px; padding:8px 12px; cursor:pointer; font-size:14px; }
+.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); display:flex; align-items:center; }
+.scene-inner{ max-width:840px; margin:0 auto; position:relative; z-index:2; width:100%; }
+.scene-wide .scene-inner{ max-width:1080px; }
+footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); border-top:1px solid var(--line); }
+.eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--c-data); display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.eyebrow::before{ content:''; width:26px; height:1px; background:var(--c-data); }
+.ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
+@keyframes driftBlob{ 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(4%,-6%) scale(1.08);} 100%{transform:translate(-5%,4%) scale(0.96);} }
+.kw{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em;}
+.kw-inner{display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+.title-card{ min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; }
+.title-card h2{ font-size:clamp(2.2rem, 7vw, 5.4rem); line-height:1.1; font-weight:700; }
+.scanbeam{ position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg, transparent, rgba(167,139,250,0.14), transparent); animation:scanSweep 6s linear infinite; }
+@keyframes scanSweep{ 0%{top:-140px;} 100%{top:100%;} }
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .8s ease, transform .8s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+.stagger > *{opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease, transform .6s ease;}
+.stagger.in > *{opacity:1; transform:translateY(0) scale(1);}
+.rail{ position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px; }
+.rail-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease, transform .3s ease; }
+.rail-dot.active{ background:var(--accent); border-color:var(--accent); transform:scale(1.3); }
+@media (max-width:900px){ .rail{display:none;} }
+.drawer-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px); }
+.drawer-overlay.open{ opacity:1; pointer-events:auto; }
+.drawer{ position:fixed; top:0; right:0; height:100%; width:min(420px, 90vw); background:var(--surface-raised); border-left:1px solid var(--line); z-index:201; padding:36px 32px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); box-shadow:-20px 0 60px rgba(0,0,0,0.35); }
+.drawer.open{ transform:translateX(0); }
+.bottom-sheet-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.bottom-sheet-overlay.open{ opacity:1; pointer-events:auto; }
+.bottom-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:201; background:var(--surface-raised); border-top:1px solid var(--line); border-radius:20px 20px 0 0; padding:32px 40px 40px; transform:translateY(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); max-width:760px; margin:0 auto; box-shadow:0 -20px 60px rgba(0,0,0,0.35); max-height:80vh; overflow-y:auto; }
+.bottom-sheet.open{ transform:translateY(0); }
+.sheet-close{ position:absolute; top:20px; right:24px; background:none; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; }
+.discussion{ display:flex; flex-direction:column; gap:22px; margin-top:36px; }
+.discussion-pair{ display:flex; flex-direction:column; gap:10px; }
+.bubble{ max-width:82%; padding:16px 20px; border-radius:18px; font-size:0.95rem; line-height:1.65; }
+.bubble-q{ align-self:flex-start; background:var(--surface); border:1px solid var(--line); border-bottom-left-radius:4px; cursor:pointer; transition:border-color .2s ease; display:flex; flex-direction:column; }
+.bubble-q:hover{ border-color:var(--accent); }
+.bubble-q .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.bubble-q .chev{ margin-left:auto; transition:transform .25s ease; font-size:12px; color:var(--text-dim); }
+.discussion-pair.open .bubble-q .chev{ transform:rotate(90deg); color:var(--accent); }
+.bubble-a{ align-self:flex-end; background:var(--accent-dim); border-bottom-right-radius:4px; max-height:0; overflow:hidden; opacity:0; padding:0 20px; transition:max-height .45s ease, opacity .35s ease, padding .35s ease; }
+.discussion-pair.open .bubble-a{ max-height:600px; opacity:1; padding:16px 20px; }
+.bubble-a .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--c-data); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:block; text-align:right; }
+.resource-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:36px; }
+.resource-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; position:relative; transition:border-color .2s ease, transform .15s ease; }
+.resource-card:hover{ border-color:var(--accent-dim); transform:translateY(-2px); }
+.resource-pill{ position:absolute; top:20px; right:20px; font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px; }
+.resource-pill.free{ background:var(--c-gov-dim); color:var(--green); }
+.resource-pill.paid{ background:var(--c-detect-dim); color:var(--amber); }
+.resource-card h4{ font-size:1rem; padding-right:70px; margin-bottom:8px; }
+.resource-card .source{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+.resource-card p{ font-size:0.88rem; color:var(--text-dim); line-height:1.6; }
+.resource-card a{ display:inline-block; margin-top:14px; font-size:0.85rem; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+@media (max-width:720px){ .resource-grid{grid-template-columns:1fr;} }
+.mindnode{ cursor:pointer; }
+.node-info{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:0; }
+.node-info.open{ max-height:320px; opacity:1; margin-top:14px; padding:16px 20px; }
+.mentor-aside{ background:var(--surface); border-left:3px solid var(--accent); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0; }
+.mentor-aside::before{ content:'🛡️ MENTOR NOTE'; display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--accent); margin-bottom:8px; }
+.mentor-aside p{ font-size:0.94rem; color:var(--text); line-height:1.7; font-style:italic; }
+@media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
+/* Page-specific additions */
+.scenario-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin:18px 0; }
+.diagram-box{ background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:30px; margin:28px 0; }
+.trap-card{ background:var(--surface); border:1px solid var(--ir, var(--line)); border-left:3px solid var(--c-ir); border-radius:0 14px 14px 0; padding:22px 26px; margin:16px 0; }
+.trap-card h4{ color:var(--c-ir); margin-bottom:8px; font-size:1rem; }
+.exam-card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:24px 26px; margin:18px 0; }
+.exam-choice{ display:block; width:100%; text-align:left; background:var(--surface-raised); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin:8px 0; cursor:pointer; color:var(--text); font-size:0.94rem; transition:border-color .2s ease; }
+.exam-choice:hover{ border-color:var(--accent); }
+.exam-choice.correct{ border-color:var(--green); background:var(--c-gov-dim); }
+.exam-choice.incorrect{ border-color:var(--c-ir); background:var(--c-ir-dim); }
+.exam-explain{ display:none; margin-top:12px; padding:14px 16px; background:var(--accent-dim); border-radius:10px; font-size:0.9rem; color:var(--text); }
+.exam-explain.show{ display:block; }
+.score-tracker{ position:sticky; top:80px; z-index:10; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 20px; margin-bottom:24px; font-family:'JetBrains Mono', monospace; font-size:13px; display:flex; justify-content:space-between; }
+.reveal-btn{ background:var(--accent); color:var(--card-bg); border:none; border-radius:8px; padding:8px 16px; font-size:0.85rem; cursor:pointer; font-weight:600; }
+.reveal-panel{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease; margin-top:0; }
+.reveal-panel.open{ max-height:500px; opacity:1; margin-top:14px; }
+.footer-nav{ display:flex; justify-content:space-between; max-width:840px; margin:0 auto 30px; font-size:0.9rem; }
+.footer-nav a{ text-decoration:none; }
+.comparison-table{ width:100%; border-collapse:collapse; margin-top:24px; }
+.comparison-table th, .comparison-table td{ border:1px solid var(--line); padding:12px 14px; font-size:0.88rem; text-align:left; color:var(--text-dim); }
+.comparison-table th{ background:var(--surface); color:var(--text); font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
+.policy-json{ background:var(--card-bg); color:#B9C4E0; border-radius:10px; padding:18px 20px; font-family:'JetBrains Mono', monospace; font-size:12.5px; line-height:1.6; overflow-x:auto; margin:14px 0; }
+.stat-num{ font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--accent); }
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress"></div>
+<nav class="topnav">
+  <div class="brand">SCS-C03 <strong>· Module 07</strong> · Encryption Foundations</div>
+  <div class="nav-right">
+    <span class="domain-tag">Domain 5 — Data Protection</span>
+    <button id="themeToggle" aria-label="Toggle theme">🌙</button>
+  </div>
+</nav>
+<div class="rail" id="railNav"></div>
+
+<section class="scene" id="scene-bridge">
+  <div class="ambient-blob" style="width:420px;height:420px;background:var(--c-data);top:10%;left:-8%;"></div>
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Domain shift · Infrastructure → Data Protection</div>
+    <h2 class="kinetic">The lock changes.</h2>
+    <p style="margin-top:22px;">Modules 5 and 6 were about the perimeter and the workload — the network boundary, the edge, the compute layer, the hybrid connections tying it all together. The working assumption underneath all of it was simple: if access control holds and the network controls hold, the data behind them is safe.</p>
+    <p style="margin-top:16px;">This module asks the harder question. What protects the data if every other control somehow fails — if a policy is misconfigured, a network path opens that should not have, a credential leaks? That is what encryption is actually for. It is not a compliance checkbox sitting next to access control. It is the last line, the one that has to hold even when everything upstream of it did not.</p>
+    <p style="margin-top:16px;">We planted <strong>encryption everywhere</strong> as a bare concept back in Module 1. Here it gets its real mechanical depth: KMS key types, envelope encryption, key policies, grants, rotation, multi-region keys, and encryption in transit between resources. This is the deepest module in the Data Protection domain, and Domain 5 is 18% of the exam — so budget real focus time here.</p>
+    <p style="margin-top:16px;">One habit to build starting now: every time this module introduces a new KMS concept, ask yourself "what happens if this control is misconfigured, and does the rest of the system still catch it?" That question is exactly how the exam frames most of its scenario questions in this domain, and it is also, not coincidentally, how a good security review actually gets conducted in production.</p>
+  </div>
+</section>
+
+<section class="scene" id="scene-keytypes">
+  <div class="ambient-blob" style="width:380px;height:380px;background:var(--c-data);bottom:5%;right:-6%;"></div>
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Topic 1 · KMS Key Types</div>
+    <h2 class="kinetic">Three keys, one service, very different control.</h2>
+    <p style="margin-top:22px;">Every encryption operation in AWS eventually traces back to a KMS key, but not all KMS keys give you the same level of control, and the exam leans on that distinction constantly.</p>
+    <p style="margin-top:14px;"><strong>AWS-managed keys</strong> are created and administered automatically by an AWS service on your behalf — think the default key behind S3 SSE-KMS if you never specify your own, or the key EBS uses by default. You cannot edit the key policy, you cannot control its rotation schedule, and you cannot share it cross-account. It exists in your account, but the service owns the operational levers.</p>
+    <p style="margin-top:14px;"><strong>Customer-managed keys</strong> are the ones you create yourself. You own the key policy, you control rotation (automatic or manual), you decide who else in another account can use it, and you control its deletion schedule. Whenever a scenario mentions fine-grained control — a custom key policy, controlled rotation cadence, or cross-account sharing — a customer-managed key is the answer the exam wants.</p>
+    <p style="margin-top:14px;"><strong>AWS-owned keys</strong> sit a level further away still: they are not even visible in your account. AWS uses them internally for certain service-side encryption where you have no key management responsibility at all — you get the benefit of encryption at rest with zero operational surface.</p>
+    <p style="margin-top:14px;">Separately, KMS keys are either <strong>symmetric</strong> or <strong>asymmetric</strong>. Symmetric is the default and the correct choice for the overwhelming majority of encryption use cases — a single key material both encrypts and decrypts, and it is what envelope encryption is built around. Asymmetric keys exist for two specific problems: digital signing and verification, or encrypting data with a public key held by a party who should never receive your private key material. If a scenario does not explicitly need signing or a genuinely external public-key exchange, asymmetric is the wrong answer, however secure it might sound.</p>
+    <p style="margin-top:14px;">There is a cost and operational dimension here too, and the exam expects you to weigh it. AWS-managed keys carry no monthly key fee — you only pay for API usage — which makes them attractive for services where you genuinely have no policy requirements beyond "just encrypt this by default." Customer-managed keys carry a small monthly fee per key in addition to usage charges, which is a real but usually trivial cost next to the control you get: the ability to disable a key immediately if you suspect compromise, schedule its deletion with a mandatory waiting period, and audit every policy change through CloudTrail.</p>
+    <p style="margin-top:14px;">One more distinction worth internalizing: choosing symmetric versus asymmetric is not really about "strength." A symmetric AES-256 key and an asymmetric RSA or ECC key pair are solving fundamentally different problems. Symmetric works because both the encryptor and decryptor can be the same trusted party (you, through KMS). Asymmetric exists specifically for situations where the encryptor and decryptor cannot safely share the same secret — a verifier who only ever needs the public half to check a signature, or an external partner who should be able to encrypt data for you without ever holding your private key. If a scenario does not describe one of those two shapes, symmetric is correct by default, full stop.</p>
+    <div class="scenario-card">
+      <h3>Production scenario</h3>
+      <p style="margin-top:10px;">A partner integration team needs to encrypt files before dropping them into a shared S3 bucket, and your team needs to decrypt them on the way out — no external party ever holds a public key, and nothing needs to be cryptographically signed. A customer-managed <strong>symmetric</strong> key is correct. The instinct to reach for asymmetric "because it sounds stronger" is exactly the trap the exam is testing.</p>
+    </div>
+    <div class="trap-card">
+      <h4>Common mistake</h4>
+      <p>Treating "AWS-managed" and "AWS-owned" as interchangeable terms in conversation. They are not. AWS-managed keys are visible in your account under aliases like aws/s3 or aws/ebs — you can see them, view usage in CloudTrail, and reference their ARN. AWS-owned keys never appear in your account at all. Mixing these up on the exam is an easy way to lose an otherwise straightforward question.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene scene-wide" id="scene-envelope">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Topic 2 · Envelope Encryption</div>
+    <h2 class="kinetic">KMS never touches your data.</h2>
+    <p style="margin-top:22px;">This is the single most important mechanic in this module, and it explains almost every design decision downstream of it. KMS is deliberately built so that it never has to see, hold, or process your actual bulk data — only a small data key.</p>
+    <p style="margin-top:14px;">Here is the full cycle, step by step. Click each stage below to walk through it.</p>
+    <div class="diagram-box">
+      <div id="envelopeDiagram" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+    <p style="margin-top:10px;">Two details the exam loves to test: <code class="mono">GenerateDataKey</code> returns <strong>both</strong> a plaintext data key and its KMS-encrypted counterpart in the same response — the plaintext copy is used immediately in memory and then discarded, never written to disk. And only the <strong>encrypted</strong> data key is ever stored alongside your ciphertext. Decryption simply reverses the process: KMS decrypts the stored encrypted data key using your KMS key, handing back the plaintext data key, which your application then uses locally to decrypt the actual data.</p>
+    <div class="mentor-aside">
+      <p>Why bother with this two-layer dance instead of just encrypting everything directly with the KMS key? Two reasons that matter operationally. First, KMS API calls have throughput limits — you cannot run your entire multi-terabyte dataset through KMS directly, but you absolutely can run a 256-bit data key through it. Second, when you rotate the KMS key, you only ever need to re-encrypt the small data keys, not the bulk data itself. That is the entire economic case for envelope encryption in one sentence.</p>
+    </div>
+    <div class="scenario-card">
+      <h3>Production scenario</h3>
+      <p style="margin-top:10px;">An application team asks why their multi-GB file uploads to S3 with SSE-KMS do not appear to be hitting KMS request quotas the way they expected. The answer: S3 is doing envelope encryption under the hood — one <code class="mono">GenerateDataKey</code> call per object (or reused per a bounded window), not one KMS call per byte.</p>
+    </div>
+    <div class="trap-card">
+      <h4>Common mistake</h4>
+      <p>Assuming the plaintext data key is stored anywhere. It never is — it exists only in memory for the duration of the encrypt or decrypt operation. If you ever see plaintext data key material persisted to disk or logs in a design, that is a finding, not a feature.</p>
+    </div>
+    <p style="margin-top:14px;">There is a related API, <code class="mono">GenerateDataKeyWithoutPlaintext</code>, that is worth knowing precisely because of what it deliberately omits: it returns only the encrypted data key, never the plaintext copy. This exists for cases where the calling component's job is only to store the encrypted data key for later — a provisioning workflow, for instance — and should never have plaintext key material pass through it at all, even transiently. Recognizing when a design calls for this variant versus the standard <code class="mono">GenerateDataKey</code> is a subtle but real exam signal: if the described component never actually performs the encryption itself, it should not be requesting plaintext.</p>
+    <p style="margin-top:14px;">It is also worth being precise about what "envelope encryption" buys you architecturally, beyond throughput. Because the KMS key itself never directly touches your bulk data, you can change how that data is stored, move it between services, or scale storage independently of your KMS design. The KMS key's job stays constant and small: encrypt and decrypt small data keys, all day, regardless of how large or how distributed the underlying dataset becomes. That separation of concerns is what lets services like S3, EBS, and RDS offer KMS-backed encryption at massive scale without KMS becoming a bottleneck.</p>
+  </div>
+</section>
+
+<section class="title-card">
+  <div class="scanbeam"></div>
+  <h2>THE KEY POLICY IS THE ROOT.<br>EVERYTHING ELSE IS AN EXTENSION.</h2>
+</section>
+
+<section class="scene scene-wide" id="scene-authority">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Topic 3 · Key Policies vs. Grants vs. IAM Policies</div>
+    <h2 class="kinetic">This inverts the usual IAM mental model.</h2>
+    <p style="margin-top:22px;">Everywhere else in AWS, an IAM policy attached to a principal is sufficient on its own to grant an action. KMS is the exception. A KMS key's <strong>key policy</strong> is the root-level, resource-based control on that specific key — and even a maximally permissive IAM policy, <code class="mono">"Action":"kms:*","Resource":"*","Effect":"Allow"</code>, grants nothing if the key policy does not also allow that principal.</p>
+    <p style="margin-top:14px;">In practice, most customer-managed keys ship with the classic <strong>"Enable IAM User Permissions"</strong> statement in their key policy, which delegates day-to-day authorization down to account-level IAM policies. Once that statement is present, an IAM policy genuinely can extend access — but only because the key policy explicitly opened that door first.</p>
+    <div class="policy-json">{
+  "Sid": "Enable IAM User Permissions",
+  "Effect": "Allow",
+  "Principal": {"AWS": "arn:aws:iam::111122223333:root"},
+  "Action": "kms:*",
+  "Resource": "*"
+}</div>
+    <p>With that statement present, an IAM policy attached to a specific role in the account can grant narrower actions like <code class="mono">kms:Decrypt</code> — and it will actually take effect, because authority was delegated down from the key policy. Remove that statement, and IAM policies in the account become powerless against the key no matter how permissive they are.</p>
+    <p style="margin-top:14px;"><strong>Grants</strong> are a third, separate mechanism — narrow, temporary, and created programmatically without ever touching the key policy document. AWS services use grants constantly: an EBS volume needing decrypt access for the lifetime of an attachment, or a Lambda execution needing a scoped, revocable permission. Grants can be issued and retired via API calls, which makes them the right tool when the need is short-lived and auditable at the API-call level rather than the document level.</p>
+    <div class="diagram-box">
+      <h3 style="margin-bottom:16px;">Authority diagram — three layers, one gate</h3>
+      <div id="authorityDiagram"></div>
+    </div>
+    <div class="mentor-aside">
+      <p>When you are staring down an access-denied error on a KMS action, evaluate in this exact order: key policy first — does it allow this principal at all, directly or via the IAM-delegation statement? Then IAM policy — is there an explicit allow, and no explicit deny? Then grants — is there a grant covering this specific action for this principal? Skipping straight to IAM policy is the single most common diagnostic mistake engineers make with KMS.</p>
+    </div>
+    <div class="scenario-card">
+      <h3>Production scenario</h3>
+      <p style="margin-top:10px;">Team B in Account 222233334444 needs to decrypt objects encrypted under a customer-managed key that lives in Account 111122223333. Correct design: the key policy in the owning account must explicitly allow Account 222233334444's principal (or a specific role ARN), and separately, an IAM policy in Account 222233334444 must also allow that role to call <code class="mono">kms:Decrypt</code>. Both sides are required — missing either one breaks the flow.</p>
+    </div>
+    <p style="margin-top:14px;">It helps to think of the key policy as answering one question only: "which accounts or principals are even in scope to be considered for this key at all?" Everything an IAM policy does afterward is scoping down within that already-approved set — it can never expand access beyond what the key policy allowed in the first place. This is why security reviews of KMS access should always start at the key policy and work outward, rather than starting from an IAM policy and hoping it is sufficient.</p>
+    <p style="margin-top:14px;">Grants deserve one more distinction: unlike IAM policies, which are evaluated at request time by checking the full policy document, a grant is closer to a pre-authorized token — once created, it is valid until explicitly retired or until it expires, and the calling principal typically must present a grant token (or rely on the grant being visible to KMS) to use it. Because grants can be created without any key policy edit, they are the mechanism of choice for automated, high-frequency, short-lived authorization patterns — exactly the pattern AWS services themselves rely on internally, such as an EBS volume's temporary need to decrypt on attach and nothing more.</p>
+    <div class="trap-card">
+      <h4>Common mistake</h4>
+      <p>Trying to solve a permanent, auditable access requirement with a grant because it feels faster than editing a key policy. Grants are harder to inventory at a glance than a key policy document, and using one for a long-lived, business-critical access path makes that access path invisible to anyone reviewing the key policy alone. Permanent needs belong in the policy; temporary, programmatic needs belong in a grant.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-rotation">
+  <div class="ambient-blob" style="width:360px;height:360px;background:var(--c-data);top:8%;right:-6%;"></div>
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Topic 4 · Key Rotation</div>
+    <h2 class="kinetic">Rotation is not re-encryption.</h2>
+    <p style="margin-top:22px;">AWS-managed keys rotate automatically every year, no configuration required. Customer-managed symmetric keys can opt into the same automatic annual rotation. Here is what actually happens on rotation: new key material is generated, the key's ARN and key ID stay exactly the same, and the <strong>old</strong> key material is retained internally so anything encrypted under it remains decryptable indefinitely.</p>
+    <p style="margin-top:14px;">That last part is the piece the exam tests hardest. Rotation only changes which key material is used for <strong>new</strong> encryption operations going forward. It does not reach back and re-encrypt every object that was already encrypted under the previous key material — that data stays exactly as it was, and KMS silently tracks which version decrypts it.</p>
+    <p style="margin-top:14px;">Asymmetric keys do not support this kind of automatic rotation the same way, because a public/private key pair cannot be silently swapped without breaking any external party who has already been handed the public key. Rotating an asymmetric key is a manual, coordinated operation — you create a new key pair, redistribute the new public key to every consumer, and only then deprecate the old pair.</p>
+    <div class="trap-card">
+      <h4>Common mistake</h4>
+      <p>An application team assumes that after rotation, they need to re-encrypt every previously stored object under the new key material "to stay current." They do not — the retained old material keeps decrypting exactly what it always did. Re-encryption is only needed if you are deliberately migrating data to a <em>different</em> key entirely, which is an application-level operation, not something rotation does for you.</p>
+    </div>
+    <div class="scenario-card">
+      <h3>Production scenario</h3>
+      <p style="margin-top:10px;">A team pins a specific KMS key <strong>version</strong> in application config rather than referencing the key by ARN, expecting rotation to leave that version untouched. This is unnecessary and fragile — the key ARN/ID is stable across rotation, and KMS internally tracks which key material decrypts which ciphertext. Reference the key by ARN and let rotation happen transparently.</p>
+    </div>
+    <p style="margin-top:14px;">There is a compliance angle here too that shows up frequently in scenario questions. Some regulatory frameworks require evidence that key material rotates on a schedule, but do not necessarily require the underlying data to be re-encrypted on that same schedule. Automatic annual rotation for a customer-managed symmetric key satisfies the rotation requirement on its own — you are not additionally on the hook to re-encrypt your entire dataset just to stay compliant, because the control being audited is "does key material rotate," not "is every byte of stored data re-wrapped every year."</p>
+    <p style="margin-top:14px;">If a genuine business requirement does call for re-encrypting existing data under entirely new key material — for example, moving data to a brand-new customer-managed key after a suspected compromise of the old one — that is a deliberate, application-level migration: decrypt with the old key, encrypt with the new one, and update what is stored. That is a fundamentally different operation from rotation, even though the two get confused constantly in casual conversation and in distractor answers on the exam.</p>
+  </div>
+</section>
+
+<section class="scene scene-wide" id="scene-multiregion">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Topic 5 · Multi-Region Keys</div>
+    <h2 class="kinetic">Related keys. Not one key, live-synced.</h2>
+    <p style="margin-top:22px;">A multi-region key is a set of KMS keys in different regions that share the same key material and a common key ID prefix. That shared material is what lets you encrypt data in one region and decrypt it in another — the core use case for disaster recovery and global applications that need to move encrypted data across regions without a round trip to a single home region.</p>
+    <p style="margin-top:14px;"><strong>What it is not:</strong> a single key object replicated with live, automatic synchronization the way a database might replicate rows. Each regional key in the set is independently manageable — you can disable one region's replica, delete it, or manage its key policy separately from the others, and none of that automatically propagates. They started as clones of the same material; they are not wired together afterward.</p>
+    <div class="diagram-box">
+      <h3 style="margin-bottom:16px;">Multi-region key relationship</h3>
+      <div id="multiRegionDiagram"></div>
+    </div>
+    <div class="mentor-aside">
+      <p>The exam will describe a scenario where someone assumes updating the key policy in the primary region instantly applies everywhere. It does not. If you need consistent access control across every regional replica, you update each one — or you build automation to do it, because AWS will not do it for you.</p>
+    </div>
+    <p style="margin-top:14px;">Multi-region keys are the right answer when you genuinely need cross-region encrypt/decrypt continuity — DR failover, or a globally distributed application reading and writing the same encrypted data from multiple regions. Independent, per-region keys are more appropriate when the requirement is the opposite: tight regional isolation, such as data-residency rules that require a region's data to never be decryptable using material tied to any other region.</p>
+    <div class="scenario-card">
+      <h3>Production scenario</h3>
+      <p style="margin-top:10px;">A financial services workload must guarantee that EU customer data can never be decrypted using key material that also exists outside the EU, even as a backup. Multi-region keys are the wrong fit here — independent regional keys, scoped and never replicated, satisfy the residency requirement.</p>
+    </div>
+    <p style="margin-top:14px;">A useful mental test for exam scenarios: ask whether the requirement is about <em>continuity</em> or about <em>isolation</em>. Disaster recovery, active-active global applications, and any workflow where "encrypt here, decrypt there" needs to just work without a cross-region KMS call are continuity requirements — multi-region keys fit. Data residency, regulatory data sovereignty, and "this data must never be decryptable outside this boundary" are isolation requirements — independent per-region keys fit, precisely because they guarantee no shared material exists to leak across the boundary in the first place.</p>
+    <p style="margin-top:14px;">Also worth knowing operationally: you designate one replica as the primary when you first create a multi-region key, and every other replica is created from it. You can later promote a replica to become the new primary if needed, but this is a deliberate administrative action, not something that happens automatically during a regional failure — DR runbooks that assume automatic primary failover for multi-region keys are describing something AWS does not do on its own.</p>
+  </div>
+</section>
+
+<section class="scene" id="scene-transit">
+  <div class="ambient-blob" style="width:340px;height:340px;background:var(--c-data);bottom:6%;left:-6%;"></div>
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Topic 6 · Encryption In Transit — Inter-Resource</div>
+    <h2 class="kinetic">The wire needs protecting too.</h2>
+    <p style="margin-top:22px;">Everything so far protected data at rest. Data moving between an application and its data store — or between any two AWS resources — needs its own guarantee, and that guarantee is TLS enforcement, not KMS.</p>
+    <p style="margin-top:14px;">The exam-relevant mechanic ties directly back to Module 2's condition-key content: a resource policy can require <code class="mono">aws:SecureTransport</code> to be true, denying any request that arrives over plain HTTP rather than HTTPS. This is how you enforce, at the policy layer, that no client — internal or external — can talk to an S3 bucket, an API, or another resource without TLS in place, regardless of what the client itself is configured to do.</p>
+    <div class="policy-json">{
+  "Effect": "Deny",
+  "Principal": "*",
+  "Action": "s3:*",
+  "Resource": "arn:aws:s3:::example-bucket/*",
+  "Condition": {"Bool": {"aws:SecureTransport": "false"}}
+}</div>
+    <p>Notice this is enforced independently of encryption at rest. A bucket can have SSE-KMS at rest and still allow unencrypted transit unless this condition is explicitly in place — the two protections are separate controls that both need to be deliberately configured.</p>
+    <div class="scenario-card">
+      <h3>Production scenario</h3>
+      <p style="margin-top:10px;">A security review finds that an internal service-to-service call between an application tier and its database is unencrypted in transit, even though the database's storage volume is encrypted at rest. The fix is a resource or connection-level TLS requirement — encryption at rest never covered the network hop, and it was never meant to.</p>
+    </div>
+    <p style="margin-top:14px;">This ties back directly to Module 2's condition-key material because the mechanism is identical — a policy condition evaluated against the request context, not a KMS concept at all. That is a distinction worth holding onto for the exam: encryption at rest is a KMS and service-configuration problem, while encryption in transit enforcement is an IAM/resource-policy condition problem. A question describing "data must always be encrypted end to end" is usually testing whether you reach for both controls together, rather than assuming one implies the other.</p>
+    <p style="margin-top:14px;">The same <code class="mono">aws:SecureTransport</code> condition pattern applies well beyond S3 — it shows up on SQS queue policies, SNS topic policies, and API Gateway resource policies wherever a service supports condition-based resource policies. Wherever you see a requirement that a resource must reject any non-TLS request outright, this is the condition key to reach for, regardless of which specific service is in front of you.</p>
+    <p style="margin-top:14px;">It is worth being precise about what this Deny statement actually blocks versus what it does not. It blocks the request outright at the resource-policy layer before the operation is ever evaluated further — the caller gets an access-denied response, full stop, regardless of what their IAM policy allows. It does nothing to inspect or validate the TLS version or cipher suite in use, only whether the underlying transport was HTTPS at all. If a scenario requires enforcing a minimum TLS version specifically, that is a separate control, typically configured at the load balancer or API Gateway layer, not something this condition key expresses on its own.</p>
+  </div>
+</section>
+
+<section class="scene scene-wide" id="scene-comparison">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Reference</div>
+    <h2 class="kinetic">Key type comparison, at a glance.</h2>
+    <p style="margin-top:22px;">One table, the three key types side by side. Tap for the full deep-dive.</p>
+    <table class="comparison-table">
+      <tr><th>Attribute</th><th>AWS-managed</th><th>Customer-managed</th><th>AWS-owned</th></tr>
+      <tr><td>Visible in your account</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+      <tr><td>Key policy control</td><td>None</td><td>Full</td><td>None</td></tr>
+      <tr><td>Rotation control</td><td>Fixed annual, automatic</td><td>Optional automatic or manual</td><td>Managed entirely by AWS</td></tr>
+      <tr><td>Cross-account sharing</td><td>Not possible</td><td>Yes, via key policy</td><td>Not applicable</td></tr>
+      <tr><td>Cost</td><td>No monthly fee, usage charges apply</td><td>Monthly fee + usage charges</td><td>No direct cost to you</td></tr>
+      <tr><td>Typical use case</td><td>Default service-side encryption</td><td>Fine-grained control, cross-account, compliance</td><td>Internal AWS service operations</td></tr>
+    </table>
+    <button class="reveal-btn" id="openSheetBtn" style="margin-top:20px;">View deep-dive details</button>
+  </div>
+</section>
+
+<div class="bottom-sheet-overlay" id="sheetOverlay"></div>
+<div class="bottom-sheet" id="keyTypeSheet">
+  <button class="sheet-close" id="closeSheetBtn" aria-label="Close">&times;</button>
+  <h3>Choosing the right key type</h3>
+  <p style="margin-top:14px;">Default to a <strong>customer-managed key</strong> whenever the scenario mentions any of: a custom key policy, cross-account access, controlled rotation timing, or the ability to disable/delete the key on your own schedule. Reach for <strong>AWS-managed</strong> only when the scenario explicitly says "default encryption, no special requirements." <strong>AWS-owned</strong> keys are almost never something you configure — they show up as background infrastructure inside certain AWS services.</p>
+</div>
+
+<section class="scene scene-wide" id="scene-whocanuse">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Exercise</div>
+    <h2 class="kinetic">Who Can Use This Key?</h2>
+    <p style="margin-top:22px;">Ten scenarios. Read the policy context, predict the answer, then reveal the reasoning — walking key-policy-first evaluation order every time.</p>
+    <div id="whoCanUseContainer"></div>
+  </div>
+</section>
+
+<section class="scene scene-wide" id="scene-traps">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Production Trap Gallery</div>
+    <h2 class="kinetic">Six ways this breaks in real environments.</h2>
+    <div id="trapGallery"></div>
+  </div>
+</section>
+
+<section class="scene scene-wide" id="scene-exam">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Mock Exam · Knowledge Check</div>
+    <h2 class="kinetic">Twelve questions, SCS-C03 style.</h2>
+    <div class="score-tracker">
+      <span>Score: <span id="scoreCount">0</span> / <span id="scoreTotal">0</span></span>
+      <span id="scorePct">0%</span>
+    </div>
+    <div id="examContainer"></div>
+  </div>
+</section>
+
+<section class="scene scene-wide" id="scene-faq">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Discussion</div>
+    <h2 class="kinetic">Questions engineers actually ask.</h2>
+    <div class="discussion" id="faqContainer"></div>
+  </div>
+</section>
+
+<section class="scene scene-wide" id="scene-resources">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Resources</div>
+    <h2 class="kinetic">Go deeper.</h2>
+    <div class="resource-grid" id="resourceGrid"></div>
+  </div>
+</section>
+
+<section class="scene" id="scene-closing">
+  <div class="scene-inner reveal">
+    <div class="eyebrow">Up Next</div>
+    <h2 class="kinetic">You know how to lock the door.</h2>
+    <p style="margin-top:22px;">You now have the full mechanics: key types, envelope encryption, the key-policy-as-root-control model, rotation, multi-region keys, and encryption in transit. That is how encryption works.</p>
+    <p style="margin-top:14px;">Module 8 asks the next question, staying in Domain 5: which doors actually exist, and where do the keys live operationally? Data discovery, secrets management, and certificate management pick up right where this module leaves off — because knowing how to encrypt correctly only matters once you know exactly what needs encrypting, and where the operational secrets protecting that data actually get stored, rotated, and audited day to day.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-nav">
+    <a href="module-06-workload-hybrid.html">← Previous: Module 06 — Workload, Compute & Hybrid Connectivity</a>
+    <a href="module-08-data-secrets.html">Next: Module 08 — Data Discovery, Secrets & Certificates →</a>
+  </div>
+  <p style="text-align:center; font-size:0.85rem;">SCS-C03 Certification Course · Module 07 of 16 · Domain 5 — Data Protection</p>
+</footer>
+
+<script>
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Theme toggle
+const html = document.documentElement;
+html.style.colorScheme = html.getAttribute("data-theme") === "light" ? "light" : "dark";
+const themeBtn = document.getElementById("themeToggle");
+themeBtn.textContent = html.getAttribute("data-theme") === "light" ? "☀️" : "🌙";
+themeBtn.addEventListener("click", () => {
+  const current = html.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  html.setAttribute("data-theme", next);
+  html.style.colorScheme = next;
+  themeBtn.textContent = next === "light" ? "☀️" : "🌙";
+});
+
+// Scroll progress
+function updateProgress(){ const h = document.documentElement; const scrolled = h.scrollTop; const height = h.scrollHeight - h.clientHeight; document.getElementById("scrollProgress").style.width = (height > 0 ? (scrolled / height) * 100 : 0) + "%"; }
+document.addEventListener("scroll", () => requestAnimationFrame(updateProgress));
+
+// Kinetic headings
+function wrapKinetic(el, text){
+  const words = text.split(" ");
+  el.innerHTML = words.map((w, i) => `<span class="kw"><span class="kw-inner" style="transition-delay:${i * 45}ms">${w}</span></span>`).join(" ");
+}
+document.querySelectorAll("h2.kinetic").forEach(h => wrapKinetic(h, h.textContent));
+const kineticIo = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }); }, { threshold: 0.4 });
+document.querySelectorAll("h2.kinetic").forEach(h => kineticIo.observe(h));
+
+// Reveal / stagger
+const io = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }); }, { threshold: 0.15 });
+document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+document.querySelectorAll(".stagger > *").forEach((el, i) => { el.style.transitionDelay = (i * 90) + "ms"; });
+
+// Bottom sheet
+const openSheetBtn = document.getElementById("openSheetBtn");
+const sheetOverlay = document.getElementById("sheetOverlay");
+const keyTypeSheet = document.getElementById("keyTypeSheet");
+const closeSheetBtn = document.getElementById("closeSheetBtn");
+function openSheet(){ sheetOverlay.classList.add("open"); keyTypeSheet.classList.add("open"); }
+function closeSheet(){ sheetOverlay.classList.remove("open"); keyTypeSheet.classList.remove("open"); }
+openSheetBtn.addEventListener("click", openSheet);
+closeSheetBtn.addEventListener("click", closeSheet);
+sheetOverlay.addEventListener("click", closeSheet);
+
+// ---- Envelope encryption diagram ----
+const envelopeSteps = [
+  {t: "1 · Request a data key", d: "Your application calls GenerateDataKey against your KMS key, specifying a key spec (typically AES-256)."},
+  {t: "2 · KMS responds with two things", d: "A plaintext data key, and that same data key encrypted under your KMS key. Both come back in one response."},
+  {t: "3 · Encrypt locally", d: "Your application uses the plaintext data key to encrypt your actual data, entirely on your side — KMS never sees the bulk data."},
+  {t: "4 · Discard the plaintext key", d: "The plaintext data key is wiped from memory immediately. Only the encrypted data key is kept, stored alongside your ciphertext."},
+  {t: "5 · Decrypting later", d: "KMS Decrypt is called on the stored encrypted data key, returning the plaintext data key, which is then used locally to decrypt your data."}
+];
+const envelopeDiagram = document.getElementById("envelopeDiagram");
+envelopeSteps.forEach((s, i) => {
+  const row = document.createElement("div");
+  row.className = "mindnode";
+  row.setAttribute("tabindex", "0");
+  row.setAttribute("role", "button");
+  row.setAttribute("aria-label", s.t);
+  row.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface-raised);border:1px solid var(--line);border-radius:12px;">
+    <span class="mono" style="color:var(--accent);font-size:13px;">${i+1}</span>
+    <strong style="font-size:0.95rem;">${s.t}</strong>
+  </div>
+  <div class="node-info"><p>${s.d}</p></div>`;
+  row.addEventListener("click", () => row.querySelector(".node-info").classList.toggle("open"));
+  row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); row.querySelector(".node-info").classList.toggle("open"); } });
+  envelopeDiagram.appendChild(row);
+});
+
+// ---- Authority diagram (key policy / IAM / grants) ----
+const authorityLayers = [
+  {t: "Layer 1 — Key Policy (root gate)", d: "Attached directly to the KMS key. Nothing downstream matters if this layer does not allow the principal, either directly or via the Enable IAM User Permissions statement."},
+  {t: "Layer 2 — IAM Policy (extension)", d: "Only effective once the key policy has delegated authority down to account IAM. Grants or restricts specific actions for specific principals within what the key policy already allows."},
+  {t: "Layer 3 — Grants (temporary, programmatic)", d: "A narrow, revocable permission created via API call, often by AWS services themselves, without ever editing the key policy document."}
+];
+const authorityDiagram = document.getElementById("authorityDiagram");
+authorityLayers.forEach((l, i) => {
+  const row = document.createElement("div");
+  row.className = "mindnode";
+  row.setAttribute("tabindex", "0");
+  row.setAttribute("role", "button");
+  row.setAttribute("aria-label", l.t);
+  row.style.marginBottom = "10px";
+  row.innerHTML = `<div style="padding:16px 18px;background:var(--surface-raised);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;">
+    <strong style="font-size:0.95rem;">${l.t}</strong>
+  </div>
+  <div class="node-info"><p>${l.d}</p></div>`;
+  row.addEventListener("click", () => row.querySelector(".node-info").classList.toggle("open"));
+  row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); row.querySelector(".node-info").classList.toggle("open"); } });
+  authorityDiagram.appendChild(row);
+});
+
+// ---- Multi-region key diagram ----
+const mrkNodes = [
+  {t: "us-east-1 replica (primary)", d: "Created first. Holds the shared key material. Independently manages its own key policy and lifecycle from this point forward."},
+  {t: "eu-west-1 replica", d: "Created from the primary using the same key material, sharing the mrk- key ID prefix. Not automatically kept in sync afterward — its key policy can diverge."},
+  {t: "ap-southeast-2 replica", d: "Another independent replica. Deleting or disabling this one has no effect on the others — there is no live replication link between replicas."}
+];
+const mrkDiagram = document.getElementById("multiRegionDiagram");
+mrkNodes.forEach((n) => {
+  const row = document.createElement("div");
+  row.className = "mindnode";
+  row.setAttribute("tabindex", "0");
+  row.setAttribute("role", "button");
+  row.setAttribute("aria-label", n.t);
+  row.style.marginBottom = "10px";
+  row.innerHTML = `<div style="padding:14px 16px;background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;">
+    <strong style="font-size:0.92rem;">${n.t}</strong>
+  </div>
+  <div class="node-info"><p>${n.d}</p></div>`;
+  row.addEventListener("click", () => row.querySelector(".node-info").classList.toggle("open"));
+  row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); row.querySelector(".node-info").classList.toggle("open"); } });
+  mrkDiagram.appendChild(row);
+});
+
+// ---- Who Can Use This Key? ----
+const whoScenarios = [
+  {ctx: "Key policy has no Enable IAM User Permissions statement, only allows Account root. An IAM policy in the same account grants a role kms:Decrypt with Resource *.", q: "Can that role decrypt using this key?", a: "No", reason: "Without the delegation statement, IAM policies in the account have no effect on this key. Only the root principal or whoever the key policy explicitly names can act on it."},
+  {ctx: "Key policy includes the standard Enable IAM User Permissions statement. A role has an IAM policy allowing kms:Decrypt on this key's ARN.", q: "Can that role decrypt?", a: "Yes", reason: "The key policy delegated control to account IAM, and the IAM policy explicitly allows the action — both layers align."},
+  {ctx: "Key policy explicitly allows Account B's root principal to use the key for Decrypt. Account B has no IAM policy referencing this key at all.", q: "Can a role in Account B decrypt?", a: "No", reason: "Cross-account access needs both sides: the key policy allowing the account/principal, AND an IAM policy in Account B explicitly granting the action to that role."},
+  {ctx: "Key policy allows Account B's specific role ARN directly (not just root). Account B's IAM policy for that role also allows kms:Decrypt.", q: "Can that specific role decrypt?", a: "Yes", reason: "Both layers explicitly align: the key policy names the exact principal, and the IAM policy grants the action."},
+  {ctx: "No key policy statement or IAM policy exists, but a grant was issued to a role for kms:Decrypt.", q: "Can that role decrypt via the grant?", a: "Yes", reason: "Grants operate independently of the key policy document — a valid, unretired grant is sufficient authorization for the specific action it covers."},
+  {ctx: "A grant was issued for kms:Encrypt only. The same role attempts kms:Decrypt.", q: "Does the grant cover this?", a: "No", reason: "Grants are narrowly scoped to the exact operations listed. A grant for Encrypt does not extend to Decrypt."},
+  {ctx: "Key policy allows the account root with the delegation statement. An IAM policy explicitly Denies kms:Decrypt for this role.", q: "Can the role decrypt?", a: "No", reason: "An explicit Deny anywhere in the evaluated policies always wins, regardless of what the key policy or other Allow statements say."},
+  {ctx: "Key policy grants access to an AWS service principal (e.g., logs.amazonaws.com) for GenerateDataKey, used for encrypting CloudWatch Logs.", q: "Does the service need an additional IAM policy to use the key?", a: "No", reason: "Service principals granted directly in the key policy do not need a separate IAM policy — the key policy statement is sufficient for that service's use case."},
+  {ctx: "A customer-managed key's policy was updated to add a new IAM role, but the change has not yet propagated in the console view an engineer is looking at.", q: "Is IAM policy propagation the likely cause of an immediate access-denied?", a: "No", reason: "Policy changes typically apply within seconds; console caching, not propagation delay, is the more common cause of what looks like a lag. Re-check the actual policy document rather than assuming eventual consistency."},
+  {ctx: "Key policy allows an IAM role to call kms:CreateGrant. That role creates a grant for a second role to use kms:Decrypt.", q: "Can the second role now decrypt?", a: "Yes", reason: "A properly created grant is a valid authorization path — it does not require the second role to appear in the key policy or have its own IAM policy statement for this key."}
+];
+const whoContainer = document.getElementById("whoCanUseContainer");
+whoScenarios.forEach((s, i) => {
+  const card = document.createElement("div");
+  card.className = "scenario-card";
+  card.innerHTML = `<p class="mono" style="color:var(--text-dim);font-size:0.85rem;">SCENARIO ${i+1}</p>
+    <p style="margin-top:8px;color:var(--text);">${s.ctx}</p>
+    <p style="margin-top:10px;font-weight:600;color:var(--text);">${s.q}</p>
+    <button class="reveal-btn" style="margin-top:12px;">Reveal answer</button>
+    <div class="reveal-panel"><p style="margin-top:0;"><strong style="color:var(--c-data);">${s.a}.</strong> ${s.reason}</p></div>`;
+  const btn = card.querySelector(".reveal-btn");
+  const panel = card.querySelector(".reveal-panel");
+  btn.addEventListener("click", () => panel.classList.toggle("open"));
+  whoContainer.appendChild(card);
+});
+
+// ---- Production trap gallery ----
+const traps = [
+  {t: "Cross-account access request updated the wrong side", d: "A team updated the consuming account's IAM policy to allow kms:Decrypt, but never touched the key policy in the owning account. Access stayed denied for days until someone checked the key policy first."},
+  {t: "Rotation blamed for a decrypt failure", d: "After annual rotation, an application started failing to decrypt older objects — the real cause was an unrelated IAM policy change deployed the same week, not rotation. Retained key material means rotation itself does not break old ciphertext."},
+  {t: "Multi-region key assumed to auto-sync", d: "A key policy update in the primary region was assumed to propagate to the EU replica automatically. It did not — the EU replica kept its original, more permissive policy for weeks before anyone noticed the drift."},
+  {t: "Grant used where a permanent policy change was needed", d: "A team issued a temporary grant for what turned out to be a permanent integration need, leaving the actual access path undocumented in any policy — an auditor could not find how the integration was authorized."},
+  {t: "Asymmetric key chosen for a routine encryption need", d: "A team defaulted to an asymmetric key 'for extra security' on an internal encryption workflow with no external public-key exchange and no signing requirement, adding operational complexity for zero benefit."},
+  {t: "Deleted key policy statement removed IAM delegation entirely", d: "During a policy cleanup, the Enable IAM User Permissions statement was removed as 'unused.' Every IAM policy in the account instantly stopped working against that key, breaking production access until the statement was restored."}
+];
+const trapGallery = document.getElementById("trapGallery");
+traps.forEach((t) => {
+  const card = document.createElement("div");
+  card.className = "trap-card";
+  card.innerHTML = `<h4>${t.t}</h4><p>${t.d}</p>`;
+  trapGallery.appendChild(card);
+});
+
+// ---- Mock exam ----
+const examQuestions = [
+  {q: "A developer has an IAM policy granting kms:* on Resource *, but still gets AccessDenied calling kms:Decrypt. What is the most likely cause?", choices: ["The key policy does not allow this principal", "The IAM policy needs a Sid field", "KMS requires MFA by default", "The region is wrong"], correct: 0, explain: "The key policy is the root control on a KMS key. A permissive IAM policy alone is never sufficient if the key policy does not also allow the principal."},
+  {q: "What does GenerateDataKey return?", choices: ["Only an encrypted data key", "Only a plaintext data key", "Both a plaintext and an encrypted data key", "A signed certificate"], correct: 2, explain: "It returns both — the plaintext copy is used immediately and discarded; only the encrypted copy is stored."},
+  {q: "A customer-managed key was rotated automatically last month. What happens to data encrypted before that rotation?", choices: ["It becomes undecryptable", "It is automatically re-encrypted under the new material", "It remains decryptable via retained old key material", "It must be manually migrated within 30 days"], correct: 2, explain: "Rotation retains old key material internally so previously encrypted data stays decryptable without any re-encryption step."},
+  {q: "Which is the correct default choice for ordinary application-level encryption with no external public-key exchange?", choices: ["Asymmetric KMS key", "Symmetric KMS key", "AWS-owned key", "A hardware security module key pair"], correct: 1, explain: "Symmetric is the default and correct choice unless the scenario specifically needs signing or an external public-key exchange."},
+  {q: "A multi-region key's primary replica has its key policy updated. What happens to the replica in another region?", choices: ["It updates automatically within seconds", "It updates automatically within 24 hours", "It does not update — replicas are independently managed", "It is deleted for consistency"], correct: 2, explain: "Multi-region key replicas share key material but are independently manageable; policy changes do not propagate automatically."},
+  {q: "Which mechanism is best suited for a short-lived, programmatically revocable permission on a KMS key, such as one used by an AWS service internally?", choices: ["Editing the key policy", "A grant", "An SCP", "A permission boundary"], correct: 1, explain: "Grants are designed exactly for temporary, narrowly scoped, API-manageable permissions — without touching the key policy document."},
+  {q: "A resource policy includes a Deny statement with Condition Bool aws:SecureTransport false. What does this enforce?", choices: ["Encryption at rest", "TLS-only access to the resource", "Automatic key rotation", "Cross-account KMS access"], correct: 1, explain: "This condition denies any request not made over HTTPS/TLS, enforcing encryption in transit at the resource-policy layer."},
+  {q: "A team wants cross-account access to a customer-managed key. Which combination of changes is required?", choices: ["Key policy change only", "IAM policy change only", "Both a key policy change in the owning account and an IAM policy change in the consuming account", "A grant only, no policy edits needed"], correct: 2, explain: "Cross-account KMS access requires the key policy to allow the external account/principal, AND an IAM policy in the consuming account permitting the action."},
+  {q: "Why is envelope encryption used instead of encrypting bulk data directly with a KMS key?", choices: ["KMS cannot encrypt more than 1KB and has API throughput limits for bulk data", "It is required by all AWS compliance frameworks", "It removes the need for any key policy", "It makes data permanently undecryptable if the key is deleted"], correct: 0, explain: "KMS has payload size and throughput constraints; envelope encryption keeps KMS calls limited to small data keys while your data is encrypted locally."},
+  {q: "An asymmetric KMS key is being considered for signing application release artifacts. Is this an appropriate use case?", choices: ["No, symmetric keys should always be used", "Yes, signing and verification is a core use case for asymmetric keys", "No, asymmetric keys cannot rotate so they cannot be used at all", "Yes, but only for S3 SSE-KMS"], correct: 1, explain: "Signing and verification is one of the two specific problems asymmetric keys solve — this is an appropriate use case."},
+  {q: "A grant was created for kms:Decrypt only. Can the grantee also call kms:Encrypt under that grant?", choices: ["Yes, grants cover all KMS actions once created", "No, grants are scoped to only the operations explicitly listed", "Yes, but only for 24 hours", "Only if the key policy also allows it separately"], correct: 1, explain: "Grants are narrowly scoped — a grant for Decrypt does not implicitly cover Encrypt or any other unlisted action."},
+  {q: "A data-residency requirement mandates that a region's data can never be decrypted using key material located outside that region, even for DR. What is the right key design?", choices: ["A multi-region key spanning both regions", "Independent, per-region customer-managed keys with no shared material", "An AWS-owned key", "A single symmetric key shared via IAM policy"], correct: 1, explain: "Multi-region keys share material across regions, which conflicts with strict residency requirements. Independent per-region keys with no shared material are correct here."}
+];
+let examScore = 0;
+document.getElementById("scoreTotal").textContent = examQuestions.length;
+const examContainer = document.getElementById("examContainer");
+examQuestions.forEach((eq, qi) => {
+  const card = document.createElement("div");
+  card.className = "exam-card";
+  card.innerHTML = `<p class="mono" style="color:var(--text-dim);font-size:0.85rem;">QUESTION ${qi+1}</p>
+    <p style="margin-top:8px;font-weight:600;color:var(--text);">${eq.q}</p>
+    <div class="choices"></div>
+    <div class="exam-explain"></div>`;
+  const choicesEl = card.querySelector(".choices");
+  const explainEl = card.querySelector(".exam-explain");
+  let answered = false;
+  eq.choices.forEach((c, ci) => {
+    const btn = document.createElement("button");
+    btn.className = "exam-choice";
+    btn.textContent = c;
+    btn.addEventListener("click", () => {
+      if (answered) return;
+      answered = true;
+      if (ci === eq.correct){
+        btn.classList.add("correct");
+        examScore++;
+      } else {
+        btn.classList.add("incorrect");
+        choicesEl.children[eq.correct].classList.add("correct");
+      }
+      document.getElementById("scoreCount").textContent = examScore;
+      document.getElementById("scorePct").textContent = Math.round((examScore/examQuestions.length)*100) + "%";
+      explainEl.textContent = eq.explain;
+      explainEl.classList.add("show");
+    });
+    choicesEl.appendChild(btn);
+  });
+  examContainer.appendChild(card);
+});
+
+// ---- FAQ ----
+const faqPairs = [
+  {q: "Why does IAM alone work for almost everything except KMS?", a: "Most AWS resources rely purely on identity-based policies because the resource itself has no separate policy layer of its own. KMS keys are different — they are always resource-policy-first by design, specifically so that key administrators retain a hard override on who can ever use a given key, independent of how permissive account IAM becomes. It is a deliberate extra layer of control given how sensitive key material is."},
+  {q: "If I remove the Enable IAM User Permissions statement, do I lose access completely?", a: "Not necessarily — whoever is still explicitly named in the key policy retains access. But every IAM policy in the account instantly stops mattering for that key, which is why this statement should never be removed casually during a policy cleanup."},
+  {q: "Do grants show up in the key policy document?", a: "No. Grants exist as separate API-managed objects tracked internally by KMS, entirely apart from the key policy JSON. You list and manage them with dedicated APIs like ListGrants and RevokeGrant, not by editing the policy."},
+  {q: "Is a multi-region key the same key ID everywhere?", a: "The replicas share a common mrk- prefix and the same underlying key material, but each regional replica has its own distinct key ID and ARN. They are related, not identical single objects."},
+  {q: "Does rotating a key change its ARN?", a: "No. The key's ARN and key ID stay exactly the same across rotation — only the underlying key material changes for future encryption operations, with old material retained for existing ciphertext."},
+  {q: "When would I actually need an asymmetric KMS key in a real design?", a: "Two situations: you need to sign data (like release artifacts or JWTs) so a verifier can confirm integrity without holding your private key, or an external party needs to encrypt data for you using only a public key, without ever seeing your private key material."},
+  {q: "Can I enforce TLS and encryption at rest with the same policy statement?", a: "No, they are separate concerns typically enforced with separate statements — an aws:SecureTransport condition covers transit, while SSE-KMS configuration covers at-rest. Both need to be deliberately set; neither implies the other."},
+  {q: "What is the fastest way to debug a KMS AccessDenied error?", a: "Check the key policy first — does it name this principal directly, or does it include the IAM delegation statement? Then check IAM policy for an explicit allow and no deny. Then check for a relevant grant. Working in any other order wastes time."}
+];
+const faqContainer = document.getElementById("faqContainer");
+faqPairs.forEach((p) => {
+  const pair = document.createElement("div");
+  pair.className = "discussion-pair";
+  pair.innerHTML = `<div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>${p.q}</div>
+    <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>${p.a}</div>`;
+  pair.querySelector(".bubble-q").addEventListener("click", () => pair.classList.toggle("open"));
+  faqContainer.appendChild(pair);
+});
+
+// ---- Resources ----
+const resources = [
+  {t: "AWS KMS Developer Guide — Key Policies", free: true, src: "docs.aws.amazon.com", d: "The authoritative reference for writing and reasoning about KMS key policy documents.", url: "https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html"},
+  {t: "AWS KMS Developer Guide — Grants", free: true, src: "docs.aws.amazon.com", d: "Covers grant creation, retirement, and how grants interact with key policies.", url: "https://docs.aws.amazon.com/kms/latest/developerguide/grants.html"},
+  {t: "AWS KMS Developer Guide — Envelope Encryption", free: true, src: "docs.aws.amazon.com", d: "The official walkthrough of data keys, GenerateDataKey, and envelope encryption mechanics.", url: "https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#enveloping"},
+  {t: "AWS KMS Developer Guide — Multi-Region Keys", free: true, src: "docs.aws.amazon.com", d: "Details on how multi-Region keys are created, replicated, and independently managed.", url: "https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html"},
+  {t: "AWS KMS Developer Guide — Rotating Keys", free: true, src: "docs.aws.amazon.com", d: "Explains automatic annual rotation behavior and manual rotation for asymmetric keys.", url: "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html"},
+  {t: "AWS Whitepaper — Logging and Monitoring for Data Protection", free: true, src: "aws.amazon.com/whitepapers", d: "Broader context on how encryption fits into overall AWS data protection posture.", url: "https://aws.amazon.com/whitepapers/"},
+  {t: "AWS Skill Builder — Security Specialty Learning Path", free: true, src: "skillbuilder.aws", d: "Official curated digital training aligned to the SCS-C03 exam guide.", url: "https://skillbuilder.aws/"},
+  {t: "AWS re:Post — KMS Topic Threads", free: true, src: "repost.aws", d: "Community and AWS-staff answered threads on real KMS key policy and grant edge cases.", url: "https://repost.aws/tags/TA4IvCeWI1TE66q4jEj4Z9zg/amazon-kms"},
+  {t: "Tutorials Dojo — SCS-C03 Practice Exams", free: false, src: "tutorialsdojo.com", d: "Widely used practice question sets with detailed rationale, including KMS-heavy sections.", url: "https://tutorialsdojo.com/"},
+  {t: "Adrian Cantrill — AWS Security Specialty Course", free: false, src: "learn.cantrill.io", d: "Deep, hands-on video course with strong coverage of KMS internals and demos.", url: "https://learn.cantrill.io/"},
+  {t: "Stephane Maarek — AWS Security Specialty on Udemy", free: false, src: "udemy.com", d: "A widely taken full-course option covering every domain including data protection.", url: "https://www.udemy.com/"},
+  {t: "A Cloud Guru — AWS Certified Security Specialty", free: false, src: "pluralsight.com", d: "Structured video training with labs, part of the Pluralsight/ACG catalog.", url: "https://www.pluralsight.com/"}
+];
+const resourceGrid = document.getElementById("resourceGrid");
+resources.forEach((r) => {
+  const card = document.createElement("div");
+  card.className = "resource-card tilt";
+  card.innerHTML = `<span class="resource-pill ${r.free ? "free" : "paid"}">${r.free ? "Free" : "Paid"}</span>
+    <h4>${r.t}</h4>
+    <div class="source">${r.src}</div>
+    <p>${r.d}</p>
+    <a href="${r.url}" target="_blank" rel="noopener">Visit resource →</a>`;
+  resourceGrid.appendChild(card);
+});
+
+// Tilt on hover
+if (!reduceMotion){
+  document.querySelectorAll(".tilt").forEach(card => {
+    card.addEventListener("mousemove", (e) => {
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(600px) rotateX(${py * -6}deg) rotateY(${px * 6}deg) translateY(-2px)`;
+    });
+    card.addEventListener("mouseleave", () => { card.style.transform = "perspective(600px) rotateX(0) rotateY(0)"; });
+  });
+}
+
+// Side rail nav + IntersectionObserver, wired last
+const railSections = ["scene-bridge","scene-keytypes","scene-envelope","scene-authority","scene-rotation","scene-multiregion","scene-transit","scene-comparison","scene-whocanuse","scene-traps","scene-exam","scene-faq","scene-resources","scene-closing"];
+const railNav = document.getElementById("railNav");
+railSections.forEach((id) => {
+  const dot = document.createElement("div");
+  dot.className = "rail-dot";
+  dot.dataset.target = id;
+  dot.addEventListener("click", () => document.getElementById(id).scrollIntoView({behavior: reduceMotion ? "auto" : "smooth"}));
+  railNav.appendChild(dot);
+});
+const railDots = document.querySelectorAll(".rail-dot");
+const railIo = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting){
+      railDots.forEach(d => d.classList.remove("active"));
+      const match = document.querySelector(`.rail-dot[data-target="${e.target.id}"]`);
+      if (match) match.classList.add("active");
+    }
+  });
+}, {threshold: 0.5});
+railSections.forEach(id => { const el = document.getElementById(id); if (el) railIo.observe(el); });
+</script>
+</body>
+</html>
