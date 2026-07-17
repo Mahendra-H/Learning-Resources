@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 12: Multi-Account Governance & Continuous Compliance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grain-opacity: 0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg: rgba(10,14,26,0.72);
+  --node-glow: rgba(76,134,255,0.28);
+  --overlay: rgba(4,6,14,0.6);
+  --grid-line: rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme: dark; }
+html[data-theme="light"]{
+  color-scheme: light;
+  --grain-opacity: 0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow: 0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg: rgba(246,247,251,0.72);
+  --node-glow: rgba(47,111,237,0.20);
+  --overlay: rgba(20,26,40,0.35);
+  --grid-line: rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth; background:var(--bg); scroll-padding-top:90px;}
+body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em;}
+h2{font-size:clamp(1.8rem, 4vw, 2.7rem); font-weight:700; margin-bottom:22px;}
+h3{font-size:1.3rem; font-weight:600; margin-bottom:14px;}
+p{line-height:1.75; color:var(--text-dim); font-size:1rem; margin-bottom:16px;}
+a{color:var(--accent);}
+.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); overflow:hidden; }
+footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); border-top:1px solid var(--line); }
+.col{ max-width:840px; margin:0 auto; position:relative; z-index:2; }
+.eyebrow{ font-family:'JetBrains Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.12em; color:var(--c-gov); display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.eyebrow::before{ content:''; width:28px; height:1px; background:var(--c-gov); display:inline-block; }
+strong{color:var(--text);}
+
+/* grain overlay — bug fix #2, no mix-blend-mode */
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity, 0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+nav.topnav{ position:fixed; top:0; left:0; right:0; z-index:100; background:var(--nav-bg); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); padding:16px 40px; display:flex; align-items:center; justify-content:space-between; }
+.brand{ font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--text-dim); letter-spacing:0.04em; }
+.brand strong{ color:var(--c-gov); }
+.nav-actions{ display:flex; gap:14px; align-items:center; }
+#themeToggle{ background:var(--surface); border:1px solid var(--line); color:var(--text); border-radius:20px; padding:7px 16px; font-family:'JetBrains Mono', monospace; font-size:12px; cursor:pointer; transition:border-color .2s ease; }
+#themeToggle:hover{ border-color:var(--c-gov); }
+
+.ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
+@keyframes driftBlob{ 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(4%,-6%) scale(1.08);} 100%{transform:translate(-5%,4%) scale(0.96);} }
+
+.kw{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em;}
+.kw-inner{display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+
+.title-card{ min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; }
+.title-card h2{ font-size:clamp(2.2rem, 7vw, 5.4rem); line-height:1.1; font-weight:700; color:var(--card-text); }
+.title-card p{ color:#9AA5C0; max-width:600px; margin-top:18px; }
+.scanbeam{ position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg, transparent, rgba(76,134,255,0.14), transparent); animation:scanSweep 6s linear infinite; }
+@keyframes scanSweep{ 0%{top:-140px;} 100%{top:100%;} }
+
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .8s ease, transform .8s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+.stagger > *{opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease, transform .6s ease;}
+.stagger.in > *{opacity:1; transform:translateY(0) scale(1);}
+
+.rail{ position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px; }
+.rail-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease, transform .3s ease; }
+.rail-dot.active{ background:var(--accent); border-color:var(--accent); transform:scale(1.3); }
+@media (max-width:900px){ .rail{display:none;} }
+
+.mentor-aside{ background:var(--surface); border-left:3px solid var(--accent); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0; }
+.mentor-aside::before{ content:'🛡️ MENTOR NOTE'; display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--accent); margin-bottom:8px; }
+.mentor-aside p{ font-size:0.94rem; color:var(--text); line-height:1.7; font-style:italic; margin-bottom:0; }
+
+.scenario-box{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 26px; margin:22px 0; }
+.scenario-box .tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-detect); margin-bottom:10px; display:block; }
+.scenario-box p{ margin-bottom:0; }
+
+.trap-box{ background:var(--c-ir-dim); border:1px solid var(--c-ir); border-radius:14px; padding:20px 24px; margin:22px 0; }
+.trap-box .tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-ir); margin-bottom:10px; display:block; }
+.trap-box p{ margin-bottom:0; color:var(--text); }
+
+.exam-box{ background:var(--c-gov-dim); border:1px solid var(--c-gov); border-radius:14px; padding:20px 24px; margin:22px 0; }
+.exam-box .tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-gov); margin-bottom:10px; display:block; }
+.exam-box p{ margin-bottom:0; color:var(--text); }
+
+.mindnode{ cursor:pointer; }
+.node-info{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:0; }
+.node-info.open{ max-height:320px; opacity:1; margin-top:14px; padding:16px 20px; }
+.node-info p{ margin-bottom:0; }
+
+@media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
+
+.footer-nav{ max-width:840px; margin:0 auto 40px; display:flex; justify-content:space-between; gap:20px; }
+.footer-nav a{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 22px; text-decoration:none; flex:1; transition:border-color .2s ease; }
+.footer-nav a:hover{ border-color:var(--c-gov); }
+.footer-nav .dir{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:6px; }
+.footer-nav .ttl{ color:var(--text); font-weight:600; font-family:'Space Grotesk',sans-serif; }
+.footer-nav .next{ text-align:right; }
+@media (max-width:700px){ .footer-nav{flex-direction:column;} .footer-nav .next{text-align:left;} }
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress" style="position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:300; transition:width .08s linear;"></div>
+<nav class="topnav">
+  <div class="brand">SCS-C03 · <strong>MODULE 12</strong> · Governance</div>
+  <div class="nav-actions">
+    <button id="themeToggle">☾ DARK</button>
+  </div>
+</nav>
+<nav class="rail" id="railNav"></nav>
+
+<main id="mainContent">
+<!-- CHUNK CONTENT INSERTS BELOW THIS LINE -->
+<section class="scene" id="scene-bridge-open" data-title="Domain Shift">
+  <div class="ambient-blob" style="width:520px;height:520px;background:var(--c-gov);top:-120px;left:-160px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">DOMAIN SHIFT · 2 → 6</div>
+    <h2 class="kinetic">Everything you built has been leading here.</h2>
+    <p>Module 11 closed with you inside a single account, walking a security incident from detection through containment to recovery. Necessary work, but narrow work — one account, one blast radius, one timeline.</p>
+    <p>Zoom out now. The organization you actually operate inside isn't one account. It's dozens, sometimes hundreds — a workload account per team, a sandbox for experimentation, a log-archive account from Module 9 quietly ingesting CloudTrail from everywhere, a forensics account from Module 11 waiting for the next incident. None of that coheres into a security posture on its own. Something has to hold the shape.</p>
+    <p>That something is <strong>governance</strong> — Domain 6, 14% of the exam, and the domain this module opens. Module 3 gave you SCPs and RCPs as tools attached to individual accounts. Module 9 gave you centralized logging as a pattern. This module is where those threads finally assemble into one structure: an organization of accounts that is governed, not just monitored — where the right guardrail exists at the right scope before an engineer ever has the chance to violate it.</p>
+    <div class="mentor-aside"><p>If Module 11 was about how you respond when something goes wrong in one account, this module is about designing the organization so that "wrong" becomes structurally rarer in the first place — and so that when it does happen, it's contained by design, not by luck.</p></div>
+  </div>
+</section>
+
+<section class="scene" id="scene-organizations" data-title="AWS Organizations">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-iam);bottom:-100px;right:-140px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">CONCEPT 1 OF 6</div>
+    <h2 class="kinetic">AWS Organizations, at real depth</h2>
+    <p>Module 1 introduced Organizations as the container that lets you manage multiple accounts centrally. Here's the part that actually matters for the exam and for real architecture: the <strong>organizational unit (OU)</strong> is not a folder for tidiness. It's the structural mechanism by which every policy you attach — SCPs restricting what's possible, RCPs restricting what resource policies can grant, tag policies enforcing naming — gets applied at a scope larger than one account.</p>
+    <p>OUs nest. You can put OUs inside OUs, and every account inherits every policy attached anywhere above it, all the way to the organization root. That inheritance is the entire point. Design your OU tree around real organizational boundaries — environment (prod vs. non-prod), business unit, compliance tier — and a single SCP attached at the right level governs every account under it, present and future, without touching a single account individually.</p>
+    <p>Consolidated billing is the other half of Organizations, and it's not just a finance feature. One consolidated view of spend across every linked account is also, quietly, an anomaly-detection signal — the same mindset Module 10 built around unusual API activity applies to unusual spend. A sandbox account suddenly running a spot-instance fleet at 3x its historical spend is worth the same kind of attention as an unusual GuardDuty finding.</p>
+    <p>A practical naming discipline matters more than it sounds like it should. OUs named after org-chart teams ("Platform-Team-OU", "Data-Team-OU") tend to need restructuring every time the company reorganizes, because the OU boundary was never actually about security in the first place — it just happened to track headcount. OUs named after the security-relevant property they enforce ("Prod-Tier1-Compliance", "Non-Prod-Sandbox") survive reorgs, because the property they're protecting — a compliance tier, an environment class — doesn't move just because reporting lines do. This is worth internalizing before you ever draw the tree: name OUs for what they guarantee, not for who currently owns the accounts inside them.</p>
+    <p>It's also worth being precise about what an OU actually is under the hood: a grouping construct with policies attached to it, not a container with its own independent identity or resources. An OU can't itself run workloads or be assumed into — it exists purely to be a scope that SCPs, RCPs, and tag policies attach to, and that accounts sit inside of for inheritance purposes. That distinction avoids a common early confusion where someone tries to treat an OU like it's an account.</p>
+    <div class="scenario-box reveal"><span class="tag">Production scenario</span><p>A financial services company runs 60 AWS accounts under one Organization: one per product team, split further into dev/staging/prod. Their security team needs every account — current and any created next quarter — to inherit a baseline: no root user activity, mandatory encryption at rest, and CloudTrail that can't be disabled. They attach these controls as SCPs and RCPs at the root of the Organization, once, rather than replicating them into 60 individual account policies that would immediately start drifting out of sync. Six months later, when the company acquires a smaller competitor and onboards 15 new accounts, those accounts inherit the exact same baseline automatically, the moment they join the Organization under the right OU — no separate rollout project required.</p></div>
+    <div class="exam-box reveal"><span class="tag">Exam angle</span><p>The exam will describe an OU restructuring and ask what a moved account gains or loses. The answer always traces back to one rule: an account inherits every SCP and RCP attached to every OU above it in the hierarchy, all the way to the root. Move the account, change what it inherits.</p></div>
+  </div>
+</section>
+<section class="scene" id="scene-control-tower" data-title="Control Tower">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-gov);top:100px;right:-160px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">CONCEPT 2 OF 6</div>
+    <h2 class="kinetic">AWS Control Tower — automating the baseline</h2>
+    <p>Control Tower is best understood as three things bundled together. First, a <strong>landing zone</strong>: a pre-configured multi-account baseline — a Management account, a dedicated Log Archive account, a dedicated Audit account — set up correctly on day one instead of assembled by hand over months. Second, a set of <strong>guardrails</strong>, split into three tiers: mandatory (always on, cannot be disabled — things like preventing CloudTrail from being disabled), strongly recommended (best practice, deployable org-wide), and elective (optional, situational). Third, <strong>Account Factory</strong>: a repeatable way to provision new accounts that are compliant from the moment they're created.</p>
+    <p>Here's the distinction the exam leans on hardest in this section: <strong>Control Tower does not replace SCPs.</strong> It deploys and manages them as part of its guardrail system — a "guardrail" in Control Tower's vocabulary is frequently just an SCP under the hood, alongside AWS Config rules for the guardrails that are detective rather than preventive. Control Tower is the automation and management layer; SCPs and Config rules are still the actual enforcement mechanisms doing the work underneath it.</p>
+    <p>Control Tower also continuously checks each enrolled account against its expected baseline — a process it calls drift detection. If someone manually edits an SCP that Control Tower deployed, or disables the Config recorder in an enrolled account, Control Tower flags that account as drifted from its landing zone configuration. This matters because it means the guardrails aren't a one-time deployment that can silently erode — there's an ongoing mechanism specifically watching for the baseline being tampered with, which is a meaningfully different guarantee than "we configured it correctly once."</p>
+    <div class="mindnode-wrap reveal" style="margin:26px 0;">
+      <div class="mindnode" tabindex="0" role="button" aria-label="Expand Control Tower guardrail taxonomy detail" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 24px;">
+        <strong style="font-family:'Space Grotesk',sans-serif;">Click to expand: the three guardrail tiers, and what enforces each ▾</strong>
+      </div>
+      <div class="node-info">
+        <p><strong>Mandatory</strong> — always enforced, no opt-out (e.g., prevent disabling of centralized logging). Backed by SCPs.<br><strong>Strongly recommended</strong> — best-practice guardrails AWS recommends broadly (e.g., detect unencrypted EBS volumes). Often backed by Config rules — detective, not preventive.<br><strong>Elective</strong> — situational, opt-in guardrails you choose based on your own risk posture. Can be either SCP-backed (preventive) or Config-rule-backed (detective) depending on the specific guardrail.</p>
+      </div>
+    </div>
+    <div class="scenario-box reveal"><span class="tag">Production scenario</span><p>A newly acquired subsidiary needs to be onboarded into the parent company's AWS Organization within a week, with the same security baseline as every existing account — encrypted storage, centralized logging, no public S3 buckets. Instead of manually replicating dozens of settings, the platform team provisions the new accounts through Account Factory. Every account arrives already enrolled in the landing zone, already inheriting the baseline SCPs, already shipping logs to the Log Archive account — compliant from birth.</p></div>
+    <div class="mentor-aside reveal"><p>The instinct when governance feels behind is to retrofit — bolt SCPs and logging onto accounts that already exist and are already drifted. Account Factory flips that: a new account that's compliant from the moment it's created is a fundamentally stronger security posture than the best retrofit you could ever apply afterward. Design for that from the start if you can.</p></div>
+    <div class="trap-box reveal"><span class="tag">Trap</span><p>A common wrong answer: assuming Control Tower is a replacement for SCPs, and that removing Control Tower would leave accounts ungoverned. In reality the SCPs and Config rules it deployed persist and continue enforcing — Control Tower manages them, it doesn't uniquely embody them.</p></div>
+  </div>
+</section>
+<section class="scene" id="scene-landing-zone" data-title="Landing Zone Patterns">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-infra);bottom:-140px;left:-140px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">CONCEPT 3 OF 6</div>
+    <h2 class="kinetic">Landing zone patterns, made concrete</h2>
+    <p>Module 1 introduced the landing zone conceptually. Here's a structure you'll actually recognize in the field — four top-level OUs, each doing a distinct job:</p>
+    <p><strong>Security OU</strong> — houses the Log Archive account (Module 9's centralized CloudTrail/Config destination) and the Audit account (read-only cross-account visibility for the security team). Tighter guardrails than anywhere else in the org; almost nothing is elective here.<br>
+    <strong>Sandbox OU</strong> — loosely governed experimentation space, deliberately permissive so engineers can prototype, with guardrails limited to the truly non-negotiable ones (no public data exposure, spend caps).<br>
+    <strong>Workloads OU</strong> — split further into Prod and Non-Prod sub-OUs, since a production database account and a dev account for the same team have very different guardrail needs despite sharing a parent.<br>
+    <strong>Suspended OU</strong> — where accounts land the moment they're being decommissioned; an SCP here denies essentially everything, so a suspended account can't quietly keep incurring cost or exposure while offboarding paperwork catches up.</p>
+    <p>Notice what this does: the log-archive account and the forensics account from Module 11 both live inside the Security OU, under the tightest guardrails in the organization — because the accounts holding your evidence and your detection data are exactly the accounts you can least afford to have loosely governed.</p>
+    <p>It's worth being explicit about why these are separate accounts rather than a folder inside an existing workload account. Account boundaries in AWS are the strongest isolation boundary available short of a separate cloud provider entirely — a compromised workload account cannot reach into a separate log-archive account's data unless a cross-account role was deliberately granted, and even then only with the specific permissions that role was scoped to. Putting logs in a dedicated account means an attacker who fully compromises a workload account still can't tamper with the evidence of what they did, because that evidence was never reachable from where they landed. This is the same blast-radius-minimization thread Module 3 introduced and Module 11 reinforced, now expressed as an account-topology decision rather than an IAM-policy decision.</p>
+    <p>The Suspended OU deserves one more note: it isn't only for planned decommissioning. It's equally the right first move for an account you suspect may be compromised and want to contain immediately while investigation proceeds — moving it into an OU with a near-total-deny SCP is a fast, structural way to stop further damage without needing to individually revoke every credential and permission inside that account first.</p>
+    <div class="diagram-wrap reveal" style="margin:30px 0;">
+      <svg viewBox="0 0 760 380" style="width:100%; height:auto; font-family:'JetBrains Mono',monospace;" id="ouTreeSvg">
+        <line x1="380" y1="55" x2="130" y2="120" stroke="var(--line)" stroke-width="2"/>
+        <line x1="380" y1="55" x2="310" y2="120" stroke="var(--line)" stroke-width="2"/>
+        <line x1="380" y1="55" x2="500" y2="120" stroke="var(--line)" stroke-width="2"/>
+        <line x1="380" y1="55" x2="650" y2="120" stroke="var(--line)" stroke-width="2"/>
+        <line x1="500" y1="150" x2="440" y2="230" stroke="var(--line)" stroke-width="2"/>
+        <line x1="500" y1="150" x2="560" y2="230" stroke="var(--line)" stroke-width="2"/>
+        <g class="mindnode ou-node" tabindex="0" role="button" aria-label="Organization root node, expand inheritance detail" data-node="root">
+          <rect x="320" y="20" width="120" height="42" rx="10" fill="var(--surface-raised)" stroke="var(--accent)" stroke-width="1.5"/>
+          <text x="380" y="46" text-anchor="middle" font-size="13" fill="var(--text)">ORG ROOT</text>
+        </g>
+        <g class="mindnode ou-node" tabindex="0" role="button" aria-label="Security OU node, expand inheritance detail" data-node="security">
+          <rect x="60" y="120" width="140" height="42" rx="10" fill="var(--c-gov-dim)" stroke="var(--c-gov)" stroke-width="1.5"/>
+          <text x="130" y="146" text-anchor="middle" font-size="12.5" fill="var(--text)">SECURITY OU</text>
+        </g>
+        <g class="mindnode ou-node" tabindex="0" role="button" aria-label="Sandbox OU node, expand inheritance detail" data-node="sandbox">
+          <rect x="240" y="120" width="140" height="42" rx="10" fill="var(--c-detect-dim)" stroke="var(--c-detect)" stroke-width="1.5"/>
+          <text x="310" y="146" text-anchor="middle" font-size="12.5" fill="var(--text)">SANDBOX OU</text>
+        </g>
+        <g class="mindnode ou-node" tabindex="0" role="button" aria-label="Workloads OU node, expand inheritance detail" data-node="workloads">
+          <rect x="430" y="120" width="140" height="42" rx="10" fill="var(--c-iam-dim)" stroke="var(--c-iam)" stroke-width="1.5"/>
+          <text x="500" y="146" text-anchor="middle" font-size="12.5" fill="var(--text)">WORKLOADS OU</text>
+        </g>
+        <g class="mindnode ou-node" tabindex="0" role="button" aria-label="Suspended OU node, expand inheritance detail" data-node="suspended">
+          <rect x="580" y="120" width="140" height="42" rx="10" fill="var(--c-ir-dim)" stroke="var(--c-ir)" stroke-width="1.5"/>
+          <text x="650" y="146" text-anchor="middle" font-size="12.5" fill="var(--text)">SUSPENDED OU</text>
+        </g>
+        <g class="mindnode ou-node" tabindex="0" role="button" aria-label="Production sub-OU node, expand inheritance detail" data-node="prod">
+          <rect x="370" y="230" width="140" height="42" rx="10" fill="var(--c-iam-dim)" stroke="var(--c-iam)" stroke-width="1.5" opacity="0.85"/>
+          <text x="440" y="256" text-anchor="middle" font-size="12" fill="var(--text)">PROD sub-OU</text>
+        </g>
+        <g class="mindnode ou-node" tabindex="0" role="button" aria-label="Non-production sub-OU node, expand inheritance detail" data-node="nonprod">
+          <rect x="490" y="230" width="140" height="42" rx="10" fill="var(--c-iam-dim)" stroke="var(--c-iam)" stroke-width="1.5" opacity="0.85"/>
+          <text x="560" y="256" text-anchor="middle" font-size="12" fill="var(--text)">NON-PROD sub-OU</text>
+        </g>
+      </svg>
+      <div id="ouNodeInfo" class="node-info" style="max-height:none; opacity:1; margin-top:16px; padding:18px 22px; display:none;"></div>
+    </div>
+    <div class="trap-box reveal"><span class="tag">Trap</span><p>Treating OU structure as an org-chart exercise — mirroring reporting lines instead of security boundaries. Two teams that report to different VPs but have identical compliance needs should often share an OU; two teams under the same VP with different data sensitivity often shouldn't.</p></div>
+  </div>
+</section>
+<section class="title-card">
+  <div class="scanbeam"></div>
+  <h2 class="kinetic">PREVENTIVE STOPS IT.</h2>
+  <h2 class="kinetic" style="margin-top:8px; color:var(--c-gov);">DETECTIVE JUST NOTICES IT HAPPENED.</h2>
+  <p>The single most tested distinction in this domain. Get comfortable with it before you go further.</p>
+</section>
+
+<section class="scene" id="scene-preventive-detective" data-title="Preventive vs Detective">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-detect);top:-100px;right:-140px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">CONCEPT 4 OF 6</div>
+    <h2 class="kinetic">Preventive vs. detective guardrails</h2>
+    <p>A <strong>preventive guardrail</strong> — mechanically, almost always an SCP or RCP — makes an action structurally impossible. There is no window of time where the violation could occur, because the API call itself is denied at evaluation time, before anything happens. If an SCP denies <code>s3:PutBucketPolicy</code> with a public-access condition, that bucket is never public, not even for a second.</p>
+    <p>A <strong>detective guardrail</strong> — an AWS Config rule, a Security Hub standard — allows the action to occur, then evaluates afterward and flags that it violated policy. That's genuinely valuable when a preventive block isn't feasible (some actions are too broad to safely deny outright) or would be overly restrictive for legitimate work. But it inherently leaves a window — however brief — where non-compliance existed before anyone or anything caught it.</p>
+    <p>This is not a stylistic choice between two roughly-equivalent tools. It's a decision about whether a window of exposure is acceptable for the specific risk in front of you. For a control like "no S3 bucket in this org is ever public," the risk of even a brief window is unacceptable — that's an RCP, preventive, no exceptions. For a control like "resources should be tagged with a cost center," a brief window of non-compliance is annoying, not dangerous — Config rule, detective, remediate on a schedule.</p>
+    <p>There's a practical reason detective guardrails exist at all rather than everything simply being made preventive: some legitimate actions are too broad, too situational, or too operationally necessary to safely deny outright. Blocking every IAM policy change organization-wide would also block the emergency access grant a team needs during an actual incident. In cases like that, a detective control — flag any IAM policy change that grants broad administrative access, then have a human or automated process review it quickly — accepts a short window of risk in exchange for not breaking legitimate operations. The skill this domain tests isn't "always prefer preventive" — it's correctly judging, for a specific described requirement, which side of that trade-off the situation actually falls on.</p>
+    <div class="diagram-wrap reveal" style="margin:30px 0; display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+      <div style="background:var(--surface); border:1px solid var(--c-gov); border-radius:14px; padding:20px;">
+        <div class="eyebrow" style="color:var(--c-gov);">PREVENTIVE — SCP</div>
+        <svg viewBox="0 0 300 140" style="width:100%;">
+          <rect x="10" y="50" width="80" height="40" rx="8" fill="var(--surface-raised)" stroke="var(--line)"/>
+          <text x="50" y="74" text-anchor="middle" font-size="11" fill="var(--text)" font-family="monospace">API call</text>
+          <line x1="90" y1="70" x2="150" y2="70" stroke="var(--c-gov)" stroke-width="2"/>
+          <polygon points="150,62 165,70 150,78" fill="var(--c-gov)"/>
+          <rect x="165" y="45" width="70" height="50" rx="8" fill="var(--c-gov-dim)" stroke="var(--c-gov)" stroke-width="2"/>
+          <text x="200" y="66" text-anchor="middle" font-size="10.5" fill="var(--text)" font-family="monospace">SCP eval</text>
+          <text x="200" y="80" text-anchor="middle" font-size="10.5" fill="var(--c-gov)" font-family="monospace">DENY</text>
+          <text x="150" y="115" text-anchor="middle" font-size="11" fill="var(--text-dim)" font-family="monospace">Action never executes</text>
+        </svg>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--c-detect); border-radius:14px; padding:20px;">
+        <div class="eyebrow" style="color:var(--c-detect);">DETECTIVE — Config rule</div>
+        <svg viewBox="0 0 300 140" style="width:100%;">
+          <rect x="10" y="50" width="70" height="40" rx="8" fill="var(--surface-raised)" stroke="var(--line)"/>
+          <text x="45" y="74" text-anchor="middle" font-size="11" fill="var(--text)" font-family="monospace">API call</text>
+          <line x1="80" y1="70" x2="130" y2="70" stroke="var(--c-detect)" stroke-width="2"/>
+          <polygon points="130,62 145,70 130,78" fill="var(--c-detect)"/>
+          <rect x="145" y="45" width="70" height="50" rx="8" fill="var(--c-detect-dim)" stroke="var(--c-detect)" stroke-width="2"/>
+          <text x="180" y="66" text-anchor="middle" font-size="10.5" fill="var(--text)" font-family="monospace">Executes</text>
+          <text x="180" y="80" text-anchor="middle" font-size="10.5" fill="var(--text)" font-family="monospace">(allowed)</text>
+          <line x1="215" y1="70" x2="250" y2="70" stroke="var(--c-detect)" stroke-width="2" stroke-dasharray="4,3"/>
+          <polygon points="250,62 262,70 250,78" fill="var(--c-detect)"/>
+          <text x="150" y="118" text-anchor="middle" font-size="11" fill="var(--text-dim)" font-family="monospace">Flagged after the fact</text>
+        </svg>
+      </div>
+    </div>
+    <h3 class="reveal" style="margin-top:20px;">Decision walkthrough</h3>
+    <div class="diagram-wrap reveal mindnode-wrap">
+      <div class="mindnode" tabindex="0" role="button" aria-label="Expand preventive vs detective decision diagram" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 24px;">
+        <strong style="font-family:'Space Grotesk',sans-serif;">Click: "Can any account ever make a data store publicly readable?" ▾</strong>
+      </div>
+      <div class="node-info">
+        <p><strong>Step 1</strong> — Is the consequence of even one instance unacceptable (data exposure, credential leak, disabled logging)? Yes here.<br>
+        <strong>Step 2</strong> — Is there a legitimate business case where this action is needed at all? No — no workload legitimately needs a public data store in this org.<br>
+        <strong>Step 3</strong> — Since the answer to "ever acceptable" is no, block the API call itself. <strong>Preventive: RCP or SCP.</strong> Only when a legitimate use case exists but needs monitoring rather than blocking do you move to detective.</p>
+      </div>
+    </div>
+    <div class="exam-box reveal"><span class="tag">Exam angle</span><p>Explicitly flagged as a recurring exam point: a question describes a requirement and two answer choices differ only in preventive vs. detective mechanism. Ask yourself first whether any window of non-compliance is tolerable. If not, the answer is preventive, full stop.</p></div>
+  </div>
+</section>
+<section class="scene" id="scene-scp-rcp-scale" data-title="SCP/RCP at Scale">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-iam);top:60px;left:-150px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">CONCEPT 5 OF 6</div>
+    <h2 class="kinetic">SCPs and RCPs, enforced at scale</h2>
+    <p>Module 3 introduced SCPs and RCPs conceptually, likely attached close to individual accounts. At organizational scale, the practical mechanic that matters is applying them at the <strong>OU level</strong> instead — one attachment, every current and future account under that OU inherits it. This is exactly why OU design, as covered above, is a security decision and not just an org-chart exercise: get the tree wrong, and you either under-govern accounts that needed the guardrail or over-govern accounts that didn't.</p>
+    <p>Inheritance is strictly additive down the tree: an account is subject to every SCP attached to its own OU, every SCP attached to each OU above it, and every SCP attached to the root — there's no mechanism to "opt out" of a policy from a level above by attaching something more permissive lower down. SCPs and RCPs only restrict; they never grant. The most restrictive applicable policy always wins.</p>
+    <p>RCPs deserve their own moment at this scale specifically because of what they let you guarantee <em>organization-wide, regardless of any individual account's own policy</em>. An RCP attached at the Organization root stating that no S3 bucket resource policy anywhere in the org may grant public access holds even if some engineer, in some account, writes a resource policy that tries to make a bucket public. The RCP evaluates first and wins. That's Module 3's RCP content, but applied at the scope where it actually earns its keep.</p>
+    <div class="diagram-wrap reveal mindnode-wrap" style="margin:28px 0;">
+      <div class="mindnode" tabindex="0" role="button" aria-label="Expand SCP inheritance mechanics across OU levels" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 24px;">
+        <strong style="font-family:'Space Grotesk',sans-serif;">Click: trace an SCP from root to a Prod account ▾</strong>
+      </div>
+      <div class="node-info">
+        <p><strong>Root</strong>: RCP — no S3 bucket may ever be public, org-wide. Applies to this account.<br>
+        <strong>→ Workloads OU</strong>: SCP — deny disabling of CloudTrail. Applies to this account.<br>
+        <strong>→ Prod sub-OU</strong>: SCP — deny any IAM action outside a change-managed pipeline role. Applies to this account.<br>
+        <strong>Effective policy on the account</strong>: all three, combined, most-restrictive-wins. The account cannot make an S3 bucket public, cannot disable CloudTrail, and cannot make IAM changes outside the pipeline — even though only one of those three was written specifically for Prod.</p>
+      </div>
+    </div>
+    <div class="mentor-aside reveal"><p>When someone asks "why is this Prod account blocked from an action that seems unrelated to Prod," the answer is almost always three or four OUs up, not in the account itself. Debugging SCP-related denials means walking the OU tree upward, not just reading the account's own policy.</p></div>
+    <div class="trap-box reveal"><span class="tag">Trap</span><p>An SCP meant only for a newly-created sandbox team gets attached at the Workloads OU instead of a scoped sub-OU beneath it — and silently restricts every Prod and Non-Prod account under Workloads too. This is an inheritance mistake, not a permissions mistake, and it's exactly the kind of scenario the exam likes to describe.</p></div>
+  </div>
+</section>
+<section class="scene" id="scene-tagging" data-title="Tagging Strategy">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-data);bottom:-120px;right:-130px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">CONCEPT 6 OF 6</div>
+    <h2 class="kinetic">Tagging strategy as a governance tool</h2>
+    <p>Tagging gets dismissed as a cost-allocation nicety, and that framing badly undersells it. A consistent, enforced tagging strategy — environment, owner, cost-center, data-classification — is a security and governance mechanism in its own right, because tags are what make automation <em>scopeable</em>. A Config rule scoped to <code>data-classification=restricted</code> can apply stricter checks only where they're needed. A remediation automation can target exactly the resources tagged <code>environment=prod</code>. And access control itself can key off tags directly, through condition keys like <code>aws:ResourceTag</code> — a policy that grants access only to resources tagged with a matching cost-center or team is enforcing authorization based on tags, not just organizing spend by them.</p>
+    <p>None of that works if tags are inconsistent — one team using <code>Env</code>, another using <code>environment</code>, a third leaving it blank. <strong>Tag policies</strong>, defined through Organizations, are the mechanism for enforcing tag key/value consistency across every account in the org — they don't just document a convention, they let you flag or prevent non-compliant tagging. Pair that with an SCP that requires specific tags be present at resource creation time (denying <code>ec2:RunInstances</code> without a <code>cost-center</code> tag, for instance), and you've made tagging discipline structural rather than aspirational.</p>
+    <p>Tag governance also has a lifecycle problem that's easy to overlook: a tag that was correctly required and enforced when a resource was created can still go stale. An account gets sold to a different cost center, a workload's data classification changes after a new dataset gets added to it, and the original tag never gets updated because nothing forces a re-check after creation, only at creation. This is exactly the kind of gap that pairs a preventive control (require the tag at creation) with a detective one (periodically check that tag values still reflect current reality) — the same preventive-plus-detective pairing pattern that shows up throughout this module, applied to a different problem.</p>
+    <div class="diagram-wrap reveal" style="margin:30px 0;">
+      <svg viewBox="0 0 720 200" style="width:100%; font-family:'JetBrains Mono',monospace;">
+        <rect x="10" y="70" width="150" height="60" rx="10" fill="var(--c-gov-dim)" stroke="var(--c-gov)" stroke-width="1.5"/>
+        <text x="85" y="96" text-anchor="middle" font-size="11" fill="var(--text)">Org-level</text>
+        <text x="85" y="112" text-anchor="middle" font-size="11" fill="var(--text)">Tag Policy</text>
+        <line x1="160" y1="100" x2="220" y2="100" stroke="var(--line)" stroke-width="2"/>
+        <polygon points="220,93 234,100 220,107" fill="var(--line)"/>
+        <g class="mindnode tag-node" tabindex="0" role="button" aria-label="Expand SCP enforcement step" data-tag="scp">
+          <rect x="234" y="70" width="150" height="60" rx="10" fill="var(--c-iam-dim)" stroke="var(--c-iam)" stroke-width="1.5"/>
+          <text x="309" y="96" text-anchor="middle" font-size="11" fill="var(--text)">SCP requires</text>
+          <text x="309" y="112" text-anchor="middle" font-size="11" fill="var(--text)">tag at creation</text>
+        </g>
+        <line x1="384" y1="100" x2="444" y2="100" stroke="var(--line)" stroke-width="2"/>
+        <polygon points="444,93 458,100 444,107" fill="var(--line)"/>
+        <g class="mindnode tag-node" tabindex="0" role="button" aria-label="Expand resource creation step" data-tag="create">
+          <rect x="458" y="70" width="130" height="60" rx="10" fill="var(--c-detect-dim)" stroke="var(--c-detect)" stroke-width="1.5"/>
+          <text x="523" y="96" text-anchor="middle" font-size="11" fill="var(--text)">Resource</text>
+          <text x="523" y="112" text-anchor="middle" font-size="11" fill="var(--text)">created, tagged</text>
+        </g>
+        <line x1="588" y1="100" x2="640" y2="100" stroke="var(--line)" stroke-width="2"/>
+        <polygon points="640,93 654,100 640,107" fill="var(--line)"/>
+        <g class="mindnode tag-node" tabindex="0" role="button" aria-label="Expand downstream automation step" data-tag="downstream">
+          <rect x="654" y="55" width="60" height="90" rx="10" fill="var(--c-data-dim)" stroke="var(--c-data)" stroke-width="1.5"/>
+          <text x="684" y="96" text-anchor="middle" font-size="10" fill="var(--text)">Config /</text>
+          <text x="684" y="110" text-anchor="middle" font-size="10" fill="var(--text)">IAM /</text>
+          <text x="684" y="124" text-anchor="middle" font-size="10" fill="var(--text)">automation</text>
+        </g>
+      </svg>
+      <div id="tagNodeInfo" class="node-info" style="max-height:none; opacity:1; margin-top:14px; padding:16px 20px; display:none;"></div>
+    </div>
+    <div class="scenario-box reveal"><span class="tag">Production scenario</span><p>A compliance audit needs a list of every resource that stores PII, org-wide, within an hour. A team with a rigorously enforced <code>data-classification</code> tag policy answers this with one scoped query. A team without one has to inspect resources individually — and inevitably misses some, because tagging that isn't enforced isn't reliable.</p></div>
+  </div>
+</section>
+<section class="scene" id="scene-exercise" data-title="Design This Governance Structure">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-gov);top:-100px;left:-150px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">APPLY IT</div>
+    <h2 class="kinetic">Design this governance structure</h2>
+    <p>Nine organizational requirements. For each, decide the OU placement and the guardrail type before revealing the reasoning.</p>
+    <div class="stagger" style="display:flex; flex-direction:column; gap:16px; margin-top:24px;">
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 1">
+        <span class="tag">Scenario 1</span>
+        <p><strong>Requirement:</strong> A newly acquired business unit's accounts must be isolated from the rest of the org until a security review is complete.</p>
+        <div class="node-info"><p><strong>Answer:</strong> A dedicated, temporary "Onboarding" or "Quarantine" OU with tight, mostly-preventive SCPs restricting cross-account access and outbound data movement. Move the accounts into their permanent OU (likely Workloads) only once the review clears.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 2">
+        <span class="tag">Scenario 2</span>
+        <p><strong>Requirement:</strong> No account, anywhere in the org, should ever be able to disable CloudTrail.</p>
+        <div class="node-info"><p><strong>Answer:</strong> Preventive — an SCP denying the relevant CloudTrail-stopping actions, attached at the Organization root so every account, current and future, inherits it with zero exceptions.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 3">
+        <span class="tag">Scenario 3</span>
+        <p><strong>Requirement:</strong> Engineers need to freely experiment with new services without full production guardrails getting in the way.</p>
+        <div class="node-info"><p><strong>Answer:</strong> Sandbox OU, with guardrails limited to true non-negotiables (no public data exposure, spend caps). Resist the urge to import Prod-level SCPs here — that defeats the purpose of the OU.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 4">
+        <span class="tag">Scenario 4</span>
+        <p><strong>Requirement:</strong> Guarantee that no S3 bucket in the entire org can ever be made publicly accessible, regardless of any individual account's own bucket policy.</p>
+        <div class="node-info"><p><strong>Answer:</strong> An RCP at the Organization root. This is precisely the case an RCP is built for — a resource-control guarantee that holds no matter what any account's own policy grants.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 5">
+        <span class="tag">Scenario 5</span>
+        <p><strong>Requirement:</strong> Flag (but don't block) any EC2 instance launched without a required cost-center tag, since blocking would disrupt legitimate emergency work.</p>
+        <div class="node-info"><p><strong>Answer:</strong> Detective — a Config rule checking for the required tag, paired with a tag policy for consistency. A window of non-compliance is acceptable here in exchange for not blocking urgent work.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 6">
+        <span class="tag">Scenario 6</span>
+        <p><strong>Requirement:</strong> An account is being decommissioned and must stop incurring cost or exposure immediately, before offboarding paperwork finishes.</p>
+        <div class="node-info"><p><strong>Answer:</strong> Move the account into the Suspended OU immediately, where an SCP denies nearly all actions. Don't wait for offboarding process completion to restrict access.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 7">
+        <span class="tag">Scenario 7</span>
+        <p><strong>Requirement:</strong> Every new account created for any team should already have centralized logging and baseline guardrails in place before an engineer logs in for the first time.</p>
+        <div class="node-info"><p><strong>Answer:</strong> Control Tower's Account Factory. This is the definition of "compliant from creation" rather than compliance retrofitted after the fact.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 8">
+        <span class="tag">Scenario 8</span>
+        <p><strong>Requirement:</strong> A production database account and a staging account for the same product team need meaningfully different guardrails despite sharing a parent team OU.</p>
+        <div class="node-info"><p><strong>Answer:</strong> Split the team's Workloads sub-tree into Prod and Non-Prod sub-OUs so each inherits the shared team-level policy plus its own tier-specific SCPs — this is exactly why Workloads splits further down instead of staying flat.</p></div>
+      </div>
+      <div class="scenario-box mindnode" tabindex="0" role="button" aria-label="Expand reasoning for scenario 9">
+        <span class="tag">Scenario 9</span>
+        <p><strong>Requirement:</strong> The security team needs org-wide visibility into every account's compliance posture without being able to modify anything in those accounts.</p>
+        <div class="node-info"><p><strong>Answer:</strong> The Audit account inside the Security OU — read-only cross-account roles into every other account, no write access. Pair with the Log Archive account for the underlying data.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="scene" id="scene-trap-gallery" data-title="Trap Gallery">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-ir);bottom:-120px;right:-140px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">WHERE THIS FAILS IN PRODUCTION</div>
+    <h2 class="kinetic">Production trap gallery</h2>
+    <p>Six real patterns of governance going quietly wrong — not from malice, from structure.</p>
+    <div class="stagger" style="display:flex; flex-direction:column; gap:16px; margin-top:24px;">
+      <div class="trap-box"><span class="tag">Vignette 1 — wrong-level SCP</span><p>An SCP meant to restrict a single new sandbox team gets attached at the shared Workloads OU instead of a scoped sub-OU. Every Prod and Non-Prod account under Workloads inherits it, and several production deployments start failing for reasons that look nothing like the actual cause — an OU three levels away.</p></div>
+      <div class="trap-box"><span class="tag">Vignette 2 — Control Tower assumption broke on account move</span><p>A team assumed an account's guardrails were tied to Control Tower's registration rather than its OU placement. When the account moved from Sandbox to Workloads for a promotion to production use, the guardrails it actually needed didn't automatically strengthen — because Control Tower manages the SCPs, but which SCPs apply is still a function of OU placement, not registration status.</p></div>
+      <div class="trap-box"><span class="tag">Vignette 3 — tagging gap breaks compliance scoping</span><p>A cost-center tag was enforced by policy for six months, then a new resource-creation path (an infrastructure-as-code module) shipped without the tag-requiring SCP wired in. Six months later, an audit needing every PII-storing resource org-wide silently misses an entire category, because the automation trusted a tag that was never guaranteed present.</p></div>
+      <div class="trap-box"><span class="tag">Vignette 4 — retrofitted compliance</span><p>Fifty existing accounts get the "compliant baseline" applied after the fact, account by account, over three months. Twelve of them have resource policies from before the retrofit that technically still violate the new baseline in edge cases the retrofit script didn't catch — because retrofitting inherently misses what account-factory-from-creation would have prevented entirely.</p></div>
+      <div class="trap-box"><span class="tag">Vignette 5 — detective guardrail treated as sufficient for an unacceptable risk</span><p>A team relies on a Config rule to detect public S3 buckets rather than an RCP to prevent them, reasoning that "we'll get an alert." A bucket goes public for four hours over a weekend before anyone reviews the finding — a window that a preventive RCP would have made impossible from the start.</p></div>
+      <div class="trap-box"><span class="tag">Vignette 6 — Suspended OU applied too late</span><p>An account marked for decommissioning stays in its original Workloads sub-OU for three weeks while offboarding paperwork is processed, still fully permissioned. It continues incurring cost and remains a live target the entire time — exactly the exposure the Suspended OU pattern exists to close immediately, not eventually.</p></div>
+    </div>
+  </div>
+</section>
+<style>
+.quiz-header{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:10px; }
+.score-tracker{ font-family:'JetBrains Mono', monospace; font-size:14px; background:var(--surface); border:1px solid var(--c-gov); border-radius:999px; padding:8px 20px; color:var(--c-gov); }
+.quiz-q{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 24px; }
+.quiz-q .q-num{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; display:block; }
+.quiz-q .q-text{ color:var(--text); font-weight:600; margin-bottom:16px; }
+.q-options{ display:flex; flex-direction:column; gap:10px; }
+.q-opt{ text-align:left; background:var(--surface-raised); border:1px solid var(--line); border-radius:10px; padding:12px 16px; color:var(--text); font-family:'Inter',sans-serif; font-size:0.92rem; cursor:pointer; transition:border-color .2s ease, background .2s ease; }
+.q-opt:hover{ border-color:var(--accent); }
+.q-opt.correct{ border-color:var(--c-gov); background:var(--c-gov-dim); }
+.q-opt.incorrect{ border-color:var(--c-ir); background:var(--c-ir-dim); }
+.q-opt:disabled{ cursor:default; opacity:0.9; }
+.q-feedback{ margin-top:16px; padding:14px 18px; border-radius:10px; background:var(--surface-raised); border-left:3px solid var(--accent); font-size:0.9rem; color:var(--text-dim); line-height:1.6; }
+</style>
+<section class="scene" id="scene-exam" data-title="Mock Exam">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-gov);top:-100px;left:-140px;"></div>
+  <div class="col reveal">
+    <div class="quiz-header">
+      <div>
+        <div class="eyebrow">KNOWLEDGE CHECK</div>
+        <h2 class="kinetic" style="margin-bottom:0;">Mock exam — 12 questions</h2>
+      </div>
+      <div class="score-tracker">SCORE: <span id="quizScore">0</span> / 12</div>
+    </div>
+    <p>Answer each question, then check your reasoning against the explanation that appears.</p>
+    <div class="stagger" style="display:flex; flex-direction:column; gap:18px; margin-top:20px;" id="quizContainer">
+      <div class="quiz-q" data-answer="B"><span class="q-num">Question 1</span><p class="q-text">A company wants to guarantee that no account in its Organization can ever disable AWS CloudTrail, with zero exceptions. Which mechanism should they use?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">A Config rule that alerts when CloudTrail is disabled</button>
+          <button class="q-opt" data-key="B">An SCP denying the CloudTrail-stopping actions, attached at the Organization root</button>
+          <button class="q-opt" data-key="C">An IAM permission boundary on every user in every account</button>
+          <button class="q-opt" data-key="D">A Control Tower elective guardrail</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="C"><span class="q-num">Question 2</span><p class="q-text">Which statement correctly describes Control Tower's relationship to SCPs?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">Control Tower replaces the need for SCPs entirely</button>
+          <button class="q-opt" data-key="B">Control Tower only works if SCPs are disabled first</button>
+          <button class="q-opt" data-key="C">Control Tower deploys and manages SCPs as part of its guardrail system</button>
+          <button class="q-opt" data-key="D">Control Tower guardrails and SCPs are mutually exclusive mechanisms</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="A"><span class="q-num">Question 3</span><p class="q-text">An account is moved from the Sandbox OU into the Workloads OU's Prod sub-OU. What happens to the policies it's subject to?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">It now inherits root, Workloads, and Prod sub-OU policies, losing Sandbox OU policies</button>
+          <button class="q-opt" data-key="B">It keeps Sandbox policies in addition to its new Prod policies</button>
+          <button class="q-opt" data-key="C">Nothing changes until the account is manually re-registered with Control Tower</button>
+          <button class="q-opt" data-key="D">SCP inheritance is unaffected by OU moves</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="D"><span class="q-num">Question 4</span><p class="q-text">A security team wants to guarantee, org-wide, that no S3 bucket resource policy can ever grant public access — regardless of what any individual account's own policy says. What should they use?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">A per-account bucket policy audit performed quarterly</button>
+          <button class="q-opt" data-key="B">A Config rule flagging public buckets</button>
+          <button class="q-opt" data-key="C">An SCP restricting only IAM users, not resource policies</button>
+          <button class="q-opt" data-key="D">An RCP attached at the Organization root</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="B"><span class="q-num">Question 5</span><p class="q-text">Which guardrail type inherently allows a violating action to occur before flagging it?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">Preventive (SCP)</button>
+          <button class="q-opt" data-key="B">Detective (Config rule)</button>
+          <button class="q-opt" data-key="C">Both equally</button>
+          <button class="q-opt" data-key="D">Neither — both block in real time</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="C"><span class="q-num">Question 6</span><p class="q-text">Why does Account Factory specifically improve on retrofitted compliance?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">It runs faster than manual account creation</button>
+          <button class="q-opt" data-key="B">It removes the need for SCPs on new accounts</button>
+          <button class="q-opt" data-key="C">New accounts are compliant with baseline guardrails from the moment of creation, rather than compliance being applied after resources already exist</button>
+          <button class="q-opt" data-key="D">It automatically deletes non-compliant accounts</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="A"><span class="q-num">Question 7</span><p class="q-text">An SCP intended only for a new sandbox team is mistakenly attached to the shared Workloads OU. What is the most likely consequence?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">Every account under Workloads OU, including Prod and Non-Prod, unintentionally inherits the restriction</button>
+          <button class="q-opt" data-key="B">Only the sandbox team's accounts are affected, as intended</button>
+          <button class="q-opt" data-key="C">The SCP has no effect until Control Tower re-syncs</button>
+          <button class="q-opt" data-key="D">SCPs attached above account level are ignored</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="D"><span class="q-num">Question 8</span><p class="q-text">Which of the following best describes why tagging is a security concern, not just a cost concern?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">Tags are encrypted by default</button>
+          <button class="q-opt" data-key="B">Tags replace the need for IAM policies</button>
+          <button class="q-opt" data-key="C">AWS bills differently based on tag accuracy</button>
+          <button class="q-opt" data-key="D">Tags scope automated compliance checks, remediation targeting, and can drive access control via tag-based condition keys</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="B"><span class="q-num">Question 9</span><p class="q-text">Which Organizations feature enforces consistent tag key/value usage across every account?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">Consolidated billing</button>
+          <button class="q-opt" data-key="B">Tag policies</button>
+          <button class="q-opt" data-key="C">Service control policies</button>
+          <button class="q-opt" data-key="D">Resource control policies</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="C"><span class="q-num">Question 10</span><p class="q-text">An account is being decommissioned. What is the correct immediate governance action?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">Wait until offboarding paperwork is fully complete before restricting anything</button>
+          <button class="q-opt" data-key="B">Delete the account immediately without moving it</button>
+          <button class="q-opt" data-key="C">Move it into the Suspended OU immediately, where an SCP denies nearly all actions</button>
+          <button class="q-opt" data-key="D">Leave it in its current OU but revoke the root user only</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="A"><span class="q-num">Question 11</span><p class="q-text">Consolidated billing across an Organization can also serve as what kind of security signal?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">An anomaly-detection signal — unusual spend patterns can indicate unusual or unauthorized activity</button>
+          <button class="q-opt" data-key="B">A replacement for GuardDuty findings</button>
+          <button class="q-opt" data-key="C">A guarantee that all accounts are equally governed</button>
+          <button class="q-opt" data-key="D">Confirmation that SCPs are correctly attached</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+      <div class="quiz-q" data-answer="D"><span class="q-num">Question 12</span><p class="q-text">Why should the Log Archive and Audit accounts live inside a dedicated Security OU with the tightest guardrails in the org?</p>
+        <div class="q-options">
+          <button class="q-opt" data-key="A">They generate the most AWS spend</button>
+          <button class="q-opt" data-key="B">They require public internet access for log ingestion</button>
+          <button class="q-opt" data-key="C">Control Tower requires it structurally with no security rationale</button>
+          <button class="q-opt" data-key="D">They hold the organization's evidence and detection data, making them the accounts you can least afford to have loosely governed</button>
+        </div>
+        <div class="q-feedback" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="scene" id="scene-faq" data-title="FAQ">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-gov);bottom:-100px;left:-130px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">QUESTIONS FROM THE FIELD</div>
+    <h2 class="kinetic">Discussion</h2>
+    <div class="discussion">
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>If a Config rule can catch the same violation an SCP would prevent, why does the exam care which one I use?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Because "catching" and "preventing" have different consequences. A Config rule tells you a violation happened; an SCP guarantees it never happens. For low-stakes drift — a missing tag — that gap is fine. For something like a public S3 bucket holding customer data, the gap between "detected in four hours" and "never possible" is the whole ballgame, and the exam consistently tests whether you can tell which situation you're in.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Do RCPs and SCPs ever conflict with each other?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>They operate on different sides of the same interaction — SCPs restrict what the calling principal can do, RCPs restrict what a resource's own policy can grant to others. They don't override each other; both are evaluated, and either one denying is enough to deny the overall request.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Is it ever correct to attach an SCP directly to an account instead of an OU?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Occasionally, for a genuinely one-off requirement that applies to exactly one account and nothing else. But if you find yourself doing this repeatedly for a group of similar accounts, that's usually a sign you need a new sub-OU, not more per-account attachments.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Why does the Sandbox OU exist at all if it's loosely governed — isn't that a risk?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>It's a deliberate, bounded risk. Engineers need somewhere to experiment without production-grade friction, and isolating that need into its own OU with only the true non-negotiables enforced means the risk stays contained there instead of leaking into how you govern everything else.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>How is this different from what Module 9's centralized logging already covered?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Module 9 covered getting the logs to one place. This module covers the account structure that makes that pattern secure and sustainable at scale — the Security OU that houses the log-archive account, and the guardrails that keep that account from ever being loosely governed itself.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Does Account Factory eliminate the need to ever review an account's configuration manually?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>No — it eliminates the need to build the baseline manually every time. Accounts still drift after creation as teams request exceptions or new services get adopted, which is exactly why the detective guardrails and audits from Module 13 stay necessary even with a strong Account Factory baseline.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>If tag policies exist, do I still need an SCP requiring tags at creation?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Yes, if you need the requirement to be structural rather than advisory. A tag policy alone can flag a non-compliant tag after the fact; it doesn't stop the resource from being created untagged in the first place. Pairing it with an SCP is what closes that gap.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+.resource-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:36px; }
+.resource-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; position:relative; transition:border-color .2s ease, transform .15s ease; }
+.resource-card:hover{ border-color:var(--accent-dim); transform:translateY(-2px); }
+.resource-pill{ position:absolute; top:20px; right:20px; font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px; }
+.resource-pill.free{ background:var(--c-gov-dim); color:var(--green); }
+.resource-pill.paid{ background:var(--c-detect-dim); color:var(--amber); }
+.resource-card h4{ font-size:1rem; padding-right:70px; margin-bottom:8px; font-family:'Space Grotesk',sans-serif; color:var(--text); }
+.resource-card .source{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+.resource-card p{ font-size:0.88rem; color:var(--text-dim); line-height:1.6; margin-bottom:0; }
+.resource-card a{ display:inline-block; margin-top:14px; font-size:0.85rem; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+@media (max-width:720px){ .resource-grid{grid-template-columns:1fr;} }
+</style>
+<section class="scene" id="scene-resources" data-title="Resources">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-iam);top:-100px;right:-140px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">GO DEEPER</div>
+    <h2 class="kinetic">Resources</h2>
+    <div class="resource-grid tilt-grid">
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span><h4>AWS Organizations — User Guide</h4><div class="source">docs.aws.amazon.com</div><p>Official documentation on OUs, SCPs, RCPs, and consolidated billing mechanics.</p><a href="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html" target="_blank" rel="noopener">Read the docs →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span><h4>AWS Control Tower — How It Works</h4><div class="source">docs.aws.amazon.com</div><p>Landing zone architecture, guardrail tiers, and Account Factory documentation.</p><a href="https://docs.aws.amazon.com/controltower/latest/userguide/how-control-tower-works.html" target="_blank" rel="noopener">Read the docs →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span><h4>Tagging AWS Resources — Best Practices</h4><div class="source">docs.aws.amazon.com</div><p>Tag policies, tag-based access control, and org-wide tagging strategy guidance.</p><a href="https://docs.aws.amazon.com/tag-editor/latest/userguide/tagging.html" target="_blank" rel="noopener">Read the docs →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span><h4>Resource Control Policies — User Guide</h4><div class="source">docs.aws.amazon.com</div><p>How RCPs evaluate alongside resource-based policies at the organization level.</p><a href="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html" target="_blank" rel="noopener">Read the docs →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span><h4>Establishing Your Landing Zone (Whitepaper)</h4><div class="source">aws.amazon.com/whitepapers</div><p>AWS's own guidance on landing zone design patterns and OU structuring.</p><a href="https://aws.amazon.com/whitepapers/" target="_blank" rel="noopener">Browse whitepapers →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span><h4>AWS Skill Builder — Governance at Scale</h4><div class="source">skillbuilder.aws</div><p>Digital training covering multi-account governance and SCS-C03 domain content.</p><a href="https://skillbuilder.aws" target="_blank" rel="noopener">Browse courses →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span><h4>re:Post — Organizations & Control Tower Tag</h4><div class="source">repost.aws</div><p>Community Q&A on real OU design and guardrail troubleshooting scenarios.</p><a href="https://repost.aws" target="_blank" rel="noopener">Browse re:Post →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill paid">Paid</span><h4>Tutorials Dojo — SCS-C03 Practice Exams</h4><div class="source">tutorialsdojo.com</div><p>Practice questions specifically covering Domain 6 governance scenarios.</p><a href="https://tutorialsdojo.com" target="_blank" rel="noopener">Visit site →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill paid">Paid</span><h4>Adrian Cantrill — SCS-C03 Deep Dive</h4><div class="source">learn.cantrill.io</div><p>In-depth video coverage of Organizations, Control Tower, and governance patterns.</p><a href="https://learn.cantrill.io" target="_blank" rel="noopener">Visit site →</a></div>
+      <div class="resource-card tilt"><span class="resource-pill paid">Paid</span><h4>Stéphane Maarek — AWS Security Specialty Course</h4><div class="source">udemy.com</div><p>Structured course walkthroughs of governance, SCPs, RCPs, and landing zones.</p><a href="https://www.udemy.com" target="_blank" rel="noopener">Search Udemy →</a></div>
+    </div>
+  </div>
+</section>
+<section class="scene" id="scene-bridge-close" data-title="Closing Bridge">
+  <div class="ambient-blob" style="width:520px;height:520px;background:var(--c-gov);top:-100px;right:-150px;"></div>
+  <div class="col reveal">
+    <div class="eyebrow">WHAT'S NEXT</div>
+    <h2 class="kinetic">You've built the guardrails.</h2>
+    <p>This module gave you the structure — OUs mapped to real security boundaries, SCPs and RCPs enforced at the right scope, preventive and detective guardrails chosen deliberately, tagging that makes automation trustworthy. That structure is the governance model, built once and inherited everywhere beneath it.</p>
+    <p>But a governance structure built today can still drift tomorrow — an SCP gets loosened for a one-off request and never reverted, a new account slips in through a path that bypasses Account Factory, a tag requirement quietly stops being enforced. <strong>Module 13 — Governance Frameworks, Auditing & Enforcement</strong> — is where you move from "how the governance structure is built" to "how you continuously verify it's actually being followed." You've built the guardrails; Module 13 is how you prove, on an ongoing basis, that they're holding.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="footer-nav">
+    <a href="module-11-incident-response.html"><span class="dir">← Previous</span><span class="ttl">Module 11: Incident Response</span></a>
+    <a href="module-13-auditing.html" class="next"><span class="dir">Next →</span><span class="ttl">Module 13: Governance Frameworks & Auditing</span></a>
+  </div>
+  <div class="col" style="text-align:center; margin-top:30px; font-family:'JetBrains Mono',monospace; font-size:11px;">SCS-C03 Certification Course · Module 12 of 16 · Domain 6: Security Foundations and Governance</div>
+</footer>
+
+<script>
+// theme toggle — bug fix #3
+const html = document.documentElement;
+const themeBtn = document.getElementById('themeToggle');
+html.style.colorScheme = html.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+function applyThemeLabel(){ themeBtn.textContent = html.getAttribute('data-theme') === 'light' ? '☀ LIGHT' : '☾ DARK'; }
+applyThemeLabel();
+themeBtn.addEventListener('click', () => {
+  const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next);
+  html.style.colorScheme = next;
+  applyThemeLabel();
+});
+
+// scroll progress
+function updateProgress(){ const h = document.documentElement; const scrolled = h.scrollTop; const height = h.scrollHeight - h.clientHeight; document.getElementById('scrollProgress').style.width = (height > 0 ? (scrolled / height) * 100 : 0) + '%'; }
+document.addEventListener('scroll', () => requestAnimationFrame(updateProgress));
+
+// kinetic headings
+function wrapKinetic(el, text){
+  const words = text.split(' ');
+  el.innerHTML = words.map((w, i) => `<span class="kw"><span class="kw-inner" style="transition-delay:${i * 45}ms">${w}</span></span>`).join(' ');
+}
+document.querySelectorAll('h2.kinetic').forEach(h => wrapKinetic(h, h.textContent));
+const kineticIo = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }); }, { threshold: 0.4 });
+document.querySelectorAll('h2.kinetic').forEach(h => kineticIo.observe(h));
+
+// scroll reveal + stagger
+const io = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }); }, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.stagger > *').forEach((el, i) => { el.style.transitionDelay = (i * 90) + 'ms'; });
+
+// tilt + magnetic
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!reduceMotion){
+  document.querySelectorAll('.tilt').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(600px) rotateX(${py * -6}deg) rotateY(${px * 6}deg) translateY(-2px)`;
+    });
+    card.addEventListener('mouseleave', () => { card.style.transform = 'perspective(600px) rotateX(0) rotateY(0)'; });
+  });
+  document.querySelectorAll('.magnetic').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = `translate(${x * 0.18}px, ${y * 0.35}px)`;
+    });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = 'translate(0,0)'; });
+  });
+}
+
+// mind node expand
+document.querySelectorAll('.mindnode').forEach(node => {
+  node.addEventListener('click', () => {
+    const info = node.parentElement.querySelector('.node-info');
+    if (info) info.classList.toggle('open');
+  });
+  node.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); node.click(); }
+  });
+});
+
+// stat count-up
+document.querySelectorAll('.stat-num').forEach(el => {
+  new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting || el.dataset.done) return;
+      el.dataset.done = '1';
+      const target = parseInt(el.dataset.target, 10);
+      const start = performance.now(), duration = 1100;
+      function tick(now){ const p = Math.min((now-start)/duration,1); el.textContent = (el.dataset.prefix||'') + Math.round((1-Math.pow(1-p,3))*target) + (el.dataset.suffix||''); if(p<1) requestAnimationFrame(tick); }
+      requestAnimationFrame(tick);
+    });
+  }, {threshold:0.4}).observe(el);
+});
+
+const ouDetails = {
+  root: "Every SCP and RCP attached here applies to every account in the Organization, with no exception — this is where truly universal baselines live (e.g., a data-protection RCP that blocks public S3 anywhere).",
+  security: "Tightest guardrails in the org. Houses the Log Archive account (Module 9) and the Audit account. Inherits root policies plus Security-specific SCPs restricting almost everything except log ingestion and read-only audit access.",
+  sandbox: "Deliberately permissive. Inherits only root-level non-negotiables (no public data exposure, spend caps) — engineers here need room to experiment without full production guardrails blocking iteration.",
+  workloads: "Parent OU for all product/team accounts. Splits into Prod and Non-Prod sub-OUs below, each inheriting Workloads-level policy plus their own tier-specific SCPs.",
+  suspended: "An SCP here denies nearly all actions. Accounts land here the moment offboarding begins, so a suspended account can't keep incurring cost or exposure while paperwork is still in flight.",
+  prod: "Inherits Workloads OU policy plus Prod-specific SCPs — typically the strictest tier below Security: mandatory encryption, no direct console access, change-managed deployments only.",
+  nonprod: "Inherits Workloads OU policy but with looser SCPs than Prod — enough freedom for dev/staging work while still blocking the truly dangerous actions (disabling logging, deleting the log-archive trail)."
+};
+document.querySelectorAll('.ou-node').forEach(node => {
+  node.addEventListener('click', () => {
+    const panel = document.getElementById('ouNodeInfo');
+    const key = node.getAttribute('data-node');
+    panel.style.display = 'block';
+    panel.innerHTML = '<p>' + ouDetails[key] + '</p>';
+  });
+  node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); node.click(); } });
+});
+
+const tagDetails = {
+  scp: "The tag policy alone only flags non-compliant tags; it doesn't stop resource creation. An SCP denying the relevant creation API (e.g., ec2:RunInstances) unless a required tag key is present makes the requirement structural, not just advisory.",
+  create: "The resource exists only in a state where the required tags are already attached — there was never a moment where an untagged, unscoped resource was live in the account.",
+  downstream: "Because every resource is reliably tagged, downstream systems can scope by tag with confidence: Config rules apply stricter checks only to data-classification=restricted resources, remediation automation targets environment=prod precisely, and IAM policies can grant or deny access using aws:ResourceTag conditions."
+};
+document.querySelectorAll('.tag-node').forEach(node => {
+  node.addEventListener('click', () => {
+    const panel = document.getElementById('tagNodeInfo');
+    const key = node.getAttribute('data-tag');
+    panel.style.display = 'block';
+    panel.innerHTML = '<p>' + tagDetails[key] + '</p>';
+  });
+  node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); node.click(); } });
+});
+
+const quizFeedback = {
+  1: "The exam-favored answer for a zero-exception guarantee is always the preventive mechanism attached at the highest applicable scope — here, the Organization root.",
+  2: "Control Tower automates and manages guardrails; SCPs remain the actual enforcement mechanism doing the work underneath.",
+  3: "Inheritance is a function of OU placement. Moving OUs changes which policies apply immediately — Sandbox policies no longer apply, Workloads/Prod policies now do.",
+  4: "This is precisely the scenario RCPs exist for — a resource-control guarantee that overrides what any individual account's own policy might grant.",
+  5: "Detective guardrails (Config rules, Security Hub standards) evaluate after the action has already occurred.",
+  6: "Account Factory produces accounts that are compliant from creation, which is structurally stronger than any retrofit applied after resources already exist.",
+  7: "Because inheritance flows downward from every OU above an account, an SCP attached too high restricts everything beneath it — this is an inheritance mistake, not a targeting mistake.",
+  8: "Tags aren't just for cost allocation — they scope Config rules, remediation automation, and can gate access directly through aws:ResourceTag condition keys.",
+  9: "Tag policies (via Organizations) are the mechanism for enforcing consistent tag keys and values across accounts.",
+  10: "Suspended OU placement should happen immediately on the decision to decommission, not after paperwork completes — the SCP there closes the exposure window right away.",
+  11: "A sudden spend spike in a sandbox or dormant account is a signal worth the same scrutiny as an unusual API-activity finding.",
+  12: "These accounts hold the org's evidence and detection data — compromising them undermines every other control, so they warrant the tightest guardrails in the organization."
+};
+let quizScoreVal = 0;
+document.querySelectorAll('.quiz-q').forEach((q, idx) => {
+  const correctKey = q.getAttribute('data-answer');
+  const feedbackEl = q.querySelector('.q-feedback');
+  q.querySelectorAll('.q-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (q.dataset.answered) return;
+      q.dataset.answered = '1';
+      const chosenKey = opt.getAttribute('data-key');
+      q.querySelectorAll('.q-opt').forEach(o => {
+        o.disabled = true;
+        if (o.getAttribute('data-key') === correctKey) o.classList.add('correct');
+        else if (o === opt) o.classList.add('incorrect');
+      });
+      if (chosenKey === correctKey){
+        quizScoreVal++;
+        document.getElementById('quizScore').textContent = quizScoreVal;
+      }
+      feedbackEl.style.display = 'block';
+      feedbackEl.textContent = quizFeedback[idx + 1];
+    });
+  });
+});
+
+const railScenes = Array.from(document.querySelectorAll('main .scene, main .title-card')).filter(s => s.id);
+const railEl = document.getElementById('railNav');
+railScenes.forEach(scene => {
+  const dot = document.createElement('div');
+  dot.className = 'rail-dot';
+  dot.setAttribute('data-target', scene.id);
+  dot.setAttribute('tabindex', '0');
+  dot.setAttribute('role', 'button');
+  dot.setAttribute('aria-label', 'Jump to ' + (scene.getAttribute('data-title') || scene.id));
+  dot.addEventListener('click', () => { document.getElementById(scene.id).scrollIntoView({behavior:'smooth'}); });
+  dot.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); dot.click(); } });
+  railEl.appendChild(dot);
+});
+const railIo = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting){
+      document.querySelectorAll('.rail-dot').forEach(d => d.classList.remove('active'));
+      const activeDot = document.querySelector('.rail-dot[data-target="' + entry.target.id + '"]');
+      if (activeDot) activeDot.classList.add('active');
+    }
+  });
+}, { threshold: 0.5, rootMargin: '-90px 0px -40% 0px' });
+railScenes.forEach(scene => railIo.observe(scene));
+</script>
+</body>
+</html>

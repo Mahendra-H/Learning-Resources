@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 06: Workload, Compute &amp; Hybrid Connectivity Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* === COLOR TOKENS === */
+:root{
+  --grain-opacity:0.05;
+  --bg:#0A0E1A; --surface:#10162A; --surface-raised:#161D34;
+  --text:#EDF1FB; --text-dim:#8B93A7; --line:#232B45;
+  --accent:#4C86FF; --accent-dim:#2A4A8C;
+  --amber:#FFB020; --green:#34D399;
+  --shadow:0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg:rgba(10,14,26,0.72); --node-glow:rgba(76,134,255,0.28);
+  --overlay:rgba(4,6,14,0.6); --grid-line:rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme:dark; }
+html[data-theme="light"]{
+  color-scheme:light;
+  --grain-opacity:0.015;
+  --bg:#F6F7FB; --surface:#FFFFFF; --surface-raised:#FFFFFF;
+  --text:#0B1220; --text-dim:#5B6478; --line:#E2E5EF;
+  --accent:#2F6FED; --accent-dim:#D6E2FF;
+  --amber:#B9750B; --green:#0F8F63;
+  --shadow:0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg:rgba(246,247,251,0.72); --node-glow:rgba(47,111,237,0.20);
+  --overlay:rgba(20,26,40,0.35); --grid-line:rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+/* === BASE === */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;background:var(--bg);}
+body{background:var(--bg);color:var(--text);font-family:"Inter",sans-serif;transition:background .4s ease,color .4s ease;overflow-x:hidden;}
+/* === GRAIN === */
+#grainOverlay{position:fixed;inset:0;z-index:250;pointer-events:none;opacity:var(--grain-opacity,0.05);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+/* === NAV === */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-family:"JetBrains Mono",monospace;font-size:0.85rem;color:var(--text-dim);letter-spacing:0.04em;}
+.nav-logo span{color:var(--c-infra);}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.nav-module{font-family:"JetBrains Mono",monospace;font-size:0.75rem;color:var(--text-dim);}
+#themeToggle{background:var(--surface);border:1px solid var(--line);color:var(--text-dim);cursor:pointer;padding:6px 14px;border-radius:8px;font-size:0.8rem;font-family:"JetBrains Mono",monospace;transition:border-color .2s ease,color .2s ease;letter-spacing:0.04em;}
+#themeToggle:hover{border-color:var(--c-infra);color:var(--c-infra);}
+/* === SCENE === */
+.scene{min-height:100vh;padding:160px 40px;position:relative;background:var(--bg);overflow:hidden;}
+.scene-inner{max-width:840px;margin:0 auto;position:relative;z-index:1;}
+.scene-eyebrow{font-family:"JetBrains Mono",monospace;font-size:0.74rem;color:var(--c-infra);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.scene-eyebrow::before{content:"";display:inline-block;width:28px;height:2px;background:var(--c-infra);flex-shrink:0;}
+h2.kinetic{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(2rem,5vw,3.4rem);line-height:1.1;letter-spacing:-0.02em;margin-bottom:24px;}
+h3{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:1.22rem;letter-spacing:-0.01em;margin-bottom:10px;color:var(--text);}
+p{line-height:1.75;color:var(--text-dim);margin-bottom:16px;}
+p:last-child{margin-bottom:0;}
+a{color:var(--accent);}
+code{font-family:"JetBrains Mono",monospace;font-size:0.84em;background:var(--surface);padding:2px 6px;border-radius:4px;color:var(--c-infra);}
+/* === AMBIENT BLOBS === */
+.ambient-blob{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:0.35;animation:driftBlob 34s ease-in-out infinite alternate;}
+@keyframes driftBlob{0%{transform:translate(0,0) scale(1);}50%{transform:translate(4%,-6%) scale(1.08);}100%{transform:translate(-5%,4%) scale(0.96);}}
+/* === TITLE CARD === */
+.title-card{min-height:100vh;background:var(--card-bg);color:var(--card-text);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden;}
+.title-card h2{font-family:"Space Grotesk",sans-serif;font-size:clamp(2.2rem,7vw,5.4rem);line-height:1.1;font-weight:700;letter-spacing:-0.03em;color:var(--card-text);}
+.title-card .tc-sub{font-family:"JetBrains Mono",monospace;font-size:0.85rem;color:rgba(244,246,251,0.4);margin-top:20px;letter-spacing:0.06em;text-transform:uppercase;}
+.scanbeam{position:absolute;left:0;right:0;height:140px;top:-140px;background:linear-gradient(180deg,transparent,rgba(76,134,255,0.14),transparent);animation:scanSweep 6s linear infinite;pointer-events:none;}
+@keyframes scanSweep{0%{top:-140px;}100%{top:100%;}}
+/* === KINETIC HEADINGS === */
+.kw{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:0.08em;}
+.kw-inner{display:inline-block;transform:translateY(115%);transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+/* === REVEAL / STAGGER === */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s ease,transform .8s ease;}
+.reveal.in{opacity:1;transform:translateY(0);}
+.stagger>*{opacity:0;transform:translateY(18px) scale(.98);transition:opacity .6s ease,transform .6s ease;}
+.stagger.in>*{opacity:1;transform:translateY(0) scale(1);}
+/* === RAIL === */
+.rail{position:fixed;right:26px;top:50%;transform:translateY(-50%);z-index:90;display:flex;flex-direction:column;gap:14px;}
+.rail-dot{width:9px;height:9px;border-radius:50%;background:var(--line);border:1px solid var(--line);cursor:pointer;transition:background .3s ease,transform .3s ease;}
+.rail-dot.active{background:var(--c-infra);border-color:var(--c-infra);transform:scale(1.3);}
+@media (max-width:900px){.rail{display:none;}}
+/* === CARDS === */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:28px;}
+.tilt{transition:transform .15s ease;}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px;text-align:center;}
+.stat-num{font-family:"JetBrains Mono",monospace;font-size:2.6rem;font-weight:700;color:var(--c-infra);display:block;margin-bottom:6px;}
+.stat-label{font-size:0.8rem;color:var(--text-dim);font-family:"JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:0.06em;}
+.feature-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;}
+.feature-card .fc-icon{font-size:1.5rem;margin-bottom:12px;display:block;}
+.feature-card h4{font-family:"Space Grotesk",sans-serif;font-size:0.97rem;font-weight:600;margin-bottom:8px;color:var(--text);}
+.feature-card p{font-size:0.86rem;}
+.info-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;}
+/* === MENTOR ASIDE === */
+.mentor-aside{background:var(--surface);border-left:3px solid var(--c-infra);border-radius:0 14px 14px 0;padding:18px 24px;margin:28px 0;}
+.mentor-aside::before{content:"🛡️ MENTOR NOTE";display:block;font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--c-infra);margin-bottom:8px;}
+.mentor-aside p{font-size:0.94rem;color:var(--text);line-height:1.7;font-style:italic;}
+/* === MINDNODE === */
+.mindnode{cursor:pointer;user-select:none;}
+.node-info{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease,margin .3s ease;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-top:0;}
+.node-info.open{max-height:320px;opacity:1;margin-top:14px;padding:16px 20px;}
+/* === HIGHLIGHT BOX === */
+.hbox{border-radius:12px;padding:18px 22px;margin:20px 0;}
+.hbox.warn{background:var(--c-detect-dim);border:1px solid var(--amber);}
+.hbox.danger{background:var(--c-ir-dim);border:1px solid var(--c-ir);}
+.hbox.info{background:var(--c-infra-dim);border:1px solid var(--c-infra);}
+.hbox.success{background:var(--c-gov-dim);border:1px solid var(--green);}
+.hbox-label{font-family:"JetBrains Mono",monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;display:block;}
+.hbox.warn .hbox-label{color:var(--amber);}
+.hbox.danger .hbox-label{color:var(--c-ir);}
+.hbox.info .hbox-label{color:var(--c-infra);}
+.hbox.success .hbox-label{color:var(--green);}
+.hbox p{font-size:0.9rem;color:var(--text);margin-bottom:0;}
+/* === COMPARISON MATRIX === */
+.matrix-wrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:28px;}
+.matrix-table{width:100%;border-collapse:collapse;}
+.matrix-table thead tr{background:var(--surface-raised);}
+.matrix-table th{padding:13px 18px;text-align:left;font-family:"JetBrains Mono",monospace;font-size:0.73rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);border-bottom:1px solid var(--line);}
+.matrix-table td{padding:14px 18px;font-size:0.88rem;border-bottom:1px solid var(--line);color:var(--text);vertical-align:middle;}
+.matrix-table tbody tr{cursor:pointer;transition:background .2s ease;}
+.matrix-table tbody tr:hover td{background:var(--surface-raised);}
+.matrix-table tbody tr:last-child td{border-bottom:none;}
+.m-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:0.74rem;font-family:"JetBrains Mono",monospace;font-weight:500;}
+.badge-good{background:var(--c-gov-dim);color:var(--green);}
+.badge-mid{background:var(--c-detect-dim);color:var(--amber);}
+.badge-warn{background:var(--c-ir-dim);color:var(--c-ir);}
+.matrix-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0;}
+.matrix-detail.open{max-height:180px;opacity:1;}
+.matrix-detail-inner{padding:14px 18px;font-size:0.87rem;color:var(--text-dim);line-height:1.65;border-top:1px solid var(--line);background:var(--surface-raised);}
+/* === VPC FLOW === */
+.flow-container{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px;margin-top:28px;}
+.flow-step{display:none;}
+.flow-step.active{display:block;}
+.flow-question{font-family:"Space Grotesk",sans-serif;font-size:1.12rem;font-weight:600;color:var(--text);margin-bottom:12px;}
+.flow-sub{font-size:0.88rem;color:var(--text-dim);margin-bottom:20px;line-height:1.65;}
+.flow-options{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;}
+.flow-btn{background:var(--surface-raised);border:1px solid var(--line);color:var(--text);padding:10px 22px;border-radius:10px;cursor:pointer;font-size:0.9rem;transition:border-color .2s ease,background .2s ease;}
+.flow-btn:hover{border-color:var(--c-infra);background:var(--c-infra-dim);color:var(--c-infra);}
+.flow-result{background:var(--c-infra-dim);border:1px solid var(--c-infra);border-radius:12px;padding:20px 24px;}
+.flow-result .result-title{font-family:"Space Grotesk",sans-serif;font-weight:700;color:var(--c-infra);font-size:1.05rem;margin-bottom:8px;}
+.flow-result p{font-size:0.88rem;color:var(--text);line-height:1.65;margin-bottom:0;}
+.flow-restart{margin-top:14px;background:transparent;border:1px solid var(--line);color:var(--text-dim);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:"JetBrains Mono",monospace;}
+.flow-restart:hover{border-color:var(--accent);color:var(--accent);}
+/* === BEDROCK FLOW === */
+.bedrock-flow{display:flex;flex-direction:column;gap:0;margin-top:28px;}
+.bf-step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 24px;cursor:pointer;transition:border-color .2s ease;}
+.bf-step:hover,.bf-step.active{border-color:var(--c-infra);}
+.bf-step .bf-label{font-family:"JetBrains Mono",monospace;font-size:0.72rem;color:var(--c-infra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:block;}
+.bf-step h4{font-size:0.97rem;font-weight:600;margin-bottom:0;color:var(--text);}
+.bf-detail{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s ease,opacity .3s ease;}
+.bf-step.active .bf-detail{max-height:240px;opacity:1;margin-top:10px;}
+.bf-detail p{font-size:0.87rem;line-height:1.65;margin-bottom:0;}
+.bf-arrow{text-align:center;color:var(--c-infra);font-size:1.1rem;padding:6px 0;pointer-events:none;}
+/* === IRSA === */
+.irsa-compare{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:28px;}
+@media (max-width:640px){.irsa-compare{grid-template-columns:1fr;}}
+.irsa-panel{background:var(--surface);border-radius:14px;padding:22px;}
+.irsa-panel.danger{border:2px solid var(--c-ir-dim);}
+.irsa-panel.safe{border:2px solid var(--c-gov-dim);}
+.irsa-label{font-family:"JetBrains Mono",monospace;font-size:0.73rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;display:block;}
+.irsa-panel.danger .irsa-label{color:var(--c-ir);}
+.irsa-panel.safe .irsa-label{color:var(--green);}
+.irsa-node{background:var(--surface-raised);border-radius:9px;padding:10px 14px;margin-bottom:8px;font-size:0.84rem;color:var(--text);cursor:pointer;transition:border-color .2s ease;}
+.irsa-node:hover{outline:1px solid var(--c-infra);}
+.irsa-arrow{text-align:center;color:var(--text-dim);font-size:0.8rem;margin:3px 0;}
+.blast-bar{height:8px;border-radius:4px;margin-top:14px;}
+.irsa-panel.danger .blast-bar{background:linear-gradient(90deg,var(--c-ir-dim),var(--c-ir));width:90%;}
+.irsa-panel.safe .blast-bar{background:linear-gradient(90deg,var(--c-gov-dim),var(--green));width:20%;}
+.blast-label{font-size:0.76rem;color:var(--text-dim);margin-top:6px;font-family:"JetBrains Mono",monospace;}
+/* === EXERCISE === */
+.scenario-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:14px;}
+.sc-badge{font-family:"JetBrains Mono",monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--c-infra);margin-bottom:10px;display:block;}
+.scenario-card h4{font-size:0.97rem;font-weight:600;margin-bottom:10px;color:var(--text);}
+.sc-gap{background:var(--c-ir-dim);border:1px solid var(--c-ir);border-radius:8px;padding:10px 14px;font-size:0.85rem;color:var(--c-ir);margin:10px 0;}
+.scenario-reveal{max-height:0;overflow:hidden;transition:max-height .45s ease,opacity .35s ease;opacity:0;}
+.scenario-reveal.open{max-height:500px;opacity:1;}
+.sc-fix{background:var(--c-gov-dim);border:1px solid var(--green);border-radius:8px;padding:14px 18px;margin-top:10px;font-size:0.87rem;color:var(--text);line-height:1.65;}
+.scenario-btn{background:var(--c-infra-dim);color:var(--c-infra);border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-family:"JetBrains Mono",monospace;font-size:0.8rem;margin-top:14px;transition:background .2s ease,color .2s ease;}
+.scenario-btn:hover{background:var(--c-infra);color:var(--bg);}
+/* === TRAPS === */
+.trap-card{background:var(--surface);border:1px solid var(--c-ir-dim);border-radius:14px;padding:20px 22px;margin-bottom:12px;cursor:pointer;transition:border-color .25s ease;}
+.trap-card:hover{border-color:var(--c-ir);}
+.trap-card.open{border-color:var(--c-ir);}
+.trap-header{display:flex;align-items:center;gap:14px;}
+.trap-icon{font-size:1.4rem;flex-shrink:0;}
+.trap-title{font-weight:600;font-size:0.97rem;color:var(--text);flex:1;}
+.trap-chev{color:var(--text-dim);transition:transform .25s ease;font-size:0.9rem;}
+.trap-card.open .trap-chev{transform:rotate(180deg);color:var(--c-ir);}
+.trap-body{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .35s ease;opacity:0;}
+.trap-card.open .trap-body{max-height:700px;opacity:1;margin-top:16px;}
+.trap-scene{font-size:0.87rem;line-height:1.7;color:var(--text-dim);}
+.trap-fix-label{font-family:"JetBrains Mono",monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-top:14px;margin-bottom:6px;display:block;}
+.trap-fix{font-size:0.87rem;line-height:1.65;color:var(--text);background:var(--c-gov-dim);border-radius:8px;padding:12px 16px;}
+/* === EXAM === */
+.score-bar-wrap{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin-bottom:32px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.score-display{font-family:"JetBrains Mono",monospace;font-size:2.4rem;font-weight:700;color:var(--c-infra);line-height:1;}
+.score-meta{display:flex;flex-direction:column;gap:4px;}
+.score-label{font-size:0.83rem;color:var(--text-dim);}
+.score-progress{flex:1;min-width:120px;height:8px;background:var(--line);border-radius:4px;overflow:hidden;}
+.score-progress-fill{height:100%;background:var(--c-infra);border-radius:4px;width:0%;transition:width .4s ease;}
+.question-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px;margin-bottom:18px;transition:border-color .3s ease;}
+.question-card.correct{border-color:var(--green);}
+.question-card.wrong{border-color:var(--c-ir);}
+.q-num{font-family:"JetBrains Mono",monospace;font-size:0.72rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.q-text{font-size:0.95rem;color:var(--text);line-height:1.72;margin-bottom:16px;font-weight:500;}
+.options{display:flex;flex-direction:column;gap:8px;}
+.option-label{display:block;padding:11px 15px;border-radius:10px;border:1px solid var(--line);cursor:pointer;transition:background .2s ease,border-color .2s ease;font-size:0.88rem;color:var(--text);}
+.option-label:hover{border-color:var(--accent);background:var(--surface-raised);}
+.option-label.selected{border-color:var(--accent);background:var(--accent-dim);}
+.option-label.correct-ans{border-color:var(--green)!important;background:var(--c-gov-dim)!important;color:var(--text)!important;}
+.option-label.wrong-ans{border-color:var(--c-ir)!important;background:var(--c-ir-dim)!important;color:var(--text)!important;}
+.option-label input[type="radio"]{display:none;}
+.check-btn{background:var(--c-infra-dim);color:var(--c-infra);border:none;padding:9px 20px;border-radius:8px;cursor:pointer;font-family:"JetBrains Mono",monospace;font-size:0.8rem;margin-top:14px;transition:background .2s ease,color .2s ease;}
+.check-btn:hover{background:var(--c-infra);color:var(--bg);}
+.check-btn:disabled{opacity:0.45;cursor:not-allowed;}
+.reasoning{max-height:0;overflow:hidden;transition:max-height .45s ease;}
+.reasoning.open{max-height:500px;}
+.reasoning-inner{background:var(--surface-raised);border-radius:10px;padding:16px 20px;margin-top:12px;font-size:0.87rem;line-height:1.7;color:var(--text-dim);}
+/* === DISCUSSION FAQ === */
+.discussion{display:flex;flex-direction:column;gap:22px;margin-top:36px;}
+.discussion-pair{display:flex;flex-direction:column;gap:10px;}
+.bubble{max-width:82%;padding:16px 20px;border-radius:18px;font-size:0.94rem;line-height:1.65;}
+.bubble-q{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px;cursor:pointer;transition:border-color .2s ease;display:flex;flex-direction:column;}
+.bubble-q:hover{border-color:var(--accent);}
+.bubble-q .who{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.bubble-q .chev{margin-left:auto;transition:transform .25s ease;font-size:12px;color:var(--text-dim);}
+.discussion-pair.open .bubble-q .chev{transform:rotate(90deg);color:var(--accent);}
+.bubble-a{align-self:flex-end;background:var(--accent-dim);border-bottom-right-radius:4px;max-height:0;overflow:hidden;opacity:0;padding:0 20px;transition:max-height .45s ease,opacity .35s ease,padding .35s ease;}
+.discussion-pair.open .bubble-a{max-height:700px;opacity:1;padding:16px 20px;}
+.bubble-a .who{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--c-infra);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:block;text-align:right;}
+/* === RESOURCES === */
+.resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:36px;}
+.resource-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;position:relative;transition:border-color .2s ease,transform .15s ease;}
+.resource-card:hover{border-color:var(--accent-dim);transform:translateY(-2px);}
+.resource-pill{position:absolute;top:20px;right:20px;font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;padding:4px 10px;border-radius:999px;}
+.resource-pill.free{background:var(--c-gov-dim);color:var(--green);}
+.resource-pill.paid{background:var(--c-detect-dim);color:var(--amber);}
+.resource-card h4{font-size:0.97rem;padding-right:72px;margin-bottom:8px;font-family:"Space Grotesk",sans-serif;font-weight:600;color:var(--text);}
+.resource-card .source{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text-dim);margin-bottom:10px;display:block;}
+.resource-card p{font-size:0.86rem;color:var(--text-dim);line-height:1.6;margin-bottom:0;}
+.resource-card a{display:inline-block;margin-top:14px;font-size:0.84rem;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-dim);}
+@media (max-width:720px){.resource-grid{grid-template-columns:1fr;}}
+/* === NAV FOOTER === */
+.nav-footer{display:flex;justify-content:space-between;align-items:stretch;gap:16px;margin-top:60px;padding-top:40px;border-top:1px solid var(--line);flex-wrap:wrap;}
+.nav-footer-link{display:flex;flex-direction:column;gap:4px;text-decoration:none;padding:16px 20px;background:var(--surface);border:1px solid var(--line);border-radius:12px;transition:border-color .2s ease;flex:1;min-width:180px;}
+.nav-footer-link:hover{border-color:var(--c-infra);}
+.nfl-dir{font-family:"JetBrains Mono",monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:4px;}
+.nfl-title{font-size:0.92rem;color:var(--text);font-weight:500;}
+.nav-footer-link.next{text-align:right;}
+/* === FOOTER === */
+footer{padding:60px 40px;background:var(--bg);color:var(--text-dim);}
+.footer-inner{max-width:840px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+.footer-copy{font-family:"JetBrains Mono",monospace;font-size:0.78rem;}
+.footer-domain{font-family:"JetBrains Mono",monospace;font-size:0.78rem;color:var(--c-infra);}
+/* === MISC === */
+.divider{height:1px;background:var(--line);margin:36px 0;}
+.step-list{display:flex;flex-direction:column;gap:0;margin:22px 0;}
+.step-item{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--line);align-items:flex-start;}
+.step-item:last-child{border-bottom:none;}
+.step-num{font-family:"JetBrains Mono",monospace;font-size:0.78rem;color:var(--c-infra);background:var(--c-infra-dim);border-radius:6px;padding:4px 10px;flex-shrink:0;margin-top:2px;}
+.step-content h4{font-size:0.95rem;font-weight:600;color:var(--text);margin-bottom:5px;}
+.step-content p{font-size:0.87rem;margin-bottom:0;}
+.infobar{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0;}
+.infobar-item{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-family:"JetBrains Mono",monospace;font-size:0.76rem;color:var(--text-dim);}
+.infobar-item span{color:var(--c-infra);}
+.drawer-overlay{position:fixed;inset:0;background:var(--overlay);z-index:200;opacity:0;pointer-events:none;transition:opacity .35s ease;backdrop-filter:blur(2px);}
+.drawer-overlay.open{opacity:1;pointer-events:auto;}
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion:reduce){*{animation-duration:0.001ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;}}
+/* === RESPONSIVE === */
+@media (max-width:600px){.scene{padding:120px 20px;}.cards-grid{grid-template-columns:1fr;}.irsa-compare{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress" style="position:fixed;top:0;left:0;height:3px;width:0%;background:var(--c-infra);z-index:300;transition:width .08s linear;"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">SCS-C03 <span>// Module 06</span></div>
+  <div class="nav-right">
+    <span class="nav-module">Workload &amp; Hybrid Security</span>
+    <button id="themeToggle" aria-label="Toggle theme">☀ Light</button>
+  </div>
+</nav>
+
+<!-- RAIL -->
+<nav class="rail" id="rail" aria-label="Section navigator"></nav>
+
+<!-- ═══════════════════════════════════════════ HERO ═══ -->
+<section class="scene" id="s-hero">
+  <div class="ambient-blob" style="width:600px;height:600px;background:var(--c-infra);top:-200px;right:-200px;animation-delay:0s;"></div>
+  <div class="ambient-blob" style="width:400px;height:400px;background:var(--c-iam);bottom:-100px;left:-150px;animation-delay:-14s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Domain 3 — Infrastructure Security · Module 06 of 16</div>
+    <h2 class="kinetic">Workload, Compute &amp; Hybrid Connectivity Security</h2>
+    <p class="reveal" style="font-size:1.1rem;color:var(--text);line-height:1.8;margin-bottom:28px;">Module 5 hardened the edge — the WAFs, the NACLs, the CloudFront distribution standing between the internet and your infrastructure. Now we move the lens <em>inward</em>. Traffic that clears the edge still has to reach compute. That compute still has to be patched, locked down, and running only the permissions it actually needs. And the private networks that need to reach AWS without touching the internet at all — those connections have their own security properties, some of which will surprise you.</p>
+    <div class="infobar reveal">
+      <span class="infobar-item">Domain <span>3 — Infrastructure Security</span></span>
+      <span class="infobar-item">Exam weight <span>18%</span></span>
+      <span class="infobar-item">Study time <span>~2.5 hours</span></span>
+      <span class="infobar-item">Difficulty <span>Advanced</span></span>
+    </div>
+    <div class="cards-grid stagger" style="margin-top:32px;">
+      <div class="stat-card tilt"><span class="stat-num" data-target="7" data-suffix="">0</span><span class="stat-label">Topic Areas</span></div>
+      <div class="stat-card tilt"><span class="stat-num" data-target="10" data-suffix="">0</span><span class="stat-label">Exam Questions</span></div>
+      <div class="stat-card tilt"><span class="stat-num" data-target="6" data-suffix="">0</span><span class="stat-label">Trap Vignettes</span></div>
+      <div class="stat-card tilt"><span class="stat-num" data-target="12" data-suffix="">0</span><span class="stat-label">Practice Questions</span></div>
+    </div>
+    <div class="cards-grid stagger" style="margin-top:16px;">
+      <div class="feature-card reveal"><span class="fc-icon">🖥️</span><h4>EC2 Workload Security</h4><p>IMDSv2 enforcement, instance profiles, security group scoping, and guest OS patch ownership.</p></div>
+      <div class="feature-card reveal"><span class="fc-icon">🔧</span><h4>Systems Manager</h4><p>Session Manager replaces SSH bastions. Patch Manager operationalizes shared responsibility at scale.</p></div>
+      <div class="feature-card reveal"><span class="fc-icon">📦</span><h4>Container Security</h4><p>Task roles vs node roles, IRSA for EKS, ECR image scanning, and the EKS shared responsibility split.</p></div>
+      <div class="feature-card reveal"><span class="fc-icon">⚡</span><h4>Lambda Security</h4><p>Per-function execution role scoping, environment variable encryption, VPC attachment trade-offs.</p></div>
+      <div class="feature-card reveal"><span class="fc-icon">🔗</span><h4>Hybrid Connectivity</h4><p>VPN vs Direct Connect vs both. The Direct Connect encryption gotcha is a top tested trap.</p></div>
+      <div class="feature-card reveal"><span class="fc-icon">🔒</span><h4>PrivateLink &amp; VPC Endpoints</h4><p>Interface vs gateway endpoints, and when a VPC endpoint fully replaces a NAT Gateway.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ EC2 ═══ -->
+<section class="scene" id="s-ec2">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-infra);top:-100px;left:-200px;animation-delay:-8s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">EC2 Workload Security</div>
+    <h2 class="kinetic">The Instance You Own Is the Instance You Harden</h2>
+
+    <h3>IMDSv2 and the SSRF-to-Credential-Theft Attack Path</h3>
+    <p>Every EC2 instance can reach a special IP address — <code>169.254.169.254</code> — that serves instance metadata, including the temporary IAM credentials for the attached instance role. This is the Instance Metadata Service, or IMDS. Under IMDSv1, any process on the instance that can make an HTTP GET request to that address can retrieve those credentials. No authentication, no token, no session — just a raw HTTP request.</p>
+    <p>This becomes a concrete attack when combined with a Server-Side Request Forgery (SSRF) vulnerability. SSRF flaws let an attacker manipulate a server-side request — typically a URL parameter, a webhook, or an image-fetch function — so it makes HTTP requests to attacker-chosen destinations. Redirect it to <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/MyRole</code> and the application returns the instance role's access key, secret key, and session token. The attacker now has credentials they can use from anywhere on the internet.</p>
+
+    <div class="hbox danger reveal">
+      <span class="hbox-label">⚠ Concrete Attack Path (IMDSv1)</span>
+      <p>App receives a URL parameter → fetches it server-side → attacker redirects to metadata endpoint → app returns JSON with <code>AccessKeyId</code>, <code>SecretAccessKey</code>, <code>Token</code> → attacker exfiltrates credentials → uses them from their own machine. No access to the instance, no exploit of AWS infrastructure — only the application SSRF and an unprotected metadata endpoint.</p>
+    </div>
+
+    <p>IMDSv2 closes this path by requiring a session-oriented flow. Before retrieving any metadata, the instance must first <code>PUT</code> to the metadata endpoint to get a session token (with a configurable TTL). All subsequent requests must include this token in the <code>X-aws-ec2-metadata-token</code> header. Most SSRF exploits cannot follow this two-step PUT-then-GET sequence. The session token requirement makes the metadata service effectively opaque to SSRF attacks.</p>
+    <p>Enforce IMDSv2 with the <code>--http-tokens required</code> option on the instance metadata options, or enforce it at the AWS Organizations level using an SCP that denies <code>ec2:RunInstances</code> unless the condition <code>ec2:MetadataHttpTokens: required</code> is set. The exam expects IMDSv2 enforcement as the correct answer whenever IMDSv1 is presented as the current state — not "upgrade IMDSv1 is fine" but "enforce IMDSv2."</p>
+
+    <div class="mentor-aside reveal">
+      <p>The IMDSv2 question usually arrives in the exam disguised as an application vulnerability question. The scenario describes an app making outbound HTTP requests, mentions a WAF or something else already in place, and asks what additional control prevents credential theft. IMDSv2 is the answer. The other answer choices (tightening the security group, adding a VPN) don't address the metadata endpoint at all — they let the attack succeed through a different vector.</p>
+    </div>
+
+    <h3>Least-Privilege Instance Profiles</h3>
+    <p>An instance profile is how an IAM role is attached to an EC2 instance — the profile is the container, the role is the permissions. Every EC2 instance that needs to call AWS services should have an instance profile with an IAM role scoped precisely to what that workload needs. A web tier that reads from S3 and puts messages on SQS needs those two permission sets, nothing more. It doesn't need <code>iam:*</code>, <code>ec2:*</code>, or access to other buckets. Granting overly broad permissions to an instance role means that when an instance is compromised (through SSRF, through a web application vulnerability, through a misconfigured app), the attacker inherits those permissions. The blast radius of a compromised instance is exactly the blast radius of its role.</p>
+    <p>Security groups at the instance level should be scoped to the minimum set of ports and sources required. A backend API server that only receives traffic from a load balancer should have a security group that allows inbound traffic only from the load balancer's security group — not from <code>0.0.0.0/0</code>, not from a broad CIDR that encompasses the whole VPC. This ties back to Module 5's security group discussion: the specificity of the source is the control.</p>
+
+    <h3>Guest OS Patch Ownership</h3>
+    <p>The shared responsibility model's most operationally concrete expression for EC2: AWS patches the hypervisor, the physical host, and the underlying infrastructure. You patch the operating system, the middleware (web servers, runtimes), and the application running inside the instance. This is not a theoretical division — an unpatched guest OS with a known CVE is a door that's open regardless of how locked down your VPC is. The exam doesn't just want you to know this as a concept (Module 1 covered it); it expects you to recognize the operational practices that fulfill this responsibility, which leads directly to Systems Manager Patch Manager.</p>
+
+    <div class="hbox info reveal">
+      <span class="hbox-label">Production Scenario — SSRF via IMDSv1</span>
+      <p>An e-commerce platform has a product image preview feature that fetches URLs provided by users. A researcher discovers the SSRF path and retrieves the EC2 instance role credentials via the metadata endpoint. The role has <code>s3:GetObject</code> on all buckets, which includes a bucket storing customer PII. The fix: enforce IMDSv2 on all instances via SCP, and scope the instance role to only the specific S3 prefix this workload needs to read.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ SSM ═══ -->
+<section class="scene" id="s-ssm">
+  <div class="ambient-blob" style="width:450px;height:450px;background:var(--c-gov);top:100px;right:-180px;animation-delay:-20s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Systems Manager</div>
+    <h2 class="kinetic">Eliminate the Bastion Host. Audit the Session Instead.</h2>
+
+    <h3>Session Manager: SSH Without SSH</h3>
+    <p>Traditional access to EC2 instances required a bastion host — a jump server sitting in a public subnet with port 22 open to the internet, carrying SSH keys that had to be rotated, accessed, and secured. The bastion host itself becomes a high-value target: compromise it and you have shell access to the fleet behind it. Session Manager eliminates this entire attack surface. It provides browser-based and CLI shell access to any instance running the SSM Agent — without opening any inbound port on the instance, without an SSH key to manage, and without a bastion host to maintain.</p>
+    <p>The session is authenticated through IAM: the user needs <code>ssm:StartSession</code> permission for the target instance. The connection runs through the Systems Manager API over HTTPS — outbound from the instance to the SSM endpoint, not inbound from the internet to the instance. Sessions are logged automatically to CloudWatch Logs or S3, creating an audit trail. This is a concrete defense-in-depth win: you've removed an entire class of target (the bastion host and all the attack surface it carries) while adding auditability you didn't have with SSH.</p>
+
+    <div class="mentor-aside reveal">
+      <p>Session Manager is where the "eliminate SSH bastion hosts" principle becomes real. In the exam, when a scenario describes a bastion host with open port 22 and asks for a more secure alternative that maintains auditability, Session Manager is the answer. The key insight: it is not just equivalent to SSH from a security standpoint — it is meaningfully more secure because it eliminates inbound ports entirely and adds centralized, tamper-evident session logging tied to IAM identities.</p>
+    </div>
+
+    <h3>Patch Manager: OS Patching at Scale</h3>
+    <p>Patch Manager operationalizes your guest OS patching responsibility across an entire fleet. You define patch baselines — the set of patches to approve based on severity, classification, and product — and maintenance windows that specify when patching runs. Instances are assigned to patch groups via resource tags, and Patch Manager applies approved patches on schedule without requiring SSH or manual runbook execution. Compliance reporting in Systems Manager tells you which instances are compliant, which are missing patches, and by how many days.</p>
+    <p>The shared responsibility principle is abstract until you're looking at a fleet of 400 EC2 instances with no patching schedule. Patch Manager is the operational mechanism that makes "you own the guest OS" a manageable reality rather than a spreadsheet nightmare.</p>
+
+    <h3>Run Command and IAM Scoping</h3>
+    <p>Run Command executes scripts or SSM documents across a fleet of instances in parallel, without SSH. This is useful for configuration management, security remediation, and compliance enforcement at scale. The critical security consideration: Systems Manager is a very powerful management-plane tool. The <code>ssm:StartSession</code> and <code>ssm:SendCommand</code> permissions give significant operational reach over your fleet. Scope these permissions with conditions — use <code>aws:ResourceTag</code> conditions to limit which instances a principal can target, and restrict by session document types. Don't treat SSM permissions as low-risk just because they don't look like "infrastructure access" at first glance.</p>
+
+    <div class="step-list reveal">
+      <div class="step-item">
+        <span class="step-num">SSM</span>
+        <div class="step-content"><h4>Session Manager</h4><p>Browser or CLI shell access — no SSH, no bastion, no inbound ports. Session logs to CloudWatch/S3. Auth via IAM.</p></div>
+      </div>
+      <div class="step-item">
+        <span class="step-num">SSM</span>
+        <div class="step-content"><h4>Patch Manager</h4><p>Define patch baselines and maintenance windows. Fleet-wide OS patching without SSH. Compliance dashboards show patch state.</p></div>
+      </div>
+      <div class="step-item">
+        <span class="step-num">SSM</span>
+        <div class="step-content"><h4>Run Command</h4><p>Parallel script execution across tagged instance sets. No SSH required. Scope <code>ssm:SendCommand</code> carefully — it has broad reach.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ TITLE CARD 1 ═══ -->
+<div class="title-card" id="s-tc1">
+  <div class="scanbeam"></div>
+  <div class="ambient-blob" style="width:700px;height:700px;background:var(--c-infra);top:-200px;left:-200px;animation-delay:-5s;opacity:0.2;"></div>
+  <h2>PATCH WHAT<br>YOU OWN.</h2>
+  <div class="tc-sub">The hypervisor is AWS. The OS is yours.</div>
+</div>
+<!-- ═══════════════════════════════════════════ CONTAINERS ═══ -->
+<section class="scene" id="s-containers">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-data);bottom:-100px;right:-150px;animation-delay:-12s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Container Security — ECS &amp; EKS</div>
+    <h2 class="kinetic">Blast Radius Starts at the Task, Not the Node</h2>
+
+    <h3>ECS Task Roles: The Correct Least-Privilege Pattern</h3>
+    <p>When you run ECS tasks on EC2-backed clusters, each EC2 host has an IAM instance role. The classic mistake is using that instance role to grant the permissions that tasks need — S3 read access, DynamoDB writes, SQS messages. The problem: every task running on that host inherits the instance role's permissions, regardless of what that specific task actually needs. One over-broad instance role means the entire host's workload runs with those permissions. If any container on that host is compromised, the attacker gets the full instance role.</p>
+    <p>ECS Task IAM Roles solve this with per-task credential isolation. You define an IAM role in the ECS task definition. The ECS agent handles credential vending to each container through a task metadata endpoint — credentials for the task role are served to the container's environment and rotated automatically. The blast radius of a compromised container is now limited to exactly what that task's role permits. A task that processes image uploads and writes thumbnails to S3 gets <code>s3:PutObject</code> for the thumbnails prefix, and nothing else.</p>
+
+    <h3>EKS: IRSA — IAM Roles for Service Accounts</h3>
+    <p>EKS introduces the same problem with an additional Kubernetes layer. Worker nodes are EC2 instances and have an IAM role — the node role. If you grant pod-level permissions through the node role, every pod on that node inherits everything. IRSA (IAM Roles for Service Accounts) solves this at the Kubernetes level using OpenID Connect (OIDC) federation.</p>
+    <p>Each EKS cluster has an OIDC identity provider endpoint. You create an IAM role with a trust policy that allows a specific Kubernetes service account in a specific namespace to assume it. You annotate the Kubernetes service account with the IAM role ARN. When a pod using that service account starts, the EKS control plane injects a projected token into the pod — a short-lived OIDC token that the AWS SDK exchanges for temporary IAM credentials for the bound role. The pod gets exactly the permissions of its assigned service account's role, scoped to that pod alone. The node role grants nothing to the pod's AWS calls.</p>
+
+    <div class="hbox warn reveal">
+      <span class="hbox-label">Exam Trap — Node Role vs IRSA</span>
+      <p>If a question describes an EKS deployment where pods need S3 access and the team has attached S3 permissions to the node IAM role, the correct answer is always to use IRSA instead. Node-role permissions are applied to every pod on the node, not just the ones that need them. IRSA achieves true pod-level least privilege. The exam tests this exact substitution.</p>
+    </div>
+
+    <h3>EKS Shared Responsibility Split</h3>
+    <p>For EKS specifically, the shared responsibility line runs through the control plane. AWS manages and operates the Kubernetes control plane — the API server, etcd, the scheduler, controller manager, and the underlying infrastructure they run on. AWS patches the control plane, scales it, backs up etcd, and maintains its availability. You are responsible for worker nodes (EC2 instances — you patch the OS, configure the node groups), the container images running in your pods, and the Kubernetes configurations you apply (RBAC, network policies, pod security standards).</p>
+
+    <h3>ECR Image Scanning and Supply Chain Risk</h3>
+    <p>A container image is the atomic unit of your workload's supply chain. The base image you start from — <code>ubuntu:22.04</code>, <code>node:20-alpine</code>, <code>python:3.12-slim</code> — carries whatever vulnerabilities existed in that image at build time. ECR image scanning (now powered by Amazon Inspector) checks images against known CVE databases both on push and on a scheduled basis. A container with a critical OpenSSL vulnerability in its base image is exploitable regardless of how clean your application code is.</p>
+    <p>The shared responsibility principle applies directly: the container image is yours. AWS secures the underlying host and container runtime in Fargate; you own what's inside the container. Enable scanning on push for all ECR repositories, set up Inspector findings notifications, and enforce policies that prevent deployment of images with unresolved critical or high-severity findings. A finding in the image registry that stays unresolved is a known vulnerability you've chosen to accept — the exam treats that as a control failure.</p>
+
+    <div class="hbox info reveal">
+      <span class="hbox-label">Production Scenario — Over-Broad EKS Node Role</span>
+      <p>A microservices team runs 12 different services on an EKS cluster. Because configuring individual roles was deemed complex, all pods share the node role, which has full access to the production DynamoDB tables and S3 buckets. A vulnerability in one service's open-source dependency allows RCE inside the container. The attacker now has full access to every production data store — not just the one that service needed. The fix: IRSA for each service account, with each role scoped to only the specific tables and buckets that service needs.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ LAMBDA ═══ -->
+<section class="scene" id="s-lambda">
+  <div class="ambient-blob" style="width:450px;height:450px;background:var(--c-detect);top:-80px;left:-150px;animation-delay:-18s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Lambda Security</div>
+    <h2 class="kinetic">One Function, One Role, One Purpose</h2>
+
+    <h3>Execution Role Scoping: The Shared Role Anti-Pattern</h3>
+    <p>Lambda's shared responsibility model differs from EC2 in a critical way: AWS manages the underlying execution environment entirely, including OS patching, runtime updates, and the security of the underlying host. Your responsibility narrows to the function code, the execution role permissions, the environment configuration, and the network placement. This narrower scope makes the permissions problem more avoidable — and more clearly your fault when it goes wrong.</p>
+    <p>The most common over-permissioning pattern in Lambda is a single execution role shared across many functions. It's convenient — one role to rule them all, no per-function IAM management. It is also a significant blast-radius risk. Lambda functions are intentionally small and single-purpose. A function that processes SQS messages and writes to a DynamoDB table needs exactly those three permissions: <code>sqs:ReceiveMessage</code>, <code>sqs:DeleteMessage</code>, and <code>dynamodb:PutItem</code> on specific resources. A shared role that also has <code>s3:GetObject</code>, <code>kms:Decrypt</code>, and <code>secretsmanager:GetSecretValue</code> turns a compromised function into a much broader threat.</p>
+    <p>Create a dedicated execution role per function. Scope it to the specific actions on specific resource ARNs. This is the Lambda embodiment of least privilege — it is achievable in Lambda because the function's purpose is narrow by design, and there is no excuse for not doing it.</p>
+
+    <h3>Environment Variable Encryption</h3>
+    <p>Lambda environment variables are a convenient place to store configuration — connection strings, feature flags, endpoint URLs. They should not store plaintext credentials or secrets. Environment variables at rest are encrypted by a default Lambda service key, but you should use a customer-managed KMS key for sensitive values to maintain control and auditability of the decryption. Better still: store secrets in AWS Secrets Manager or SSM Parameter Store, and have the function retrieve them at startup using the execution role's permission to call those services. Scope the role's Secrets Manager permission to the specific secret ARN the function needs — not <code>secretsmanager:GetSecretValue</code> on <code>*</code>.</p>
+
+    <h3>VPC-Attached Lambda: When and Why</h3>
+    <p>By default, Lambda functions run in an AWS-managed VPC outside your account's network. They can reach any public endpoint on the internet but cannot reach resources in your VPC that have no public endpoint — an RDS instance in a private subnet, an internal API behind an Application Load Balancer with no internet-facing listener, an ElastiCache cluster. Attaching a Lambda function to your VPC places its execution environment on an ENI inside your chosen subnets, giving it private network access to those resources.</p>
+    <p>The security trade-off: a VPC-attached Lambda function loses its default internet access. If it also needs to call AWS service APIs (S3, DynamoDB, Secrets Manager), you need to provide a path — either a NAT Gateway in the subnet's route table (for internet access) or VPC endpoints for the specific AWS services the function needs to reach. This is where the VPC endpoint vs NAT Gateway decision, which we cover in the PrivateLink section, becomes practically important. The correct answer for a Lambda function that only needs to reach AWS services is VPC endpoints, not a NAT Gateway — smaller blast radius, no internet path, often lower cost.</p>
+
+    <div class="step-list reveal">
+      <div class="step-item">
+        <span class="step-num">IAM</span>
+        <div class="step-content"><h4>Per-function execution roles</h4><p>Never share roles across Lambda functions. Scope each to specific actions on specific resource ARNs.</p></div>
+      </div>
+      <div class="step-item">
+        <span class="step-num">KMS</span>
+        <div class="step-content"><h4>Encrypt environment variables at rest</h4><p>Use a CMK for sensitive config. Better: retrieve secrets at runtime from Secrets Manager with a scoped role.</p></div>
+      </div>
+      <div class="step-item">
+        <span class="step-num">VPC</span>
+        <div class="step-content"><h4>VPC attachment trade-offs</h4><p>Needed for access to private resources. Requires NAT Gateway or VPC endpoints for internet and AWS service access respectively.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ TITLE CARD 2 ═══ -->
+<div class="title-card" id="s-tc2">
+  <div class="scanbeam"></div>
+  <div class="ambient-blob" style="width:800px;height:800px;background:var(--c-ir);top:-300px;right:-300px;animation-delay:-3s;opacity:0.15;"></div>
+  <h2>PRIVATE<br>ISN'T ENCRYPTED.</h2>
+  <div class="tc-sub">The exam knows the difference. Now so do you.</div>
+</div>
+<!-- ═══════════════════════════════════════════ HYBRID ═══ -->
+<section class="scene" id="s-hybrid">
+  <div class="ambient-blob" style="width:550px;height:550px;background:var(--c-ir);top:-120px;right:-180px;animation-delay:-9s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Hybrid Connectivity</div>
+    <h2 class="kinetic">VPN vs Direct Connect: Know the Difference Cold</h2>
+
+    <h3>Site-to-Site VPN</h3>
+    <p>AWS Site-to-Site VPN creates an encrypted IPsec tunnel between a customer gateway (your on-premises router or firewall) and a virtual private gateway or Transit Gateway on the AWS side. The tunnel runs over the public internet. Encryption is not optional or configurable — it is inherent to IPsec. You cannot have an unencrypted Site-to-Site VPN tunnel. Provisioning takes minutes. Each tunnel supports up to 1.25 Gbps, and you can use ECMP (Equal-Cost Multi-Path routing) across multiple tunnels to increase aggregate throughput. Latency depends on the internet path — it will vary, and you cannot guarantee it.</p>
+
+    <h3>AWS Direct Connect</h3>
+    <p>Direct Connect is a dedicated, private fiber circuit between your data center (or colocation facility) and an AWS Direct Connect location. Once established, your traffic bypasses the public internet entirely — it travels on a private circuit that AWS operates between the Direct Connect location and the AWS region. This gives you consistent, predictable latency and high throughput — dedicated connections scale from 1 Gbps to 100 Gbps. Provisioning takes weeks to months, because a physical fiber circuit must be physically installed.</p>
+
+    <div class="hbox danger reveal">
+      <span class="hbox-label">⚠ Critical Exam Gotcha — Direct Connect Is NOT Encrypted by Default</span>
+      <p>Direct Connect is private — traffic does not traverse the public internet. But <strong>private and encrypted are two entirely different properties</strong>. A dedicated fiber circuit is still unencrypted unless you explicitly add an encryption layer. Another customer at the same colocation facility, a malicious insider at the carrier, or a splice on the physical fiber could theoretically read your traffic. The exam tests this distinction repeatedly and explicitly. "Private" does not mean "encrypted."</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>This gotcha has ended careers in poorly architected compliance environments. A team assumes their Direct Connect connection satisfies data-in-transit encryption requirements because "it doesn't go over the internet." Their auditor disagrees. The fix requires either MACsec (Layer 2 encryption on the physical connection, supported on 10G and 100G dedicated connections) or a VPN-over-Direct-Connect setup — an IPsec tunnel that uses the Direct Connect circuit as its path rather than the internet. The VPN-over-DC approach gives you both the consistent latency of Direct Connect and the encryption of IPsec.</p>
+    </div>
+
+    <h3>Direct Connect Encryption Options</h3>
+    <p><strong>MACsec</strong> operates at Layer 2 and encrypts frames on the physical connection itself. It is supported on dedicated 10G and 100G Direct Connect connections and requires compatible hardware at the customer end. It is the cleanest solution but has hardware requirements. <strong>VPN-over-Direct-Connect</strong> runs a standard IPsec VPN tunnel over the Direct Connect path instead of over the internet. This is compatible with any Direct Connect connection and any VPN-capable customer gateway. It adds IPsec overhead but provides encryption that satisfies compliance requirements. Both are legitimate exam answers — the question will tell you whether hardware compatibility is a constraint.</p>
+
+    <h3>When to Use VPN + Direct Connect Together</h3>
+    <p>The exam's favorite combined architecture: Direct Connect as the primary path, with a Site-to-Site VPN as a backup. Direct Connect provides the performance and consistency required for production traffic. The VPN provides an encrypted internet-routed path that activates via BGP failover when the Direct Connect circuit fails — carrier outages, physical link issues, or Direct Connect location maintenance. This pattern gives you production-grade performance under normal conditions and resilience under failure conditions. Configure BGP routing with appropriate local preferences so Direct Connect is preferred; the VPN path carries traffic only when Direct Connect routes are withdrawn.</p>
+
+    <!-- COMPARISON MATRIX -->
+    <h3 style="margin-top:40px;">Connectivity Comparison Matrix</h3>
+    <p style="font-size:0.88rem;">Click any row to expand the detail and exam angle for that property.</p>
+    <div class="matrix-wrap reveal">
+      <table class="matrix-table">
+        <thead><tr><th>Property</th><th>Site-to-Site VPN</th><th>Direct Connect</th><th>DC + VPN</th></tr></thead>
+        <tbody>
+          <tr class="mindnode" onclick="toggleMatrix(this)" tabindex="0" role="button" aria-label="Expand encryption row">
+            <td><strong>Encryption</strong></td>
+            <td><span class="m-badge badge-good">Always (IPsec)</span></td>
+            <td><span class="m-badge badge-warn">Not by default</span></td>
+            <td><span class="m-badge badge-good">Yes (IPsec)</span></td>
+          </tr>
+          <tr><td colspan="4"><div class="matrix-detail"><div class="matrix-detail-inner">VPN is always IPsec-encrypted — there is no unencrypted VPN option. Direct Connect is unencrypted unless you add MACsec or a VPN tunnel on top. This is the most tested gotcha on this topic. VPN-over-DC gives you both the private circuit and IPsec encryption.</div></div></td></tr>
+          <tr class="mindnode" onclick="toggleMatrix(this)" tabindex="0" role="button" aria-label="Expand throughput row">
+            <td><strong>Throughput</strong></td>
+            <td><span class="m-badge badge-mid">Up to 1.25 Gbps/tunnel</span></td>
+            <td><span class="m-badge badge-good">1–100 Gbps</span></td>
+            <td><span class="m-badge badge-good">1–100 Gbps (DC path)</span></td>
+          </tr>
+          <tr><td colspan="4"><div class="matrix-detail"><div class="matrix-detail-inner">VPN throughput is bounded by internet path quality and the 1.25 Gbps per-tunnel limit. Multiple tunnels with ECMP can aggregate throughput. Direct Connect offers dedicated, guaranteed bandwidth from 1G to 100G. When high or consistent throughput is a requirement, Direct Connect is the answer.</div></div></td></tr>
+          <tr class="mindnode" onclick="toggleMatrix(this)" tabindex="0" role="button" aria-label="Expand latency row">
+            <td><strong>Latency</strong></td>
+            <td><span class="m-badge badge-mid">Variable (internet)</span></td>
+            <td><span class="m-badge badge-good">Consistent (private)</span></td>
+            <td><span class="m-badge badge-good">Consistent (DC path)</span></td>
+          </tr>
+          <tr><td colspan="4"><div class="matrix-detail"><div class="matrix-detail-inner">VPN latency follows the internet path — it varies with congestion, routing changes, and ISP peering decisions. Direct Connect latency is consistent because the path is dedicated and fixed. Latency-sensitive workloads (real-time trading, manufacturing OT, video production pipelines) should use Direct Connect.</div></div></td></tr>
+          <tr class="mindnode" onclick="toggleMatrix(this)" tabindex="0" role="button" aria-label="Expand provisioning row">
+            <td><strong>Provisioning Time</strong></td>
+            <td><span class="m-badge badge-good">Minutes</span></td>
+            <td><span class="m-badge badge-warn">Weeks to months</span></td>
+            <td><span class="m-badge badge-warn">Weeks to months</span></td>
+          </tr>
+          <tr><td colspan="4"><div class="matrix-detail"><div class="matrix-detail-inner">VPN is software-defined and provisions in minutes. Direct Connect requires physical fiber installation to a colocation facility — carrier coordination, cross-connects, LOAs. Plan for 4–12 weeks minimum. In urgent scenarios where you need connectivity now, VPN is the answer; Direct Connect is the answer when you can plan ahead and need the performance.</div></div></td></tr>
+          <tr class="mindnode" onclick="toggleMatrix(this)" tabindex="0" role="button" aria-label="Expand path row">
+            <td><strong>Network Path</strong></td>
+            <td><span class="m-badge badge-mid">Public internet</span></td>
+            <td><span class="m-badge badge-good">Private circuit</span></td>
+            <td><span class="m-badge badge-good">Private circuit</span></td>
+          </tr>
+          <tr><td colspan="4"><div class="matrix-detail"><div class="matrix-detail-inner">VPN traffic traverses the public internet, encrypted. Direct Connect traffic travels on a dedicated fiber circuit that never touches the public internet — reducing exposure to BGP hijacking, DDoS amplification on the internet path, and internet congestion. "Private" is a network topology property, not a security property — remember that encryption is separate.</div></div></td></tr>
+          <tr class="mindnode" onclick="toggleMatrix(this)" tabindex="0" role="button" aria-label="Expand use case row">
+            <td><strong>Best For</strong></td>
+            <td><span class="m-badge badge-mid">Fast setup, low volume</span></td>
+            <td><span class="m-badge badge-good">Production, high throughput</span></td>
+            <td><span class="m-badge badge-good">Production + resilience</span></td>
+          </tr>
+          <tr><td colspan="4"><div class="matrix-detail"><div class="matrix-detail-inner">VPN is best for rapid connectivity, DR situations, backup paths, or low-volume workloads where internet path variability is acceptable. Direct Connect is best for production workloads requiring consistent throughput and latency. DC+VPN is the pattern for organizations that need both production-grade performance and resilient failover.</div></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ PRIVATELINK ═══ -->
+<section class="scene" id="s-privatelink">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-infra);bottom:-100px;left:-150px;animation-delay:-22s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">PrivateLink &amp; VPC Endpoints</div>
+    <h2 class="kinetic">Remove the Internet From the Equation Entirely</h2>
+
+    <h3>The Core Security Argument</h3>
+    <p>When an EC2 instance in a private subnet needs to call an AWS service — upload to S3, read from DynamoDB, retrieve a secret from Secrets Manager — the default path is through the internet. Traffic exits the VPC via an internet gateway or NAT Gateway, reaches the AWS service's public endpoint, and returns. This works, and HTTPS encrypts the data in transit. But the internet is still in the path. A misconfigured route, a BGP anomaly, or a network security group too loose could expose that traffic or redirect it. VPC endpoints remove the internet from the equation entirely: traffic stays on the AWS network backbone from your subnet to the AWS service.</p>
+
+    <h3>Gateway Endpoints — S3 and DynamoDB Only</h3>
+    <p>Gateway endpoints work only for S3 and DynamoDB. They function by injecting a route into your VPC route table: traffic destined for the service's managed prefix list is directed to the endpoint instead of through an internet gateway or NAT Gateway. No ENI is created in your subnet, no additional IP address is consumed, and there is no per-hour or per-GB charge beyond standard S3 or DynamoDB pricing. You can attach an endpoint policy to restrict which buckets or tables are accessible through this endpoint — a powerful tool for preventing data exfiltration to attacker-controlled S3 buckets from your instances.</p>
+
+    <h3>Interface Endpoints — PrivateLink-Backed, Everything Else</h3>
+    <p>Interface endpoints work for virtually every other AWS service — EC2 API, Secrets Manager, SSM, KMS, CloudWatch, STS — and many third-party services available through AWS PrivateLink on Marketplace. An interface endpoint creates an Elastic Network Interface (ENI) in your chosen subnet with a private IP address. When DNS is enabled (the default), the service's regional endpoint name resolves to this private IP inside your VPC. Your existing application code makes the same API calls as before; the DNS resolution transparently routes them through the endpoint. No code changes required. Interface endpoints have a per-hour charge per AZ and a per-GB data processing charge.</p>
+
+    <div class="mentor-aside reveal">
+      <p>An endpoint policy on an interface endpoint or gateway endpoint is an additional access control layer on top of IAM — not a replacement for it. The endpoint policy controls what can flow through the endpoint; IAM controls whether the calling principal is allowed to perform the action at all. Both must allow the request. This makes endpoint policies useful for blast-radius reduction: even if credentials are stolen, an endpoint policy restricting the S3 endpoint to a specific bucket list limits what an attacker can do with those credentials from inside your VPC.</p>
+    </div>
+
+    <h3>VPC Endpoint vs. NAT Gateway — The Decision</h3>
+    <p>The most common mistake: using a NAT Gateway for all outbound traffic from private subnets, including traffic that only needs to reach AWS services. A NAT Gateway routes traffic to the internet and back. It has a per-hour cost and a per-GB data processing charge. For traffic that only needs to reach S3 or DynamoDB, a gateway endpoint is free and removes the internet path entirely. For traffic that needs to reach other AWS services (SSM, Secrets Manager, ECR, etc.), an interface endpoint provides the private path without the internet. A NAT Gateway is only necessary when traffic genuinely needs the general internet — third-party APIs, package repositories, external webhooks.</p>
+
+    <div class="hbox info reveal">
+      <span class="hbox-label">Production Scenario — S3 Access from Private Subnet</span>
+      <p>A data processing fleet in private subnets uploads results to S3. The current architecture routes all traffic through a NAT Gateway. Adding an S3 gateway endpoint redirects that S3 traffic directly to S3 via the AWS backbone — no NAT Gateway costs for S3 data transfer, no internet path, and the endpoint policy restricts access to the specific production bucket. The NAT Gateway remains for any traffic that genuinely needs the internet, but S3 traffic is completely off that path.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ VPC DECISION DIAGRAM ═══ -->
+<section class="scene" id="s-vpc-diagram">
+  <div class="ambient-blob" style="width:400px;height:400px;background:var(--c-iam);top:-100px;right:-120px;animation-delay:-16s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Interactive Decision Flow</div>
+    <h2 class="kinetic">VPC Endpoint or NAT Gateway?</h2>
+    <p>Use this flow to determine the right connectivity choice for any outbound traffic scenario from a private subnet. Click through each decision point.</p>
+
+    <div class="flow-container reveal">
+      <!-- Step 0 -->
+      <div class="flow-step active" id="flow-0">
+        <div class="flow-question">What is the destination of the outbound traffic?</div>
+        <div class="flow-sub">This determines whether a VPC endpoint can serve the need, or whether you require a NAT Gateway for general internet access.</div>
+        <div class="flow-options">
+          <button class="flow-btn" onclick="flowGo('flow-1a')">An AWS service (S3, DynamoDB, SSM, etc.)</button>
+          <button class="flow-btn" onclick="flowGo('flow-1b')">The general internet (third-party API, package repo)</button>
+        </div>
+      </div>
+      <!-- Step 1a -->
+      <div class="flow-step" id="flow-1a">
+        <div class="flow-question">Which AWS service?</div>
+        <div class="flow-sub">Gateway endpoints cover S3 and DynamoDB. All other AWS services use interface endpoints (PrivateLink).</div>
+        <div class="flow-options">
+          <button class="flow-btn" onclick="flowGo('flow-2a')">Amazon S3 or DynamoDB</button>
+          <button class="flow-btn" onclick="flowGo('flow-2b')">Any other AWS service (SSM, Secrets Manager, KMS, ECR, etc.)</button>
+        </div>
+      </div>
+      <!-- Step 1b -->
+      <div class="flow-step" id="flow-1b">
+        <div class="flow-question">Does your instance need both AWS services AND the internet?</div>
+        <div class="flow-sub">If yes, you need both — a NAT Gateway for internet traffic and VPC endpoints for AWS service traffic (to avoid routing AWS API calls through NAT unnecessarily).</div>
+        <div class="flow-options">
+          <button class="flow-btn" onclick="flowGo('flow-2c')">Yes, both internet and AWS services</button>
+          <button class="flow-btn" onclick="flowGo('flow-2d')">No, only the general internet</button>
+        </div>
+      </div>
+      <!-- Results -->
+      <div class="flow-step" id="flow-2a">
+        <div class="flow-result">
+          <div class="result-title">✅ Gateway Endpoint (Free)</div>
+          <p>Create a VPC gateway endpoint for S3 or DynamoDB. Add the route to your private subnet route table. No ENI, no per-hour cost, no data processing charge. Traffic stays on the AWS backbone — never touches the internet. Attach an endpoint policy to restrict accessible buckets or tables.</p>
+        </div>
+        <button class="flow-restart" onclick="flowGo('flow-0')">↩ Start over</button>
+      </div>
+      <div class="flow-step" id="flow-2b">
+        <div class="flow-result">
+          <div class="result-title">✅ Interface Endpoint (PrivateLink)</div>
+          <p>Create a VPC interface endpoint for the specific AWS service. An ENI is provisioned in your subnet with a private IP. DNS resolves the service endpoint to this private IP automatically. Per-hour and per-GB charges apply, but there is no internet path and no NAT Gateway required for this traffic.</p>
+        </div>
+        <button class="flow-restart" onclick="flowGo('flow-0')">↩ Start over</button>
+      </div>
+      <div class="flow-step" id="flow-2c">
+        <div class="flow-result">
+          <div class="result-title">✅ NAT Gateway + VPC Endpoints</div>
+          <p>Use a NAT Gateway for internet-bound traffic. Add VPC endpoints for AWS services (gateway for S3/DynamoDB, interface for others). This hybrid approach avoids routing AWS API calls through NAT unnecessarily — reducing NAT data-processing costs and eliminating the internet path for AWS service traffic.</p>
+        </div>
+        <button class="flow-restart" onclick="flowGo('flow-0')">↩ Start over</button>
+      </div>
+      <div class="flow-step" id="flow-2d">
+        <div class="flow-result">
+          <div class="result-title">✅ NAT Gateway Only</div>
+          <p>A NAT Gateway provides outbound internet access from private subnets. Ensure the NAT Gateway is in a public subnet with an Elastic IP. Remember: if you later add AWS service calls, add the appropriate VPC endpoint to avoid routing them through NAT.</p>
+        </div>
+        <button class="flow-restart" onclick="flowGo('flow-0')">↩ Start over</button>
+      </div>
+    </div>
+
+    <!-- Inline expand nodes for endpoint types -->
+    <h3 style="margin-top:44px;">Endpoint Type Quick Reference</h3>
+    <div class="stagger" style="margin-top:18px;">
+      <div class="info-card mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand gateway endpoint detail" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>Gateway Endpoint</strong> <span style="font-family:JetBrains Mono,monospace;font-size:0.75rem;color:var(--c-infra);margin-left:10px;">S3 &amp; DynamoDB only</span></div>
+          <span style="color:var(--text-dim);font-size:0.85rem;">▾ expand</span>
+        </div>
+        <div class="node-info">
+          <p style="font-size:0.88rem;margin-bottom:8px;"><strong>How it works:</strong> Adds a route entry to your VPC route table directing service-specific prefix list traffic to the endpoint. No ENI created.</p>
+          <p style="font-size:0.88rem;margin-bottom:8px;"><strong>Cost:</strong> Free — no per-hour or per-GB charge.</p>
+          <p style="font-size:0.88rem;margin-bottom:0;"><strong>Security control:</strong> Endpoint policy restricts which S3 buckets or DynamoDB tables are accessible through the endpoint. Useful for preventing data exfiltration to external buckets.</p>
+        </div>
+      </div>
+      <div class="info-card mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand interface endpoint detail">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>Interface Endpoint (PrivateLink)</strong> <span style="font-family:JetBrains Mono,monospace;font-size:0.75rem;color:var(--c-infra);margin-left:10px;">Most AWS services + third-party</span></div>
+          <span style="color:var(--text-dim);font-size:0.85rem;">▾ expand</span>
+        </div>
+        <div class="node-info">
+          <p style="font-size:0.88rem;margin-bottom:8px;"><strong>How it works:</strong> Creates an ENI in your subnet with a private IP. Private DNS resolves the service endpoint name to this IP. Existing code works with no changes.</p>
+          <p style="font-size:0.88rem;margin-bottom:8px;"><strong>Cost:</strong> Per-hour per AZ + per-GB data processing charge.</p>
+          <p style="font-size:0.88rem;margin-bottom:0;"><strong>Security control:</strong> Endpoint policy controls what actions are allowed through the endpoint. Works for AWS services and third-party PrivateLink services.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ═══════════════════════════════════════════ BEDROCK ═══ -->
+<section class="scene" id="s-bedrock">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-data);top:-80px;left:-160px;animation-delay:-25s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Emerging Exam Content · Amazon Bedrock</div>
+    <h2 class="kinetic">Guardrails for Generative AI Workloads</h2>
+
+    <div class="hbox warn reveal">
+      <span class="hbox-label">📌 Study Note — New Exam Content</span>
+      <p>Bedrock Guardrails appear on the SCS-C03 blueprint (December 2025 revision) but are absent from study materials written for earlier exam versions. This is a real but lighter-weight topic compared to IAM, encryption, and network security. Treat it as something you need to understand conceptually and be able to apply in a scenario — not a deep technical implementation area.</p>
+    </div>
+
+    <h3>What Bedrock Guardrails Are</h3>
+    <p>Amazon Bedrock is AWS's managed service for accessing and deploying foundation models — large language models and multimodal models from providers including Anthropic, Amazon, Meta, Mistral, and others. When you build a generative AI application on Bedrock, the application sends prompts to the model and processes responses. Guardrails are a configurable safety and policy layer that sits between the application and the model, inspecting both the incoming prompt and the outgoing response.</p>
+    <p>A Guardrail is a standalone AWS resource — you create it, configure its policies, and apply it to a Bedrock API invocation by passing its ARN at call time. The same guardrail can be applied consistently across multiple model invocations, application entry points, or deployment environments.</p>
+
+    <h3>The Three Guardrail Controls</h3>
+    <p><strong>Content filters</strong> apply configurable thresholds to harmful content categories — violence, hate speech, sexual content, self-harm, and prompt injection attacks. For each category, you set a sensitivity threshold from None to High. At the High setting, even mild references to that category are blocked. At Low, only extreme content is blocked. These filters apply bidirectionally: to the user's prompt and to the model's response.</p>
+    <p><strong>PII redaction</strong> detects personally identifiable information in prompts and responses. You can configure Guardrails to block inputs containing PII (preventing sensitive data from being sent to the model at all), redact PII in the model's response before it reaches the user (masking names, email addresses, phone numbers, credit card numbers), or both. This is particularly relevant for customer service or healthcare applications where inadvertent PII leakage in model outputs is a compliance risk.</p>
+    <p><strong>Topic restrictions (denied topics)</strong> let you define specific topics that the model should refuse to engage with for your application's use case. A financial services company deploying a customer service chatbot might deny topics related to investment advice (regulatory requirement) or competitor products (business policy). These are defined in natural language — Bedrock uses the foundation model itself to evaluate whether an incoming prompt attempts to steer the conversation toward a denied topic.</p>
+
+    <!-- BEDROCK FLOW DIAGRAM -->
+    <h3 style="margin-top:40px;">Request Pipeline — Click to Explore Each Stage</h3>
+    <div class="bedrock-flow reveal">
+      <div class="bf-step active" onclick="toggleBfStep(this)" tabindex="0" role="button" aria-label="Expand application request stage">
+        <span class="bf-label">Stage 1</span>
+        <h4>Application sends prompt to Bedrock API</h4>
+        <div class="bf-detail"><p>Your application calls <code>bedrock-runtime:InvokeModel</code> with the model ID, the prompt, and the Guardrail ARN (plus guardrailVersion). IAM controls whether this principal can make this API call at all — Guardrails have no effect if the caller is blocked by IAM first.</p></div>
+      </div>
+      <div class="bf-arrow">↓</div>
+      <div class="bf-step" onclick="toggleBfStep(this)" tabindex="0" role="button" aria-label="Expand content filter stage">
+        <span class="bf-label">Stage 2</span>
+        <h4>Content Filter — Harmful Category Check</h4>
+        <div class="bf-detail"><p>The prompt is evaluated against configured content category thresholds (violence, hate, sexual content, prompt injection). If the prompt exceeds any threshold, the request is blocked before the model ever sees it. The response returned to the application indicates which policy was violated.</p></div>
+      </div>
+      <div class="bf-arrow">↓</div>
+      <div class="bf-step" onclick="toggleBfStep(this)" tabindex="0" role="button" aria-label="Expand PII detection stage">
+        <span class="bf-label">Stage 3</span>
+        <h4>PII Detection and Redaction</h4>
+        <div class="bf-detail"><p>The prompt is scanned for configured PII entity types (names, emails, phone numbers, SSNs, credit card numbers, etc.). Depending on configuration: the request may be blocked if PII is present, or PII may be anonymized/masked before the prompt is forwarded to the model.</p></div>
+      </div>
+      <div class="bf-arrow">↓</div>
+      <div class="bf-step" onclick="toggleBfStep(this)" tabindex="0" role="button" aria-label="Expand topic restriction stage">
+        <span class="bf-label">Stage 4</span>
+        <h4>Topic Restriction Evaluation</h4>
+        <div class="bf-detail"><p>Denied topics are evaluated using the model's own understanding. If the prompt is classified as attempting to discuss a denied topic, the request is blocked. Topic definitions are written in natural language and can be highly specific to your business context.</p></div>
+      </div>
+      <div class="bf-arrow">↓</div>
+      <div class="bf-step" onclick="toggleBfStep(this)" tabindex="0" role="button" aria-label="Expand model invocation stage">
+        <span class="bf-label">Stage 5</span>
+        <h4>Model Invocation (prompt passed to FM)</h4>
+        <div class="bf-detail"><p>The prompt has passed all configured guardrail checks. It is now sent to the foundation model. The model processes the prompt and generates a response. The response is then passed back through the guardrail pipeline before being returned to your application.</p></div>
+      </div>
+      <div class="bf-arrow">↓</div>
+      <div class="bf-step" onclick="toggleBfStep(this)" tabindex="0" role="button" aria-label="Expand output filter stage">
+        <span class="bf-label">Stage 6</span>
+        <h4>Output Content Filter and PII Redaction</h4>
+        <div class="bf-detail"><p>The model response passes through the same content filters and PII checks on output. If the model generates harmful content or PII despite the input-side guardrails (which can happen), the output filter catches it here. PII in the response can be masked before the application receives it.</p></div>
+      </div>
+    </div>
+
+    <div class="hbox danger reveal" style="margin-top:28px;">
+      <span class="hbox-label">Exam Trap — Guardrails Are Not IAM or Network Controls</span>
+      <p>Bedrock Guardrails control what the model can say — not who can call it. You still need IAM permissions on <code>bedrock:InvokeModel</code> to control API access, VPC endpoints if your application requires private network access to Bedrock, and resource-based policies for cross-account access. Guardrails are an additional, workload-specific safety layer — they do not replace the foundational access controls.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ IRSA DIAGRAM ═══ -->
+<section class="scene" id="s-irsa">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-gov);bottom:-120px;right:-160px;animation-delay:-30s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Interactive Contrast Diagram</div>
+    <h2 class="kinetic">Node-Level IAM vs. IRSA — The Blast Radius Difference</h2>
+    <p>These two diagrams show the same EKS cluster with two different IAM strategies. Click any node to see what it can access. Notice how the blast radius changes when a single pod is compromised.</p>
+
+    <div class="irsa-compare reveal">
+      <!-- DANGER PANEL: Node Role -->
+      <div class="irsa-panel danger">
+        <span class="irsa-label">❌ Anti-Pattern — Node IAM Role</span>
+        <div class="irsa-node mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand node role detail">
+          <strong>EC2 Worker Node</strong><br><small style="color:var(--text-dim);">IAM Role: broad-node-role</small>
+          <div class="node-info">
+            <p style="font-size:0.85rem;margin-bottom:0;">Permissions: S3:* on prod bucket, DynamoDB:* on all tables, SecretsManager:GetSecretValue on *. All pods on this node inherit ALL of these.</p>
+          </div>
+        </div>
+        <div class="irsa-arrow">↓ all pods inherit node role</div>
+        <div class="irsa-node" style="border-left:2px solid var(--c-ir);">
+          <strong>Pod: payment-service</strong><br><small style="color:var(--text-dim);">Needs: DynamoDB orders table only</small>
+        </div>
+        <div class="irsa-node" style="border-left:2px solid var(--c-ir);">
+          <strong>Pod: image-resizer</strong><br><small style="color:var(--text-dim);">Needs: S3 PUT to thumbnails/ only</small>
+        </div>
+        <div class="irsa-node mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand compromised pod detail" style="border-left:2px solid var(--c-ir);background:var(--c-ir-dim);">
+          <strong>💀 Pod: vulnerable-app</strong><br><small style="color:var(--c-ir);">Compromised via RCE</small>
+          <div class="node-info">
+            <p style="font-size:0.85rem;margin-bottom:0;">This pod was exploited. Because it runs on the node and the node role grants broad access, the attacker now has S3:* on prod, DynamoDB:* on all tables, and SecretManager access. Full production data breach from a single pod compromise.</p>
+          </div>
+        </div>
+        <div class="blast-bar"></div>
+        <div class="blast-label">Blast radius: 90% — entire node role exposed</div>
+      </div>
+
+      <!-- SAFE PANEL: IRSA -->
+      <div class="irsa-panel safe">
+        <span class="irsa-label">✅ Correct Pattern — IRSA</span>
+        <div class="irsa-node mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand IRSA node role detail">
+          <strong>EC2 Worker Node</strong><br><small style="color:var(--text-dim);">Node role: minimal (no app permissions)</small>
+          <div class="node-info">
+            <p style="font-size:0.85rem;margin-bottom:0;">The node role only has permissions the node itself needs: EC2 node registration, ECR image pull, CloudWatch logging. Zero application-level AWS permissions on the node role itself.</p>
+          </div>
+        </div>
+        <div class="irsa-arrow">↓ each pod gets its own OIDC-bound role</div>
+        <div class="irsa-node mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand payment service IRSA detail" style="border-left:2px solid var(--green);">
+          <strong>Pod: payment-service</strong><br><small style="color:var(--green);">IRSA role: dynamodb:PutItem on orders only</small>
+          <div class="node-info">
+            <p style="font-size:0.85rem;margin-bottom:0;">This pod uses its OIDC-bound service account to assume a role with only <code>dynamodb:PutItem</code> on the specific orders table ARN. No S3, no Secrets Manager, no other DynamoDB tables.</p>
+          </div>
+        </div>
+        <div class="irsa-node mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand image resizer IRSA detail" style="border-left:2px solid var(--green);">
+          <strong>Pod: image-resizer</strong><br><small style="color:var(--green);">IRSA role: s3:PutObject on thumbnails/ only</small>
+          <div class="node-info">
+            <p style="font-size:0.85rem;margin-bottom:0;">This pod can only write to the <code>thumbnails/</code> prefix of one S3 bucket. It cannot read, delete, or access any other prefix or bucket. Compromise here is isolated to thumbnail writes.</p>
+          </div>
+        </div>
+        <div class="irsa-node mindnode" onclick="toggleNodeInfo(this)" tabindex="0" role="button" aria-label="Expand compromised pod IRSA detail" style="border-left:2px solid var(--green);background:var(--c-gov-dim);">
+          <strong>✅ Pod: vulnerable-app (exploited)</strong><br><small style="color:var(--green);">IRSA role: read from /config prefix only</small>
+          <div class="node-info">
+            <p style="font-size:0.85rem;margin-bottom:0;">Even though this pod is compromised, the attacker can only use its IRSA role: reading from a single S3 prefix. The rest of the cluster data and AWS resources are completely inaccessible. Containment is automatic.</p>
+          </div>
+        </div>
+        <div class="blast-bar"></div>
+        <div class="blast-label">Blast radius: 20% — isolated to this pod role only</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ═══════════════════════════════════════════ EXERCISE ═══ -->
+<section class="scene" id="s-exercise">
+  <div class="ambient-blob" style="width:450px;height:450px;background:var(--c-infra);top:-80px;left:-140px;animation-delay:-6s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Interactive Exercise</div>
+    <h2 class="kinetic">Secure This Workload</h2>
+    <p>Each scenario describes a real workload configuration with a security gap. Identify the specific problem and the correct fix before revealing the reasoning. These mirror the style of scenario questions on the exam.</p>
+
+    <!-- Scenario 1 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 01 — EC2 / IMDS</span>
+      <h4>An e-commerce application runs on EC2. A security researcher reports they retrieved IAM credentials by sending a crafted HTTP GET to <code>169.254.169.254</code> through a URL-fetching feature in the app.</h4>
+      <div class="sc-gap">🔴 Gap: IMDSv1 is enabled — any HTTP GET to the metadata endpoint succeeds without a session token. The SSRF vulnerability in the application made it trivial to exploit.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Enforce IMDSv2 using <code>--http-tokens required</code> on the instance metadata options (or via SCP for all new instances). IMDSv2 requires a PUT request to obtain a session token before any GET request succeeds. Most SSRF exploits cannot follow this two-step flow, which breaks the credential theft path. Additionally, scope the instance role to only the S3 prefix this workload needs — limiting what stolen credentials could access even if SSRF were exploited through some other vector.</div>
+      </div>
+    </div>
+
+    <!-- Scenario 2 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 02 — Systems Manager / SSH</span>
+      <h4>A team manages 200 EC2 instances by maintaining a bastion host in a public subnet with port 22 open to <code>0.0.0.0/0</code>. SSH keys are distributed to 15 engineers. A recent audit flagged the bastion host as a high-value target with unclear session logging.</h4>
+      <div class="sc-gap">🔴 Gap: Open port 22 to the internet is an unnecessary attack surface. Distributed SSH keys are difficult to rotate consistently. Session activity is not being centrally logged or audited.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Replace the bastion host with AWS Systems Manager Session Manager. Install the SSM Agent on all instances. Grant engineers <code>ssm:StartSession</code> permissions via IAM (scoped to instance resource ARNs). Remove the bastion host, close port 22, and configure Session Manager to log sessions to CloudWatch Logs or S3. No SSH keys, no inbound ports, full audit trail tied to IAM identities.</div>
+      </div>
+    </div>
+
+    <!-- Scenario 3 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 03 — ECS / Task Role</span>
+      <h4>An ECS cluster on EC2 hosts 8 microservices. The EC2 instance role has <code>s3:*</code> on all buckets, <code>dynamodb:*</code> on all tables, and <code>secretsmanager:GetSecretValue</code> with a wildcard resource, because "it's easier to manage one role." A container vulnerability is discovered in one of the services.</h4>
+      <div class="sc-gap">🔴 Gap: All containers on the host inherit the instance role. Compromise of any single container gives access to all S3 buckets, all DynamoDB tables, and all secrets — regardless of what that container actually needs.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Create a separate ECS Task IAM Role for each service, scoped to only the specific resources that service needs. Attach the role to the ECS task definition, not the EC2 instance. Remove application-level permissions from the EC2 instance role entirely (it only needs permissions for ECS agent operation and CloudWatch). Compromise of any single container is now bounded by that task role alone.</div>
+      </div>
+    </div>
+
+    <!-- Scenario 4 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 04 — EKS / IRSA</span>
+      <h4>An EKS cluster runs a payment processing pod and a logging pod on the same node. The node IAM role has <code>dynamodb:GetItem</code> and <code>dynamodb:PutItem</code> on the payments table (for the payment pod) and <code>s3:PutObject</code> on the logs bucket (for the logging pod). The logging pod is built on an old base image with a known critical CVE.</h4>
+      <div class="sc-gap">🔴 Gap: Both pods run with the node role permissions. An exploit against the logging pod gives the attacker access to the payments DynamoDB table — a resource the logging pod should never be able to reach.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Implement IRSA. Create two separate IAM roles — one for the payment service account (<code>dynamodb</code> permissions only), one for the logging service account (<code>s3:PutObject</code> to the logs bucket only). Annotate each Kubernetes service account with the appropriate role ARN. Remove application permissions from the node role. Also: update the logging pod base image and enable ECR scanning to catch this class of issue earlier.</div>
+      </div>
+    </div>
+
+    <!-- Scenario 5 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 05 — Lambda / Shared Role</span>
+      <h4>A serverless application has 12 Lambda functions. All share one execution role that has <code>s3:GetObject</code> on all buckets, <code>dynamodb:*</code> on all tables, <code>kms:Decrypt</code> on all keys, and <code>secretsmanager:GetSecretValue</code> on all secrets. The role was created at project start and never revisited.</h4>
+      <div class="sc-gap">🔴 Gap: A function that should only read from a single S3 prefix effectively has access to every data store and key in the account through the shared role. Any compromise, code injection, or supply-chain attack on any function gives the attacker the full role permissions.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Create a dedicated execution role per Lambda function. For each function, determine exactly which AWS actions on which specific resource ARNs it needs. Define that as the role policy. A function processing SQS messages and writing to one DynamoDB table gets exactly those three permissions on those exact resource ARNs — nothing more. This is achievable in Lambda precisely because functions are single-purpose by design.</div>
+      </div>
+    </div>
+
+    <!-- Scenario 6 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 06 — Hybrid / Direct Connect Encryption</span>
+      <h4>An enterprise connects its data center to AWS via Direct Connect for its core banking application. The security team asserts that data in transit is protected because "traffic stays on the private circuit and never touches the public internet." A compliance auditor challenges this assertion.</h4>
+      <div class="sc-gap">🔴 Gap: Direct Connect is private — it does not traverse the public internet. But private and encrypted are different properties. The Direct Connect circuit itself is unencrypted unless an additional encryption layer is added. The compliance assertion is incorrect.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Add encryption to the Direct Connect path. Option 1: MACsec (IEEE 802.1AE) on the dedicated connection — Layer 2 encryption on the physical link. Requires supported hardware at the customer end; available on 10G and 100G dedicated connections. Option 2: VPN-over-Direct-Connect — run an IPsec tunnel over the Direct Connect circuit. This is the most common compliance solution and works with any connection speed and customer gateway hardware.</div>
+      </div>
+    </div>
+
+    <!-- Scenario 7 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 07 — VPC Endpoint vs NAT Gateway</span>
+      <h4>Private-subnet EC2 instances process data and upload results to S3. The current architecture routes all outbound traffic through a NAT Gateway. A cost review shows significant NAT Gateway data processing charges for the S3 traffic. Security wants to reduce internet exposure.</h4>
+      <div class="sc-gap">🔴 Gap: S3 traffic does not need to traverse the internet or a NAT Gateway. Routing it through NAT adds cost, internet path exposure, and uses the NAT Gateway's bandwidth allocation unnecessarily.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Create an S3 gateway endpoint in the VPC and add a route to the private subnet route tables. S3 traffic now travels directly to S3 via the AWS backbone — no NAT Gateway, no internet path, no data processing charges on NAT. The NAT Gateway remains for any traffic that genuinely needs the internet. Apply an endpoint policy to restrict access to only the specific S3 bucket(s) the instances should access — preventing accidental or malicious writes to other buckets.</div>
+      </div>
+    </div>
+
+    <!-- Scenario 8 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 08 — Lambda in VPC</span>
+      <h4>A Lambda function is attached to a VPC to access an RDS database in a private subnet. After deployment, the function can reach RDS successfully but cannot call Secrets Manager to retrieve the database password, timing out every time. The VPC has no internet gateway on the private subnet.</h4>
+      <div class="sc-gap">🔴 Gap: VPC-attached Lambda loses its default internet access. Secrets Manager is a public AWS endpoint — the function has no route to reach it without either internet access (NAT Gateway) or a VPC endpoint for Secrets Manager.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Create a VPC interface endpoint for Secrets Manager (<code>com.amazonaws.region.secretsmanager</code>) in the private subnet. This gives the Lambda function private network access to Secrets Manager without requiring internet access. No NAT Gateway needed for this use case. Also create interface endpoints for any other AWS services the Lambda calls (KMS for decryption, CloudWatch Logs for logging).</div>
+      </div>
+    </div>
+
+    <!-- Scenario 9 -->
+    <div class="scenario-card reveal">
+      <span class="sc-badge">Scenario 09 — Bedrock Guardrails Scope</span>
+      <h4>A team deploys a customer service chatbot on Amazon Bedrock with Guardrails configured for content filtering and PII redaction. They conclude that IAM controls on the Bedrock API are no longer necessary because "Guardrails handle the security." An internal user with misconfigured broad permissions begins probing the API directly.</h4>
+      <div class="sc-gap">🔴 Gap: Guardrails control what the model can say — not who can call the API. A user with <code>bedrock:InvokeModel</code> permissions can bypass Guardrails by calling the API without specifying the Guardrail ARN, or calling with a different model ID.</div>
+      <button class="scenario-btn" onclick="toggleReveal(this)">Reveal Fix &amp; Reasoning ›</button>
+      <div class="scenario-reveal">
+        <div class="sc-fix">✅ <strong>Fix:</strong> Maintain strict IAM controls on Bedrock API access — <code>bedrock:InvokeModel</code> should be granted only to the application's execution role, scoped to specific model ARNs. Use resource-based policies or IAM conditions to enforce Guardrail usage if needed. Guardrails are a workload-specific content safety layer that complements, not replaces, IAM and network-level access controls.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ═══════════════════════════════════════════ TRAPS ═══ -->
+<section class="scene" id="s-traps">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-ir);bottom:-100px;right:-130px;animation-delay:-14s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Production Trap Gallery</div>
+    <h2 class="kinetic">Real Incidents, Teachable Failures</h2>
+    <p>These six vignettes are composite scenarios based on publicly reported breach patterns and exam-tested architectural mistakes. Click each to read the incident and the postmortem finding.</p>
+
+    <!-- Trap 1 -->
+    <div class="trap-card" onclick="toggleTrap(this)">
+      <div class="trap-header">
+        <span class="trap-icon">🪤</span>
+        <div class="trap-title">The SSRF That Became a Data Breach</div>
+        <span class="trap-chev">▾</span>
+      </div>
+      <div class="trap-body">
+        <div class="trap-scene">A SaaS platform offered a "URL preview" feature — paste a link, see a preview card. The feature made server-side HTTP requests. A researcher discovered that redirecting the URL to <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/</code> caused the server to return a JSON response containing the full EC2 instance role credentials — access key, secret key, and session token. The instance role had <code>s3:GetObject</code> on a bucket containing customer invoices, <code>rds:Connect</code> to the production database, and <code>sts:AssumeRole</code> to a cross-account role in the data warehouse account. The researcher escalated this to the company privately; in a real attack, all three resources would have been accessible within seconds of the credential extraction. IMDSv1 was enabled. The instance role had never been reviewed since the product launched three years prior.</div>
+        <span class="trap-fix-label">✅ Postmortem Finding</span>
+        <div class="trap-fix">Root cause: IMDSv1 enabled + SSRF vulnerability in URL preview feature + overly broad instance role. Fixes applied: IMDSv2 enforced via SCP for all accounts; instance role scoped to specific S3 prefix; SSRF prevention added via allow-listing valid preview domains at the application layer. IMDSv2 enforcement was the critical security control — it would have prevented credential extraction entirely regardless of the SSRF.</div>
+      </div>
+    </div>
+
+    <!-- Trap 2 -->
+    <div class="trap-card" onclick="toggleTrap(this)">
+      <div class="trap-header">
+        <span class="trap-icon">🪤</span>
+        <div class="trap-title">Direct Connect Assumed Encrypted — Compliance Audit Fails</div>
+        <span class="trap-chev">▾</span>
+      </div>
+      <div class="trap-body">
+        <div class="trap-scene">A healthcare company completed migration of their on-premises systems to AWS using AWS Direct Connect. During a PCI-DSS QSA audit, the auditor asked for evidence of encryption in transit for cardholder data flowing between the data center and AWS. The security architect provided documentation of the Direct Connect connection — dedicated 10G fiber, private circuit, no public internet traversal. The QSA rejected this as insufficient. "Private" is not the same as "encrypted." Cardholder data was flowing unencrypted on a fiber circuit that, while dedicated, was not protected against interception at the colocation facility or along the carrier's fiber path. The audit resulted in a finding that required remediation before the next QSA review.</div>
+        <span class="trap-fix-label">✅ Postmortem Finding</span>
+        <div class="trap-fix">Remediation: Implemented MACsec on the dedicated 10G connection (supported on AWS Direct Connect dedicated connections, required compatible hardware at the colo — confirmed and installed). For connections that predated MACsec support, a VPN-over-Direct-Connect backup encryption layer was added. Policy updated to require explicit encryption documentation for all data-in-transit controls, specifically calling out that "private circuit" does not satisfy encryption requirements.</div>
+      </div>
+    </div>
+
+    <!-- Trap 3 -->
+    <div class="trap-card" onclick="toggleTrap(this)">
+      <div class="trap-header">
+        <span class="trap-icon">🪤</span>
+        <div class="trap-title">One Lambda Role, Twelve Functions, One Breach</div>
+        <span class="trap-chev">▾</span>
+      </div>
+      <div class="trap-body">
+        <div class="trap-scene">A fintech startup built their serverless backend with 12 Lambda functions all sharing one execution role created on day one of the project. The role had grown organically as permissions were added for new features — eventually including <code>s3:GetObject</code> on all buckets, <code>kms:Decrypt</code> on all keys, <code>secretsmanager:GetSecretValue</code> on all secrets, and <code>dynamodb:*</code> on all tables. One of the functions processed third-party webhook payloads using an open-source JSON parsing library. A supply-chain attack on that library allowed code execution within the Lambda environment. The attacker used the shared execution role to retrieve the application's production database credentials from Secrets Manager, export the customer table from DynamoDB, and decrypt archived payment records from S3. The breach was discovered 18 days later during a routine log review.</div>
+        <span class="trap-fix-label">✅ Postmortem Finding</span>
+        <div class="trap-fix">Root cause: Single overly-broad shared Lambda execution role + supply chain vulnerability in a third-party library. The shared role converted a single-function compromise into a full data breach. Remediation: All 12 functions received dedicated, scoped execution roles. AWS Lambda code signing was enabled to require signed deployment packages. A dependency scanning pipeline was added to CI/CD. The webhook-processing function was isolated in its own account with no cross-account access.</div>
+      </div>
+    </div>
+
+    <!-- Trap 4 -->
+    <div class="trap-card" onclick="toggleTrap(this)">
+      <div class="trap-header">
+        <span class="trap-icon">🪤</span>
+        <div class="trap-title">EKS Node Role Too Broad — One Pod Reaches Production Database</div>
+        <span class="trap-chev">▾</span>
+      </div>
+      <div class="trap-body">
+        <div class="trap-scene">An engineering team ran a mixed-criticality EKS cluster: production payment processing pods and a log aggregation sidecar running on the same node pool. The node IAM role included RDS database connect permissions (added for the payment pods) and S3 write access (for log shipping). An open-source log formatter library used by the aggregation sidecar had a deserialization vulnerability — a known CVE that the team's image scanning was not catching because they had not enabled continuous scanning, only on-push scanning that ran when the image was first built six months prior. The RCE via the log sidecar gave an attacker shell access in the container. From there, they assumed the node role and connected directly to the production RDS database using the node role's RDS permissions. IRSA was available but had never been configured.</div>
+        <span class="trap-fix-label">✅ Postmortem Finding</span>
+        <div class="trap-fix">Root cause: Node-level IAM over-permissioning + stale images not re-scanned after initial push. IRSA implementation would have bounded the blast radius to log-aggregation permissions only — no RDS access. Fixes: IRSA rolled out for all service accounts; node role stripped to minimal cluster-operation permissions; ECR continuous scanning enabled; critical/high CVE findings block deployment in CI/CD pipeline.</div>
+      </div>
+    </div>
+
+    <!-- Trap 5 -->
+    <div class="trap-card" onclick="toggleTrap(this)">
+      <div class="trap-header">
+        <span class="trap-icon">🪤</span>
+        <div class="trap-title">NAT Gateway Used for S3 — Compliance and Cost Surprise</div>
+        <span class="trap-chev">▾</span>
+      </div>
+      <div class="trap-body">
+        <div class="trap-scene">A data analytics team ran nightly ETL jobs from 50 EC2 instances in private subnets, reading from S3 and writing processed results back to S3. All traffic routed through a NAT Gateway. Monthly NAT Gateway data processing charges reached $4,200 for S3 traffic alone. A security audit also noted that S3 API traffic was traversing the internet (via NAT), creating a brief internet exposure for data that should stay fully within the AWS network. The team had not known VPC endpoints existed — they had set up the NAT Gateway years ago and assumed it was the only way to reach S3 from a private subnet.</div>
+        <span class="trap-fix-label">✅ Postmortem Finding</span>
+        <div class="trap-fix">Resolution: S3 gateway endpoint added to the VPC; route table updated for private subnets. S3 traffic moved entirely off the NAT Gateway path. Monthly cost dropped by $4,200. Security posture improved — S3 API traffic no longer traverses any internet path. An S3 endpoint policy was added restricting access to the specific bucket used by the ETL jobs, preventing accidental writes to other buckets. No code changes required in the ETL applications.</div>
+      </div>
+    </div>
+
+    <!-- Trap 6 -->
+    <div class="trap-card" onclick="toggleTrap(this)">
+      <div class="trap-header">
+        <span class="trap-icon">🪤</span>
+        <div class="trap-title">Vulnerable ECR Base Image Deployed to Production</div>
+        <span class="trap-chev">▾</span>
+      </div>
+      <div class="trap-body">
+        <div class="trap-scene">A development team built microservices on top of a common base image: <code>python:3.9-slim</code>. The base image had been pulled and committed to ECR 14 months prior. A critical CVE in a cryptographic library bundled in the Debian base was disclosed 8 months ago — but the team had scanning enabled only on initial push, not continuously. The ECR images were never rescanned after the CVE was published. A penetration test discovered the CVE and used it to achieve code execution within a container running in production. The container ran under an IRSA role scoped to read a single DynamoDB table — so the blast radius was contained — but the initial access via a known-CVE base image should never have reached production at all.</div>
+        <span class="trap-fix-label">✅ Postmortem Finding</span>
+        <div class="trap-fix">Root cause: ECR image scanning on push only; base images not rebuilt when underlying CVEs are disclosed. IRSA limited the blast radius once access was achieved — a meaningful mitigation. Fixes: ECR continuous scanning (Amazon Inspector) enabled for all repositories; critical/high findings trigger SNS notifications and auto-block deployment in CI/CD; base image rebuild pipeline added to rebuild and push all production images when the base image receives a critical vulnerability disclosure. The IRSA implementation was confirmed as a significant success — it prevented the container compromise from escalating to a data breach.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ TITLE CARD 3 ═══ -->
+<div class="title-card" id="s-tc3">
+  <div class="scanbeam"></div>
+  <div class="ambient-blob" style="width:700px;height:700px;background:var(--c-iam);bottom:-300px;right:-250px;animation-delay:-2s;opacity:0.15;"></div>
+  <h2>NOW PROVE<br>YOU KNOW IT.</h2>
+  <div class="tc-sub">12 SCS-C03-style questions · score tracked live</div>
+</div>
+<!-- ═══════════════════════════════════════════ EXAM ═══ -->
+<section class="scene" id="s-exam">
+  <div class="ambient-blob" style="width:450px;height:450px;background:var(--c-infra);top:-80px;right:-130px;animation-delay:-11s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Mock Exam · Knowledge Check</div>
+    <h2 class="kinetic">12 SCS-C03-Style Questions</h2>
+    <p>Select your answer and click Check Answer. Your score updates after each question. Reveal the reasoning to understand why each option is correct or incorrect — the same logic the exam uses.</p>
+
+    <div class="score-bar-wrap reveal">
+      <div class="score-display"><span id="scoreNum">0</span>/<span id="scoreTotal">12</span></div>
+      <div class="score-meta">
+        <div class="score-label">Correct answers</div>
+        <div class="score-label" id="scorePercent">0% — Keep going!</div>
+      </div>
+      <div class="score-progress"><div class="score-progress-fill" id="scoreFill"></div></div>
+    </div>
+
+    <!-- Q1 -->
+    <div class="question-card" id="qc1">
+      <div class="q-num">Question 1 of 12</div>
+      <div class="q-text">A web application running on EC2 has a Server-Side Request Forgery (SSRF) vulnerability. A security engineer wants to prevent the vulnerability from being used to steal IAM credentials from the instance metadata service. Which action is MOST effective?</div>
+      <div class="options" id="opts1">
+        <label class="option-label"><input type="radio" name="q1" value="A"> A. Add a security group rule denying traffic to 169.254.169.254</label>
+        <label class="option-label"><input type="radio" name="q1" value="B"> B. Enforce IMDSv2 by requiring session tokens for all metadata requests</label>
+        <label class="option-label"><input type="radio" name="q1" value="C"> C. Remove the EC2 instance role and hardcode IAM credentials in the application</label>
+        <label class="option-label"><input type="radio" name="q1" value="D"> D. Enable AWS WAF with an SSRF rule on the Application Load Balancer</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q1','B',1)">Check Answer</button>
+      <div class="reasoning" id="r1"><div class="reasoning-inner"><strong>✅ B is correct.</strong> IMDSv2 requires a PUT request to obtain a session token before metadata can be accessed. SSRF attacks typically cannot follow this two-step flow, preventing credential theft even if the SSRF vulnerability exists. A: Security groups cannot block traffic to a link-local address (169.254.0.0/16) — these rules apply only to VPC traffic, not to loopback/link-local. C: Hardcoding credentials is far worse than an instance role — no rotation, no audit trail. D: WAF rules may help at the edge but do not protect the metadata endpoint if the SSRF target is reachable from inside the instance.</div></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-card" id="qc2">
+      <div class="q-num">Question 2 of 12</div>
+      <div class="q-text">A company uses AWS Direct Connect to connect its data center to AWS for processing financial transactions. The compliance team asks for confirmation that data in transit is encrypted. The security architect states that Direct Connect is a private circuit and therefore provides data protection. Is this assessment correct?</div>
+      <div class="options" id="opts2">
+        <label class="option-label"><input type="radio" name="q2" value="A"> A. Yes — Direct Connect uses dedicated fiber and never traverses the public internet, satisfying encryption requirements</label>
+        <label class="option-label"><input type="radio" name="q2" value="B"> B. No — Direct Connect is private but not encrypted by default; MACsec or a VPN overlay is required for encryption in transit</label>
+        <label class="option-label"><input type="radio" name="q2" value="C"> C. Yes — AWS automatically encrypts all traffic on Direct Connect connections using TLS</label>
+        <label class="option-label"><input type="radio" name="q2" value="D"> D. No — Direct Connect cannot carry encrypted traffic and must be replaced with a Site-to-Site VPN for compliance</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q2','B',2)">Check Answer</button>
+      <div class="reasoning" id="r2"><div class="reasoning-inner"><strong>✅ B is correct.</strong> Private and encrypted are distinct properties. Direct Connect provides a private circuit (traffic does not traverse the public internet) but does not encrypt traffic by default. MACsec (supported on dedicated 10G/100G connections) or a VPN-over-Direct-Connect configuration provides encryption. A: "Private circuit" does not satisfy encryption requirements in compliance frameworks like PCI-DSS, HIPAA, or SOC 2. C: AWS does not automatically encrypt Direct Connect traffic. D: Direct Connect CAN carry encrypted traffic — you add the encryption layer (MACsec or VPN) rather than replacing it.</div></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-card" id="qc3">
+      <div class="q-num">Question 3 of 12</div>
+      <div class="q-text">An EKS cluster runs multiple microservices on shared worker nodes. Each microservice pod needs access to a different set of AWS resources. A security engineer needs to implement least-privilege IAM for the pods. Which approach is MOST appropriate?</div>
+      <div class="options" id="opts3">
+        <label class="option-label"><input type="radio" name="q3" value="A"> A. Attach a single IAM role to the EKS worker node EC2 instances with permissions for all services</label>
+        <label class="option-label"><input type="radio" name="q3" value="B"> B. Use IRSA (IAM Roles for Service Accounts) to bind individual Kubernetes service accounts to specific IAM roles</label>
+        <label class="option-label"><input type="radio" name="q3" value="C"> C. Pass IAM access keys as Kubernetes secrets and mount them in the pod containers</label>
+        <label class="option-label"><input type="radio" name="q3" value="D"> D. Use the same IAM role for all pods but apply Kubernetes RBAC to restrict permissions</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q3','B',3)">Check Answer</button>
+      <div class="reasoning" id="r3"><div class="reasoning-inner"><strong>✅ B is correct.</strong> IRSA binds a Kubernetes service account to an IAM role using OIDC federation. Each pod gets only the AWS permissions assigned to its service account role. Compromise of one pod cannot access other pods' resources. A: Node-level roles grant all permissions to all pods on that node — this is the anti-pattern that IRSA solves. C: Static IAM credentials in Kubernetes Secrets are a significant security risk — no automatic rotation, easy to accidentally expose. D: Kubernetes RBAC controls access to Kubernetes resources, not AWS resources — it has no effect on IAM permissions.</div></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-card" id="qc4">
+      <div class="q-num">Question 4 of 12</div>
+      <div class="q-text">EC2 instances in a private subnet regularly upload processed data to Amazon S3. The current route table sends all outbound traffic through a NAT Gateway. A security engineer is asked to improve the security posture and reduce costs without affecting functionality. What should the engineer do?</div>
+      <div class="options" id="opts4">
+        <label class="option-label"><input type="radio" name="q4" value="A"> A. Move the EC2 instances to a public subnet so they can reach S3 directly</label>
+        <label class="option-label"><input type="radio" name="q4" value="B"> B. Create a VPC gateway endpoint for S3 and update the private subnet route table</label>
+        <label class="option-label"><input type="radio" name="q4" value="C"> C. Enable S3 Transfer Acceleration on the bucket to reduce NAT Gateway latency</label>
+        <label class="option-label"><input type="radio" name="q4" value="D"> D. Create a Site-to-Site VPN to route S3 traffic over an encrypted path</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q4','B',4)">Check Answer</button>
+      <div class="reasoning" id="r4"><div class="reasoning-inner"><strong>✅ B is correct.</strong> An S3 gateway endpoint adds a route to the private subnet route table directing S3 traffic to the endpoint. Traffic never leaves the AWS backbone, there is no internet exposure, and NAT Gateway data processing charges for S3 traffic are eliminated. No code changes are required. A: Moving instances to a public subnet increases attack surface and is not necessary. C: Transfer Acceleration optimizes internet path performance — irrelevant here and does not reduce internet exposure. D: A VPN is for connecting on-premises networks to AWS, not for private subnet instances to reach S3.</div></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-card" id="qc5">
+      <div class="q-num">Question 5 of 12</div>
+      <div class="q-text">A company needs to connect its on-premises data center to AWS for latency-sensitive production workloads. They require consistent throughput of at least 5 Gbps and data must be encrypted in transit. They have a 3-month lead time to provision the connection. Which solution should they choose?</div>
+      <div class="options" id="opts5">
+        <label class="option-label"><input type="radio" name="q5" value="A"> A. Site-to-Site VPN with ECMP across multiple tunnels</label>
+        <label class="option-label"><input type="radio" name="q5" value="B"> B. Direct Connect dedicated connection with MACsec enabled</label>
+        <label class="option-label"><input type="radio" name="q5" value="C"> C. Direct Connect hosted connection without additional encryption</label>
+        <label class="option-label"><input type="radio" name="q5" value="D"> D. AWS PrivateLink with a VPC endpoint for all on-premises traffic</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q5','B',5)">Check Answer</button>
+      <div class="reasoning" id="r5"><div class="reasoning-inner"><strong>✅ B is correct.</strong> A 10G+ Direct Connect dedicated connection provides consistent high throughput and predictable low latency — appropriate for latency-sensitive production workloads. MACsec on the dedicated connection provides Layer 2 encryption in transit satisfying the encryption requirement. The 3-month lead time is realistic for Direct Connect provisioning. A: VPN tunnels max at 1.25 Gbps each — even with multiple tunnels and ECMP, 5 Gbps consistent throughput is not guaranteed and latency varies with internet path. C: Direct Connect without encryption fails the encryption-in-transit requirement. D: PrivateLink is for reaching AWS service endpoints from within a VPC — it is not a mechanism for connecting on-premises data centers to AWS.</div></div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question-card" id="qc6">
+      <div class="q-num">Question 6 of 12</div>
+      <div class="q-text">A security team wants to replace the company's SSH bastion hosts entirely. Engineers need interactive shell access to EC2 instances for troubleshooting, and all sessions must be audited and logged to a central location. Which AWS service best satisfies these requirements?</div>
+      <div class="options" id="opts6">
+        <label class="option-label"><input type="radio" name="q6" value="A"> A. AWS CloudTrail with EC2 API logging enabled</label>
+        <label class="option-label"><input type="radio" name="q6" value="B"> B. AWS Systems Manager Session Manager with session logging to CloudWatch Logs</label>
+        <label class="option-label"><input type="radio" name="q6" value="C"> C. Amazon EC2 Instance Connect with VPC flow log capture</label>
+        <label class="option-label"><input type="radio" name="q6" value">D"> D. AWS Config with shell command tracking enabled</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q6','B',6)">Check Answer</button>
+      <div class="reasoning" id="r6"><div class="reasoning-inner"><strong>✅ B is correct.</strong> Session Manager provides browser and CLI shell access without SSH keys or open inbound ports. Sessions are logged (commands, output) to CloudWatch Logs or S3. Authentication is through IAM. This directly replaces SSH bastion functionality with improved security and auditability. A: CloudTrail logs AWS API calls — not interactive shell sessions. C: EC2 Instance Connect still uses SSH and requires open port 22; VPC flow logs capture IP traffic metadata, not shell command content. D: AWS Config tracks configuration changes to AWS resources, not shell session content.</div></div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="question-card" id="qc7">
+      <div class="q-num">Question 7 of 12</div>
+      <div class="q-text">An ECS task needs to read objects from a specific S3 bucket. The ECS cluster runs on EC2 instances. Which IAM approach follows the principle of least privilege?</div>
+      <div class="options" id="opts7">
+        <label class="option-label"><input type="radio" name="q7" value="A"> A. Attach an IAM role with S3 read permissions to the EC2 instances running the ECS cluster</label>
+        <label class="option-label"><input type="radio" name="q7" value="B"> B. Create an ECS task IAM role with S3 read permissions scoped to the specific bucket and assign it to the task definition</label>
+        <label class="option-label"><input type="radio" name="q7" value="C"> C. Store AWS access keys in an ECS environment variable and grant those credentials S3 read access</label>
+        <label class="option-label"><input type="radio" name="q7" value="D"> D. Grant all ECS tasks in the cluster the same broad IAM role to simplify management</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q7','B',7)">Check Answer</button>
+      <div class="reasoning" id="r7"><div class="reasoning-inner"><strong>✅ B is correct.</strong> ECS Task IAM Roles assign an IAM role directly to the task definition. Only that task gets the role credentials — via the ECS task metadata endpoint. Other tasks on the same EC2 instance are not affected. Permissions are scoped to the specific bucket ARN. A: EC2 instance role credentials are available to all containers on that instance — all tasks inherit the permissions, violating least privilege. C: Static credentials in environment variables have no automatic rotation and risk exposure through environment inspection. D: Sharing one role across all tasks has the same blast-radius problem as the instance role approach.</div></div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="question-card" id="qc8">
+      <div class="q-num">Question 8 of 12</div>
+      <div class="q-text">A Lambda function is configured to run inside a VPC and needs to call the AWS Secrets Manager API to retrieve database credentials. After deployment, the function times out when calling Secrets Manager. What is the MOST likely cause and solution?</div>
+      <div class="options" id="opts8">
+        <label class="option-label"><input type="radio" name="q8" value="A"> A. The function execution role does not have secretsmanager:GetSecretValue permission — add the permission to the role</label>
+        <label class="option-label"><input type="radio" name="q8" value="B"> B. VPC-attached Lambda loses internet access; the function cannot reach the Secrets Manager public endpoint — add a VPC interface endpoint for Secrets Manager</label>
+        <label class="option-label"><input type="radio" name="q8" value="C"> C. The function timeout setting is too low — increase the timeout to 15 minutes</label>
+        <label class="option-label"><input type="radio" name="q8" value="D"> D. Secrets Manager is not available in the region — use Parameter Store instead</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q8','B',8)">Check Answer</button>
+      <div class="reasoning" id="r8"><div class="reasoning-inner"><strong>✅ B is correct.</strong> By default, Lambda functions run in an AWS-managed environment with internet access. When placed in a VPC, the function runs on an ENI in your private subnet and loses internet access (unless a NAT Gateway is present). Secrets Manager is a public AWS service endpoint — unreachable from a VPC without internet or a VPC endpoint. Creating a Secrets Manager interface endpoint in the VPC resolves this. A: If the permission were missing, the error would be an authorization failure, not a timeout — timeouts indicate a connectivity failure, not an IAM failure. C: Increasing timeout does not fix a connectivity issue — it just makes the function wait longer before failing. D: Secrets Manager is a global service available in all AWS regions.</div></div>
+    </div>
+
+    <!-- Q9 -->
+    <div class="question-card" id="qc9">
+      <div class="q-num">Question 9 of 12</div>
+      <div class="q-text">An organization's security policy requires that all traffic between its private subnets and AWS services must not traverse the public internet. They currently use a NAT Gateway for all outbound traffic, which routes through an internet gateway. Which change satisfies the policy for AWS service traffic?</div>
+      <div class="options" id="opts9">
+        <label class="option-label"><input type="radio" name="q9" value="A"> A. Replace the NAT Gateway with an internet gateway for lower latency</label>
+        <label class="option-label"><input type="radio" name="q9" value="B"> B. Create VPC endpoints for each required AWS service and update the route tables</label>
+        <label class="option-label"><input type="radio" name="q9" value="C"> C. Enable VPC flow logs to monitor traffic traversing the NAT Gateway</label>
+        <label class="option-label"><input type="radio" name="q9" value="D"> D. Encrypt all traffic through the NAT Gateway using KMS</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q9','B',9)">Check Answer</button>
+      <div class="reasoning" id="r9"><div class="reasoning-inner"><strong>✅ B is correct.</strong> VPC endpoints (gateway for S3/DynamoDB, interface for other services) route AWS service traffic through the AWS backbone without touching the internet or requiring a NAT Gateway. The policy requirement is met because traffic never reaches the internet gateway or traverses the public internet. A: An internet gateway routes traffic to the public internet — worse, not better. C: Flow logs provide visibility but do not change the traffic path — the policy violation remains. D: KMS encrypts data at rest; it is not a mechanism for controlling network traffic paths. The NAT Gateway still routes through the internet regardless of KMS configuration.</div></div>
+    </div>
+
+    <!-- Q10 -->
+    <div class="question-card" id="qc10">
+      <div class="q-num">Question 10 of 12</div>
+      <div class="q-text">An Amazon ECR repository contains container images that are deployed to ECS production tasks. A new critical CVE is published affecting a library in the base image used by these containers. The images were scanned when they were pushed two months ago and showed no findings at that time. What should a security engineer configure to catch this going forward?</div>
+      <div class="options" id="opts10">
+        <label class="option-label"><input type="radio" name="q10" value="A"> A. Rebuild and push all images — a new push will trigger a fresh scan</label>
+        <label class="option-label"><input type="radio" name="q10" value="B"> B. Enable enhanced scanning with Amazon Inspector for continuous image scanning that re-evaluates images against new CVE data without requiring a re-push</label>
+        <label class="option-label"><input type="radio" name="q10" value="C"> C. Enable CloudTrail to monitor ECR API calls for vulnerability indicators</label>
+        <label class="option-label"><input type="radio" name="q10" value="D"> D. Subscribe to the ECR service health dashboard for vulnerability notifications</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q10','B',10)">Check Answer</button>
+      <div class="reasoning" id="r10"><div class="reasoning-inner"><strong>✅ B is correct.</strong> Amazon Inspector enhanced scanning for ECR provides continuous scanning — it re-evaluates existing images in the repository when new CVEs are published, without requiring images to be rebuilt or re-pushed. Findings are surfaced in the Inspector console and can trigger EventBridge events for automated notification or deployment blocking. A: Rebuilding and re-pushing works but is not scalable — it requires manual action whenever a CVE is disclosed and does not cover images that teams forget to rebuild. C: CloudTrail tracks API operations, not vulnerability data. D: ECR service health is about service availability, not image vulnerability findings.</div></div>
+    </div>
+
+    <!-- Q11 -->
+    <div class="question-card" id="qc11">
+      <div class="q-num">Question 11 of 12</div>
+      <div class="q-text">A company connects to AWS via Direct Connect for its primary path and also has a Site-to-Site VPN configured to the same VPC. Under what circumstances will traffic automatically fail over to the VPN?</div>
+      <div class="options" id="opts11">
+        <label class="option-label"><input type="radio" name="q11" value="A"> A. Automatically when Direct Connect throughput drops below 50%</label>
+        <label class="option-label"><input type="radio" name="q11" value="B"> B. Only when manually triggered by the network operations team</label>
+        <label class="option-label"><input type="radio" name="q11" value="C"> C. Automatically via BGP route withdrawal when the Direct Connect connection or BGP session fails</label>
+        <label class="option-label"><input type="radio" name="q11" value="D"> D. Automatically after 30 minutes of Direct Connect inactivity</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q11','C',11)">Check Answer</button>
+      <div class="reasoning" id="r11"><div class="reasoning-inner"><strong>✅ C is correct.</strong> Both Direct Connect and VPN advertise routes via BGP. When the Direct Connect connection fails, the BGP session on that path goes down, and the routes advertised by Direct Connect are withdrawn from the routing table. The VPN BGP session remains up and its routes are used automatically. This is standard BGP failover — it requires proper route preference configuration (e.g., local preference to prefer Direct Connect under normal conditions). A: BGP failover is binary — it triggers on session failure, not on throughput thresholds. B: Manual failover defeats the purpose of a resilient dual-path architecture. D: BGP failover is event-driven (session down), not time-based.</div></div>
+    </div>
+
+    <!-- Q12 -->
+    <div class="question-card" id="qc12">
+      <div class="q-num">Question 12 of 12</div>
+      <div class="q-text">A company deploys a customer service chatbot using Amazon Bedrock with Guardrails configured for PII redaction and content filtering. The security team states that because Guardrails are enabled, they do not need to configure IAM policies for the Bedrock API — the Guardrails handle all access control. Which statement accurately describes this assessment?</div>
+      <div class="options" id="opts12">
+        <label class="option-label"><input type="radio" name="q12" value="A"> A. Correct — Bedrock Guardrails enforce both content safety and IAM access control</label>
+        <label class="option-label"><input type="radio" name="q12" value="B"> B. Incorrect — Guardrails control content and PII in model interactions; IAM policies are still required to control who can invoke the Bedrock API</label>
+        <label class="option-label"><input type="radio" name="q12" value="C"> C. Correct — enabling Guardrails automatically restricts Bedrock API access to the application only</label>
+        <label class="option-label"><input type="radio" name="q12" value="D"> D. Incorrect — Guardrails are not supported on the standard Bedrock API, only on Bedrock Agents</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer(this,'q12','B',12)">Check Answer</button>
+      <div class="reasoning" id="r12"><div class="reasoning-inner"><strong>✅ B is correct.</strong> Bedrock Guardrails are a content safety and policy layer that controls what the foundation model can say — harmful content, PII in outputs, denied topics. They do not control who can call the Bedrock API. IAM policies (<code>bedrock:InvokeModel</code>) are still required to restrict which principals can make API calls. A principal with the IAM permission can call the Bedrock API and may be able to bypass Guardrails by calling without specifying the Guardrail ARN, or by calling a different model. Guardrails and IAM serve complementary, non-overlapping roles.</div></div>
+    </div>
+  </div>
+</section>
+<!-- ═══════════════════════════════════════════ FAQ ═══ -->
+<section class="scene" id="s-faq">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-infra);bottom:-100px;left:-130px;animation-delay:-27s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Discussion-Style FAQ</div>
+    <h2 class="kinetic">Questions You Will Actually Have</h2>
+    <p>Click any question to reveal the answer. These are the conversations that come up after studying this material for the first time — questions worth sitting with rather than glossing over.</p>
+
+    <div class="discussion">
+      <!-- FAQ 1 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Why is IMDSv1 such a big deal? My app runs on an EC2 instance, not on the internet — what is an attacker actually going to do with the metadata endpoint?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>The key insight is that the threat is not an external attacker directly reaching the metadata endpoint — it is your own application being weaponized to make that request for them. If any part of your application accepts a URL and fetches it server-side (image previews, link shorteners, webhooks, curl-based integrations), that is potentially an SSRF vector. The attacker never touches your server directly. They craft a malicious URL that your app fetches for them. The metadata endpoint is on a link-local address that is reachable from inside the instance but not from outside — SSRF abuses the trust boundary between the instance and the metadata service. IMDSv1 makes this trivially exploitable because there is no authentication on the GET request at all.</div>
+      </div>
+
+      <!-- FAQ 2 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>If Direct Connect is private and never touches the public internet, why would I still need encryption on it? Who exactly is going to intercept traffic on a dedicated fiber circuit?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>The threat model is narrower but real. Dedicated fiber goes through carrier networks and colocation facilities. Employees at those facilities, carrier insiders, or a party with physical access to the cable route could theoretically splice the fiber or tap the colocation cross-connects. More practically: compliance frameworks (PCI-DSS, HIPAA, FedRAMP) require encryption in transit for regulated data regardless of whether the path is private. The auditor does not care that it is a dedicated circuit — they want a cryptographic guarantee of confidentiality. "Private" is a topology property; "encrypted" is a security property. You need both for regulated workloads. MACsec or VPN-over-DC gives you both on the same physical path.</div>
+      </div>
+
+      <!-- FAQ 3 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Why not just give the EKS node a broad IAM role and rely on Kubernetes RBAC to control what pods can do? Kubernetes RBAC is already controlling which pods can talk to which services within the cluster.</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Kubernetes RBAC controls what Kubernetes objects a pod can interact with — API server resources like pods, services, configmaps. It has absolutely no influence on what that pod can do when it makes AWS API calls. When a pod runs code that calls <code>s3.GetObject</code> or <code>dynamodb.PutItem</code>, those calls go directly to the AWS API with the IAM credentials in scope — which on a node with a broad IAM role, are the node role's credentials. IRSA solves this by giving each pod its own IAM identity, completely independently of Kubernetes RBAC. The two systems address different access control planes: RBAC for the Kubernetes control plane, IRSA for the AWS IAM plane. You need both.</div>
+      </div>
+
+      <!-- FAQ 4 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>When exactly would I run both Direct Connect and a Site-to-Site VPN at the same time? Is that not redundant and expensive?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Think of it as primary path plus automatic failover. Direct Connect gives you the consistent, high-throughput, low-latency path for production traffic. The VPN is your backup — it costs a few dollars a month and provisions in minutes, whereas getting a new Direct Connect circuit if the primary fails would take weeks. Under normal operation, all traffic flows over Direct Connect because your BGP route preferences favor it. If the Direct Connect circuit or your BGP session fails, the VPN path activates automatically — no manual intervention required. The additional cost of the VPN backup is nearly always worth it for any workload where Direct Connect downtime is a business problem. The exam often presents this pattern as the correct answer for "production Direct Connect with resilience requirements."</div>
+      </div>
+
+      <!-- FAQ 5 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>What is the real difference between a gateway endpoint and an interface endpoint? They both let me reach AWS services without the internet — why do I need to know which is which?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>The implementation is fundamentally different, and it matters for both cost and architecture. A gateway endpoint is a route table entry — it is entirely software-defined, costs nothing, and works for S3 and DynamoDB only. An interface endpoint is an actual Elastic Network Interface in your subnet — it has an IP address, it uses Private DNS to resolve service endpoint names, it has an hourly cost per AZ, and it works for virtually everything else. The exam tests which type applies to which service. If a question mentions S3 or DynamoDB private access without internet, gateway endpoint is the answer. If it mentions SSM, Secrets Manager, KMS, ECR, or any other service, interface endpoint. Getting these swapped is a common exam mistake.</div>
+      </div>
+
+      <!-- FAQ 6 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Should I always put Lambda functions inside a VPC? It seems like it would make them more secure by default.</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Only put a Lambda in a VPC when it genuinely needs private network access — to an RDS instance, an ElastiCache cluster, an internal API that has no public endpoint. If you put a Lambda in a VPC without a good reason, you are adding latency (ENI setup time), complexity (VPC endpoints or NAT Gateway needed for AWS service calls), and operational overhead for no security benefit. A Lambda that only calls public AWS APIs (S3, DynamoDB, Secrets Manager) through VPC endpoints would need interface endpoints for each service — added cost and management. The security is provided by the execution role scope, not by VPC placement. VPC attachment is an architectural need, not a default security hardening step.</div>
+      </div>
+
+      <!-- FAQ 7 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Are Bedrock Guardrails a replacement for IAM and network controls on the Bedrock API? If I have content filtering in place, does it matter who can call the model?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Completely different control planes. Guardrails control the content of model interactions — they decide what the model can say, what topics are off limits, what PII can flow through. IAM controls who can call the Bedrock API at all. An attacker who has the IAM permission <code>bedrock:InvokeModel</code> can call the model without specifying your Guardrail ARN — completely bypassing the content controls. Or they could call a different model ID. IAM is the gatekeeper for API access; Guardrails are the content safety layer for legitimate application traffic. You need both. Guardrails should be thought of the same way you think about WAF rules: they add a control layer, but they assume the underlying access controls (IAM, network) are already properly configured.</div>
+      </div>
+
+      <!-- FAQ 8 -->
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>What actually happens if I use one shared Lambda execution role across all my functions? The exam keeps flagging this as wrong, but in practice it seems like it works fine.</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>It works fine right up until it does not. The blast radius problem is not visible in your monitoring dashboards — it shows up the moment one function is compromised through a dependency vulnerability, event injection, or code flaw. A shared role turns a single-function compromise into a full account-wide lateral movement opportunity. The attacker calls AWS APIs using the shared role and can access every resource that role touches: all the S3 buckets, all the DynamoDB tables, all the secrets. With per-function roles, a compromised function can only access what it specifically needs. Lambda functions are intentionally single-purpose — there is rarely a legitimate reason to share a role. The operational overhead of maintaining separate roles is small; the security benefit is real and measurable.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ RESOURCES ═══ -->
+<section class="scene" id="s-resources">
+  <div class="ambient-blob" style="width:450px;height:450px;background:var(--c-gov);top:-80px;right:-130px;animation-delay:-19s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Study Resources</div>
+    <h2 class="kinetic">Go Deeper on What Matters</h2>
+    <p>Official AWS documentation for the concepts in this module, plus recommended paid resources for exam practice. All links verified as of the SCS-C03 December 2025 blueprint.</p>
+
+    <div class="resource-grid reveal">
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>EC2 Instance Metadata and IMDSv2</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Official EC2 documentation covering the metadata service, IMDSv1 vs IMDSv2 comparison, and how to enforce IMDSv2 at instance and organization level.</p>
+        <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>Systems Manager Session Manager</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Complete documentation on Session Manager — setup, IAM permissions, session logging, and audit configuration. Covers how it replaces SSH bastion hosts.</p>
+        <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>Amazon ECS Task IAM Roles</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Explains how ECS task roles work, how to define them in task definitions, and how they differ from EC2 instance roles for least-privilege IAM on containers.</p>
+        <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>EKS IAM Roles for Service Accounts (IRSA)</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Full IRSA documentation — OIDC provider setup, service account annotation, IAM role trust policy configuration, and testing pod-level IAM credential isolation.</p>
+        <a href="https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Direct Connect User Guide</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Covers connection types, encryption options (MACsec), BGP configuration, and failover patterns. The encryption section is essential reading for the Direct Connect gotcha.</p>
+        <a href="https://docs.aws.amazon.com/directconnect/latest/UserGuide/Welcome.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>VPC Endpoints (Gateway and Interface)</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Complete VPC endpoint documentation covering gateway vs interface endpoints, endpoint policies, DNS configuration, and route table considerations.</p>
+        <a href="https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>Amazon Bedrock Guardrails</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Official Bedrock Guardrails documentation — content filters, PII redaction, denied topics, and how to apply guardrails to Bedrock API invocations. New content for SCS-C03.</p>
+        <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>ECR Image Scanning with Amazon Inspector</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Covers enhanced scanning setup, continuous vs on-push scanning, vulnerability finding severity levels, and EventBridge integration for automated remediation workflows.</p>
+        <a href="https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html" target="_blank" rel="noopener">Read documentation →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Security Best Practices Whitepaper</h4>
+        <span class="source">aws.amazon.com/whitepapers</span>
+        <p>Foundational whitepaper covering IAM, infrastructure security, and data protection best practices. Reinforces the shared responsibility and defense-in-depth concepts from this module.</p>
+        <a href="https://aws.amazon.com/whitepapers/introduction-to-aws-security/" target="_blank" rel="noopener">Read whitepaper →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Tutorials Dojo SCS-C03 Practice Exams</h4>
+        <span class="source">tutorialsdojo.com</span>
+        <p>Highly regarded practice question sets for the AWS Security Specialty. Questions closely match the exam style, with detailed explanations. Excellent for validating understanding of infrastructure security topics.</p>
+        <a href="https://tutorialsdojo.com" target="_blank" rel="noopener">Visit Tutorials Dojo →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Adrian Cantrill AWS Security Specialty Course</h4>
+        <span class="source">learn.cantrill.io</span>
+        <p>Known for visual, architecture-first teaching style. The VPC and hybrid connectivity sections are particularly strong for building mental models of how Direct Connect and VPC endpoints actually work.</p>
+        <a href="https://learn.cantrill.io" target="_blank" rel="noopener">Visit learn.cantrill.io →</a>
+      </div>
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Stephane Maarek / Neal Davis — AWS Security Specialty</h4>
+        <span class="source">udemy.com</span>
+        <p>Udemy-based courses with comprehensive coverage of the SCS-C03 exam domains. Good for supplementary practice questions and video-format reinforcement of container and serverless security topics.</p>
+        <a href="https://www.udemy.com" target="_blank" rel="noopener">Search on Udemy →</a>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ═══════════════════════════════════════════ CLOSING ═══ -->
+<section class="scene" id="s-close">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-infra);top:-100px;right:-160px;animation-delay:-7s;"></div>
+  <div class="scene-inner">
+    <div class="scene-eyebrow">Module Complete · What Is Next</div>
+    <h2 class="kinetic">You Have Hardened the Path. Now Protect the Data.</h2>
+    <p style="font-size:1.05rem;color:var(--text);line-height:1.8;">Everything covered in this module — IMDSv2, Session Manager, task roles, IRSA, Direct Connect encryption, VPC endpoints — has been about controlling access and hardening the paths data travels. You have secured the compute it runs on, the connections it moves through, and the permissions that govern what it can touch.</p>
+    <p>Module 7 is the second domain shift of this course. We move from Domain 3 (Infrastructure Security) into Domain 5 (Data Protection). The question changes from "who can reach this resource?" to "if every other control fails and an attacker has the data, can they read it?" That is the encryption question — and it starts with AWS KMS.</p>
+
+    <div class="info-card reveal" style="margin:32px 0;border-left:3px solid var(--c-infra);">
+      <h3 style="margin-bottom:12px;">What Module 7 Covers</h3>
+      <p style="margin-bottom:8px;"><strong>KMS Key Architecture</strong> — symmetric vs asymmetric keys, AWS managed keys vs customer managed keys vs customer-provided keys, and when each is the right choice.</p>
+      <p style="margin-bottom:8px;"><strong>Key Policies &amp; Grants</strong> — how KMS access control works, how key policies interact with IAM policies, and how grants delegate time-limited access without modifying the key policy.</p>
+      <p style="margin-bottom:0;"><strong>Envelope Encryption</strong> — the pattern that underpins nearly every AWS encryption service, how data keys work, and why you never encrypt large data directly with a KMS key.</p>
+    </div>
+
+    <div class="nav-footer">
+      <a href="module-05-network-edge.html" class="nav-footer-link">
+        <span class="nfl-dir">← Previous</span>
+        <span class="nfl-title">Module 05: Network &amp; Edge Security</span>
+      </a>
+      <a href="module-07-encryption.html" class="nav-footer-link next">
+        <span class="nfl-dir">Next →</span>
+        <span class="nfl-title">Module 07: Encryption Foundations: KMS, Key Policies &amp; Grants</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">SCS-C03 Certification Course · Module 06 of 16</span>
+    <span class="footer-domain">Domain 3 — Infrastructure Security</span>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════ JAVASCRIPT ═══ -->
+<script>
+(function(){
+  "use strict";
+
+  /* ── Theme toggle ── */
+  var html = document.documentElement;
+  html.style.colorScheme = html.getAttribute("data-theme") === "light" ? "light" : "dark";
+  var themeBtn = document.getElementById("themeToggle");
+  themeBtn.addEventListener("click", function(){
+    var next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    html.setAttribute("data-theme", next);
+    html.style.colorScheme = next;
+    themeBtn.textContent = next === "dark" ? "☀ Light" : "☾ Dark";
+  });
+
+  /* ── Scroll progress ── */
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrolled = h.scrollTop;
+    var height = h.scrollHeight - h.clientHeight;
+    var pct = height > 0 ? (scrolled / height) * 100 : 0;
+    document.getElementById("scrollProgress").style.width = pct + "%";
+  }
+  document.addEventListener("scroll", function(){ requestAnimationFrame(updateProgress); });
+
+  /* ── Kinetic headings ── */
+  function wrapKinetic(el, text){
+    var words = text.split(" ");
+    el.innerHTML = words.map(function(w, i){
+      return "<span class=\"kw\"><span class=\"kw-inner\" style=\"transition-delay:" + (i * 45) + "ms\">" + w + "</span></span>";
+    }).join(" ");
+  }
+  document.querySelectorAll("h2.kinetic").forEach(function(h){ wrapKinetic(h, h.textContent.trim()); });
+
+  var kIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.35 });
+  document.querySelectorAll("h2.kinetic").forEach(function(h){ kIo.observe(h); });
+
+  /* ── Reveal / stagger ── */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+
+  document.querySelectorAll(".stagger > *").forEach(function(el, i){
+    el.style.transitionDelay = (i * 90) + "ms";
+  });
+  var sIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add("in"); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll(".stagger").forEach(function(el){ sIo.observe(el); });
+
+  /* ── Stat count-up ── */
+  document.querySelectorAll(".stat-num").forEach(function(el){
+    new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(!entry.isIntersecting || el.dataset.done) return;
+        el.dataset.done = "1";
+        var target = parseInt(el.dataset.target, 10);
+        var start = performance.now(), duration = 1100;
+        function tick(now){
+          var p = Math.min((now - start) / duration, 1);
+          el.textContent = (el.dataset.prefix || "") + Math.round((1 - Math.pow(1 - p, 3)) * target) + (el.dataset.suffix || "");
+          if(p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.4 }).observe(el);
+  });
+
+  /* ── Rail nav ── */
+  var railScenes = [
+    { id:"s-hero",       label:"Overview" },
+    { id:"s-ec2",        label:"EC2 Security" },
+    { id:"s-ssm",        label:"Systems Manager" },
+    { id:"s-containers", label:"Containers" },
+    { id:"s-lambda",     label:"Lambda" },
+    { id:"s-hybrid",     label:"Hybrid Connectivity" },
+    { id:"s-privatelink",label:"PrivateLink" },
+    { id:"s-vpc-diagram",label:"VPC Decision" },
+    { id:"s-bedrock",    label:"Bedrock" },
+    { id:"s-irsa",       label:"IRSA Diagram" },
+    { id:"s-exercise",   label:"Exercise" },
+    { id:"s-traps",      label:"Traps" },
+    { id:"s-exam",       label:"Mock Exam" },
+    { id:"s-faq",        label:"FAQ" },
+    { id:"s-resources",  label:"Resources" },
+    { id:"s-close",      label:"Closing" }
+  ];
+  var rail = document.getElementById("rail");
+  railScenes.forEach(function(scene, idx){
+    var dot = document.createElement("div");
+    dot.className = "rail-dot";
+    dot.setAttribute("tabindex","0");
+    dot.setAttribute("role","button");
+    dot.setAttribute("aria-label", "Go to " + scene.label);
+    dot.title = scene.label;
+    dot.addEventListener("click", function(){
+      var target = document.getElementById(scene.id);
+      if(target) target.scrollIntoView({ behavior:"smooth" });
+    });
+    dot.addEventListener("keydown", function(e){
+      if(e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        var target = document.getElementById(scene.id);
+        if(target) target.scrollIntoView({ behavior:"smooth" });
+      }
+    });
+    rail.appendChild(dot);
+  });
+
+  var dots = rail.querySelectorAll(".rail-dot");
+  var railIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var idx = railScenes.findIndex(function(s){ return s.id === e.target.id; });
+        if(idx >= 0){
+          dots.forEach(function(d){ d.classList.remove("active"); });
+          if(dots[idx]) dots[idx].classList.add("active");
+        }
+      }
+    });
+  }, { threshold: 0.3 });
+  railScenes.forEach(function(scene){
+    var el = document.getElementById(scene.id);
+    if(el) railIo.observe(el);
+  });
+
+  /* ── Tilt cards + magnetic buttons ── */
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(!reduceMotion){
+    document.querySelectorAll(".tilt").forEach(function(card){
+      card.addEventListener("mousemove", function(e){
+        var rect = card.getBoundingClientRect();
+        var px = (e.clientX - rect.left) / rect.width - 0.5;
+        var py = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = "perspective(600px) rotateX(" + (py * -6) + "deg) rotateY(" + (px * 6) + "deg) translateY(-2px)";
+      });
+      card.addEventListener("mouseleave", function(){
+        card.style.transform = "perspective(600px) rotateX(0) rotateY(0)";
+      });
+    });
+    document.querySelectorAll(".magnetic").forEach(function(btn){
+      btn.addEventListener("mousemove", function(e){
+        var rect = btn.getBoundingClientRect();
+        var x = e.clientX - rect.left - rect.width / 2;
+        var y = e.clientY - rect.top - rect.height / 2;
+        btn.style.transform = "translate(" + (x * 0.18) + "px," + (y * 0.35) + "px)";
+      });
+      btn.addEventListener("mouseleave", function(){
+        btn.style.transform = "translate(0,0)";
+      });
+    });
+  }
+
+  /* ── Discussion FAQ ── */
+  document.querySelectorAll(".discussion-pair").forEach(function(pair){
+    var q = pair.querySelector(".bubble-q");
+    if(q) q.addEventListener("click", function(){ pair.classList.toggle("open"); });
+  });
+
+  /* ── Trap cards ── */
+  window.toggleTrap = function(card){
+    card.classList.toggle("open");
+  };
+
+  /* ── Scenario reveal ── */
+  window.toggleReveal = function(btn){
+    var card = btn.closest(".scenario-card");
+    var reveal = card.querySelector(".scenario-reveal");
+    if(!reveal) return;
+    var isOpen = reveal.classList.contains("open");
+    reveal.classList.toggle("open");
+    btn.textContent = isOpen ? "Reveal Fix & Reasoning ›" : "Hide Reasoning ›";
+  };
+
+  /* ── Mindnode (generic inline expand) ── */
+  window.toggleNodeInfo = function(el){
+    var info = el.querySelector(".node-info");
+    if(!info) return;
+    info.classList.toggle("open");
+  };
+
+  /* ── Matrix row expand ── */
+  window.toggleMatrix = function(row){
+    var detail = row.nextElementSibling;
+    if(!detail) return;
+    var inner = detail.querySelector(".matrix-detail");
+    if(!inner) return;
+    var isOpen = inner.classList.contains("open");
+    document.querySelectorAll(".matrix-detail.open").forEach(function(d){ d.classList.remove("open"); });
+    if(!isOpen) inner.classList.add("open");
+  };
+
+  /* ── VPC decision flow ── */
+  window.flowGo = function(stepId){
+    document.querySelectorAll(".flow-step").forEach(function(s){ s.classList.remove("active"); });
+    var target = document.getElementById(stepId);
+    if(target) target.classList.add("active");
+  };
+
+  /* ── Bedrock flow steps ── */
+  window.toggleBfStep = function(step){
+    var isActive = step.classList.contains("active");
+    document.querySelectorAll(".bf-step").forEach(function(s){ s.classList.remove("active"); });
+    if(!isActive) step.classList.add("active");
+  };
+
+  /* ── Exam scoring ── */
+  var examScore = 0;
+  var examAnswered = 0;
+  var totalQ = 12;
+  document.getElementById("scoreTotal").textContent = totalQ;
+
+  function updateScore(){
+    document.getElementById("scoreNum").textContent = examScore;
+    var pct = examAnswered > 0 ? Math.round((examScore / totalQ) * 100) : 0;
+    var fill = document.getElementById("scoreFill");
+    var label = document.getElementById("scorePercent");
+    fill.style.width = (examAnswered / totalQ * 100) + "%";
+    if(examAnswered === totalQ){
+      label.textContent = pct + "% — " + (pct >= 80 ? "Excellent work!" : pct >= 70 ? "Almost there — review the misses." : "Review this module and retry.");
+    } else {
+      label.textContent = pct + "% so far";
+    }
+  }
+
+  window.checkAnswer = function(btn, qName, correctVal, qNum){
+    var opts = document.getElementById("opts" + qNum);
+    var reasoning = document.getElementById("r" + qNum);
+    var qCard = document.getElementById("qc" + qNum);
+    if(!opts || btn.disabled) return;
+
+    var selected = opts.querySelector("input[name=\"" + qName + "\"]:checked");
+    if(!selected){
+      btn.textContent = "Select an answer first";
+      setTimeout(function(){ btn.textContent = "Check Answer"; }, 1500);
+      return;
+    }
+
+    btn.disabled = true;
+    examAnswered++;
+
+    var labels = opts.querySelectorAll(".option-label");
+    labels.forEach(function(lbl){
+      var input = lbl.querySelector("input");
+      lbl.style.pointerEvents = "none";
+      if(input && input.value === correctVal){
+        lbl.classList.add("correct-ans");
+      } else if(input && input.checked){
+        lbl.classList.add("wrong-ans");
+      }
+    });
+
+    if(selected.value === correctVal){
+      examScore++;
+      qCard.classList.add("correct");
+      btn.textContent = "✓ Correct";
+    } else {
+      qCard.classList.add("wrong");
+      btn.textContent = "✗ Incorrect";
+    }
+
+    if(reasoning) reasoning.classList.add("open");
+    updateScore();
+  };
+
+})();
+</script>
+</body>
+</html>

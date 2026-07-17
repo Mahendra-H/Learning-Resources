@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 14: Cross-Domain Scenario Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grain-opacity: 0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg: rgba(10,14,26,0.72);
+  --node-glow: rgba(76,134,255,0.28);
+  --overlay: rgba(4,6,14,0.6);
+  --grid-line: rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme: dark; }
+html[data-theme="light"]{
+  color-scheme: light;
+  --grain-opacity: 0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow: 0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg: rgba(246,247,251,0.72);
+  --node-glow: rgba(47,111,237,0.20);
+  --overlay: rgba(20,26,40,0.35);
+  --grid-line: rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth; background:var(--bg); scroll-padding-top:100px;}
+body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden; margin:0;}
+.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); }
+footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); }
+@media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
+
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity, 0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1,h2,h3{ font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; }
+h2{ font-weight:700; font-size:clamp(1.8rem, 4vw, 2.6rem); }
+h3{ font-weight:600; }
+.eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.14em; color:var(--accent); display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.eyebrow::before{ content:''; width:28px; height:1px; background:var(--accent); display:inline-block; }
+.content-col{ max-width:840px; margin:0 auto; position:relative; z-index:1; }
+p{ line-height:1.75; }
+
+/* nav */
+.topnav{ position:fixed; top:0; left:0; right:0; z-index:120; background:var(--nav-bg); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
+.topnav .brand{ font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--text-dim); letter-spacing:0.05em; }
+.topnav .brand strong{ color:var(--text); }
+.theme-toggle{ background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:8px 16px; color:var(--text); font-family:'JetBrains Mono', monospace; font-size:12px; cursor:pointer; }
+
+#scrollProgress{ position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:300; transition:width .08s linear; }
+
+.ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
+@keyframes driftBlob{ 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(4%,-6%) scale(1.08);} 100%{transform:translate(-5%,4%) scale(0.96);} }
+
+.kw{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em;}
+.kw-inner{display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+
+.title-card{ min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; padding:40px; }
+.title-card h2{ font-size:clamp(2.2rem, 7vw, 5.4rem); line-height:1.1; font-weight:700; }
+.title-card .eyebrow{ justify-content:center; }
+.scanbeam{ position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg, transparent, rgba(76,134,255,0.14), transparent); animation:scanSweep 6s linear infinite; }
+@keyframes scanSweep{ 0%{top:-140px;} 100%{top:100%;} }
+
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .8s ease, transform .8s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+.stagger > *{opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease, transform .6s ease;}
+.stagger.in > *{opacity:1; transform:translateY(0) scale(1);}
+
+.rail{ position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px; }
+.rail-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease, transform .3s ease; position:relative; }
+.rail-dot.active{ background:var(--accent); border-color:var(--accent); transform:scale(1.3); }
+.rail-dot .rail-label{ position:absolute; right:20px; top:50%; transform:translateY(-50%); white-space:nowrap; font-family:'JetBrains Mono', monospace; font-size:10.5px; background:var(--surface-raised); border:1px solid var(--line); padding:4px 10px; border-radius:6px; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+.rail-dot:hover .rail-label{ opacity:1; }
+@media (max-width:900px){ .rail{display:none;} }
+
+.drawer-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px); }
+.drawer-overlay.open{ opacity:1; pointer-events:auto; }
+.bottom-sheet-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.bottom-sheet-overlay.open{ opacity:1; pointer-events:auto; }
+.bottom-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:201; background:var(--surface-raised); border-top:1px solid var(--line); border-radius:20px 20px 0 0; padding:32px 40px 40px; transform:translateY(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); max-width:760px; margin:0 auto; box-shadow:0 -20px 60px rgba(0,0,0,0.35); max-height:80vh; overflow-y:auto; }
+.bottom-sheet.open{ transform:translateY(0); }
+.sheet-close{ background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 14px; color:var(--text-dim); font-family:'JetBrains Mono', monospace; font-size:11px; cursor:pointer; float:right; }
+.sheet-journey{ display:flex; flex-direction:column; gap:16px; margin-top:20px; clear:both; }
+.sheet-journey .stage{ border-left:2px solid var(--accent-dim); padding-left:16px; }
+.sheet-journey .stage h5{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent); margin-bottom:4px; }
+.sheet-journey .stage p{ font-size:0.9rem; color:var(--text-dim); }
+
+.mentor-aside{ background:var(--surface); border-left:3px solid var(--accent); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0; }
+.mentor-aside::before{ content:'🛡️ MENTOR NOTE'; display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--accent); margin-bottom:8px; }
+.mentor-aside p{ font-size:0.94rem; color:var(--text); line-height:1.7; font-style:italic; margin:0; }
+
+.mindnode{ cursor:pointer; }
+.node-info{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:0; }
+.node-info.open{ max-height:320px; opacity:1; margin-top:14px; padding:16px 20px; }
+
+.discussion{ display:flex; flex-direction:column; gap:22px; margin-top:36px; }
+.discussion-pair{ display:flex; flex-direction:column; gap:10px; }
+.bubble{ max-width:82%; padding:16px 20px; border-radius:18px; font-size:0.95rem; line-height:1.65; }
+.bubble-q{ align-self:flex-start; background:var(--surface); border:1px solid var(--line); border-bottom-left-radius:4px; cursor:pointer; transition:border-color .2s ease; display:flex; flex-direction:column; }
+.bubble-q:hover{ border-color:var(--accent); }
+.bubble-q .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.bubble-q .chev{ margin-left:auto; transition:transform .25s ease; font-size:12px; color:var(--text-dim); }
+.discussion-pair.open .bubble-q .chev{ transform:rotate(90deg); color:var(--accent); }
+.bubble-a{ align-self:flex-end; background:var(--accent-dim); border-bottom-right-radius:4px; max-height:0; overflow:hidden; opacity:0; padding:0 20px; transition:max-height .45s ease, opacity .35s ease, padding .35s ease; }
+.discussion-pair.open .bubble-a{ max-height:600px; opacity:1; padding:16px 20px; }
+.bubble-a .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:block; text-align:right; }
+
+.resource-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:36px; }
+.resource-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; position:relative; transition:border-color .2s ease, transform .15s ease; }
+.resource-card:hover{ border-color:var(--accent-dim); transform:translateY(-2px); }
+.resource-pill{ position:absolute; top:20px; right:20px; font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px; }
+.resource-pill.free{ background:var(--c-gov-dim); color:var(--green); }
+.resource-pill.paid{ background:var(--c-detect-dim); color:var(--amber); }
+.resource-card h4{ font-size:1rem; padding-right:70px; margin-bottom:8px; }
+.resource-card .source{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+.resource-card p{ font-size:0.88rem; color:var(--text-dim); line-height:1.6; }
+.resource-card a{ display:inline-block; margin-top:14px; font-size:0.85rem; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+@media (max-width:720px){ .resource-grid{grid-template-columns:1fr;} }
+
+/* Case File component */
+.case-file{
+  background:var(--surface); border:1px solid var(--line); border-radius:18px;
+  padding:0; margin-top:36px; box-shadow:var(--shadow); overflow:hidden;
+}
+.case-file-header{
+  padding:24px 32px; border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px;
+}
+.case-file-num{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.1em; }
+.case-file-title{ font-family:'Space Grotesk', sans-serif; font-size:1.4rem; font-weight:700; }
+.case-file-tags{ display:flex; gap:8px; flex-wrap:wrap; }
+.case-file-tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; padding:5px 11px; border-radius:999px; text-transform:uppercase; letter-spacing:0.04em; }
+.case-file-body{ padding:28px 32px; }
+.case-file-narrative{ font-size:0.98rem; line-height:1.75; color:var(--text); }
+.attack-path{ display:flex; flex-wrap:wrap; gap:10px; margin:22px 0; align-items:center; }
+.attack-step{ background:var(--surface-raised); border:1px solid var(--line); border-radius:10px; padding:10px 16px; font-family:'JetBrains Mono', monospace; font-size:12px; cursor:pointer; transition:border-color .2s ease; }
+.attack-step:hover{ border-color:var(--accent); }
+.attack-arrow{ color:var(--text-dim); font-size:14px; }
+.investigate-choices{ margin-top:24px; display:flex; flex-direction:column; gap:10px; }
+.investigate-choice{
+  border:1px solid var(--line); border-radius:10px; padding:14px 18px; cursor:pointer;
+  font-size:0.92rem; transition:border-color .2s ease, background .2s ease;
+}
+.investigate-choice:hover{ border-color:var(--accent); }
+.investigate-choice.picked{ border-color:var(--accent); background:var(--accent-dim); }
+.choice-feedback{
+  max-height:0; overflow:hidden; opacity:0; font-size:0.85rem; color:var(--text-dim);
+  transition:max-height .3s ease, opacity .3s ease, margin .3s ease;
+}
+.choice-feedback.open{ max-height:200px; opacity:1; margin-top:8px; padding:10px 14px; background:var(--surface-raised); border-radius:8px; }
+.case-file-reveal{
+  margin-top:24px; padding-top:24px; border-top:1px dashed var(--line);
+  max-height:0; overflow:hidden; opacity:0; transition:max-height .5s ease, opacity .4s ease;
+}
+.case-file-reveal.open{ max-height:1600px; opacity:1; }
+.reveal-block{ margin-bottom:20px; }
+.reveal-block h5{ font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent); margin-bottom:8px; }
+.reveal-block p{ font-size:0.92rem; color:var(--text-dim); line-height:1.7; }
+.btn{ background:var(--accent); color:#fff; border:none; border-radius:999px; padding:12px 26px; font-family:'JetBrains Mono', monospace; font-size:12.5px; cursor:pointer; letter-spacing:0.03em; }
+.btn.ghost{ background:transparent; border:1px solid var(--line); color:var(--text); }
+
+/* triage grid */
+.triage-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:32px; }
+.triage-card{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+.triage-card .symptom{ font-size:0.9rem; margin-bottom:10px; }
+.triage-opts{ display:flex; flex-wrap:wrap; gap:8px; }
+.triage-opt{ font-family:'JetBrains Mono', monospace; font-size:11px; border:1px solid var(--line); border-radius:8px; padding:6px 10px; cursor:pointer; background:var(--surface-raised); }
+.triage-opt.correct{ border-color:var(--green); color:var(--green); }
+.triage-opt.wrong{ border-color:var(--c-ir); color:var(--c-ir); opacity:.6; }
+.triage-note{ font-size:0.82rem; color:var(--text-dim); margin-top:8px; display:none; }
+.triage-note.show{ display:block; }
+@media (max-width:720px){ .triage-grid{grid-template-columns:1fr;} }
+
+/* integration drill */
+.drill-q{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 26px; margin-top:20px; }
+.drill-q .qnum{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; }
+.drill-opts{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+.drill-opt{ border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:0.88rem; cursor:pointer; }
+.drill-opt.correct{ border-color:var(--green); background:var(--c-gov-dim); }
+.drill-opt.incorrect{ border-color:var(--c-ir); background:var(--c-ir-dim); }
+.drill-reasoning{ display:none; margin-top:14px; padding:14px 16px; background:var(--surface-raised); border-radius:8px; font-size:0.86rem; color:var(--text-dim); }
+.drill-reasoning.show{ display:block; }
+.score-tracker{ position:sticky; top:80px; z-index:5; background:var(--surface-raised); border:1px solid var(--line); border-radius:999px; padding:10px 20px; display:inline-flex; gap:10px; font-family:'JetBrains Mono', monospace; font-size:12px; margin-bottom:10px; }
+
+.prevnext{ display:flex; justify-content:space-between; margin-top:40px; gap:16px; flex-wrap:wrap; }
+.prevnext a{ color:var(--accent); text-decoration:none; font-family:'JetBrains Mono', monospace; font-size:12.5px; border:1px solid var(--line); border-radius:999px; padding:10px 20px; }
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress"></div>
+<nav class="topnav">
+  <div class="brand">SCS-C03 · <strong>Module 14</strong> — Cross-Domain Scenario Lab</div>
+  <button class="theme-toggle" id="themeToggle">☾ DARK</button>
+</nav>
+<div class="rail" id="rail"></div>
+<main id="main">
+
+<section class="scene" id="scene-bridge">
+  <div class="ambient-blob" style="width:420px; height:420px; top:10%; left:-10%; background:var(--accent);"></div>
+  <div class="content-col">
+    <div class="eyebrow reveal">MODULE 14 — OPENING BRIEFING</div>
+    <h2 class="kinetic reveal">Everything so far learned its own lane. That ends here.</h2>
+    <p class="reveal">Modules 1 through 13 each went deep on one domain, or a closely related pair, at a time. IAM had its own module. Encryption had its own module. Detection, governance, incident response — each got a clean, isolated block of your attention. That was necessary. You cannot reason about a messy multi-domain incident until you deeply understand each of the pieces first.</p>
+    <p class="reveal">But real incidents do not announce which domain they belong to, and neither does the real exam. A single SCS-C03 scenario question routinely touches three services from three different domains in one paragraph, and your job is to find the one fact that actually resolves the question — not the two that are just scenery. That skill has not been tested directly anywhere in this course yet. It is tested here.</p>
+    <div class="mentor-aside reveal">
+      <p>Notice how often an exam question names three services but only one of them is actually the point. The other two are there to see if you will chase them. This module is where you build the instinct to tell the difference.</p>
+    </div>
+    <p class="reveal">Ahead: six full Case Files, each a realistic multi-domain incident. You will investigate, find findings, uncover root cause, and identify the fix — the same motion, six times, across every combination of domains the exam favors. Then a thread convergence map, a rapid-fire triage drill, and a dense integration exam to close it out.</p>
+  </div>
+</section>
+
+<section class="scene" id="cf1">
+  <div class="ambient-blob" style="width:460px; height:460px; top:6%; right:-8%; background:var(--c-iam);"></div>
+  <div class="content-col">
+    <div class="eyebrow">CASE FILE 01 OF 06</div>
+    <h2 class="kinetic">The Leaky Function</h2>
+    <div class="case-file reveal">
+      <div class="case-file-header">
+        <div>
+          <div class="case-file-num">Incident CF-01</div>
+          <div class="case-file-title">The Leaky Function</div>
+        </div>
+        <div class="case-file-tags">
+          <span class="case-file-tag" style="background:var(--c-iam-dim); color:var(--c-iam);">IAM · Domain 4</span>
+          <span class="case-file-tag" style="background:var(--c-data-dim); color:var(--c-data);">Data Protection · Domain 5</span>
+          <span class="case-file-tag" style="background:var(--c-detect-dim); color:var(--c-detect);">Detection · Domain 1</span>
+        </div>
+      </div>
+      <div class="case-file-body">
+        <p class="case-file-narrative">03:12 UTC. An automated alert fires from GuardDuty: an unusual volume of GetObject calls against a data-processing S3 bucket, originating from a Lambda execution role that has never touched that bucket before at this volume. On-call pulls the thread. The function is a nightly billing-reconciliation job, six months old, last touched by a departed contractor. Its execution role was scoped, at creation time, with <code>s3:*</code> on <code>arn:aws:s3:::*</code> — a wildcard grant nobody ever revisited, because the job worked and nobody had a reason to look at the role again. Somewhere between the last deploy and tonight, the function was compromised through a vulnerable dependency and used to enumerate and exfiltrate objects from a bucket the reconciliation job was never supposed to touch.</p>
+
+        <div class="attack-path">
+          <div class="mindnode attack-step" data-node="cf1-1" tabindex="0" role="button" aria-label="Expand step: role created wide">Role created wide, Module 2</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf1-2" tabindex="0" role="button" aria-label="Expand step: function compromised">Function compromised, Module 6</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf1-3" tabindex="0" role="button" aria-label="Expand step: bucket enumerated and read">Bucket enumerated, read</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf1-4" tabindex="0" role="button" aria-label="Expand step: GuardDuty fires after the fact">GuardDuty fires, Module 10</div>
+        </div>
+        <div class="node-info" id="info-cf1-1"><p style="margin:0;">At creation, the role was granted broad S3 permissions "to be safe" — a shortcut that skips the least-privilege modeling Module 2 covers. No resource-level scoping, no condition keys, no expectation that the role's blast radius would ever be tested.</p></div>
+        <div class="node-info" id="info-cf1-2"><p style="margin:0;">A vulnerable third-party library in the function's deployment package (Module 6's workload-hardening territory) gave an attacker remote code execution inside the function's runtime, which meant the attacker inherited the role's live temporary credentials automatically.</p></div>
+        <div class="node-info" id="info-cf1-3"><p style="margin:0;">With those credentials, the attacker had no need to escalate privilege — the role already had far more S3 reach than the job needed, so a simple <code>ListBuckets</code> plus <code>GetObject</code> loop was enough to find and pull sensitive records.</p></div>
+        <div class="node-info" id="info-cf1-4"><p style="margin:0;">GuardDuty correctly flagged the anomalous access pattern — but only after objects were already gone. Detection did its job. It just was not the layer that should have carried the weight here.</p></div>
+
+        <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
+        <div class="investigate-choices">
+          <div class="investigate-choice" data-feedback="cf1-a">A. Pull CloudTrail data events for the affected bucket to see the exact API calls made</div>
+          <div class="choice-feedback" id="fb-cf1-a">Efficient. Data events show you precisely what was read, when, and from where — the fastest path to scoping the actual damage before you do anything else.</div>
+          <div class="investigate-choice" data-feedback="cf1-b">B. Review the Lambda function's execution role policy in IAM</div>
+          <div class="choice-feedback" id="fb-cf1-b">Valid, but slower as a first move. You will get here eventually to explain the "how," but it does not tell you what was actually taken — start with the data events, then come back to the role.</div>
+          <div class="investigate-choice" data-feedback="cf1-c">C. Check GuardDuty finding details for the source IP and geolocation of the calls</div>
+          <div class="choice-feedback" id="fb-cf1-c">Useful supporting context, but attribution rarely changes your immediate containment or scoping decisions — treat this as a parallel thread, not the critical path.</div>
+          <div class="investigate-choice" data-feedback="cf1-d">D. Redeploy the Lambda function immediately from a clean artifact</div>
+          <div class="choice-feedback" id="fb-cf1-d">Premature. Redeploying before you have scoped the blast radius risks destroying the evidence you need for the findings and root-cause phases — contain access first, redeploy after.</div>
+        </div>
+
+        <button class="btn ghost magnetic" data-reveal-toggle="cf1">See the full resolution</button>
+        <div class="case-file-reveal" id="reveal-cf1">
+          <div class="reveal-block"><h5>Findings</h5><p>CloudTrail data events confirm roughly 40 minutes of sustained <code>GetObject</code> calls against a bucket containing customer billing records, none of which the reconciliation job had ever accessed in its six-month history. The source is the function's own execution role, invoked through a crafted event that triggered the vulnerable dependency's code path.</p></div>
+          <div class="reveal-block"><h5>Root Cause</h5><p>The execution role was never scoped to least privilege at creation time. A wildcard S3 grant meant that once the function itself was compromised, there was no permission boundary left to stop the attacker from reaching a completely unrelated bucket.</p></div>
+          <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Module 2's least-privilege modeling — resource-scoped policies naming the exact bucket ARN the job needs, nothing wider — would have contained this to a single, harmless bucket the attacker had no use for, regardless of whether the function itself was ever compromised. Prevention at role-creation time is dramatically cheaper than detection after the data is gone: GuardDuty did its job in Module 10, but it is the last line of defense, not the first.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="title-card" id="scene-title">
+  <div class="scanbeam"></div>
+  <div class="eyebrow">SIX CASE FILES · SIX DOMAINS · ONE SKILL</div>
+  <h2>NOTHING STAYS<br>IN ITS LANE.</h2>
+</section>
+
+<section class="scene" id="cf2">
+  <div class="ambient-blob" style="width:460px; height:460px; top:8%; left:-10%; background:var(--c-data);"></div>
+  <div class="content-col">
+    <div class="eyebrow">CASE FILE 02 OF 06</div>
+    <h2 class="kinetic">The Public Bucket Nobody Noticed</h2>
+    <div class="case-file reveal">
+      <div class="case-file-header">
+        <div>
+          <div class="case-file-num">Incident CF-02</div>
+          <div class="case-file-title">The Public Bucket Nobody Noticed</div>
+        </div>
+        <div class="case-file-tags">
+          <span class="case-file-tag" style="background:var(--c-data-dim); color:var(--c-data);">Data Protection · Domain 5</span>
+          <span class="case-file-tag" style="background:var(--c-gov-dim); color:var(--c-gov);">Governance · Domain 6</span>
+          <span class="case-file-tag" style="background:var(--c-infra-dim); color:var(--c-infra);">Infrastructure · Domain 3</span>
+        </div>
+      </div>
+      <div class="case-file-body">
+        <p class="case-file-narrative">A marketing team, migrating assets ahead of a campaign launch, applies a bucket policy meant to make a handful of static images public. A copy-paste error in the policy scope leaves an entire bucket — including an export of customer survey responses someone left there "temporarily" four months earlier — readable by anyone with the URL. Nobody notices for eleven weeks, until a routine external security researcher scan reports it. There was no alert, no automatic block, nothing in the account that would have made this structurally impossible. It was simply possible, and eventually someone found it.</p>
+
+        <div class="attack-path">
+          <div class="mindnode attack-step" data-node="cf2-1" tabindex="0" role="button" aria-label="Expand step">Bucket policy misconfigured</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf2-2" tabindex="0" role="button" aria-label="Expand step">Sensitive export left in bucket</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf2-3" tabindex="0" role="button" aria-label="Expand step">No org-wide guardrail existed</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf2-4" tabindex="0" role="button" aria-label="Expand step">External researcher discovers exposure</div>
+        </div>
+        <div class="node-info" id="info-cf2-1"><p style="margin:0;">The policy statement scoped its <code>Principal: "*"</code> grant to the bucket rather than a specific prefix, a mistake that a stricter review process would likely have caught, but nothing in the account enforced that review.</p></div>
+        <div class="node-info" id="info-cf2-2"><p style="margin:0;">Macie (Module 8) was never enabled on this bucket specifically — it had been scoped only to the buckets the security team knew about, and this one was created outside that inventory.</p></div>
+        <div class="node-info" id="info-cf2-3"><p style="margin:0;">No Resource Control Policy existed at the organization level to make public bucket access structurally impossible account-wide, regardless of what any individual bucket policy said (Module 3's RCP mechanism).</p></div>
+        <div class="node-info" id="info-cf2-4"><p style="margin:0;">An external researcher, not an internal control, is what ultimately surfaced the exposure — the most expensive and reputationally risky way for a company to learn about its own misconfiguration.</p></div>
+
+        <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
+        <div class="investigate-choices">
+          <div class="investigate-choice" data-feedback="cf2-a">A. Immediately apply S3 Block Public Access at the account level</div>
+          <div class="choice-feedback" id="fb-cf2-a">Efficient as an immediate containment step — it stops the bleeding in seconds while the rest of the investigation continues in parallel.</div>
+          <div class="investigate-choice" data-feedback="cf2-b">B. Run Macie now against the bucket to classify what was exposed</div>
+          <div class="choice-feedback" id="fb-cf2-b">Valid and necessary, but slower as the very first move — you want access closed before you spend time classifying what was already open.</div>
+          <div class="investigate-choice" data-feedback="cf2-c">C. Check CloudTrail data events for GetObject calls from external IPs during the exposure window</div>
+          <div class="choice-feedback" id="fb-cf2-c">Valid, and eventually necessary to scope actual damage, but it does not stop ongoing exposure — pair it with, not instead of, closing the bucket first.</div>
+          <div class="investigate-choice" data-feedback="cf2-d">D. Draft the customer notification before confirming what was actually exposed</div>
+          <div class="choice-feedback" id="fb-cf2-d">Premature. Notification decisions should follow, not precede, a factual understanding of scope — acting on assumption here creates its own risk.</div>
+        </div>
+
+        <button class="btn ghost magnetic" data-reveal-toggle="cf2">See the full resolution</button>
+        <div class="case-file-reveal" id="reveal-cf2">
+          <div class="reveal-block"><h5>Findings</h5><p>CloudTrail data events show a modest but real number of anonymous GetObject calls against the survey-response export over the eleven-week window, consistent with automated internet-wide scanning rather than a single targeted actor — still a genuine exposure requiring notification review.</p></div>
+          <div class="reveal-block"><h5>Root Cause</h5><p>Three independent layers all had a chance to prevent this and none of them were in place: Macie was not scoped to this bucket, so it never classified the sensitive content; no RCP existed at the org level to make public access structurally impossible regardless of bucket policy; and no continuous compliance check (Module 12) was watching for public buckets account-wide.</p></div>
+          <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>An RCP applied at the organization root, per Module 3, would have made this specific exposure structurally impossible no matter what any individual bucket policy said — the guardrail sits above the mistake, not reliant on any one team getting it right. Module 12's governance guardrails, applied consistently, are the throughline here: prevention through structural constraint beats detection through scanning, every time cost and blast radius are compared.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="cf3">
+  <div class="ambient-blob" style="width:460px; height:460px; top:8%; right:-10%; background:var(--c-infra);"></div>
+  <div class="content-col">
+    <div class="eyebrow">CASE FILE 03 OF 06</div>
+    <h2 class="kinetic">The Instance That Went Quiet, Then Loud</h2>
+    <div class="case-file reveal">
+      <div class="case-file-header">
+        <div>
+          <div class="case-file-num">Incident CF-03</div>
+          <div class="case-file-title">The Instance That Went Quiet, Then Loud</div>
+        </div>
+        <div class="case-file-tags">
+          <span class="case-file-tag" style="background:var(--c-infra-dim); color:var(--c-infra);">Infrastructure · Domain 3</span>
+          <span class="case-file-tag" style="background:var(--c-gov-dim); color:var(--c-gov);">Governance · Domain 6</span>
+          <span class="case-file-tag" style="background:var(--c-ir-dim); color:var(--c-ir);">Incident Response · Domain 2</span>
+        </div>
+      </div>
+      <div class="case-file-body">
+        <p class="case-file-narrative">An EC2 instance running a legacy internal tool has IMDSv1 still enabled, no session-hop protection on its metadata service. An SSRF vulnerability in the tool lets an attacker request the instance's temporary credentials directly through the metadata endpoint — no exploit sophistication required, just a well-known path against a workload that was never hardened. The credentials work. The attacker uses them to enumerate the account, then attempts to assume a role in a second, more sensitive member account in the organization. That attempt fails outright. The attacker's next several attempts also fail. The instance stays compromised, but the damage stops expanding.</p>
+
+        <div class="attack-path">
+          <div class="mindnode attack-step" data-node="cf3-1" tabindex="0" role="button" aria-label="Expand step">IMDSv1 exposed via SSRF</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf3-2" tabindex="0" role="button" aria-label="Expand step">Instance credentials stolen</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf3-3" tabindex="0" role="button" aria-label="Expand step">Cross-account pivot attempted</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf3-4" tabindex="0" role="button" aria-label="Expand step">SCP blocks the pivot</div>
+        </div>
+        <div class="node-info" id="info-cf3-1"><p style="margin:0;">Module 6's workload-hardening guidance calls for enforcing IMDSv2, which requires a session token obtained via a PUT request — something a simple SSRF vulnerability typically cannot replicate. That single setting was never enforced here.</p></div>
+        <div class="node-info" id="info-cf3-2"><p style="margin:0;">With IMDSv1 reachable, the SSRF flaw let the attacker request the instance role's temporary credentials as plain GET requests, no additional token required.</p></div>
+        <div class="node-info" id="info-cf3-3"><p style="margin:0;">The attacker's playbook assumed that stolen instance credentials would grant broader organizational reach, a common and often correct assumption — one this account's guardrails happened to defeat.</p></div>
+        <div class="node-info" id="info-cf3-4"><p style="margin:0;">An SCP on the target account explicitly denied <code>sts:AssumeRole</code> from outside a defined allow-list of trusted principals, per Module 3 — the attacker's credentials were valid, but the destination account structurally refused the assumption.</p></div>
+
+        <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
+        <div class="investigate-choices">
+          <div class="investigate-choice" data-feedback="cf3-a">A. Isolate the compromised instance and revoke its current credentials</div>
+          <div class="choice-feedback" id="fb-cf3-a">Efficient. Cutting off the compromised principal immediately, per Module 11's containment playbook, stops any further use of the stolen credentials while you investigate everything else.</div>
+          <div class="investigate-choice" data-feedback="cf3-b">B. Review CloudTrail for the failed AssumeRole attempts to confirm what the SCP actually blocked</div>
+          <div class="choice-feedback" id="fb-cf3-b">Valid and genuinely useful for scoping, but slower as the very first move — isolate the live threat before you spend time confirming what a control already stopped.</div>
+          <div class="investigate-choice" data-feedback="cf3-c">C. Audit every SCP in the organization to see if similar gaps exist elsewhere</div>
+          <div class="choice-feedback" id="fb-cf3-c">Important follow-up work, but far too broad for a first move during active containment — this belongs in the post-incident phase, not the opening minutes.</div>
+          <div class="investigate-choice" data-feedback="cf3-d">D. Patch the SSRF vulnerability in the application code</div>
+          <div class="choice-feedback" id="fb-cf3-d">Necessary eventually, but the live credential compromise takes priority — a code fix does nothing about credentials already in an attacker's hands right now.</div>
+        </div>
+
+        <button class="btn ghost magnetic" data-reveal-toggle="cf3">See the full resolution</button>
+        <div class="case-file-reveal" id="reveal-cf3">
+          <div class="reveal-block"><h5>Findings</h5><p>CloudTrail confirms the stolen instance credentials made several <code>AssumeRole</code> calls against a role ARN in a separate, more sensitive member account, all of which were denied. No successful pivot occurred; the compromise remained confined to the original instance and its immediate blast radius.</p></div>
+          <div class="reveal-block"><h5>Root Cause</h5><p>Workload hardening failed at the network and metadata-service layer — IMDSv1 being reachable is precisely the kind of defense-in-depth gap Module 6 and Module 5 warn about. That said, defense-in-depth means a failure at one layer should not become a failure of the whole environment, and here it did not.</p></div>
+          <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Enforcing IMDSv2 account-wide (Module 6) would have prevented the credential theft outright and should be the immediate remediation. Just as importantly, this case shows why defense-in-depth (Module 1, Module 5) is the whole point: a hardening failure at the workload layer was caught by a completely different, independent layer — the SCP-based governance guardrail (Module 3) — which is exactly what blast-radius minimization (Module 11's thread) is designed to achieve even when an earlier layer fails.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="cf4">
+  <div class="ambient-blob" style="width:460px; height:460px; top:8%; left:-10%; background:var(--c-iam);"></div>
+  <div class="content-col">
+    <div class="eyebrow">CASE FILE 04 OF 06</div>
+    <h2 class="kinetic">The Vendor Who Was Not Supposed to Have This Access</h2>
+    <div class="case-file reveal">
+      <div class="case-file-header">
+        <div>
+          <div class="case-file-num">Incident CF-04</div>
+          <div class="case-file-title">The Vendor Who Was Not Supposed to Have This Access</div>
+        </div>
+        <div class="case-file-tags">
+          <span class="case-file-tag" style="background:var(--c-iam-dim); color:var(--c-iam);">IAM/Federation · Domain 4</span>
+          <span class="case-file-tag" style="background:var(--c-detect-dim); color:var(--c-detect);">Detection · Domain 1</span>
+          <span class="case-file-tag" style="background:var(--c-ir-dim); color:var(--c-ir);">Incident Response · Domain 2</span>
+        </div>
+      </div>
+      <div class="case-file-body">
+        <p class="case-file-narrative">A third-party monitoring vendor is granted cross-account access through a standard assume-role trust relationship — a common, legitimate pattern from Module 4. The trust policy names the vendor's account as the trusted principal, but omits an external ID condition. Months later, GuardDuty flags an unusual role-assumption pattern: the vendor's role is being assumed from an API pattern that does not match its usual monitoring cadence. Investigation reveals the role ARN was obtained by an unrelated party — a different, unrelated customer of the same vendor — who used it to assume the role directly, impersonating the vendor's own service.</p>
+
+        <div class="attack-path">
+          <div class="mindnode attack-step" data-node="cf4-1" tabindex="0" role="button" aria-label="Expand step">Cross-account trust set up without external ID</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf4-2" tabindex="0" role="button" aria-label="Expand step">Role ARN obtained by unrelated party</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf4-3" tabindex="0" role="button" aria-label="Expand step">Role assumed by attacker</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf4-4" tabindex="0" role="button" aria-label="Expand step">GuardDuty flags the assumption pattern</div>
+        </div>
+        <div class="node-info" id="info-cf4-1"><p style="margin:0;">The trust policy correctly named the vendor's AWS account ID as the trusted principal, per Module 4's cross-account federation pattern, but skipped the external ID condition that binds the trust to a specific customer relationship rather than the account as a whole.</p></div>
+        <div class="node-info" id="info-cf4-2"><p style="margin:0;">Role ARNs are not secrets by design — they are frequently visible in vendor documentation, support tickets, or shared tooling across the vendor's entire customer base, which is exactly why the external ID exists as a second factor.</p></div>
+        <div class="node-info" id="info-cf4-3"><p style="margin:0;">Because the trust policy trusted the account without requiring the external ID, any principal inside that account — including a completely different customer's automation — could successfully call <code>sts:AssumeRole</code> against it.</p></div>
+        <div class="node-info" id="info-cf4-4"><p style="margin:0;">GuardDuty's anomaly detection on role-assumption patterns (Module 10) caught the mismatch between expected and actual usage — this is the classic confused-deputy problem, caught here by behavioral detection rather than by the missing structural control.</p></div>
+
+        <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
+        <div class="investigate-choices">
+          <div class="investigate-choice" data-feedback="cf4-a">A. Immediately update the trust policy to require an external ID and rotate it</div>
+          <div class="choice-feedback" id="fb-cf4-a">Efficient, but slightly ahead of the evidence — you want to confirm the scope of what was accessed under the misassumed role before you change the trust relationship out from under an active investigation.</div>
+          <div class="investigate-choice" data-feedback="cf4-b">B. Pull CloudTrail for every action taken under the assumed role during the suspicious sessions</div>
+          <div class="choice-feedback" id="fb-cf4-b">Efficient. This tells you exactly what the unauthorized party did with the access before you decide how aggressively to contain and remediate — the right first move under Module 11's playbook.</div>
+          <div class="investigate-choice" data-feedback="cf4-c">C. Contact the vendor to ask whether they recognize the access pattern</div>
+          <div class="choice-feedback" id="fb-cf4-c">Valid as a parallel step, but the vendor cannot tell you what happened inside your own account — your own CloudTrail data is the authoritative source, not their statement.</div>
+          <div class="investigate-choice" data-feedback="cf4-d">D. Disable the vendor role entirely without further investigation</div>
+          <div class="choice-feedback" id="fb-cf4-d">A valid containment option, but premature as a first move if it is done without checking what the legitimate vendor integration actually depends on — you risk breaking real monitoring coverage on the same incident you are trying to resolve.</div>
+        </div>
+
+        <button class="btn ghost magnetic" data-reveal-toggle="cf4">See the full resolution</button>
+        <div class="case-file-reveal" id="reveal-cf4">
+          <div class="reveal-block"><h5>Findings</h5><p>CloudTrail confirms the unauthorized party's assumed-role sessions were limited to read-only monitoring-scope API calls consistent with the role's designed permission set — no destructive or exfiltration actions occurred, but the trust boundary itself was clearly violated.</p></div>
+          <div class="reveal-block"><h5>Root Cause</h5><p>This is the confused-deputy problem, textbook: a cross-account trust relationship that authenticated based on account identity alone, with no second factor tying the trust to a specific, unique customer relationship.</p></div>
+          <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>An external ID, unique to this specific customer relationship and required as a condition in the trust policy (Module 4), would have made this exact attack path structurally impossible — the unrelated party would have needed a secret they never had, not just an ARN they could see. GuardDuty (Module 10) and the incident response playbook (Module 11) did their jobs well here, but this is a case where the Module 4 control, correctly applied at setup time, removes the need for detection to catch it at all.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="cf5">
+  <div class="ambient-blob" style="width:460px; height:460px; top:8%; right:-10%; background:var(--c-data);"></div>
+  <div class="content-col">
+    <div class="eyebrow">CASE FILE 05 OF 06</div>
+    <h2 class="kinetic">The Key Policy That Was Too Permissive, Discovered Too Late</h2>
+    <div class="case-file reveal">
+      <div class="case-file-header">
+        <div>
+          <div class="case-file-num">Incident CF-05</div>
+          <div class="case-file-title">The Key Policy That Was Too Permissive, Discovered Too Late</div>
+        </div>
+        <div class="case-file-tags">
+          <span class="case-file-tag" style="background:var(--c-data-dim); color:var(--c-data);">Data Protection · Domain 5</span>
+          <span class="case-file-tag" style="background:var(--c-gov-dim); color:var(--c-gov);">Governance · Domain 6</span>
+        </div>
+      </div>
+      <div class="case-file-body">
+        <p class="case-file-narrative">A customer-managed KMS key protects a sensitive analytics dataset. Everyone on the team is confident in the setup — encryption at rest is enabled everywhere, the dashboards are green, and "encryption everywhere" has become the team's shorthand for "we are covered." Nobody has actually re-read the key policy since it was written eight months ago. It turns out the key policy grants <code>kms:Decrypt</code> to a role condition that is broader than intended, a leftover from an early testing phase that was never tightened once the dataset went to production. No breach has occurred. A routine Config conformance pack evaluation, run as part of Module 13's continuous compliance cadence, flags the key policy as non-compliant during a scheduled check — weeks before anyone else would have noticed.</p>
+
+        <div class="attack-path">
+          <div class="mindnode attack-step" data-node="cf5-1" tabindex="0" role="button" aria-label="Expand step">Key policy written broad during testing</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf5-2" tabindex="0" role="button" aria-label="Expand step">Encryption assumed to equal protection</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf5-3" tabindex="0" role="button" aria-label="Expand step">Config conformance pack evaluates the key</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf5-4" tabindex="0" role="button" aria-label="Expand step">Finding surfaces before any breach</div>
+        </div>
+        <div class="node-info" id="info-cf5-1"><p style="margin:0;">Module 7's key-policy modeling calls for the same least-privilege discipline as IAM policies — decrypt permission scoped to exactly the roles that need it — but the testing-phase grant was never revisited once the workload matured.</p></div>
+        <div class="node-info" id="info-cf5-2"><p style="margin:0;">"Encrypted" answers the question of whether data is unreadable in storage or transit; it says nothing about who is permitted to decrypt it. That second question lives entirely in the key policy and grants, not the encryption algorithm.</p></div>
+        <div class="node-info" id="info-cf5-3"><p style="margin:0;">A Config conformance pack, evaluated on a recurring schedule per Module 13, checks key policies against an organizational rule set — in this case, a rule requiring decrypt permissions to be scoped to an explicit, reviewed role list.</p></div>
+        <div class="node-info" id="info-cf5-4"><p style="margin:0;">The finding surfaces during routine compliance review, not during incident response — the best possible timing, since it means the gap is closed before anyone with malicious intent ever has a chance to exploit it.</p></div>
+
+        <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
+        <div class="investigate-choices">
+          <div class="investigate-choice" data-feedback="cf5-a">A. Pull the full key policy and identify exactly which principals currently have decrypt access</div>
+          <div class="choice-feedback" id="fb-cf5-a">Efficient. This is the direct source of truth — you need the exact scope of the finding before deciding what to tighten or who to notify.</div>
+          <div class="investigate-choice" data-feedback="cf5-b">B. Check CloudTrail for any Decrypt calls made under the overly broad grant</div>
+          <div class="choice-feedback" id="fb-cf5-b">Valid and important, but slightly secondary — you first want the policy scope itself, then you check whether the excess access was ever actually used.</div>
+          <div class="investigate-choice" data-feedback="cf5-c">C. Re-run the entire Config conformance pack against every key in the account</div>
+          <div class="choice-feedback" id="fb-cf5-c">A reasonable follow-up action for broader assurance, but slower as the very first move on this specific finding — resolve the flagged key first, then widen the check.</div>
+          <div class="investigate-choice" data-feedback="cf5-d">D. Rotate the KMS key immediately</div>
+          <div class="choice-feedback" id="fb-cf5-d">Not the efficient move here — key rotation changes the underlying key material, but the actual problem is the policy grant, not the key itself. Rotating does not fix an overly permissive policy.</div>
+        </div>
+
+        <button class="btn ghost magnetic" data-reveal-toggle="cf5">See the full resolution</button>
+        <div class="case-file-reveal" id="reveal-cf5">
+          <div class="reveal-block"><h5>Findings</h5><p>The key policy's decrypt statement matches a role-name wildcard pattern left over from a testing convention, which resolves to several roles far beyond the analytics team's production access boundary — none of which had actually invoked Decrypt in practice, based on CloudTrail history.</p></div>
+          <div class="reveal-block"><h5>Root Cause</h5><p>Encryption everywhere, the thread introduced in Module 1 and built out in Module 7, gave the team a false sense of complete coverage. The cryptographic control was sound; the access-control layer governing who could actually decrypt was never tightened once the workload left its testing phase.</p></div>
+          <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Scoping the key policy's decrypt grant to an explicit, minimal role list (Module 7) closes the gap directly. More broadly, this case is the strongest possible illustration of why continuous compliance (Module 13) matters even when nothing has gone wrong yet — a scheduled conformance pack check found what eight months of manual confidence missed, and it found it before a breach, not after one.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="cf6">
+  <div class="ambient-blob" style="width:460px; height:460px; top:8%; left:-10%; background:var(--c-detect);"></div>
+  <div class="content-col">
+    <div class="eyebrow">CASE FILE 06 OF 06</div>
+    <h2 class="kinetic">The DDoS That Became a WAF Bypass Attempt</h2>
+    <div class="case-file reveal">
+      <div class="case-file-header">
+        <div>
+          <div class="case-file-num">Incident CF-06</div>
+          <div class="case-file-title">The DDoS That Became a WAF Bypass Attempt</div>
+        </div>
+        <div class="case-file-tags">
+          <span class="case-file-tag" style="background:var(--c-infra-dim); color:var(--c-infra);">Infrastructure · Domain 3</span>
+          <span class="case-file-tag" style="background:var(--c-ir-dim); color:var(--c-ir);">Incident Response · Domain 2</span>
+          <span class="case-file-tag" style="background:var(--c-detect-dim); color:var(--c-detect);">Detection · Domain 1</span>
+        </div>
+      </div>
+      <div class="case-file-body">
+        <p class="case-file-narrative">A public-facing application behind Shield Advanced and a Regional WAF absorbs a volumetric Layer 3/4 flood attempting to knock the service offline. Shield Advanced's automatic mitigations handle it cleanly — traffic is absorbed, the origin never feels the spike, and on-call barely notices. Twenty minutes after the flood subsides, request patterns shift: instead of raw volume, the traffic becomes a slow, methodical series of crafted requests probing specific WAF rule groups, clearly searching for a gap the ruleset does not cover. The volumetric attack was noise. This second phase is the actual objective — the attacker was testing which defenses would trigger DRT engagement and which rule gaps they could use once the obvious front door was closed to them.</p>
+
+        <div class="attack-path">
+          <div class="mindnode attack-step" data-node="cf6-1" tabindex="0" role="button" aria-label="Expand step">Volumetric flood begins</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf6-2" tabindex="0" role="button" aria-label="Expand step">Shield Advanced absorbs it automatically</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf6-3" tabindex="0" role="button" aria-label="Expand step">Traffic pattern shifts to WAF probing</div>
+          <span class="attack-arrow">→</span>
+          <div class="mindnode attack-step" data-node="cf6-4" tabindex="0" role="button" aria-label="Expand step">GuardDuty correlates the two phases as one campaign</div>
+        </div>
+        <div class="node-info" id="info-cf6-1"><p style="margin:0;">Module 5's Shield content covers exactly this profile — a Layer 3/4 volumetric event designed to exhaust bandwidth or connection state rather than exploit application logic.</p></div>
+        <div class="node-info" id="info-cf6-2"><p style="margin:0;">Shield Advanced's always-on detection and automatic mitigation absorbed the flood without manual intervention, which is precisely the service's design intent for this attack class.</p></div>
+        <div class="node-info" id="info-cf6-3"><p style="margin:0;">Once the volumetric approach failed to achieve impact, the same source infrastructure pivoted to low-and-slow, application-layer requests deliberately structured to test individual WAF rule groups for coverage gaps.</p></div>
+        <div class="node-info" id="info-cf6-4"><p style="margin:0;">GuardDuty's extended threat detection (Module 10) correlated the timing and source overlap between the two phases, surfacing them as a single multi-stage campaign rather than two unrelated events — exactly the kind of signal correlation the real exam rewards recognizing.</p></div>
+
+        <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
+        <div class="investigate-choices">
+          <div class="investigate-choice" data-feedback="cf6-a">A. Review WAF logs for the specific rule groups being probed during the second phase</div>
+          <div class="choice-feedback" id="fb-cf6-a">Efficient. This tells you exactly which rule gaps the attacker is testing, letting you close them proactively before any request actually gets through.</div>
+          <div class="investigate-choice" data-feedback="cf6-b">B. Engage the Shield Response Team (DRT) even though the volumetric phase is already resolved</div>
+          <div class="choice-feedback" id="fb-cf6-b">Valid and often correct as parallel escalation, but on its own it addresses the phase that already ended — the active probing needs the WAF log review as the immediate next step regardless.</div>
+          <div class="investigate-choice" data-feedback="cf6-c">C. Assume the incident is over once the volumetric traffic stops</div>
+          <div class="choice-feedback" id="fb-cf6-c">This is the trap the case file is built around — the volumetric phase ending is not the same as the incident ending, and treating it as resolved is exactly how the second phase goes unnoticed.</div>
+          <div class="investigate-choice" data-feedback="cf6-d">D. Add broad rate-limiting rules across the entire WAF without reviewing what is actually being probed</div>
+          <div class="choice-feedback" id="fb-cf6-d">A valid instinct but imprecise as a first move — untargeted rate limiting risks blocking legitimate traffic while still missing the specific rule gap the attacker found, since it does not come from reviewing the actual probe logs.</div>
+        </div>
+
+        <button class="btn ghost magnetic" data-reveal-toggle="cf6">See the full resolution</button>
+        <div class="case-file-reveal" id="reveal-cf6">
+          <div class="reveal-block"><h5>Findings</h5><p>WAF logs show a concentrated series of crafted requests targeting a custom rule group that had not been updated since the application's last major release, consistent with a scripted rule-gap scan rather than manual exploration.</p></div>
+          <div class="reveal-block"><h5>Root Cause</h5><p>The volumetric flood and the WAF probing were not two separate incidents but one multi-stage campaign — the flood was a diversion or a first test of defenses, and the probing was the actual objective once the obvious path failed. Treating the volumetric event as the whole incident would have left the real threat unaddressed.</p></div>
+          <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Updating the stale custom rule group and engaging Shield Advanced's DRT for expert review (Module 5) closes this specific gap. The lasting lesson, per Module 11's incident response process, is treating attack phases as connected rather than resolving each in isolation — GuardDuty's cross-signal correlation (Module 10) is what made the connection visible here, and recognizing multi-stage attacks as a pattern is exactly the reasoning the real exam is testing when a scenario spans two seemingly unrelated events.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-threadmap">
+  <div class="ambient-blob" style="width:500px; height:500px; top:6%; right:-12%; background:var(--accent);"></div>
+  <div class="content-col">
+    <div class="eyebrow">CONVERGENCE</div>
+    <h2 class="kinetic">Six threads. Six case files. Watch them meet.</h2>
+    <p class="reveal">Five of the six cross-cutting threads from this course converge directly in the Case Files above — only shared responsibility sits this one out, saved for Module 15's capstone. Click each thread below to trace its full journey: where it was first introduced, where it was reinforced, and exactly how this module tested it at depth.</p>
+
+    <svg viewBox="0 0 700 460" style="width:100%; max-width:640px; display:block; margin:32px auto 0;" aria-label="Thread convergence hub and spoke diagram">
+      <circle cx="350" cy="230" r="54" fill="var(--surface-raised)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="350" y="225" text-anchor="middle" fill="var(--text)" font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700">MODULE 14</text>
+      <text x="350" y="242" text-anchor="middle" fill="var(--text-dim)" font-family="JetBrains Mono, monospace" font-size="9.5">CONVERGENCE</text>
+
+      <g class="mindnode thread-node" data-thread="least-privilege" tabindex="0" role="button" aria-label="Least privilege thread">
+        <line x1="350" y1="230" x2="140" y2="70" stroke="var(--c-iam)" stroke-width="2" opacity="0.5"/>
+        <circle cx="140" cy="70" r="42" fill="var(--c-iam-dim)" stroke="var(--c-iam)" stroke-width="2"/>
+        <text x="140" y="66" text-anchor="middle" fill="var(--c-iam)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">LEAST</text>
+        <text x="140" y="79" text-anchor="middle" fill="var(--c-iam)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">PRIVILEGE</text>
+      </g>
+
+      <g class="mindnode thread-node" data-thread="defense-in-depth" tabindex="0" role="button" aria-label="Defense in depth thread">
+        <line x1="350" y1="230" x2="580" y2="90" stroke="var(--c-infra)" stroke-width="2" opacity="0.5"/>
+        <circle cx="580" cy="90" r="42" fill="var(--c-infra-dim)" stroke="var(--c-infra)" stroke-width="2"/>
+        <text x="580" y="86" text-anchor="middle" fill="var(--c-infra)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">DEFENSE</text>
+        <text x="580" y="99" text-anchor="middle" fill="var(--c-infra)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">IN DEPTH</text>
+      </g>
+
+      <g class="mindnode thread-node" data-thread="encryption" tabindex="0" role="button" aria-label="Encryption everywhere thread">
+        <line x1="350" y1="230" x2="620" y2="260" stroke="var(--c-data)" stroke-width="2" opacity="0.5"/>
+        <circle cx="620" cy="260" r="42" fill="var(--c-data-dim)" stroke="var(--c-data)" stroke-width="2"/>
+        <text x="620" y="256" text-anchor="middle" fill="var(--c-data)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">ENCRYPTION</text>
+        <text x="620" y="269" text-anchor="middle" fill="var(--c-data)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">EVERYWHERE</text>
+      </g>
+
+      <g class="mindnode thread-node" data-thread="shared-responsibility" tabindex="0" role="button" aria-label="Shared responsibility thread, not tested this module">
+        <line x1="350" y1="230" x2="480" y2="400" stroke="var(--text-dim)" stroke-width="2" opacity="0.35" stroke-dasharray="4 4"/>
+        <circle cx="480" cy="400" r="42" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+        <text x="480" y="396" text-anchor="middle" fill="var(--text-dim)" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">SHARED</text>
+        <text x="480" y="409" text-anchor="middle" fill="var(--text-dim)" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">RESP.</text>
+      </g>
+
+      <g class="mindnode thread-node" data-thread="multi-account" tabindex="0" role="button" aria-label="Multi account architecture thread">
+        <line x1="350" y1="230" x2="220" y2="400" stroke="var(--c-gov)" stroke-width="2" opacity="0.5"/>
+        <circle cx="220" cy="400" r="42" fill="var(--c-gov-dim)" stroke="var(--c-gov)" stroke-width="2"/>
+        <text x="220" y="396" text-anchor="middle" fill="var(--c-gov)" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">MULTI-</text>
+        <text x="220" y="409" text-anchor="middle" fill="var(--c-gov)" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">ACCOUNT</text>
+      </g>
+
+      <g class="mindnode thread-node" data-thread="blast-radius" tabindex="0" role="button" aria-label="Blast radius minimization thread">
+        <line x1="350" y1="230" x2="80" y2="270" stroke="var(--c-ir)" stroke-width="2" opacity="0.5"/>
+        <circle cx="80" cy="270" r="42" fill="var(--c-ir-dim)" stroke="var(--c-ir)" stroke-width="2"/>
+        <text x="80" y="266" text-anchor="middle" fill="var(--c-ir)" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">BLAST</text>
+        <text x="80" y="279" text-anchor="middle" fill="var(--c-ir)" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">RADIUS</text>
+      </g>
+    </svg>
+
+    <div class="mentor-aside reveal">
+      <p>Shared responsibility is deliberately absent from this map. Not every thread needs testing at every stage — the course is saving its final depth test for Module 15's capstone, where it belongs alongside a full domain review.</p>
+    </div>
+  </div>
+</section>
+
+<div class="bottom-sheet-overlay" id="threadSheetOverlay"></div>
+<div class="bottom-sheet" id="threadSheet">
+  <button class="sheet-close" id="threadSheetClose">CLOSE ✕</button>
+  <h3 id="threadSheetTitle">Thread</h3>
+  <div class="sheet-journey" id="threadSheetBody"></div>
+</div>
+
+<section class="scene" id="scene-triage">
+  <div class="ambient-blob" style="width:440px; height:440px; top:8%; left:-10%; background:var(--c-detect);"></div>
+  <div class="content-col">
+    <div class="eyebrow">RAPID-FIRE DRILL</div>
+    <h2 class="kinetic">What do you check first?</h2>
+    <p class="reveal">Ten quick-hit scenarios, faster and shallower than the Case Files above — this mirrors real exam pacing far more than deep investigation does. Read the symptom, pick where you would look first, then check yourself.</p>
+
+    <div class="triage-grid stagger">
+      <div class="triage-card">
+        <div class="symptom"><strong>1.</strong> An IAM role's trust policy shows a successful AssumeRole from an IP range nobody recognizes.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="CloudTrail confirms exactly who assumed the role, when, and what they did next — the direct source of truth.">CloudTrail role-assumption events</div>
+          <div class="triage-opt" data-note="Useful later, but the trust policy syntax is not usually the anomaly here — the event history is.">Trust policy JSON syntax</div>
+          <div class="triage-opt" data-note="Billing data will not tell you anything about an authentication anomaly.">Cost Explorer usage spikes</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>2.</strong> A GuardDuty finding reports credential exfiltration from an EC2 instance role.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="You need the finding's own detail panel first — it tells you the specific API pattern and resource involved before you go anywhere else.">GuardDuty finding details</div>
+          <div class="triage-opt" data-note="A reasonable second step, but you want the finding's specifics before pulling raw logs.">Raw VPC Flow Logs</div>
+          <div class="triage-opt" data-note="Config tracks configuration drift, not active credential misuse.">AWS Config resource timeline</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>3.</strong> Macie reports a new finding of sensitive data in a bucket you did not know existed.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="Confirming the bucket's public/private posture is the fastest way to know if this is an active exposure or a contained finding.">Bucket policy and Block Public Access status</div>
+          <div class="triage-opt" data-note="Useful, but slower — cost tags do not tell you about exposure risk.">Bucket resource tags</div>
+          <div class="triage-opt" data-note="Not relevant to a data-classification finding.">EC2 security group rules</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>4.</strong> A Lambda function suddenly makes calls to a service it has never used before.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="The execution role's attached policies show you exactly what the function is permitted to do, and whether this new call was even supposed to be possible.">The function's execution role policy</div>
+          <div class="triage-opt" data-note="Useful for timeline building, but the permission scope is the more direct first question.">CloudWatch Logs Insights query on invocation duration</div>
+          <div class="triage-opt" data-note="Not directly relevant to an unexpected API call pattern.">Lambda concurrency limits</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>5.</strong> An SCP appears to be blocking a legitimate engineering workflow after a recent org policy change.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="The AWS Organizations policy simulator or the actual SCP JSON, checked against the specific denied action, tells you precisely what changed.">The SCP's JSON against the specific denied API call</div>
+          <div class="triage-opt" data-note="IAM permission boundaries are a different mechanism — check the actual SCP first.">The user's IAM permission boundary</div>
+          <div class="triage-opt" data-note="Billing alerts have nothing to do with a policy-based denial.">AWS Budgets alerts</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>6.</strong> A KMS key shows a spike in Decrypt calls from an unfamiliar role.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="CloudTrail data events for the key show exactly who called Decrypt and how often — the direct signal for this symptom.">CloudTrail data events for the key</div>
+          <div class="triage-opt" data-note="Rotation state does not explain who is decrypting or why.">The key's rotation schedule</div>
+          <div class="triage-opt" data-note="Not directly related to a decrypt-call anomaly.">VPC endpoint policies</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>7.</strong> A federated user reports they can access resources their assigned permission set should not allow.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="Permission sets in IAM Identity Center can be assigned at multiple account/group levels — check all assignments, not just the one you expect.">All permission set assignments for that user or group</div>
+          <div class="triage-opt" data-note="A likely eventual step, but not the fastest diagnostic for an over-permission report.">The identity provider's SAML assertion contents</div>
+          <div class="triage-opt" data-note="Session duration does not explain a scope mismatch.">Session duration settings</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>8.</strong> Shield Advanced reports a mitigated event, but application error rates are still elevated afterward.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="If volumetric mitigation succeeded but errors persist, the WAF logs are the next most likely place showing an application-layer issue.">WAF logs for the same time window</div>
+          <div class="triage-opt" data-note="Billing does not explain an ongoing application error rate.">Cost and Usage Report</div>
+          <div class="triage-opt" data-note="Not the first place to look for an application-layer symptom.">Route 53 health check history alone</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>9.</strong> A Config conformance pack flags a resource as non-compliant, with no active incident underway.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="The specific rule's non-compliance detail tells you exactly what condition failed and against which resource attribute.">The specific Config rule's non-compliance detail</div>
+          <div class="triage-opt" data-note="Not relevant unless the finding specifically involves a role.">The resource's IAM role trust policy by default</div>
+          <div class="triage-opt" data-note="A reasonable long-term action, not the first diagnostic step.">Scheduling a full manual security review</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+      <div class="triage-card">
+        <div class="symptom"><strong>10.</strong> An RCP change was deployed org-wide and several teams report broken S3 access immediately after.</div>
+        <div class="triage-opts">
+          <div class="triage-opt" data-correct="true" data-note="The RCP's exact deny conditions against the specific failing calls tells you precisely what the new guardrail is blocking, intentionally or not.">The RCP's deny conditions against the failing calls</div>
+          <div class="triage-opt" data-note="A bucket policy alone will not explain an org-wide RCP effect.">A single team's bucket policy</div>
+          <div class="triage-opt" data-note="Not the first place an RCP-related access failure would show up.">CloudFront cache behavior settings</div>
+        </div>
+        <div class="triage-note"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-drill">
+  <div class="ambient-blob" style="width:460px; height:460px; top:6%; right:-10%; background:var(--accent);"></div>
+  <div class="content-col">
+    <div class="eyebrow">INTEGRATION DRILL — THIS MODULE'S MOCK EXAM</div>
+    <h2 class="kinetic">Thirteen questions. Every one crosses domains.</h2>
+    <p class="reveal">Denser than any single prior module's mock exam, deliberately. Every question below requires reasoning across at least two domains — exactly the density the real SCS-C03 exam favors. Pick an answer to reveal the reasoning and your running score.</p>
+
+    <div class="score-tracker reveal">SCORE: <span id="drillScore">0</span> / <span id="drillTotal">13</span></div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 01 of 13 — IAM + Data Protection</div>
+      <p>A Lambda function's execution role has a wildcard S3 grant, and the bucket it touches also has default SSE-KMS encryption with a customer-managed key. The key policy grants Decrypt broadly to the account root. Which single change most reduces the actual blast radius if the function is compromised?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. Enable S3 Versioning on the bucket</div>
+        <div class="drill-opt" data-correct="true">B. Scope the execution role's S3 permissions to the exact bucket ARN and required actions</div>
+        <div class="drill-opt">C. Increase the Lambda function's memory allocation</div>
+        <div class="drill-opt">D. Enable MFA delete on the bucket</div>
+      </div>
+      <div class="drill-reasoning">The KMS key policy is broad, but role compromise is the actual attack vector here — scoping the execution role itself (Module 2) directly limits what a compromised function can reach, regardless of the encryption layer. Versioning and MFA delete protect against deletion, not unauthorized read access.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 02 of 13 — Governance + Infrastructure</div>
+      <p>A security team wants every S3 bucket in every member account of an organization to be structurally prevented from ever becoming public, regardless of individual bucket policies written in the future. Which control achieves this?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. An SCP denying s3:PutBucketPolicy</div>
+        <div class="drill-opt" data-correct="true">B. A Resource Control Policy (RCP) applied at the organization root</div>
+        <div class="drill-opt">C. Enabling Macie in every account</div>
+        <div class="drill-opt">D. A Config rule that alerts after the fact</div>
+      </div>
+      <div class="drill-reasoning">RCPs (Module 3) act on the resource side and can structurally block public access regardless of what any bucket policy says — an SCP would only restrict the API call to write policies, not prevent unintended access itself. Macie and Config are detective, not preventive.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 03 of 13 — Federation + Detection</div>
+      <p>A vendor's cross-account role is being assumed at unusual times. Investigation shows the trust policy has no external ID. What is the most durable fix, and what would have surfaced the issue sooner?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. Rotate the vendor account's root credentials</div>
+        <div class="drill-opt" data-correct="true">B. Add an external ID condition to the trust policy; GuardDuty's anomaly detection is what actually surfaced the pattern</div>
+        <div class="drill-opt">C. Disable the vendor's IAM user</div>
+        <div class="drill-opt">D. Apply an SCP blocking all cross-account trust</div>
+      </div>
+      <div class="drill-reasoning">The external ID (Module 4) is the durable structural fix for confused-deputy trust issues. GuardDuty's behavioral detection (Module 10) is what actually caught the misuse in the first place — recognizing both halves of the answer is the point of this question.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 04 of 13 — Infrastructure + Incident Response</div>
+      <p>An EC2 instance's stolen credentials are used to attempt privilege escalation into a separate, more sensitive account, but the attempt fails. Which control most likely stopped it, and what is the correct immediate next containment step?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. A key policy; rotate the KMS key</div>
+        <div class="drill-opt" data-correct="true">B. An SCP restricting AssumeRole; isolate the compromised instance and revoke its credentials</div>
+        <div class="drill-opt">C. A WAF rule; update the rule group</div>
+        <div class="drill-opt">D. Macie; scope Macie to the instance's volumes</div>
+      </div>
+      <div class="drill-reasoning">SCPs (Module 3) can deny cross-account AssumeRole regardless of what the source credentials allow. Once that containment layer holds, the correct next move (Module 11) is isolating the still-compromised instance so the credentials cannot be reused elsewhere.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 05 of 13 — Data Protection + Governance</div>
+      <p>A KMS key policy has an overly broad Decrypt grant left over from testing. No breach has occurred yet. Which service is best positioned to catch this proactively, on an ongoing basis?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. GuardDuty</div>
+        <div class="drill-opt" data-correct="true">B. A Config conformance pack evaluating key policies on a recurring schedule</div>
+        <div class="drill-opt">C. Shield Advanced</div>
+        <div class="drill-opt">D. AWS WAF</div>
+      </div>
+      <div class="drill-reasoning">Config conformance packs (Module 13) evaluate configuration state continuously and can catch a policy misconfiguration before it is ever exploited — GuardDuty and Shield are built for active threat and volumetric-attack detection, not continuous configuration compliance.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 06 of 13 — Infrastructure + Detection</div>
+      <p>A volumetric DDoS event is auto-mitigated by Shield Advanced, and traffic patterns then shift to slow, structured requests against specific WAF rule groups. What does this pattern most likely represent?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. Two unrelated, coincidental events</div>
+        <div class="drill-opt" data-correct="true">B. A single multi-stage campaign, with the volumetric phase as a diversion or initial probe</div>
+        <div class="drill-opt">C. A false positive in Shield Advanced</div>
+        <div class="drill-opt">D. A misconfigured health check</div>
+      </div>
+      <div class="drill-reasoning">GuardDuty's extended threat detection (Module 10) is specifically designed to correlate signals like this over time — recognizing the shift as one connected campaign, not two isolated events, is the exact reasoning the real exam rewards.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 07 of 13 — IAM + Governance</div>
+      <p>A team wants to guarantee that no IAM principal in a specific member account can ever exceed a defined maximum session duration or a defined set of allowed services, regardless of any identity-based policy attached later. Which mechanism enforces this as an upper bound?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. A permissions boundary on each individual role</div>
+        <div class="drill-opt" data-correct="true">B. A Service Control Policy at the account or OU level</div>
+        <div class="drill-opt">C. A resource-based policy on each affected resource</div>
+        <div class="drill-opt">D. An IAM group policy</div>
+      </div>
+      <div class="drill-reasoning">SCPs (Module 3) set an account-wide or OU-wide ceiling that no identity-based policy can exceed, regardless of what is attached to any individual principal later. Permission boundaries operate per-principal, not account-wide, so they do not guarantee this for every current and future role.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 08 of 13 — Data Protection + Detection</div>
+      <p>Macie flags sensitive data in a bucket that is not publicly accessible, but a large number of GetObject calls come from an internal role with unusually broad reach. What is the most urgent first action?</p>
+      <div class="drill-opts">
+        <div class="drill-opt" data-correct="true">A. Review the role's actual permission scope and recent CloudTrail activity for this bucket</div>
+        <div class="drill-opt">B. Wait for a second Macie finding to confirm the pattern</div>
+        <div class="drill-opt">C. Enable S3 Block Public Access, which is already effectively in place</div>
+        <div class="drill-opt">D. Rotate the bucket's KMS key</div>
+      </div>
+      <div class="drill-reasoning">Since the bucket is not public, the risk is internal over-permissioning, not external exposure — reviewing the role's scope and its actual CloudTrail history (Modules 2 and 9) is the direct path to understanding whether this is legitimate access or lateral movement.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 09 of 13 — Incident Response + Infrastructure</div>
+      <p>During an active compromise, an engineer wants to redeploy a Lambda function from a clean artifact immediately, before pulling CloudTrail data events for the affected resources. Why is this the wrong sequence?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. Redeployment is always safe and should always happen first</div>
+        <div class="drill-opt" data-correct="true">B. Redeploying first risks destroying evidence needed to scope the actual damage and root cause</div>
+        <div class="drill-opt">C. Lambda functions cannot be redeployed during an active incident</div>
+        <div class="drill-opt">D. CloudTrail data events are unrelated to Lambda incidents</div>
+      </div>
+      <div class="drill-reasoning">Module 11's containment sequencing calls for scoping and preserving evidence before remediating the artifact itself — acting in the wrong order can erase the very data needed to understand what happened and confirm the fix actually addresses the root cause.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 10 of 13 — Governance + IAM</div>
+      <p>An organization wants continuous, automatic evidence that every account's IAM password policy meets a minimum standard, without manual quarterly review. Which combination of services fits best?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. GuardDuty and Shield Advanced</div>
+        <div class="drill-opt" data-correct="true">B. AWS Config rules bundled into a conformance pack, deployed org-wide</div>
+        <div class="drill-opt">C. IAM Access Analyzer alone, run manually each quarter</div>
+        <div class="drill-opt">D. CloudTrail Lake queries run manually</div>
+      </div>
+      <div class="drill-reasoning">Config conformance packs (Module 13) deployed org-wide give continuous, automatic compliance evidence without manual review cycles — GuardDuty and Shield address threats and DDoS, not configuration compliance, and manual quarterly review is exactly what the organization is trying to avoid.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 11 of 13 — Data Protection + Infrastructure</div>
+      <p>A team encrypts all data at rest with SSE-KMS and considers the dataset fully protected. A conformance pack later finds an overly broad Decrypt grant. What does this scenario primarily illustrate?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. SSE-KMS does not actually encrypt data at rest</div>
+        <div class="drill-opt" data-correct="true">B. Encryption alone does not guarantee access control — the key policy governs who can actually decrypt</div>
+        <div class="drill-opt">C. Config conformance packs cannot evaluate KMS keys</div>
+        <div class="drill-opt">D. GuardDuty should have caught this instead</div>
+      </div>
+      <div class="drill-reasoning">This is the encryption-everywhere thread's core lesson (Module 7): encryption protects data at rest and in transit, but the key policy is a completely separate access-control surface that must be scoped independently.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 12 of 13 — Detection + Incident Response</div>
+      <p>GuardDuty raises a finding for unusual cross-account role assumption. Which action sequence best reflects a mature incident response process?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. Immediately delete the role and close the finding</div>
+        <div class="drill-opt" data-correct="true">B. Review CloudTrail for what the assumed role actually did, then contain and remediate the trust relationship</div>
+        <div class="drill-opt">C. Ignore the finding if no data was moved</div>
+        <div class="drill-opt">D. Escalate directly to law enforcement before internal review</div>
+      </div>
+      <div class="drill-reasoning">Module 11's incident response playbook calls for scoping actual impact via CloudTrail before containment and remediation decisions are finalized — deleting the role first can destroy the evidence trail needed to understand and prevent recurrence.</div>
+    </div>
+
+    <div class="drill-q" data-answered="false">
+      <div class="qnum">Question 13 of 13 — All domains synthesis</div>
+      <p>A scenario mentions GuardDuty, an SCP, and a KMS key policy all in the same paragraph, and asks what the root cause of a data exposure was. What is the best approach to answering?</p>
+      <div class="drill-opts">
+        <div class="drill-opt">A. Assume all three services are equally the point of the question</div>
+        <div class="drill-opt" data-correct="true">B. Identify which single control's absence or misconfiguration actually enabled the exposure, treating the others as context</div>
+        <div class="drill-opt">C. Pick the answer that mentions the most services</div>
+        <div class="drill-opt">D. Assume the newest AWS service mentioned is always the answer</div>
+      </div>
+      <div class="drill-reasoning">This is the entire skill this module trains: a dense scenario usually has one control whose absence or misconfiguration is the actual root cause, with the other named services serving as scenery or as controls that worked correctly. Finding that one fact, not listing every service mentioned, is what the real exam rewards.</div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-faq">
+  <div class="ambient-blob" style="width:440px; height:440px; top:8%; left:-10%; background:var(--c-gov);"></div>
+  <div class="content-col">
+    <div class="eyebrow">QUESTIONS FROM THE COHORT</div>
+    <h2 class="kinetic">What people actually ask about scenario questions</h2>
+    <p class="reveal">Tap a question to see the answer.</p>
+
+    <div class="discussion stagger">
+      <div class="discussion-pair">
+        <div class="bubble bubble-q" data-pair="faq1"><span class="who">Engineer · cohort</span><span>How do I tell which service in a long scenario is actually the point, versus scenery?</span><span class="chev">▸</span></div>
+        <div class="bubble bubble-a" id="faq1"><span class="who">Answer</span>Look for the one fact that, if changed, would flip the correct answer. Every other detail in the paragraph is usually there to test whether you will chase it instead. The Case Files above are built around exactly this instinct — most have two or three services named, but only one gap actually caused the incident.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q" data-pair="faq2"><span class="who">Engineer · cohort</span><span>Is it normal for a question to mention a service that turns out to be irrelevant?</span><span class="chev">▸</span></div>
+        <div class="bubble bubble-a" id="faq2"><span class="who">Answer</span>Yes, very. The exam frequently names a service that behaved correctly, specifically to see whether you will incorrectly blame it. In Case File 3, GuardDuty and the SCP both appear, but only the missing IMDSv2 enforcement is the actual root cause — the SCP was the thing that worked.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q" data-pair="faq3"><span class="who">Engineer · cohort</span><span>When two answer choices both sound technically correct, how do I pick?</span><span class="chev">▸</span></div>
+        <div class="bubble bubble-a" id="faq3"><span class="who">Answer</span>Ask which one is efficient given the stated urgency versus merely valid. Several Case File choices above are both technically reasonable, but only one is the fastest correct path given what the scenario is actually asking for right now — sequencing matters as much as correctness.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q" data-pair="faq4"><span class="who">Engineer · cohort</span><span>Do I need to memorize every single AWS security service to pass questions like these?</span><span class="chev">▸</span></div>
+        <div class="bubble bubble-a" id="faq4"><span class="who">Answer</span>No — you need to know what each service's job is, well enough to recognize when a described symptom does not match the service being blamed. That is a much smaller, more durable skill than memorizing every API parameter.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q" data-pair="faq5"><span class="who">Engineer · cohort</span><span>Why does prevention keep winning over detection in these Case Files?</span><span class="chev">▸</span></div>
+        <div class="bubble bubble-a" id="faq5"><span class="who">Answer</span>Because it usually does in real environments too — a structural control like least privilege or an RCP removes the possibility of an incident entirely, while detection only shortens how long it takes to notice one that already happened. Both matter, but the exam consistently rewards recognizing which layer actually prevented the worst outcome.</div>
+      </div>
+      <div class="discussion-pair">
+        <div class="bubble bubble-q" data-pair="faq6"><span class="who">Engineer · cohort</span><span>How is the Integration Drill different from a regular module's mock exam?</span><span class="chev">▸</span></div>
+        <div class="bubble bubble-a" id="faq6"><span class="who">Answer</span>Every prior module's mock exam mostly stayed inside that module's own domain. Every question in this drill deliberately requires at least two domains to answer correctly — that density is the actual point of Module 14, and it is the closest rehearsal this course offers for real exam pacing.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-resources">
+  <div class="ambient-blob" style="width:420px; height:420px; top:8%; right:-10%; background:var(--c-infra);"></div>
+  <div class="content-col">
+    <div class="eyebrow">GO DEEPER</div>
+    <h2 class="kinetic">Resources on multi-domain incident reasoning</h2>
+
+    <div class="resource-grid">
+      <div class="resource-card">
+        <span class="resource-pill free">FREE</span>
+        <h4>AWS Security Incident Response Guide</h4>
+        <div class="source">AWS Whitepaper</div>
+        <p>AWS's own framework for incident response phases — preparation, detection, containment, eradication, recovery — mapped directly onto AWS-native tooling.</p>
+        <a href="https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/aws-security-incident-response-guide.html">Read the guide →</a>
+      </div>
+      <div class="resource-card">
+        <span class="resource-pill free">FREE</span>
+        <h4>MITRE ATT&amp;CK for Cloud</h4>
+        <div class="source">MITRE Corporation</div>
+        <p>A structured taxonomy of real attacker techniques against cloud environments — useful for recognizing multi-stage campaigns like Case File 6's DDoS-to-WAF-probe pivot.</p>
+        <a href="https://attack.mitre.org/matrices/enterprise/cloud/">Explore the matrix →</a>
+      </div>
+      <div class="resource-card">
+        <span class="resource-pill free">FREE</span>
+        <h4>re:Invent: Confused Deputy Problem Deep Dive</h4>
+        <div class="source">AWS re:Invent session</div>
+        <p>A focused session on cross-account trust pitfalls, external IDs, and the exact failure mode behind Case File 4.</p>
+        <a href="https://www.youtube.com/@AWSEventsChannel">Search AWS Events channel →</a>
+      </div>
+      <div class="resource-card">
+        <span class="resource-pill paid">PAID</span>
+        <h4>AWS Certified Security – Specialty Official Practice Question Set</h4>
+        <div class="source">AWS Skill Builder</div>
+        <p>Official practice questions written in the same multi-domain scenario style as this module's Integration Drill.</p>
+        <a href="https://skillbuilder.aws/">View on Skill Builder →</a>
+      </div>
+      <div class="resource-card">
+        <span class="resource-pill free">FREE</span>
+        <h4>AWS Config Conformance Pack Sample Templates</h4>
+        <div class="source">AWS Samples, GitHub</div>
+        <p>Ready-to-deploy conformance packs covering KMS key policies, S3 public access, and IAM password policies — the exact pattern behind Case Files 2 and 5.</p>
+        <a href="https://github.com/awslabs/aws-config-rules">Browse the repository →</a>
+      </div>
+      <div class="resource-card">
+        <span class="resource-pill free">FREE</span>
+        <h4>GuardDuty Finding Types Reference</h4>
+        <div class="source">AWS Documentation</div>
+        <p>The full catalog of finding types and severities, useful for recognizing exactly what a GuardDuty alert is and is not telling you.</p>
+        <a href="https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_finding-types.html">Reference the catalog →</a>
+      </div>
+      <div class="resource-card">
+        <span class="resource-pill free">FREE</span>
+        <h4>Organizations RCP Effects Reference</h4>
+        <div class="source">AWS Documentation</div>
+        <p>How Resource Control Policies interact with resource-based policies, with worked examples of org-wide S3 and KMS restrictions.</p>
+        <a href="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html">Read the reference →</a>
+      </div>
+      <div class="resource-card">
+        <span class="resource-pill paid">PAID</span>
+        <h4>Practical Cloud Security</h4>
+        <div class="source">Chris Farris, O'Reilly</div>
+        <p>A grounded, practitioner-written book covering cross-domain cloud incident patterns very close in spirit to this module's Case Files.</p>
+        <a href="https://www.oreilly.com/library/view/practical-cloud-security/9781098148887/">View on O'Reilly →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-closing">
+  <div class="ambient-blob" style="width:420px; height:420px; top:10%; left:-10%; background:var(--accent);"></div>
+  <div class="content-col">
+    <div class="eyebrow reveal">CLOSING BRIEFING</div>
+    <h2 class="kinetic reveal">One instinct, six proofs, and one module left.</h2>
+    <p class="reveal">Six Case Files, ten rapid-fire scenarios, and thirteen dense integration questions all pointed at the same instinct: find the one fact that actually resolves a multi-domain scenario, and treat everything else as scenery until proven otherwise. That instinct does not come from memorizing more services — it comes from practicing exactly this motion enough times that it becomes automatic under exam pressure.</p>
+    <p class="reveal">Module 15 closes the course with the capstone: full-length practice exams, the shared-responsibility thread's final test, and a last pass across all six domains together. Everything built here was the rehearsal for that.</p>
+    <div class="prevnext reveal">
+      <a href="#" id="prevLink">← Module 13: Continuous Compliance</a>
+      <a href="#" id="nextLink">Module 15: Capstone Review →</a>
+    </div>
+  </div>
+</section>
+</main>
+<footer>
+  <div class="content-col" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; align-items:center;">
+    <span>IAM Architect Atlas — SCS-C03 Security Specialty Prep Series</span>
+    <span>Module 14 of 16 — Cross-Domain Scenario Lab</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- Theme toggle ---------- */
+  var themeBtn = document.getElementById('themeToggle');
+  var htmlEl = document.documentElement;
+  function applyThemeLabel(){
+    var t = htmlEl.getAttribute('data-theme');
+    themeBtn.textContent = t === 'dark' ? '☾ DARK' : '☀ LIGHT';
+  }
+  themeBtn.addEventListener('click', function(){
+    var current = htmlEl.getAttribute('data-theme');
+    htmlEl.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    applyThemeLabel();
+  });
+  applyThemeLabel();
+
+  /* ---------- Scroll progress ---------- */
+  var progressBar = document.getElementById('scrollProgress');
+  function updateProgress(){
+    var h = document.documentElement;
+    var scrollTop = h.scrollTop || document.body.scrollTop;
+    var scrollHeight = (h.scrollHeight || document.body.scrollHeight) - h.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressBar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  /* ---------- Kinetic heading split ---------- */
+  document.querySelectorAll('h2.kinetic').forEach(function(h){
+    var words = h.textContent.trim().split(/\s+/);
+    h.textContent = '';
+    words.forEach(function(word, i){
+      var wrap = document.createElement('span');
+      wrap.className = 'kw';
+      var inner = document.createElement('span');
+      inner.className = 'kw-inner';
+      inner.textContent = word;
+      inner.style.transitionDelay = (i * 45) + 'ms';
+      wrap.appendChild(inner);
+      h.appendChild(wrap);
+      h.appendChild(document.createTextNode(' '));
+    });
+  });
+
+  /* ---------- Reveal / stagger / kinetic observer ---------- */
+  var revealObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+      }
+    });
+  }, { root: null, rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
+
+  document.querySelectorAll('.reveal, .stagger, h2.kinetic').forEach(function(el){
+    revealObserver.observe(el);
+  });
+
+  /* ---------- Rail nav ---------- */
+  var railSections = [
+    { id: 'scene-bridge', label: 'Briefing' },
+    { id: 'cf1', label: 'Case File 01' },
+    { id: 'cf2', label: 'Case File 02' },
+    { id: 'cf3', label: 'Case File 03' },
+    { id: 'cf4', label: 'Case File 04' },
+    { id: 'cf5', label: 'Case File 05' },
+    { id: 'cf6', label: 'Case File 06' },
+    { id: 'scene-threadmap', label: 'Convergence' },
+    { id: 'scene-triage', label: 'Rapid Fire' },
+    { id: 'scene-drill', label: 'Integration Drill' },
+    { id: 'scene-faq', label: 'FAQ' },
+    { id: 'scene-resources', label: 'Resources' },
+    { id: 'scene-closing', label: 'Closing' }
+  ];
+  var rail = document.getElementById('rail');
+  var railDots = {};
+  railSections.forEach(function(s){
+    var el = document.getElementById(s.id);
+    if(!el) return;
+    var dot = document.createElement('div');
+    dot.className = 'rail-dot';
+    dot.setAttribute('role','button');
+    dot.setAttribute('tabindex','0');
+    dot.setAttribute('aria-label','Jump to ' + s.label);
+    var lbl = document.createElement('span');
+    lbl.className = 'rail-label';
+    lbl.textContent = s.label;
+    dot.appendChild(lbl);
+    dot.addEventListener('click', function(){
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    rail.appendChild(dot);
+    railDots[s.id] = dot;
+  });
+  var railObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      var id = entry.target.id;
+      if(entry.isIntersecting && railDots[id]){
+        Object.keys(railDots).forEach(function(k){ railDots[k].classList.remove('active'); });
+        railDots[id].classList.add('active');
+      }
+    });
+  }, { root: null, rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+  railSections.forEach(function(s){
+    var el = document.getElementById(s.id);
+    if(el) railObserver.observe(el);
+  });
+
+  /* ---------- Mindnode (attack path + thread hub) expand ---------- */
+  document.querySelectorAll('.mindnode[data-node]').forEach(function(node){
+    node.addEventListener('click', function(){
+      var target = document.getElementById('info-' + node.getAttribute('data-node'));
+      if(target) target.classList.toggle('open');
+    });
+    node.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); node.click(); }
+    });
+  });
+
+  /* ---------- Investigate choices ---------- */
+  document.querySelectorAll('.investigate-choice[data-feedback]').forEach(function(choice){
+    choice.addEventListener('click', function(){
+      var group = choice.closest('.investigate-choices');
+      group.querySelectorAll('.investigate-choice').forEach(function(c){ c.classList.remove('picked'); });
+      choice.classList.add('picked');
+      group.querySelectorAll('.choice-feedback').forEach(function(f){ f.classList.remove('open'); });
+      var fb = document.getElementById('fb-' + choice.getAttribute('data-feedback'));
+      if(fb) fb.classList.add('open');
+    });
+  });
+
+  /* ---------- Case file reveal toggle ---------- */
+  document.querySelectorAll('[data-reveal-toggle]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var target = document.getElementById('reveal-' + btn.getAttribute('data-reveal-toggle'));
+      if(!target) return;
+      var open = target.classList.toggle('open');
+      btn.textContent = open ? 'Hide the full resolution' : 'See the full resolution';
+      if(open) target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  /* ---------- Thread convergence bottom sheet ---------- */
+  var threadData = {
+    'least-privilege': {
+      title: 'Least Privilege',
+      stages: [
+        { stage: 'First introduced', text: 'Module 2, IAM Core — scoping roles and policies to the exact actions and resources a principal needs, nothing wider.' },
+        { stage: 'Reinforced', text: 'Module 7 (key policies), Module 3 (permission boundaries and SCPs), and Module 8 (authorization models) each applied the same discipline to a different control surface.' },
+        { stage: 'Tested at depth here', text: 'Case File 01 shows exactly what a wildcard grant costs once a workload is compromised — the same lesson from Module 2, now with real consequences attached.' }
+      ]
+    },
+    'defense-in-depth': {
+      title: 'Defense in Depth',
+      stages: [
+        { stage: 'First introduced', text: 'Module 1 — the idea that no single control should be trusted to catch everything alone.' },
+        { stage: 'Reinforced', text: 'Module 5 (network layers), Module 6 (workload hardening), and Module 10 (detection as a backstop layer).' },
+        { stage: 'Tested at depth here', text: 'Case File 03 is the clearest proof in the course: a hardening failure at one layer was caught by a completely independent governance layer, exactly as the thread promised it would be.' }
+      ]
+    },
+    'encryption': {
+      title: 'Encryption Everywhere',
+      stages: [
+        { stage: 'First introduced', text: 'Module 1 — encrypt data at rest and in transit as a baseline, not an exception.' },
+        { stage: 'Reinforced', text: 'Module 7 built out KMS key policies, grants, and envelope encryption in depth.' },
+        { stage: 'Tested at depth here', text: 'Case File 05 draws the sharp line between encryption existing and access to it being properly controlled — the exact distinction the exam tests most often.' }
+      ]
+    },
+    'shared-responsibility': {
+      title: 'Shared Responsibility',
+      stages: [
+        { stage: 'First introduced', text: 'Module 1 — where AWS\u2019s responsibility ends and the customer\u2019s begins, for every service category.' },
+        { stage: 'Reinforced', text: 'Referenced throughout the course whenever a control was something AWS manages versus something the customer must configure.' },
+        { stage: 'Not tested at depth here', text: 'Deliberately saved for Module 15\u2019s capstone, where it gets full-length treatment alongside a complete cross-domain review.' }
+      ]
+    },
+    'multi-account': {
+      title: 'Multi-Account Architecture',
+      stages: [
+        { stage: 'First introduced', text: 'Module 3 — Organizations, OUs, SCPs, and RCPs as the structural backbone of a secure multi-account environment.' },
+        { stage: 'Reinforced', text: 'Module 4\u2019s federation patterns and Module 13\u2019s org-wide conformance packs both build directly on this foundation.' },
+        { stage: 'Tested at depth here', text: 'Case File 02 and Case File 03 both hinge on org-level guardrails — RCPs and SCPs — succeeding or failing independently of any single account\u2019s configuration.' }
+      ]
+    },
+    'blast-radius': {
+      title: 'Blast Radius Minimization',
+      stages: [
+        { stage: 'First introduced', text: 'Module 9 and Module 11 — designing so that any single compromise stays as small and contained as possible.' },
+        { stage: 'Reinforced', text: 'Module 10\u2019s detection correlation and Module 11\u2019s containment sequencing both serve this same goal.' },
+        { stage: 'Tested at depth here', text: 'Every Case File in this module is ultimately a blast-radius story — what almost got worse, and which specific control kept it from doing so.' }
+      ]
+    }
+  };
+  var sheet = document.getElementById('threadSheet');
+  var sheetOverlay = document.getElementById('threadSheetOverlay');
+  var sheetTitle = document.getElementById('threadSheetTitle');
+  var sheetBody = document.getElementById('threadSheetBody');
+  function openThreadSheet(key){
+    var data = threadData[key];
+    if(!data) return;
+    sheetTitle.textContent = data.title;
+    sheetBody.innerHTML = '';
+    data.stages.forEach(function(s){
+      var div = document.createElement('div');
+      div.className = 'stage';
+      var h5 = document.createElement('h5');
+      h5.textContent = s.stage;
+      var p = document.createElement('p');
+      p.textContent = s.text;
+      div.appendChild(h5);
+      div.appendChild(p);
+      sheetBody.appendChild(div);
+    });
+    sheet.classList.add('open');
+    sheetOverlay.classList.add('open');
+  }
+  function closeThreadSheet(){
+    sheet.classList.remove('open');
+    sheetOverlay.classList.remove('open');
+  }
+  document.querySelectorAll('.thread-node[data-thread]').forEach(function(node){
+    node.addEventListener('click', function(){ openThreadSheet(node.getAttribute('data-thread')); });
+    node.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openThreadSheet(node.getAttribute('data-thread')); }
+    });
+  });
+  document.getElementById('threadSheetClose').addEventListener('click', closeThreadSheet);
+  sheetOverlay.addEventListener('click', closeThreadSheet);
+
+  /* ---------- Triage rapid-fire ---------- */
+  document.querySelectorAll('.triage-card').forEach(function(card){
+    var note = card.querySelector('.triage-note');
+    card.querySelectorAll('.triage-opt').forEach(function(opt){
+      opt.addEventListener('click', function(){
+        if(card.classList.contains('answered')) return;
+        card.classList.add('answered');
+        card.querySelectorAll('.triage-opt').forEach(function(o){
+          if(o.getAttribute('data-correct') === 'true'){ o.classList.add('correct'); }
+          else if(o === opt){ o.classList.add('wrong'); }
+        });
+        note.textContent = opt.getAttribute('data-note') || '';
+        note.classList.add('show');
+      });
+    });
+  });
+
+  /* ---------- Integration drill ---------- */
+  var drillScoreEl = document.getElementById('drillScore');
+  var score = 0;
+  document.querySelectorAll('.drill-q').forEach(function(q){
+    var reasoning = q.querySelector('.drill-reasoning');
+    q.querySelectorAll('.drill-opt').forEach(function(opt){
+      opt.addEventListener('click', function(){
+        if(q.getAttribute('data-answered') === 'true') return;
+        q.setAttribute('data-answered', 'true');
+        var isCorrect = opt.getAttribute('data-correct') === 'true';
+        q.querySelectorAll('.drill-opt').forEach(function(o){
+          if(o.getAttribute('data-correct') === 'true'){ o.classList.add('correct'); }
+          else if(o === opt){ o.classList.add('incorrect'); }
+        });
+        if(isCorrect){ score++; drillScoreEl.textContent = score; }
+        reasoning.classList.add('show');
+      });
+    });
+  });
+
+  /* ---------- FAQ discussion ---------- */
+  document.querySelectorAll('.discussion-pair').forEach(function(pair){
+    var q = pair.querySelector('.bubble-q');
+    q.addEventListener('click', function(){
+      pair.classList.toggle('open');
+    });
+  });
+
+  /* ---------- Prev/Next placeholders ---------- */
+  document.getElementById('prevLink').addEventListener('click', function(e){ e.preventDefault(); });
+  document.getElementById('nextLink').addEventListener('click', function(e){ e.preventDefault(); });
+
+})();
+</script>
+</body>
+</html>
+</body>
+</html>

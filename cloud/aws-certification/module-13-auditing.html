@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 13: Governance Frameworks, Auditing & Enforcement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grain-opacity: 0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg: rgba(10,14,26,0.72);
+  --node-glow: rgba(76,134,255,0.28);
+  --overlay: rgba(4,6,14,0.6);
+  --grid-line: rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme: dark; }
+html[data-theme="light"]{
+  color-scheme: light;
+  --grain-opacity: 0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow: 0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg: rgba(246,247,251,0.72);
+  --node-glow: rgba(47,111,237,0.20);
+  --overlay: rgba(20,26,40,0.35);
+  --grid-line: rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+
+* { box-sizing:border-box; }
+html{scroll-behavior:smooth; background:var(--bg); scroll-padding-top: 40px;}
+body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden; margin:0;}
+h1,h2,h3{font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; margin:0;}
+h1,h2{font-weight:700;}
+h3{font-weight:600;}
+p{margin:0;}
+a{color:inherit;}
+.mono{font-family:'JetBrains Mono', monospace;}
+
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity, 0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); }
+footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); }
+
+.scene-inner{ max-width:840px; margin:0 auto; position:relative; z-index:1; }
+.eyebrow{ font-family:'JetBrains Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.12em; color:var(--c-gov); display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.eyebrow::before{ content:''; display:inline-block; width:28px; height:1px; background:var(--c-gov); }
+.scene h2{ font-size:clamp(1.8rem, 4vw, 2.6rem); margin-bottom:26px; }
+.scene .lede{ font-size:1.08rem; color:var(--text-dim); line-height:1.75; margin-bottom:20px; }
+.scene p.body-text{ font-size:1rem; line-height:1.8; color:var(--text); margin-bottom:18px; }
+.scene p.body-text + p.body-text{ margin-top:0; }
+
+.ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
+@keyframes driftBlob{ 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(4%,-6%) scale(1.08);} 100%{transform:translate(-5%,4%) scale(0.96);} }
+
+.kw{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em;}
+.kw-inner{display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+
+.title-card{ min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; }
+.title-card h2{ font-size:clamp(2.2rem, 7vw, 5.4rem); line-height:1.1; font-weight:700; }
+.scanbeam{ position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg, transparent, rgba(76,134,255,0.14), transparent); animation:scanSweep 6s linear infinite; }
+@keyframes scanSweep{ 0%{top:-140px;} 100%{top:100%;} }
+
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .8s ease, transform .8s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+.stagger > *{opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease, transform .6s ease;}
+.stagger.in > *{opacity:1; transform:translateY(0) scale(1);}
+
+.rail{ position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px; }
+.rail-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease, transform .3s ease; padding:0; }
+.rail-dot.active{ background:var(--accent); border-color:var(--accent); transform:scale(1.3); }
+@media (max-width:900px){ .rail{display:none;} }
+
+.drawer-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px); }
+.drawer-overlay.open{ opacity:1; pointer-events:auto; }
+.drawer{ position:fixed; top:0; right:0; height:100%; width:min(420px, 90vw); background:var(--surface-raised); border-left:1px solid var(--line); z-index:201; padding:36px 32px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); box-shadow:-20px 0 60px rgba(0,0,0,0.35); }
+.drawer.open{ transform:translateX(0); }
+.bottom-sheet-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.bottom-sheet-overlay.open{ opacity:1; pointer-events:auto; }
+.bottom-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:201; background:var(--surface-raised); border-top:1px solid var(--line); border-radius:20px 20px 0 0; padding:32px 40px 40px; transform:translateY(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); max-width:760px; margin:0 auto; box-shadow:0 -20px 60px rgba(0,0,0,0.35); }
+.bottom-sheet.open{ transform:translateY(0); }
+
+.stat-num{ font-family:'JetBrains Mono', monospace; }
+
+.mentor-aside{ background:var(--surface); border-left:3px solid var(--accent); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0; }
+.mentor-aside::before{ content:'🛡️ MENTOR NOTE'; display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--accent); margin-bottom:8px; }
+.mentor-aside p{ font-size:0.94rem; color:var(--text); line-height:1.7; font-style:italic; }
+
+.discussion{ display:flex; flex-direction:column; gap:22px; margin-top:36px; }
+.discussion-pair{ display:flex; flex-direction:column; gap:10px; }
+.bubble{ max-width:82%; padding:16px 20px; border-radius:18px; font-size:0.95rem; line-height:1.65; }
+.bubble-q{ align-self:flex-start; background:var(--surface); border:1px solid var(--line); border-bottom-left-radius:4px; cursor:pointer; transition:border-color .2s ease; display:flex; flex-direction:column; }
+.bubble-q:hover{ border-color:var(--accent); }
+.bubble-q .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.bubble-q .chev{ margin-left:auto; transition:transform .25s ease; font-size:12px; color:var(--text-dim); }
+.discussion-pair.open .bubble-q .chev{ transform:rotate(90deg); color:var(--accent); }
+.bubble-a{ align-self:flex-end; background:var(--accent-dim); border-bottom-right-radius:4px; max-height:0; overflow:hidden; opacity:0; padding:0 20px; transition:max-height .45s ease, opacity .35s ease, padding .35s ease; }
+.discussion-pair.open .bubble-a{ max-height:600px; opacity:1; padding:16px 20px; }
+.bubble-a .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--c-gov); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:block; text-align:right; }
+
+.resource-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:36px; }
+.resource-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; position:relative; transition:border-color .2s ease, transform .15s ease; }
+.resource-card:hover{ border-color:var(--accent-dim); transform:translateY(-2px); }
+.resource-pill{ position:absolute; top:20px; right:20px; font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px; }
+.resource-pill.free{ background:var(--c-gov-dim); color:var(--green); }
+.resource-pill.paid{ background:var(--c-detect-dim); color:var(--amber); }
+.resource-card h4{ font-size:1rem; padding-right:70px; margin-bottom:8px; }
+.resource-card .source{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+.resource-card p{ font-size:0.88rem; color:var(--text-dim); line-height:1.6; }
+.resource-card a{ display:inline-block; margin-top:14px; font-size:0.85rem; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+@media (max-width:720px){ .resource-grid{grid-template-columns:1fr;} }
+
+.mindnode{ cursor:pointer; }
+.node-info{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:0; }
+.node-info.open{ max-height:520px; opacity:1; margin-top:14px; padding:16px 20px; }
+
+/* Nav */
+.topnav{ position:fixed; top:0; left:0; right:0; z-index:100; background:var(--nav-bg); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
+.topnav .brand{ font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--text-dim); letter-spacing:0.04em; }
+.topnav .brand strong{ color:var(--text); }
+.nav-actions{ display:flex; align-items:center; gap:14px; }
+.theme-toggle{ width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; transition:border-color .2s ease; }
+.theme-toggle:hover{ border-color:var(--accent); }
+
+/* Buttons */
+.btn{ font-family:'JetBrains Mono', monospace; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.06em; padding:12px 22px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; transition:border-color .2s ease, background .2s ease; text-decoration:none; display:inline-block; }
+.btn:hover{ border-color:var(--accent); }
+.btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.btn.primary:hover{ opacity:0.9; }
+
+@media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
+
+@media (max-width:720px){ .scene{ padding:120px 22px; } }
+</style>
+</head>
+<body>
+<div id="grainOverlay"></div>
+<div id="scrollProgress" style="position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:300; transition:width .08s linear;"></div>
+
+<nav class="topnav">
+  <div class="brand">SCS-C03 <strong>· Module 13</strong> — Governance, Auditing &amp; Enforcement</div>
+  <div class="nav-actions">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle color theme">🌙</button>
+  </div>
+</nav>
+
+<nav class="rail" id="railNav" aria-label="Scene navigator"></nav>
+
+<main id="mainContent">
+
+<section class="scene" id="scene-bridge-open" data-rail-label="Bridge">
+  <div class="ambient-blob" style="width:520px;height:520px;background:var(--c-gov);top:-120px;left:-160px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Continuing from Module 12</div>
+    <h2 class="kinetic reveal">A structure you can't verify is just a diagram</h2>
+    <p class="lede reveal">Module 12 built the real thing: organizational units, service control policies, resource control policies, guardrails wired across every account in the org. On paper, that structure says "nothing bad can happen here." But a guardrail nobody checks is a belief, not a control.</p>
+    <p class="body-text reveal">This module is about the harder, less glamorous question that comes right after you finish building governance: how do you prove — continuously, not once — that the guardrails are actually holding? Not "did we configure this correctly in January," but "is it still true today, and can we show that to an auditor without three weeks of manual evidence-gathering?"</p>
+    <p class="body-text reveal">That's the thread running through everything below: conformance packs, Audit Manager, Artifact, and the frameworks they support all exist to answer one question — is your governance real, or just documented?</p>
+
+    <p class="body-text reveal">Notice too that this module reuses the multi-account architecture from Module 3 and 12 rather than introducing new mechanics. Nothing here changes how an OU or an SCP works. What changes is the lens: instead of asking "how do I design guardrails across accounts," this module asks "how do I continuously verify those guardrails, at the same multi-account scale, without doing it by hand."</p>
+  </div>
+</section>
+
+<section class="scene" id="scene-conformance" data-rail-label="Conformance Packs">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-gov);bottom:-140px;right:-140px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Topic 1 — Continuous Checking</div>
+    <h2 class="kinetic reveal">AWS Config Conformance Packs</h2>
+    <p class="lede reveal">A conformance pack is a collection of AWS Config rules and remediation actions, packaged together and deployed as a single unit. Combined with Module 12's Organizations content, one deployment can push the same set of rules across every account in an OU, or the entire org, at once.</p>
+
+    <p class="body-text reveal">Think of it as a governance policy that actually runs. Module 12's SCPs and RCPs stop certain actions from happening at all — they're preventive. Conformance packs don't stop anything; they watch. Every rule in the pack evaluates continuously against live resource configuration, and every resource that drifts out of compliance shows up immediately, not at the next audit cycle.</p>
+
+    <p class="body-text reveal"><strong>AWS-provided vs. custom.</strong> AWS publishes sample conformance packs loosely mapped to common frameworks — operational best practices packs referencing NIST, PCI DSS, and similar. These are a starting point, not a certified mapping; nothing in AWS's sample packs constitutes a compliance attestation on their own. Teams commonly start from a sample pack and layer in custom Config rules for internal requirements the sample pack doesn't cover.</p>
+
+    <p class="body-text reveal"><strong>The exam angle worth internalizing:</strong> conformance packs operationalize continuous checking, not a one-time audit. A pack deployed today keeps evaluating every resource, every configuration change, indefinitely — that's the entire value proposition over a manual spreadsheet-based review.</p>
+
+    <p class="body-text reveal">Under the hood, a conformance pack is really a template — an AWS CloudFormation-based bundle that references one or more managed or custom Config rules, each with its own parameters, plus optional remediation configurations describing what should happen automatically when a resource is found non-compliant. Deploying the pack once provisions every rule inside it in a single operation, rather than clicking through each rule's setup individually. That matters operationally: a security team maintaining forty Config rules by hand across a growing account fleet is exactly the kind of manual toil conformance packs exist to eliminate.</p>
+
+    <p class="body-text reveal">Remediation actions deserve a second look, because they're where conformance packs stop being purely observational. A rule can be paired with an SSM Automation document that runs automatically the moment a resource is flagged non-compliant — reverting an overly permissive security group rule, or re-attaching an encryption policy that was removed. Whether remediation runs automatically or requires manual approval is itself a configuration choice, and it's a reasonable one to make deliberately: automatic remediation is powerful, but it can also silently undo a change an engineer made intentionally and forgot to account for.</p>
+
+    <div class="mentor-aside reveal">
+      <p>The question I'd ask a candidate in an interview: "if a conformance pack shows 100% compliant right now, what does that tell you about six months from now?" Nothing — unless it's still running. That's the whole point of "continuous."</p>
+    </div>
+
+    <p class="body-text reveal"><strong>Production scenario.</strong> A platform team deploys a conformance pack built from the AWS Operational Best Practices for PCI DSS sample, targeting an OU that holds every account touching cardholder data. Six S3 buckets across three accounts fail the "s3-bucket-public-read-prohibited" rule within the first hour — not because anyone intentionally exposed them, but because a legacy Terraform module set ACLs before the org adopted stricter defaults. The pack doesn't just flag it; a paired remediation action can automatically apply the corrected bucket policy, or route the finding to Security Hub for manual triage, depending on how the pack was configured.</p>
+
+    <p class="body-text reveal"><strong>How compliance rolls up.</strong> Each Config rule inside the pack evaluates independently, per resource. Those per-rule results aggregate into an overall compliance status for the pack in that account. Layer in an Organization-level Config aggregator, and those per-account pack statuses roll up further — giving a security or compliance lead a single view of "is this control holding org-wide," not forty-two separate per-account dashboards.</p>
+
+    <p class="body-text reveal">It's worth being precise about what "aggregated" means here, because it's easy to picture a single number that flattens everything. In practice, the aggregator preserves the ability to drill back down — a compliance lead sees the org-wide rollup first, but can click into any account or any individual rule to see exactly which resource is causing that account's status to read non-compliant. The rollup is a starting point for triage, not a replacement for the underlying detail.</p>
+
+    <div class="node-info" id="conf-trap" style="max-height:0;">
+      <p class="body-text" style="margin-bottom:0;"><strong>Common mistake:</strong> deploying a conformance pack to individual accounts as they're created, by hand, instead of attaching it at the OU level through Organizations. The pack works fine in every account someone remembered — and silently doesn't exist in the one they didn't.</p>
+    </div>
+    <button class="btn reveal" onclick="document.getElementById('conf-trap').classList.toggle('open'); this.textContent = this.textContent.includes('Show') ? 'Hide the common mistake' : 'Show the common mistake'">Show the common mistake ›</button>
+  </div>
+</section>
+
+<section class="scene" id="scene-auditmanager" data-rail-label="Audit Manager">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-gov);top:-100px;right:-160px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Topic 2 — Evidence Collection</div>
+    <h2 class="kinetic reveal">AWS Audit Manager</h2>
+    <p class="lede reveal">Audit Manager automates continuous evidence collection mapped to the controls of a specific compliance framework — reducing the manual, screenshot-and-spreadsheet burden that a real audit engagement traditionally imposes on the teams being audited.</p>
+
+    <p class="body-text reveal">It supports both AWS-provided standard frameworks and fully custom frameworks you define for internal or industry-specific requirements. As it runs, it continuously gathers evidence — configuration snapshots, API call records, resource compliance state — and organizes that evidence against each control in the framework, ready to hand to an assessor.</p>
+
+    <p class="body-text reveal"><strong>The distinction the exam actually tests:</strong> Audit Manager and Config/Security Hub are complementary tools doing different jobs, not redundant ones doing the same job twice. Config and Security Hub <em>evaluate</em> — they tell you, right now, whether a resource is compliant with a rule. Audit Manager <em>collects and organizes evidence</em> over time, packaging that evaluation history (and other supporting artifacts) into a structure an external or internal auditor can actually review against named controls.</p>
+
+    <p class="body-text reveal">Put another way: Config answers "is this true right now?" Audit Manager answers "can I prove this was true, continuously, across the assessment period, in a form an auditor will accept?"</p>
+
+    <p class="body-text reveal">An Audit Manager assessment is built from a framework — a structured set of controls, each mapped to one or more data sources it can pull evidence from automatically. Those sources include AWS Config rule evaluations, Security Hub findings, and CloudTrail events, but also manual evidence an assessor uploads directly, for controls that don't have an automatable AWS-native signal. That mix matters: not every control in a real compliance framework maps cleanly to a technical check, and Audit Manager is built around the assumption that some evidence will always be manually attached rather than automatically collected.</p>
+
+    <p class="body-text reveal">Custom frameworks are worth understanding on their own terms, separate from the AWS-provided standard ones. A company with an internal security standard that doesn't map to any named external framework — say, an internal "vendor security baseline" required before any new SaaS integration goes live — can define that as a custom framework in Audit Manager, then run assessments against it exactly the way they would against a standard one. This is a common real-world pattern: internal governance requirements get the same continuous-evidence treatment as external regulatory ones.</p>
+
+    <p class="body-text reveal"><strong>Production scenario.</strong> A healthcare SaaS company needs to demonstrate HIPAA-aligned controls to a new enterprise customer's security team. Instead of a compliance analyst manually pulling IAM policy exports, encryption configuration screenshots, and access logs every quarter, the team stands up an Audit Manager assessment using a HIPAA-aligned framework. Audit Manager continuously pulls evidence from AWS Config, CloudTrail, and Security Hub findings, organizing it by control. When the customer's security team asks for evidence of encryption-at-rest enforcement, the analyst exports an assessment report instead of reconstructing the answer from scratch.</p>
+
+    <div class="mentor-aside reveal">
+      <p>A trap I've seen more than once: a team stands up an Audit Manager assessment and then manually re-checks the same S3 encryption settings Config was already continuously evaluating — because nobody connected the two. Audit Manager is meant to consume Config's and Security Hub's findings as evidence, not duplicate the checking work they already do.</p>
+    </div>
+
+    <div class="node-info" id="am-trap" style="max-height:0;">
+      <p class="body-text" style="margin-bottom:0;"><strong>Common mistake:</strong> treating an Audit Manager assessment as a substitute for continuous Config monitoring. An assessment is only as good as the evidence feeding it — if nothing is continuously evaluating compliance, Audit Manager just organizes a gap.</p>
+    </div>
+    <button class="btn reveal" onclick="document.getElementById('am-trap').classList.toggle('open'); this.textContent = this.textContent.includes('Show') ? 'Hide the common mistake' : 'Show the common mistake'">Show the common mistake ›</button>
+  </div>
+</section>
+
+<section class="title-card" id="scene-titlecard" data-rail-label="Artifact">
+  <div class="scanbeam"></div>
+  <h2 class="reveal">ARTIFACT IS ABOUT AWS.<br>NOT ABOUT YOU.</h2>
+</section>
+
+<section class="scene" id="scene-artifact" data-rail-label="AWS Artifact">
+  <div class="ambient-blob" style="width:500px;height:500px;background:var(--c-gov);bottom:-160px;left:-160px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Topic 3 — AWS's Own Compliance</div>
+    <h2 class="kinetic reveal">AWS Artifact</h2>
+    <p class="lede reveal">AWS Artifact is an on-demand portal for accessing AWS's own compliance reports and certifications: SOC 1/2/3 reports, ISO certifications, PCI attestations, and similar documents describing AWS's compliance posture as a cloud provider.</p>
+
+    <p class="body-text reveal">This is the module's sharpest distinction, and the one most commonly missed: Artifact is not a tool for managing <em>your</em> compliance posture. It doesn't check your resource configurations, it doesn't collect evidence about your controls, and it has no relationship to the SCPs, RCPs, conformance packs, or Audit Manager assessments covered everywhere else in this module. Artifact answers a completely different question: "has AWS itself been independently audited against this framework, and can I get the paperwork?"</p>
+
+    <p class="body-text reveal">It's easy to lump Artifact in with conformance packs and Audit Manager because all three sit under the umbrella of "compliance tooling." But conformance packs and Audit Manager are about proving <em>your</em> controls work. Artifact is about proving <em>AWS's</em> controls work — the shared responsibility model's "security <em>of</em> the cloud" half, made retrievable as a PDF.</p>
+
+    <p class="body-text reveal"><strong>Agreements, not just reports.</strong> Artifact also covers agreements you accept when your own compliance program requires them — the Business Associate Addendum (BAA) for HIPAA workloads is the standard exam example. Accepting the BAA through Artifact is a step in enabling your own HIPAA-aligned use of AWS services, but accepting it doesn't make your workload compliant on its own; that still depends on how you configure and operate the services you're using.</p>
+
+    <p class="body-text reveal">Artifact organizes reports into two broad categories worth keeping straight. Artifact Reports gives on-demand access to the actual compliance documents — SOC 1/2/3, various ISO certifications, PCI DSS Attestation of Compliance, and region- or service-specific certifications, refreshed on AWS's own audit cadence rather than yours. Artifact Agreements is where an account owner reviews and accepts legal agreements with AWS tied to specific compliance needs, the BAA being the most exam-relevant example, alongside things like the Nondisclosure Agreement some regulated customers require before certain reports can even be viewed.</p>
+
+    <p class="body-text reveal">Access to some of the more sensitive reports — certain SOC 2 details, for instance — may require the requesting IAM identity to have specific Artifact permissions and, in some cases, an NDA acceptance on file before the report becomes downloadable. That's a minor operational detail, but it explains why "just go download it from Artifact" occasionally turns into a short access-provisioning task rather than an instant download for whoever first goes looking.</p>
+
+    <p class="body-text reveal"><strong>Production scenario.</strong> A fintech company's enterprise sales team is closing a large bank as a customer. The bank's procurement process requires proof of AWS's SOC 2 Type II report before the deal can close. A well-meaning engineer, new to the account, spends a day trying to generate a "compliance report" out of Security Hub and Config, assuming that's what's being asked for — when the actual answer is a five-minute download from Artifact of a report AWS already produced.</p>
+
+    <div class="mentor-aside reveal">
+      <p>If a question describes needing proof of AWS's own certifications — SOC reports, ISO 27001, PCI attestation of compliance for the AWS infrastructure itself — that's Artifact, full stop. The moment the question is about proving something about <em>your</em> resources or <em>your</em> controls, Artifact is off the table and you're looking at conformance packs or Audit Manager instead.</p>
+    </div>
+
+    <div class="node-info" id="artifact-trap" style="max-height:0;">
+      <p class="body-text" style="margin-bottom:0;"><strong>Common mistake:</strong> a team tries to use Artifact to manage or demonstrate their own compliance posture — pointing an auditor at Artifact reports when the auditor is actually asking about the customer's controls, not AWS's. Artifact proves AWS did its part; it says nothing about whether you configured your S3 buckets, IAM policies, or encryption correctly.</p>
+    </div>
+    <button class="btn reveal" onclick="document.getElementById('artifact-trap').classList.toggle('open'); this.textContent = this.textContent.includes('Show') ? 'Hide the common mistake' : 'Show the common mistake'">Show the common mistake ›</button>
+  </div>
+</section>
+
+<section class="scene" id="scene-frameworks" data-rail-label="Frameworks">
+  <div class="ambient-blob" style="width:440px;height:440px;background:var(--c-gov);top:-100px;left:-140px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Topic 4 — Frameworks, Kept Proportionate</div>
+    <h2 class="kinetic reveal">Compliance Frameworks Mapped to AWS Tools</h2>
+    <p class="lede reveal">The exam does not require memorizing framework control numbers or clauses. It tests whether you know which AWS tool maps to which type of compliance activity. That's the whole scope of this section — deliberately kept short.</p>
+
+    <p class="body-text reveal">Three frameworks show up repeatedly on the exam, each governing a different kind of data or environment: <strong>NIST</strong> (general federal security control baselines), <strong>PCI DSS</strong> (payment card data), and <strong>HIPAA</strong> (healthcare data). None of them require you to know clause numbers — they require you to recognize which AWS tool operationalizes which part of a compliance program against them.</p>
+
+    <div class="reveal" style="margin:32px 0; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px;">
+      <div class="mindnode" tabindex="0" role="button" aria-label="Expand framework to tool mapping" id="fw-map-toggle" onclick="document.getElementById('fw-map-detail').classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); document.getElementById('fw-map-detail').classList.toggle('open');}">
+        <h3 style="margin-bottom:14px;">NIST · PCI DSS · HIPAA → AWS Tool Mapping <span class="mono" style="font-size:12px;color:var(--accent);">(click to expand)</span></h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;" class="mono" >
+          <div style="text-align:center; color:var(--text-dim); font-size:12px;">FRAMEWORK</div>
+          <div style="text-align:center; color:var(--text-dim); font-size:12px;">GOVERNS</div>
+          <div style="text-align:center; color:var(--text-dim); font-size:12px;">PRIMARY AWS TOOLS</div>
+          <div style="text-align:center; color:var(--c-gov);">NIST</div>
+          <div style="text-align:center; font-size:13px;">Federal security baselines</div>
+          <div style="text-align:center; font-size:13px;">Conformance packs, Audit Manager</div>
+          <div style="text-align:center; color:var(--c-gov);">PCI DSS</div>
+          <div style="text-align:center; font-size:13px;">Payment card data</div>
+          <div style="text-align:center; font-size:13px;">Conformance packs, Audit Manager, Artifact (AWS's own PCI AoC)</div>
+          <div style="text-align:center; color:var(--c-gov);">HIPAA</div>
+          <div style="text-align:center; font-size:13px;">Healthcare data</div>
+          <div style="text-align:center; font-size:13px;">Audit Manager, Artifact (BAA), conformance packs</div>
+        </div>
+      </div>
+      <div class="node-info" id="fw-map-detail">
+        <p class="body-text" style="margin-bottom:0;">Notice the pattern: conformance packs handle the "is it configured right, continuously" question for any framework. Audit Manager handles "can I produce organized evidence for an assessment" for any framework. Artifact only enters the picture when the question is specifically about AWS's own attestation (PCI Attestation of Compliance) or an agreement you need AWS to countersign (the HIPAA BAA). The framework name changes; which tool answers which kind of question doesn't.</p>
+      </div>
+    </div>
+
+    <p class="body-text reveal">That consistency is the actual exam-tested skill here — not framework trivia, but recognizing that "continuous checking," "evidence for an assessment," and "AWS's own attestation" are three distinct needs that map to three distinct tools, regardless of which named framework is in the question stem.</p>
+
+    <p class="body-text reveal">It also explains why real compliance programs rarely pick just one tool. A company operating under PCI DSS typically runs conformance packs to keep cardholder-data-adjacent accounts continuously checked, an Audit Manager assessment to organize evidence ahead of the annual Report on Compliance, and separately references Artifact's PCI DSS Attestation of Compliance when a payment processor partner asks for proof of AWS's own certification. Three tools, three different questions, one framework name tying them together in conversation.</p>
+
+    <div class="mentor-aside reveal">
+      <p>I'd rather see a candidate spend their prep time drilling the tool-selection instinct than memorizing PCI DSS requirement numbers. The exam consistently rewards the former and doesn't ask for the latter — don't over-invest study time in framework trivia.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-continuous" data-rail-label="Continuous vs. Point-in-Time">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-gov);bottom:-140px;right:-100px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Topic 5 — The Module's Core Distinction</div>
+    <h2 class="kinetic reveal">Continuous vs. Point-in-Time Auditing</h2>
+    <p class="lede reveal">Everything above collapses into one distinction: continuous compliance tooling runs constantly and reflects status in near-real-time. Point-in-time auditing is a bounded, dated assessment — an external audit engagement, or a specific Audit Manager assessment snapshot pulled together for a deadline.</p>
+
+    <p class="body-text reveal">Conformance packs and Security Hub standards are the continuous side — always evaluating, always current. A traditional audit engagement, or an Audit Manager assessment frozen and exported for a specific auditor's request, is the point-in-time side — a snapshot, dated and bounded, that says "as of this date, here's the evidence."</p>
+
+    <p class="body-text reveal"><strong>Why point-in-time audits don't disappear.</strong> Continuous compliance tooling doesn't eliminate the need for point-in-time audits — external auditors, regulators, and enterprise customers still often require a formal, bounded assessment with a defined scope and a signed report. What continuous tooling changes is the effort required to produce that assessment: instead of weeks of manual evidence gathering, the point-in-time audit becomes largely a matter of exporting what was already being collected continuously.</p>
+
+    <p class="body-text reveal">It helps to think about who each mode actually serves. Continuous tooling serves the people running the environment day to day — the platform team that wants to know the moment a guardrail drifts, not three months later during an audit debrief. Point-in-time auditing serves a different audience: a third party who wasn't watching continuously and needs a bounded, attestable statement covering a defined period, with clear start and end dates and a named scope. Both audiences are legitimate, and neither replaces the other's need.</p>
+
+    <p class="body-text reveal">This is also where the earlier distinction between Config/Security Hub and Audit Manager clicks into place structurally. Config and Security Hub are what make Stage 1 possible — the continuous evaluation layer. Audit Manager sits at Stage 2, translating that continuous signal into an assessment structure. The point-in-time audit at Stages 3 and 4 is the output the continuous layers were building toward all along, not a separate, disconnected process bolted on afterward.</p>
+
+    <div class="reveal" style="margin:32px 0; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:28px 24px;">
+      <h3 style="margin-bottom:20px;">Audit Workflow Timeline <span class="mono" style="font-size:12px;color:var(--accent); font-weight:400;">(click each stage)</span></h3>
+      <div id="timeline-wrap" style="display:flex; flex-direction:column; gap:0;">
+        <div class="timeline-stage" data-detail="Config rules and Security Hub standards evaluate every resource against policy continuously, 24/7, with no defined start or end date — this is the ongoing baseline everything else draws from." style="cursor:pointer; padding:16px 18px; border-left:3px solid var(--c-gov); border-radius:8px; background:var(--bg); margin-bottom:10px; transition:border-color .2s ease;">
+          <span class="mono" style="font-size:11px; color:var(--c-gov); text-transform:uppercase;">Stage 1 · Continuous</span>
+          <h4 style="margin-top:6px; font-size:1rem;">Config &amp; Security Hub evaluate resources</h4>
+        </div>
+        <div class="timeline-stage" data-detail="Audit Manager pulls that continuous evaluation history — plus CloudTrail records and other supporting data — and organizes it against the controls of the framework the assessment targets." style="cursor:pointer; padding:16px 18px; border-left:3px solid var(--c-gov); border-radius:8px; background:var(--bg); margin-bottom:10px; transition:border-color .2s ease;">
+          <span class="mono" style="font-size:11px; color:var(--c-gov); text-transform:uppercase;">Stage 2 · Continuous</span>
+          <h4 style="margin-top:6px; font-size:1rem;">Audit Manager collects &amp; organizes evidence</h4>
+        </div>
+        <div class="timeline-stage" data-detail="When a deadline or audit cycle arrives, the accumulated evidence is frozen into a specific assessment report — a bounded, dated snapshot rather than an ongoing feed." style="cursor:pointer; padding:16px 18px; border-left:3px solid var(--amber); border-radius:8px; background:var(--bg); margin-bottom:10px; transition:border-color .2s ease;">
+          <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Stage 3 · Point-in-Time</span>
+          <h4 style="margin-top:6px; font-size:1rem;">Assessment snapshot exported for a deadline</h4>
+        </div>
+        <div class="timeline-stage" data-detail="An external auditor reviews the exported evidence package against the formal audit scope and issues a signed report or attestation — the actual audit engagement, bounded to a specific period." style="cursor:pointer; padding:16px 18px; border-left:3px solid var(--amber); border-radius:8px; background:var(--bg); transition:border-color .2s ease;">
+          <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Stage 4 · Point-in-Time</span>
+          <h4 style="margin-top:6px; font-size:1rem;">External audit engagement reviews &amp; signs off</h4>
+        </div>
+      </div>
+      <div class="node-info" id="timeline-detail" style="margin-top:16px;">
+        <p class="body-text" id="timeline-detail-text" style="margin-bottom:0;"></p>
+      </div>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>Notice the timeline never stops feeding forward — stages 1 and 2 keep running underneath stages 3 and 4. A point-in-time audit is a snapshot taken <em>of</em> a continuous process, not a replacement for one.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-matrix" data-rail-label="Tool Matrix">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-gov);top:-120px;left:-100px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Required Interactive — Comparison Matrix</div>
+    <h2 class="kinetic reveal">Compliance Tool Comparison Matrix</h2>
+    <p class="lede reveal">Click any tool name below to see what it actually does, whether it's continuous or point-in-time, and whose compliance it serves.</p>
+
+    <div class="reveal" style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px;" id="matrixGrid">
+      <button class="btn matrix-btn" data-tool="config" style="text-align:left;">Config Conformance Packs</button>
+      <button class="btn matrix-btn" data-tool="am" style="text-align:left;">Audit Manager</button>
+      <button class="btn matrix-btn" data-tool="sh" style="text-align:left;">Security Hub Standards</button>
+      <button class="btn matrix-btn" data-tool="artifact" style="text-align:left;">AWS Artifact</button>
+    </div>
+
+    <div class="node-info" id="matrixDetail" style="margin-top:8px;">
+      <div id="matrixDetailInner" class="body-text" style="padding:4px 0;"></div>
+    </div>
+
+    <p class="body-text reveal" style="margin-top:28px; font-size:0.9rem; color:var(--text-dim);">The one-line version worth memorizing: Config &amp; Security Hub <strong>evaluate your resources continuously</strong>; Audit Manager <strong>organizes evidence about your resources</strong> for an assessment; Artifact <strong>hands you AWS's own reports</strong> — none of your resources are involved.</p>
+  </div>
+</section>
+
+<section class="scene" id="scene-exercise" data-rail-label="Which Tool?">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-gov);bottom:-120px;right:-140px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Required Interactive — Practice Exercise</div>
+    <h2 class="kinetic reveal">Which Governance Tool?</h2>
+    <p class="lede reveal">Read each scenario, pick the tool that actually fits, then reveal the reasoning.</p>
+    <div id="exerciseWrap" class="stagger" style="display:flex; flex-direction:column; gap:16px; margin-top:24px;"></div>
+  </div>
+</section>
+
+<section class="scene" id="scene-traps" data-rail-label="Trap Gallery">
+  <div class="ambient-blob" style="width:480px;height:480px;background:var(--c-gov);top:-140px;right:-120px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Required Interactive — Production Trap Gallery</div>
+    <h2 class="kinetic reveal">Production Trap Gallery</h2>
+    <p class="lede reveal">Six ways governance tooling goes wrong in real environments — none of them exotic, all of them common.</p>
+
+    <div class="stagger" style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:20px;">
+      <div class="tilt" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px;">
+        <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Trap 01</span>
+        <h4 style="margin:8px 0 10px; font-size:1rem;">Artifact mistaken for a compliance-management tool</h4>
+        <p style="font-size:0.88rem; color:var(--text-dim); line-height:1.6;">A team points auditors at Artifact reports when asked about their own control posture. Artifact only proves AWS's side of the shared responsibility model.</p>
+      </div>
+      <div class="tilt" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px;">
+        <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Trap 02</span>
+        <h4 style="margin:8px 0 10px; font-size:1rem;">A conformance pack deployed per-account, not org-wide</h4>
+        <p style="font-size:0.88rem; color:var(--text-dim); line-height:1.6;">Deployed by hand as accounts were created, it worked everywhere someone remembered — and left silent gaps in the accounts nobody did.</p>
+      </div>
+      <div class="tilt" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px;">
+        <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Trap 03</span>
+        <h4 style="margin:8px 0 10px; font-size:1rem;">Audit Manager duplicating Config's work</h4>
+        <p style="font-size:0.88rem; color:var(--text-dim); line-height:1.6;">An assessment was built to manually re-check settings Config was already continuously evaluating, because nobody wired the two together.</p>
+      </div>
+      <div class="tilt" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px;">
+        <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Trap 04</span>
+        <h4 style="margin:8px 0 10px; font-size:1rem;">Assuming continuous tooling ends the need for external audits</h4>
+        <p style="font-size:0.88rem; color:var(--text-dim); line-height:1.6;">A team cancels their annual audit engagement, assuming Config dashboards are an acceptable substitute — most external auditors and regulators still require a formal, bounded assessment.</p>
+      </div>
+      <div class="tilt" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px;">
+        <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Trap 05</span>
+        <h4 style="margin:8px 0 10px; font-size:1rem;">Treating a sample conformance pack as a certified mapping</h4>
+        <p style="font-size:0.88rem; color:var(--text-dim); line-height:1.6;">AWS's sample packs are loosely mapped starting points, not a certified attestation that passing them equals framework compliance.</p>
+      </div>
+      <div class="tilt" style="background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px;">
+        <span class="mono" style="font-size:11px; color:var(--amber); text-transform:uppercase;">Trap 06</span>
+        <h4 style="margin:8px 0 10px; font-size:1rem;">Over-studying framework clause numbers</h4>
+        <p style="font-size:0.88rem; color:var(--text-dim); line-height:1.6;">Hours spent memorizing PCI DSS requirement numbers instead of drilling which AWS tool answers which kind of compliance question — the actual tested skill.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-exam" data-rail-label="Mock Exam">
+  <div class="ambient-blob" style="width:460px;height:460px;background:var(--c-gov);bottom:-100px;left:-140px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Required Interactive — Knowledge Check</div>
+    <h2 class="kinetic reveal">Mock Exam — Module 13</h2>
+    <p class="lede reveal">Eight SCS-C03-style questions. Score updates as you go.</p>
+    <div class="mono reveal" style="margin-bottom:20px; font-size:0.95rem;">Score: <span id="examScore">0</span> / <span id="examTotal">8</span></div>
+    <div id="examWrap" class="stagger" style="display:flex; flex-direction:column; gap:16px;"></div>
+  </div>
+</section>
+
+<section class="scene" id="scene-faq" data-rail-label="FAQ">
+  <div class="ambient-blob" style="width:440px;height:440px;background:var(--c-gov);top:-100px;right:-140px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Discussion — FAQ</div>
+    <h2 class="kinetic reveal">Questions Worth Asking Out Loud</h2>
+    <div class="discussion stagger">
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>If Config already checks compliance continuously, why do we still need external audits at all?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Because "continuous checking exists" and "an independent third party has verified and attested to it" are different claims. Regulators, banks, and enterprise customers generally require the latter — a signed, bounded report from someone with no stake in the outcome. Config gives you the ongoing truth; the external audit gives everyone else confidence in that truth.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Can I just use Audit Manager and skip conformance packs entirely?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Technically you can point Audit Manager at other evidence sources, but you'd be giving up the continuous, automated checking conformance packs provide. Most real environments run both — conformance packs doing the ongoing evaluation, Audit Manager organizing that evaluation history into assessment-ready form.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Is downloading a report from Artifact the same as being compliant?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>No — it proves AWS's side of the shared responsibility model, not yours. You still have to configure and operate your own resources correctly; Artifact has no visibility into that at all.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>How much time should I actually spend memorizing NIST or PCI clause numbers for the exam?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Close to none. Know what each framework generally governs and which AWS tool operationalizes which activity against it. That's the tested skill — not clause-level recall.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Do conformance packs work the same way at the account level and the Organization level?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>The rules and remediation logic are the same either way — what changes is scope. Deploy at a single account and only that account is checked. Deploy through Organizations at an OU and every account in that OU gets the same checking automatically, including accounts created later.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>What's the fastest way to spot an Artifact question on the exam?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Look for the word "AWS's" — AWS's SOC report, AWS's ISO certification, AWS's PCI attestation. If the question is about proving something belongs to AWS, it's Artifact. If it's about proving something about your resources, it isn't.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-resources" data-rail-label="Resources">
+  <div class="ambient-blob" style="width:440px;height:440px;background:var(--c-gov);bottom:-120px;left:-100px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Resources</div>
+    <h2 class="kinetic reveal">Go Deeper</h2>
+    <div class="resource-grid stagger">
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>Conformance Packs — Developer Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>Official reference for authoring, deploying, and aggregating conformance packs, including Organization-level deployment.</p>
+        <a href="https://docs.aws.amazon.com/config/latest/developerguide/conformance-packs.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Audit Manager — User Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>How assessments, frameworks, and evidence collection actually work under the hood.</p>
+        <a href="https://docs.aws.amazon.com/audit-manager/latest/userguide/what-is.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Artifact — User Guide</h4>
+        <div class="source">docs.aws.amazon.com</div>
+        <p>How reports and agreements are organized and accessed inside Artifact.</p>
+        <a href="https://docs.aws.amazon.com/artifact/latest/ug/what-is-aws-artifact.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Whitepapers — Compliance &amp; Governance</h4>
+        <div class="source">aws.amazon.com/whitepapers</div>
+        <p>Broader whitepaper library covering AWS's compliance programs and shared responsibility framing.</p>
+        <a href="https://aws.amazon.com/whitepapers/" target="_blank" rel="noopener">Browse whitepapers →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS Skill Builder</h4>
+        <div class="source">skillbuilder.aws</div>
+        <p>Official free and subscription learning paths, including governance and compliance content.</p>
+        <a href="https://skillbuilder.aws/" target="_blank" rel="noopener">Visit Skill Builder →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill free">Free</span>
+        <h4>AWS re:Post</h4>
+        <div class="source">repost.aws</div>
+        <p>Community Q&amp;A on real-world conformance pack, Audit Manager, and Artifact configuration issues.</p>
+        <a href="https://repost.aws/" target="_blank" rel="noopener">Search re:Post →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Tutorials Dojo — SCS-C03 Practice Exams</h4>
+        <div class="source">tutorialsdojo.com</div>
+        <p>Widely used practice question sets with detailed explanations, including governance and audit scenarios.</p>
+        <a href="https://tutorialsdojo.com/" target="_blank" rel="noopener">Visit Tutorials Dojo →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Adrian Cantrill — SCS-C03 Course</h4>
+        <div class="source">learn.cantrill.io</div>
+        <p>Deep, hands-on video course covering the full Security Specialty syllabus.</p>
+        <a href="https://learn.cantrill.io/" target="_blank" rel="noopener">Visit Cantrill →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>Stéphane Maarek — SCS-C03 Course</h4>
+        <div class="source">udemy.com</div>
+        <p>Popular Udemy course covering governance, auditing, and the rest of the exam blueprint.</p>
+        <a href="https://www.udemy.com/" target="_blank" rel="noopener">Search Udemy →</a>
+      </div>
+
+      <div class="resource-card tilt">
+        <span class="resource-pill paid">Paid</span>
+        <h4>A Cloud Guru / Pluralsight</h4>
+        <div class="source">pluralsight.com</div>
+        <p>Structured learning paths and hands-on labs for AWS security certifications.</p>
+        <a href="https://www.pluralsight.com/" target="_blank" rel="noopener">Visit Pluralsight →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-bridge-close" data-rail-label="What's Next">
+  <div class="ambient-blob" style="width:520px;height:520px;background:var(--c-gov);top:-140px;left:-120px;"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Closing Bridge — What's Next</div>
+    <h2 class="kinetic reveal">Everything Tested Together, Not in Isolation</h2>
+    <p class="lede reveal">Module 14, the Cross-Domain Scenario Lab, is a genuine turning point in this course. Every module from 1 through this one has focused on one domain, or one closely related pair of concepts, at a time.</p>
+    <p class="body-text reveal">Module 14 is where all six domains get pulled into single, integrated incidents that don't respect domain boundaries — the way real security work never does. Everything you've learned so far gets tested together starting now, not in isolation.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div style="max-width:840px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <a class="btn" href="module-12-governance.html">← Previous: Module 12 — Governance</a>
+    <span class="mono" style="font-size:12px;">Module 13 of 16</span>
+    <a class="btn primary" href="module-14-scenario-lab.html">Next: Module 14 — Scenario Lab →</a>
+  </div>
+</footer>
+
+<script>
+// Theme toggle (bug fix #3)
+(function(){
+  const html = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  html.style.colorScheme = html.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  btn.addEventListener('click', () => {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    html.style.colorScheme = next;
+    btn.textContent = next === 'dark' ? '🌙' : '☀️';
+  });
+})();
+
+// Scroll progress
+function updateProgress(){ const h = document.documentElement; const scrolled = h.scrollTop; const height = h.scrollHeight - h.clientHeight; document.getElementById('scrollProgress').style.width = (height > 0 ? (scrolled / height) * 100 : 0) + '%'; }
+document.addEventListener('scroll', () => requestAnimationFrame(updateProgress));
+
+// Kinetic headings
+function wrapKinetic(el, text){
+  const words = text.split(' ');
+  el.innerHTML = words.map((w, i) => `<span class="kw"><span class="kw-inner" style="transition-delay:${i * 45}ms">${w}</span></span>`).join(' ');
+}
+document.querySelectorAll('h2.kinetic').forEach(h => wrapKinetic(h, h.textContent));
+const kineticIo = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }); }, { threshold: 0.4 });
+document.querySelectorAll('h2.kinetic').forEach(h => kineticIo.observe(h));
+
+// Reveal + stagger
+const io = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }); }, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.stagger > *').forEach((el, i) => { el.style.transitionDelay = (i * 90) + 'ms'; });
+
+// Tilt + magnetic
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!reduceMotion){
+  document.querySelectorAll('.tilt').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(600px) rotateX(${py * -6}deg) rotateY(${px * 6}deg) translateY(-2px)`;
+    });
+    card.addEventListener('mouseleave', () => { card.style.transform = 'perspective(600px) rotateX(0) rotateY(0)'; });
+  });
+  document.querySelectorAll('.magnetic').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      btn.style.transform = `translate(${x * 0.18}px, ${y * 0.35}px)`;
+    });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = 'translate(0,0)'; });
+  });
+}
+
+// Side rail scene navigator
+(function(){
+  const scenes = Array.from(document.querySelectorAll('main > section[id]'));
+  const rail = document.getElementById('railNav');
+  scenes.forEach(scene => {
+    const dot = document.createElement('button');
+    dot.className = 'rail-dot';
+    dot.setAttribute('aria-label', scene.dataset.railLabel || scene.id);
+    dot.addEventListener('click', () => scene.scrollIntoView({ behavior: 'smooth' }));
+    dot.dataset.target = scene.id;
+    rail.appendChild(dot);
+  });
+  const railIo = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const dot = rail.querySelector(`.rail-dot[data-target="${entry.target.id}"]`);
+      if (!dot) return;
+      if (entry.isIntersecting) {
+        rail.querySelectorAll('.rail-dot').forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+      }
+    });
+  }, { threshold: 0.5, rootMargin: '0px 0px -40% 0px' });
+  scenes.forEach(scene => railIo.observe(scene));
+})();
+
+// Discussion FAQ
+document.querySelectorAll('.discussion-pair').forEach(pair => {
+  pair.querySelector('.bubble-q').addEventListener('click', () => pair.classList.toggle('open'));
+});
+
+// Mock exam
+const examData = [
+  { q: 'A security lead wants continuous, automated evaluation that no security group in any account allows unrestricted SSH access, applied across an entire Organization at once. Which AWS capability fits best?', options: ['A conformance pack attached at the OU level', 'AWS Artifact', 'A manually scheduled quarterly review'], answer: 0, why: 'Conformance packs deployed via Organizations provide continuous, org-wide rule evaluation — exactly this need.' },
+  { q: 'Which statement correctly distinguishes AWS Audit Manager from AWS Config?', options: ['They are redundant; either can replace the other', 'Config evaluates compliance state; Audit Manager collects and organizes evidence about that state for an assessment', 'Audit Manager evaluates AWS\'s own infrastructure, Config evaluates yours'], answer: 1, why: 'Config/Security Hub evaluate. Audit Manager collects and organizes evidence — complementary jobs, not the same job twice.' },
+  { q: 'A customer requests AWS\'s ISO 27001 certification as part of their vendor risk assessment. Where do you get this?', options: ['AWS Audit Manager', 'AWS Artifact', 'A custom Config conformance pack'], answer: 1, why: 'ISO certification of AWS\'s own infrastructure is exactly what Artifact provides on demand.' },
+  { q: 'True or false: once a conformance pack shows 100% compliance, that status remains accurate indefinitely without further action.', options: ['True — compliance state doesn\'t change once verified', 'False — conformance packs evaluate continuously, and drift can occur after the pack was last checked'], answer: 1, why: 'Conformance packs are continuous, not one-time; compliance status reflects the most recent evaluation only.' },
+  { q: 'Your compliance program requires AWS to sign a Business Associate Addendum for HIPAA. Where is this accepted?', options: ['AWS Artifact', 'AWS Audit Manager', 'AWS Config'], answer: 0, why: 'Agreements like the BAA are accepted through Artifact, alongside AWS\'s compliance reports.' },
+  { q: 'A team wants organized, framework-mapped evidence ready for an external PCI DSS assessor arriving next month. Which tool is purpose-built for this?', options: ['AWS Artifact', 'AWS Audit Manager', 'Amazon GuardDuty'], answer: 1, why: 'Audit Manager exists specifically to organize continuously collected evidence against a named framework\'s controls for an assessment.' },
+  { q: 'Which best describes why point-in-time audits still matter even with mature continuous compliance tooling in place?', options: ['They don\'t — continuous tooling makes them obsolete', 'External auditors and regulators often still require a formal, bounded, dated assessment, even though continuous tooling reduces the effort to produce one', 'Point-in-time audits are only needed for AWS Artifact users'], answer: 1, why: 'Continuous tooling reduces the manual burden of point-in-time audits but doesn\'t eliminate the requirement for a bounded formal assessment.' },
+  { q: 'A candidate spends significant study time memorizing NIST 800-53 control numbers for the exam. Is this time well spent per the exam\'s actual focus?', options: ['Yes, control numbers are heavily tested', 'No — the exam tests which AWS tool maps to which type of compliance activity, not specific control numbers'], answer: 1, why: 'The exam deliberately stays at the tool-mapping level for frameworks, not clause-level memorization.' }
+];
+const examWrap = document.getElementById('examWrap');
+let examScore = 0;
+const answeredSet = new Set();
+examData.forEach((item, i) => {
+  const card = document.createElement('div');
+  card.style.cssText = 'background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px;';
+  card.innerHTML = `<p style="font-weight:600; margin-bottom:14px;">Q${i+1}. ${item.q}</p>
+    <div class="opt-row" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div class="why-box node-info" style="margin-top:0;"><p class="body-text" style="margin-bottom:0; font-size:0.9rem;">${item.why}</p></div>`;
+  const optRow = card.querySelector('.opt-row');
+  item.options.forEach((opt, oi) => {
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.style.textAlign = 'left';
+    b.textContent = opt;
+    b.addEventListener('click', () => {
+      if (answeredSet.has(i)) return;
+      answeredSet.add(i);
+      optRow.querySelectorAll('button').forEach(x => { x.style.opacity = '0.7'; });
+      b.style.opacity = '1';
+      b.style.borderColor = oi === item.answer ? 'var(--green)' : 'var(--amber)';
+      if (oi === item.answer) { examScore++; document.getElementById('examScore').textContent = examScore; }
+      card.querySelector('.why-box').classList.add('open');
+    });
+    optRow.appendChild(b);
+  });
+  examWrap.appendChild(card);
+});
+
+// Which Governance Tool exercise
+const exerciseData = [
+  { q: 'A prospective enterprise client wants proof of AWS\'s own SOC 2 Type II report before signing.', options: ['AWS Artifact', 'Audit Manager', 'Conformance Pack'], answer: 0, why: 'This is a request for AWS\'s own attestation, not anything about your resources — that\'s Artifact\'s entire purpose.' },
+  { q: 'You need continuous, org-wide checking that no S3 bucket is ever publicly readable.', options: ['AWS Artifact', 'Conformance Pack', 'A one-time manual review'], answer: 1, why: 'Continuous, org-wide, rule-based checking is exactly what a conformance pack deployed at the OU level provides.' },
+  { q: 'A PCI assessment is coming up in six weeks and you need organized evidence per control.', answer: 0, options: ['AWS Audit Manager', 'AWS Artifact', 'CloudTrail alone'], why: 'Organizing continuously-collected evidence against named framework controls, ready for an assessor, is Audit Manager\'s job.' },
+  { q: 'Your HIPAA compliance program requires a signed Business Associate Addendum with AWS.', options: ['AWS Artifact', 'Audit Manager', 'A conformance pack'], answer: 0, why: 'Agreements like the BAA are accepted through Artifact — it\'s not just reports, it\'s also the agreements your program requires.' },
+  { q: 'Leadership wants a single dashboard showing whether a security guardrail is holding across every account in the org, not per-account spreadsheets.', options: ['A conformance pack with an Organization-level Config aggregator', 'AWS Artifact', 'Manually emailing each account owner'], answer: 0, why: 'The aggregator is precisely what rolls per-account, per-pack compliance status up into one org-wide view.' },
+  { q: 'A team wants to skip continuous Config checks entirely and just run an Audit Manager assessment once a year instead.', options: ['That works fine, they are interchangeable', 'That leaves a gap — Audit Manager organizes evidence, it doesn\'t generate the continuous checking itself'], answer: 1, why: 'Audit Manager consumes evidence, including from Config and Security Hub. Without continuous evaluation feeding it, an assessment just organizes a gap.' },
+  { q: 'You need to know if AWS\'s data centers are ISO 27001 certified.', options: ['AWS Artifact', 'A custom conformance pack', 'Audit Manager assessment'], answer: 0, why: 'ISO certification of AWS infrastructure itself is AWS\'s own attestation — Artifact territory.' },
+  { q: 'Compliance wants both real-time visibility into control drift AND a bundled, exportable evidence package for the annual external audit.', options: ['Conformance packs (drift) + Audit Manager (evidence package) working together', 'Artifact alone covers both', 'Neither is necessary once SCPs are in place'], answer: 0, why: 'This scenario needs both halves of the continuous/point-in-time relationship — conformance packs for the ongoing check, Audit Manager for the bounded export.' }
+];
+const exerciseWrap = document.getElementById('exerciseWrap');
+exerciseData.forEach((item, i) => {
+  const card = document.createElement('div');
+  card.style.cssText = 'background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px;';
+  card.innerHTML = `<p style="font-weight:600; margin-bottom:14px;">${i+1}. ${item.q}</p>
+    <div class="opt-row" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <div class="why-box node-info" style="margin-top:0;"><p class="body-text" style="margin-bottom:0; font-size:0.9rem;">${item.why}</p></div>`;
+  const optRow = card.querySelector('.opt-row');
+  item.options.forEach((opt, oi) => {
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.style.textAlign = 'left';
+    b.textContent = opt;
+    b.addEventListener('click', () => {
+      optRow.querySelectorAll('button').forEach(x => { x.style.borderColor = 'var(--line)'; x.style.opacity = '0.7'; });
+      b.style.opacity = '1';
+      b.style.borderColor = oi === item.answer ? 'var(--green)' : 'var(--amber)';
+      card.querySelector('.why-box').classList.add('open');
+    });
+    optRow.appendChild(b);
+  });
+  exerciseWrap.appendChild(card);
+});
+
+// Compliance tool comparison matrix
+const matrixData = {
+  config: { title: 'AWS Config Conformance Packs', rows: ['What it does: continuously evaluates resource configuration against a packaged set of Config rules, org-wide if attached at the OU level.', 'Cadence: continuous — evaluates on every configuration change.', 'Serves: your compliance posture, checked against your own resources.'] },
+  am: { title: 'AWS Audit Manager', rows: ['What it does: continuously collects and organizes evidence mapped to a chosen framework\'s controls, ready for an assessor.', 'Cadence: continuous collection, but typically consumed as a point-in-time assessment export.', 'Serves: your compliance posture — proving it to an auditor, not evaluating it fresh.'] },
+  sh: { title: 'Security Hub Standards', rows: ['What it does: continuously evaluates resources against curated security standards (like AWS Foundational Security Best Practices), similar in spirit to Config rules but aggregated as findings.', 'Cadence: continuous.', 'Serves: your compliance and security posture, surfaced as prioritized findings.'] },
+  artifact: { title: 'AWS Artifact', rows: ['What it does: provides on-demand access to AWS\'s own compliance reports (SOC, ISO, PCI) and lets you accept agreements like the HIPAA BAA.', 'Cadence: point-in-time — a dated report, refreshed on AWS\'s own audit cycle, not a live feed.', 'Serves: AWS\'s compliance as a provider. Your resources are never evaluated by Artifact.'] }
+};
+document.querySelectorAll('.matrix-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.matrix-btn').forEach(b => b.style.borderColor = 'var(--line)');
+    btn.style.borderColor = 'var(--accent)';
+    const data = matrixData[btn.dataset.tool];
+    const detail = document.getElementById('matrixDetail');
+    document.getElementById('matrixDetailInner').innerHTML = `<h4 style="margin-bottom:10px;">${data.title}</h4>` + data.rows.map(r => `<p style="margin-bottom:8px; font-size:0.92rem; color:var(--text-dim);">${r}</p>`).join('');
+    detail.classList.add('open');
+  });
+});
+
+// Audit workflow timeline
+document.querySelectorAll('.timeline-stage').forEach(stage => {
+  stage.setAttribute('tabindex', '0');
+  stage.setAttribute('role', 'button');
+  stage.setAttribute('aria-label', stage.querySelector('h4').textContent);
+  const activate = () => {
+    document.querySelectorAll('.timeline-stage').forEach(s => s.style.background = 'var(--bg)');
+    stage.style.background = 'var(--surface-raised)';
+    const detail = document.getElementById('timeline-detail');
+    document.getElementById('timeline-detail-text').textContent = stage.dataset.detail;
+    detail.classList.add('open');
+  };
+  stage.addEventListener('click', activate);
+  stage.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+});
+
+// Stat count-up
+document.querySelectorAll('.stat-num').forEach(el => {
+  new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting || el.dataset.done) return;
+      el.dataset.done = '1';
+      const target = parseInt(el.dataset.target, 10);
+      const start = performance.now(), duration = 1100;
+      function tick(now){ const p = Math.min((now-start)/duration,1); el.textContent = (el.dataset.prefix||'') + Math.round((1-Math.pow(1-p,3))*target) + (el.dataset.suffix||''); if(p<1) requestAnimationFrame(tick); }
+      requestAnimationFrame(tick);
+    });
+  }, {threshold:0.4}).observe(el);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<title>SCS-C03 — Module 11: Incident Response: Planning, Containment & Automation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --grain-opacity: 0.05;
+  --bg:#0A0E1A;
+  --surface:#10162A;
+  --surface-raised:#161D34;
+  --text:#EDF1FB;
+  --text-dim:#8B93A7;
+  --line:#232B45;
+  --accent:#4C86FF;
+  --accent-dim:#2A4A8C;
+  --amber:#FFB020;
+  --green:#34D399;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  --nav-bg: rgba(10,14,26,0.72);
+  --node-glow: rgba(76,134,255,0.28);
+  --overlay: rgba(4,6,14,0.6);
+  --grid-line: rgba(76,134,255,0.08);
+  --c-iam:#4C86FF; --c-iam-dim:#1E3A73;
+  --c-infra:#22D3C7; --c-infra-dim:#164A46;
+  --c-data:#A78BFA; --c-data-dim:#3B2E6B;
+  --c-detect:#FFB020; --c-detect-dim:#5C3D0C;
+  --c-ir:#FB7185; --c-ir-dim:#5C2530;
+  --c-gov:#34D399; --c-gov-dim:#134A38;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+html[data-theme="dark"]{ color-scheme: dark; }
+html[data-theme="light"]{
+  color-scheme: light;
+  --grain-opacity: 0.015;
+  --bg:#F6F7FB;
+  --surface:#FFFFFF;
+  --surface-raised:#FFFFFF;
+  --text:#0B1220;
+  --text-dim:#5B6478;
+  --line:#E2E5EF;
+  --accent:#2F6FED;
+  --accent-dim:#D6E2FF;
+  --amber:#B9750B;
+  --green:#0F8F63;
+  --shadow: 0 20px 50px rgba(20,30,60,0.08);
+  --nav-bg: rgba(246,247,251,0.72);
+  --node-glow: rgba(47,111,237,0.20);
+  --overlay: rgba(20,26,40,0.35);
+  --grid-line: rgba(47,111,237,0.06);
+  --c-iam:#2F6FED; --c-iam-dim:#DCE7FF;
+  --c-infra:#0E9488; --c-infra-dim:#D5F3EF;
+  --c-data:#6D4FE0; --c-data-dim:#E6E0FB;
+  --c-detect:#B9750B; --c-detect-dim:#FBE8CC;
+  --c-ir:#D6335B; --c-ir-dim:#FBDEE4;
+  --c-gov:#0F8F63; --c-gov-dim:#D6F3E7;
+  --card-bg:#05070C; --card-text:#F4F6FB;
+}
+
+/* Bug fix #1: explicit background on every section */
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth; background:var(--bg);}
+body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden; margin:0;}
+.scene{ padding:90px 40px; position:relative; background:var(--bg); scroll-margin-top:84px; }
+.scene.scene-hero{ min-height:100vh; display:flex; flex-direction:column; justify-content:center; }
+footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); }
+
+/* Bug fix #2: grain overlay, no mix-blend-mode */
+#grainOverlay{
+  position:fixed; inset:0; z-index:250; pointer-events:none;
+  opacity:var(--grain-opacity, 0.05);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
+
+/* Typography */
+h1,h2,h3{font-family:'Space Grotesk', sans-serif; letter-spacing:-0.02em; margin:0;}
+h2{font-weight:700; font-size:clamp(1.9rem,4vw,2.7rem);}
+h3{font-weight:600; font-size:1.3rem;}
+p{margin:0 0 16px; line-height:1.7; color:var(--text);}
+.container{max-width:840px; margin:0 auto; position:relative; z-index:1;}
+.eyebrow{font-family:'JetBrains Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.12em; color:var(--c-ir); display:flex; align-items:center; gap:10px; margin-bottom:18px;}
+.eyebrow::before{content:''; width:26px; height:1px; background:var(--c-ir);}
+.lede{font-size:1.12rem; color:var(--text-dim); max-width:680px;}
+mono, .mono{font-family:'JetBrains Mono', monospace;}
+
+/* Ambient blobs */
+.ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
+@keyframes driftBlob{ 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(4%,-6%) scale(1.08);} 100%{transform:translate(-5%,4%) scale(0.96);} }
+
+/* Kinetic headings */
+.kw{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:0.08em;}
+.kw-inner{display:inline-block; transform:translateY(115%); transition:transform .7s cubic-bezier(.16,1,.3,1);}
+.in .kw-inner{transform:translateY(0);}
+
+/* Title card */
+.title-card{ min-height:100vh; background:var(--card-bg); color:var(--card-text); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; overflow:hidden; }
+.title-card h2{ font-size:clamp(2.2rem, 7vw, 5.4rem); line-height:1.1; font-weight:700; color:var(--card-text); }
+.title-card .sub{font-family:'JetBrains Mono', monospace; color:#FB7185; font-size:13px; letter-spacing:0.15em; text-transform:uppercase; margin-top:22px;}
+.scanbeam{ position:absolute; left:0; right:0; height:140px; top:-140px; background:linear-gradient(180deg, transparent, rgba(76,134,255,0.14), transparent); animation:scanSweep 6s linear infinite; }
+@keyframes scanSweep{ 0%{top:-140px;} 100%{top:100%;} }
+
+/* Scroll reveal */
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .8s ease, transform .8s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+.stagger > *{opacity:0; transform:translateY(18px) scale(.98); transition:opacity .6s ease, transform .6s ease;}
+.stagger.in > *{opacity:1; transform:translateY(0) scale(1);}
+
+/* Nav */
+nav.topnav{position:fixed; top:0; left:0; right:0; z-index:280; background:var(--nav-bg); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); padding:16px 32px; display:flex; align-items:center; justify-content:space-between;}
+nav.topnav .brand{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-dim); letter-spacing:0.05em;}
+nav.topnav .brand strong{color:var(--c-ir);}
+#themeToggle{background:var(--surface); border:1px solid var(--line); color:var(--text); border-radius:999px; padding:8px 16px; font-family:'JetBrains Mono', monospace; font-size:11px; cursor:pointer; letter-spacing:0.05em;}
+#themeToggle:hover{border-color:var(--accent);}
+
+/* Side rail */
+.rail{ position:fixed; right:26px; top:50%; transform:translateY(-50%); z-index:90; display:flex; flex-direction:column; gap:14px; }
+.rail-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); border:1px solid var(--line); cursor:pointer; transition:background .3s ease, transform .3s ease; }
+.rail-dot.active{ background:var(--c-ir); border-color:var(--c-ir); transform:scale(1.3); }
+@media (max-width:900px){ .rail{display:none;} }
+
+/* Hamburger + left TOC drawer */
+#hamburgerBtn{ background:var(--surface); border:1px solid var(--line); color:var(--text); border-radius:8px; width:36px; height:36px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; margin-right:14px; }
+#hamburgerBtn span{ display:block; width:16px; height:2px; background:var(--text); border-radius:2px; }
+#hamburgerBtn:hover{ border-color:var(--c-ir); }
+.nav-left{ display:flex; align-items:center; }
+.left-drawer{ position:fixed; top:0; left:-320px; width:300px; height:100vh; background:var(--surface); border-right:1px solid var(--line); z-index:295; transition:left .35s cubic-bezier(.16,1,.3,1); overflow-y:auto; padding:90px 0 40px; }
+.left-drawer.open{ left:0; }
+.left-drawer .toc-heading{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); padding:0 26px 14px; }
+.toc-item{ display:block; padding:12px 26px; font-size:0.9rem; color:var(--text-dim); text-decoration:none; border-left:3px solid transparent; cursor:pointer; transition:color .2s ease, border-color .2s ease, background .2s ease; }
+.toc-item:hover{ color:var(--text); background:var(--surface-raised); }
+.toc-item.active{ color:var(--c-ir); border-left-color:var(--c-ir); background:var(--surface-raised); font-weight:600; }
+.drawer-backdrop{ position:fixed; inset:0; background:var(--overlay); z-index:290; opacity:0; pointer-events:none; transition:opacity .3s ease; }
+.drawer-backdrop.open{ opacity:1; pointer-events:auto; }
+@media (max-width:560px){ .left-drawer{width:80vw;} }
+
+/* Buttons */
+.btn{display:inline-block; font-family:'JetBrains Mono', monospace; font-size:12.5px; letter-spacing:0.05em; padding:12px 22px; border-radius:10px; text-decoration:none; cursor:pointer; border:1px solid var(--line); background:var(--surface); color:var(--text); transition:border-color .2s ease, transform .15s ease;}
+.btn:hover{border-color:var(--c-ir); transform:translateY(-1px);}
+.btn.primary{background:var(--c-ir); border-color:var(--c-ir); color:#1A0509;}
+
+/* Mind node expand */
+.mindnode{ cursor:pointer; }
+.node-info{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:0; }
+.node-info.open{ max-height:320px; opacity:1; margin-top:14px; padding:16px 20px; }
+
+/* Active-recall checkpoint */
+.checkpoint{ background:var(--surface-raised); border:1px dashed var(--accent); border-radius:14px; padding:22px 26px; margin:28px 0; }
+.checkpoint-label{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--accent); display:block; margin-bottom:10px; }
+.checkpoint-q{ font-weight:600; margin-bottom:16px; }
+.checkpoint-toggle{ font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:0.05em; padding:9px 18px; border-radius:8px; border:1px solid var(--accent); background:transparent; color:var(--accent); cursor:pointer; transition:background .2s ease, color .2s ease; }
+.checkpoint-toggle:hover{ background:var(--accent); color:#fff; }
+.checkpoint-answer{ max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease; }
+.checkpoint-answer.open{ max-height:300px; opacity:1; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+.checkpoint-answer p{ margin-bottom:0; color:var(--text-dim); font-size:0.92rem; }
+
+/* Mentor aside */
+.mentor-aside{ background:var(--surface); border-left:3px solid var(--c-ir); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0; }
+.mentor-aside::before{ content:'🛡️ MENTOR NOTE'; display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.1em; color:var(--c-ir); margin-bottom:8px; }
+.mentor-aside p{ font-size:0.94rem; color:var(--text); line-height:1.7; font-style:italic; margin:0;}
+
+/* Production scenario callout */
+.scenario{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px 26px; margin:26px 0;}
+.scenario .tag{font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--amber); margin-bottom:10px; display:block;}
+.scenario p:last-child{margin-bottom:0;}
+
+/* Trap card */
+.trap-card{background:var(--surface); border:1px solid var(--c-ir-dim); border-radius:14px; padding:22px 24px; margin-bottom:16px;}
+.trap-card .trap-label{font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--c-ir); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; display:block;}
+.trap-card h4{margin:0 0 8px; font-size:1.05rem;}
+.trap-card p{margin-bottom:0; color:var(--text-dim); font-size:0.93rem;}
+
+/* Exam angle strip */
+.exam-angle{border:1px dashed var(--c-detect); border-radius:12px; padding:16px 20px; margin:22px 0; background:var(--c-detect-dim); background-blend-mode:normal;}
+.exam-angle .tag{font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--amber); display:block; margin-bottom:6px;}
+.exam-angle p{margin:0; font-size:0.92rem;}
+
+/* Diagram shared */
+.diagram-wrap{margin:34px 0; padding:28px; background:var(--surface); border:1px solid var(--line); border-radius:18px;}
+.flow-row{display:flex; flex-wrap:wrap; gap:14px; align-items:stretch; justify-content:center;}
+.flow-node{flex:1 1 140px; min-width:130px; background:var(--surface-raised); border:1px solid var(--line); border-radius:12px; padding:16px 14px; text-align:center; cursor:pointer; transition:border-color .2s ease, transform .15s ease;}
+.flow-node:hover, .flow-node:focus{border-color:var(--c-ir); transform:translateY(-2px); outline:none;}
+.flow-node .fn-icon{font-size:1.6rem; display:block; margin-bottom:8px;}
+.flow-node .fn-label{font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text);}
+.flow-arrow{display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:1.2rem; padding:0 2px;}
+@media (max-width:720px){.flow-arrow{transform:rotate(90deg);}}
+
+/* Exercise */
+.exercise-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px; margin-bottom:20px;}
+.exercise-card .ex-num{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--c-ir); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; display:block;}
+.ex-options{display:flex; flex-direction:column; gap:10px; margin:16px 0;}
+.ex-opt{background:var(--surface-raised); border:1px solid var(--line); border-radius:10px; padding:12px 16px; cursor:pointer; font-size:0.92rem; transition:border-color .2s ease;}
+.ex-opt:hover{border-color:var(--accent);}
+.ex-opt.correct{border-color:var(--green); background:color-mix(in srgb, var(--green) 12%, var(--surface-raised));}
+.ex-opt.incorrect{border-color:var(--c-ir); background:color-mix(in srgb, var(--c-ir) 12%, var(--surface-raised));}
+.ex-reasoning{max-height:0; overflow:hidden; opacity:0; transition:max-height .4s ease, opacity .3s ease, margin .3s ease;}
+.ex-reasoning.open{max-height:400px; opacity:1; margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+.ex-reasoning p{font-size:0.9rem; color:var(--text-dim); margin:0;}
+
+/* Mock exam */
+.exam-q{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px; margin-bottom:20px;}
+.exam-q .q-num{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--c-ir); text-transform:uppercase; letter-spacing:0.08em;}
+.score-tracker{position:sticky; top:76px; z-index:60; background:var(--surface-raised); border:1px solid var(--line); border-radius:999px; padding:10px 22px; display:inline-flex; gap:18px; align-items:center; font-family:'JetBrains Mono', monospace; font-size:12px; margin-bottom:28px;}
+.score-tracker .sc-val{color:var(--c-ir); font-weight:600;}
+
+/* Discussion FAQ */
+.discussion{ display:flex; flex-direction:column; gap:22px; margin-top:36px; }
+.discussion-pair{ display:flex; flex-direction:column; gap:10px; }
+.bubble{ max-width:82%; padding:16px 20px; border-radius:18px; font-size:0.95rem; line-height:1.65; }
+.bubble-q{ align-self:flex-start; background:var(--surface); border:1px solid var(--line); border-bottom-left-radius:4px; cursor:pointer; transition:border-color .2s ease; display:flex; flex-direction:column; }
+.bubble-q:hover{ border-color:var(--accent); }
+.bubble-q .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.bubble-q .chev{ margin-left:auto; transition:transform .25s ease; font-size:12px; color:var(--text-dim); }
+.discussion-pair.open .bubble-q .chev{ transform:rotate(90deg); color:var(--accent); }
+.bubble-a{ align-self:flex-end; background:var(--accent-dim); border-bottom-right-radius:4px; max-height:0; overflow:hidden; opacity:0; padding:0 20px; transition:max-height .45s ease, opacity .35s ease, padding .35s ease; }
+.discussion-pair.open .bubble-a{ max-height:600px; opacity:1; padding:16px 20px; }
+.bubble-a .who{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--c-ir); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; display:block; text-align:right; }
+
+/* Resources */
+.resource-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:36px; }
+.resource-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px; position:relative; transition:border-color .2s ease, transform .15s ease; }
+.resource-card:hover{ border-color:var(--accent-dim); transform:translateY(-2px); }
+.resource-pill{ position:absolute; top:20px; right:20px; font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px; }
+.resource-pill.free{ background:var(--c-gov-dim); color:var(--green); }
+.resource-pill.paid{ background:var(--c-detect-dim); color:var(--amber); }
+.resource-card h4{ font-size:1rem; padding-right:70px; margin-bottom:8px; }
+.resource-card .source{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+.resource-card p{ font-size:0.88rem; color:var(--text-dim); line-height:1.6; }
+.resource-card a{ display:inline-block; margin-top:14px; font-size:0.85rem; color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+@media (max-width:720px){ .resource-grid{grid-template-columns:1fr;} }
+
+/* Comparison diagram (checklist vs runbook) */
+.compare-grid{display:flex; flex-wrap:wrap; gap:18px; margin-top:8px;}
+.compare-card{flex:1; min-width:220px; border-radius:14px; padding:20px 22px; border:1px solid var(--line);}
+.compare-card.bad{background:var(--c-ir-dim); border-color:var(--c-ir);}
+.compare-card.good{background:var(--c-gov-dim); border-color:var(--c-gov);}
+.compare-card .cc-label{font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; display:block;}
+.compare-card.bad .cc-label{color:var(--c-ir);}
+.compare-card.good .cc-label{color:var(--c-gov);}
+.compare-card p{font-size:0.92rem; margin-bottom:0; color:var(--text);}
+
+/* Forensics diagram specific */
+.acct-box{border:1px solid var(--line); border-radius:14px; padding:18px; background:var(--surface-raised); flex:1; min-width:200px;}
+.acct-box.compromised{border-color:var(--c-ir);}
+.acct-box.forensics{border-color:var(--c-gov);}
+.acct-box h4{font-family:'JetBrains Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;}
+.acct-box.compromised h4{color:var(--c-ir);}
+.acct-box.forensics h4{color:var(--c-gov);}
+.acct-box ul{margin:0; padding-left:18px; font-size:0.85rem; color:var(--text-dim);}
+.acct-box ul li{margin-bottom:6px;}
+
+/* Stat count */
+.stat-num{font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--c-ir);}
+
+/* Bridge scene */
+.bridge-scene{background:linear-gradient(180deg, var(--bg), var(--surface) 60%, var(--bg));}
+.domain-shift-strip{display:flex; align-items:center; gap:10px; font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:0.05em; margin-bottom:28px; flex-wrap:wrap;}
+.domain-pill{padding:6px 14px; border-radius:999px; border:1px solid var(--line);}
+.domain-pill.from{color:var(--c-detect); border-color:var(--c-detect-dim);}
+.domain-pill.to{color:var(--c-ir); border-color:var(--c-ir-dim); background:var(--c-ir-dim);}
+
+/* Footer nav */
+.footer-nav{display:flex; justify-content:space-between; gap:20px; max-width:840px; margin:0 auto 40px; flex-wrap:wrap;}
+.footer-nav a{color:var(--text); text-decoration:none; border:1px solid var(--line); border-radius:12px; padding:16px 20px; flex:1; min-width:220px; transition:border-color .2s ease;}
+.footer-nav a:hover{border-color:var(--c-ir);}
+.footer-nav .fn-dir{font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; color:var(--text-dim); letter-spacing:0.08em; display:block; margin-bottom:6px;}
+.footer-nav .next{text-align:right;}
+.footer-credit{text-align:center; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim);}
+</style>
+</head>
+<body data-theme="dark">
+<div id="grainOverlay"></div>
+<div id="scrollProgress" style="position:fixed; top:0; left:0; height:3px; width:0%; background:var(--c-ir); z-index:300; transition:width .08s linear;"></div>
+
+<nav class="topnav">
+  <div class="nav-left">
+    <button id="hamburgerBtn" aria-label="Open module contents"><span></span><span></span><span></span></button>
+    <div class="brand">SCS-C03 · <strong>Module 11</strong> / 16 · Incident Response</div>
+  </div>
+  <button id="themeToggle">🌙 DARK</button>
+</nav>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<nav class="left-drawer" id="leftDrawer" aria-label="Module contents">
+  <div class="toc-heading">Module 11 Contents</div>
+  <div id="tocList"></div>
+</nav>
+
+<div class="rail" id="railNav"></div>
+
+<main>
+
+<!-- ================= OPENING BRIDGE ================= -->
+<section class="scene scene-hero bridge-scene reveal" id="scene-bridge" data-rail="Bridge">
+  <div class="ambient-blob" style="width:520px; height:520px; background:var(--c-ir); top:-140px; right:-160px;"></div>
+  <div class="container">
+    <div class="domain-shift-strip">
+      <span class="domain-pill from">MODULE 10 · DOMAIN 1 — DETECTION</span>
+      <span style="color:var(--text-dim);">→</span>
+      <span class="domain-pill to">MODULE 11 · DOMAIN 2 — INCIDENT RESPONSE</span>
+    </div>
+    <div class="eyebrow">MODULE 11 · DOMAIN 2 (14%) · 2.5 HRS · ADVANCED</div>
+    <h2 class="kinetic">Incident Response: Planning, Containment &amp; Automation</h2>
+    <p class="lede" style="margin-top:22px;">Module 10 gave you GuardDuty, Security Hub, and Detective — a pipeline that generates and correlates findings. But a finding sitting in a dashboard has done nothing yet. It has not isolated anything, preserved anything, or stopped anything from getting worse.</p>
+    <p class="lede">This module is what happens in the minutes and hours after that finding appears — under real pressure, with real consequences for getting the sequence wrong. Detection told you something is happening. This module is about what you do next, and just as importantly, what you must not do first.</p>
+    <div class="mentor-aside reveal">
+      <p>Every incident response scenario on the exam is really testing one thing: do you reach for the fast, satisfying action, or the correct one? They are not always the same action, and the exam knows exactly where that gap is.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= IR LIFECYCLE ================= -->
+<section class="scene reveal" id="scene-lifecycle" data-rail="IR Lifecycle">
+  <div class="ambient-blob" style="width:460px; height:460px; background:var(--c-detect); bottom:-120px; left:-140px; opacity:0.18;"></div>
+  <div class="container">
+    <div class="eyebrow">THE LIFECYCLE</div>
+    <h2 class="kinetic">The incident response lifecycle, in full depth</h2>
+    <p>A fire department doesn't start deciding where the trucks are parked while the building is already burning. That decision, along with the hose lengths, the water pressure, and who's authorized to break down a door, was made long before any alarm sounded. Incident response works the same way — and the six phases you've probably seen before, Prepare, Detect, Contain, Eradicate, Recover, Lessons Learned, are really just naming when each of those decisions has to already be made. Naming them is not the skill the exam tests. What the exam actually tests is whether you understand what each phase concretely requires in an AWS environment — and Prepare is the phase almost everyone skips, which is exactly why it gets tested hardest.</p>
+
+    <div class="diagram-wrap">
+      <div class="flow-row" id="lifecycleDiagram">
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Prepare phase detail" data-node="prepare"><span class="fn-icon">🧰</span><span class="fn-label">Prepare</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Detect phase detail" data-node="detect"><span class="fn-icon">🔎</span><span class="fn-label">Detect</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Contain phase detail" data-node="contain"><span class="fn-icon">🧱</span><span class="fn-label">Contain</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Eradicate phase detail" data-node="eradicate"><span class="fn-icon">🧹</span><span class="fn-label">Eradicate</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Recover phase detail" data-node="recover"><span class="fn-icon">📈</span><span class="fn-label">Recover</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Lessons Learned phase detail" data-node="lessons"><span class="fn-icon">📝</span><span class="fn-label">Lessons Learned</span></div>
+      </div>
+      <div class="node-info" id="info-prepare">
+        <strong>Prepare — the phase that decides everything downstream.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">Concretely, in AWS, preparation means: forensics tooling pre-provisioned in a dedicated account before it is needed, IAM roles for responders already created with exactly the permissions an investigation requires — no more — and runbooks already written and pre-approved for the incident types you expect. If any of these get built during the incident, you are not responding, you are improvising.</p>
+      </div>
+      <div class="node-info" id="info-detect">
+        <strong>Detect — a handoff, not a re-teach.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">This is Module 10's territory: GuardDuty findings, Security Hub aggregation, Detective's correlated timelines. This module picks up the moment a finding exists. The connection matters for the exam — a scenario question that opens with "GuardDuty generates a finding" is telling you the Detect phase is over and it wants to know what you do in Contain.</p>
+      </div>
+      <div class="node-info" id="info-contain">
+        <strong>Contain — stop the bleeding without destroying the evidence.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">Isolate the affected resource so it cannot do further damage or communicate further, while preserving its state for later analysis. This is where isolate-before-terminate lives, and it is the single most tested sequencing decision in this domain — its own scene is coming up.</p>
+      </div>
+      <div class="node-info" id="info-eradicate">
+        <strong>Eradicate — remove the root cause, not just the symptom.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">Rotate the compromised credential, patch the exploited vulnerability, remove the malicious IAM policy or backdoor user. Eradication only happens after evidence is preserved — doing it earlier destroys your ability to confirm you actually found the root cause.</p>
+      </div>
+      <div class="node-info" id="info-recover">
+        <strong>Recover — restore service deliberately, not by reflex.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">Rebuild from known-good AMIs or infrastructure-as-code rather than trusting a "cleaned" compromised resource, restore from backups taken before the compromise window, and monitor closely for re-compromise before declaring the incident over.</p>
+      </div>
+      <div class="node-info" id="info-lessons">
+        <strong>Lessons Learned — feeds back into Prepare.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">A blameless post-incident review that updates runbooks, closes the gap that allowed the incident, and — critically — feeds directly back into Prepare for the next cycle. This phase is why the lifecycle is drawn as a loop, not a line.</p>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <span class="tag">Production scenario</span>
+      <p>A mid-sized fintech company had excellent detection — GuardDuty findings routed cleanly into Security Hub, with Slack alerts within seconds. But when an IAM access key was actually leaked in a public GitHub commit, the responding engineer had no pre-written runbook for "leaked access key" and no pre-approved role to act with. They spent forty minutes in a Slack thread debating who had permission to disable the key, while the leaked credential remained active the entire time. Detection was never the gap. Preparation was.</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>I've never seen a team get burned by too much preparation. I've seen plenty get burned by treating it as the phase they'll "get to later" — later is the middle of the incident, and by then it's not preparation anymore, it's improvisation with a deadline.</p>
+    </div>
+
+    <div class="exam-angle">
+      <span class="tag">Exam angle</span>
+      <p>When a scenario question describes a slow or chaotic response, look for what was missing in Prepare — a pre-written runbook, a pre-provisioned role, pre-approved automation — before assuming the fix is "better detection." The exam frequently plants the gap in Prepare and dresses it up as a Detect or Contain problem.</p>
+    </div>
+
+    <p><strong>Takeaway: the lifecycle is a loop, not a line — and the phase everyone under-invests in is the one at both ends of it.</strong></p>
+
+    <div class="checkpoint reveal">
+      <span class="checkpoint-label">🧠 Quick check — before you scroll on</span>
+      <p class="checkpoint-q">A GuardDuty finding fires, gets triaged, and a response is executed — but no one updates the runbook or the automation afterward. Which phase got skipped, and what does that put at risk?</p>
+      <button class="checkpoint-toggle" type="button">Reveal answer</button>
+      <div class="checkpoint-answer">
+        <p>Lessons Learned was skipped. Without it, the gap that allowed this incident never feeds back into Prepare — so the same class of incident can recur with the exact same slow, improvised response next time. The loop only closes if this phase actually happens.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ================= RUNBOOKS ================= -->
+<section class="scene reveal" id="scene-runbooks" data-rail="Runbooks">
+  <div class="container">
+    <div class="eyebrow">IR RUNBOOKS</div>
+    <h2 class="kinetic">A runbook is not a checklist</h2>
+    <p>A checklist says "investigate the instance." A runbook says exactly which security group to attach, exactly which snapshot to take first, and exactly who is authorized to execute step four without waiting for anyone's approval. The difference is the entire point: a genuinely useful runbook contains specific, pre-approved steps for a specific incident type — compromised credential, compromised EC2 instance, publicly exposed S3 bucket — written so an on-call responder can execute it under pressure without inventing novel judgment calls in the moment.</p>
+    <p>Pre-approval is the part people underestimate. A runbook's containment steps should already be authorized by security leadership and legal before an incident happens. If a responder has to get emergency sign-off mid-incident to isolate a resource, that delay is pure cost — cost measured in the attacker's continued access, not in caution.</p>
+
+    <div class="diagram-wrap">
+      <div class="compare-grid">
+        <div class="compare-card bad">
+          <span class="cc-label">✗ Checklist</span>
+          <p>"Assess the situation." "Contain if necessary." "Notify stakeholders." Every word requires a judgment call, made for the first time, under pressure, by whoever happens to be on call.</p>
+        </div>
+        <div class="compare-card good">
+          <span class="cc-label">✓ Runbook</span>
+          <p>"Attach security group sg-quarantine-0091 (no inbound, outbound to forensics VPC only). On-call engineer is pre-authorized to execute without further approval." Zero judgment calls left to make.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <span class="tag">Production scenario</span>
+      <p>An engineering team had a well-intentioned but vague "security incident checklist": "assess the situation," "contain if necessary," "notify stakeholders." When a compromised EC2 instance was flagged, the on-call engineer spent the first critical minutes deciding what "contain if necessary" actually meant for this instance, second-guessing whether they had authority to quarantine a production resource. A specific runbook — "attach security group sg-quarantine-0091, which permits only outbound to the forensics VPC" — would have taken thirty seconds to execute with zero ambiguity.</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>If you cannot hand a runbook to an on-call engineer at 3 a.m. and expect them to execute it correctly without calling you, it is not a runbook yet. It is a description of a runbook.</p>
+    </div>
+
+    <div class="exam-angle">
+      <span class="tag">Exam angle</span>
+      <p>Watch for answer choices that describe a runbook as a general checklist or guideline. The exam consistently rewards answers where the runbook specifies exact, pre-approved actions tied to a specific incident type.</p>
+    </div>
+
+    <p><strong>Takeaway: a runbook only counts as a runbook once every decision in it has already been made and pre-approved — nothing left to improvise mid-incident.</strong></p>
+  </div>
+</section>
+
+<!-- ================= SSM INCIDENT MANAGER / OPSCENTER ================= -->
+<section class="scene reveal" id="scene-ssm" data-rail="Incident Manager">
+  <div class="ambient-blob" style="width:480px; height:480px; background:var(--c-ir); top:10%; right:-180px; opacity:0.15;"></div>
+  <div class="container">
+    <div class="eyebrow">AWS-NATIVE TOOLING</div>
+    <h2 class="kinetic">Systems Manager Incident Manager and OpsCenter</h2>
+    <p>A hospital's crash cart protocol and the room the code team actually works in are two different things — one is the pre-agreed plan for who does what, the other is the physical space with the patient's chart, monitors, and equipment already at hand. AWS splits the same two concerns. Runbooks need a place to live and a system to execute them consistently: that is what Systems Manager Incident Manager provides — response plans that tie a specific incident type to a specific automation document, plus engagement and escalation configuration so the right on-call responder is paged automatically instead of relying on someone remembering to check Slack.</p>
+    <p>OpsCenter is the workspace next to it — the room the responder actually works in. It centralizes operational issues, including security-relevant ones, and attaches the related resources, the relevant runbook, and contextual CloudWatch and Config data directly to the issue. Instead of a responder tab-switching between six consoles trying to reconstruct context, OpsCenter puts that context in one place, next to the action they need to take.</p>
+
+    <div class="diagram-wrap">
+      <div class="flow-row">
+        <div class="flow-node"><span class="fn-icon">📋</span><span class="fn-label">Response Plan</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><span class="fn-icon">⚙️</span><span class="fn-label">Automation Doc</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><span class="fn-icon">📟</span><span class="fn-label">Engagement / Escalation</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><span class="fn-icon">🗂️</span><span class="fn-label">OpsCenter Workspace</span></div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <span class="tag">Production scenario</span>
+      <p>A platform team configured an Incident Manager response plan for "public S3 bucket" findings: the plan automatically opens an OpsItem in OpsCenter, attaches the bucket's Config history and recent CloudTrail events, runs a pre-approved automation document that re-applies Block Public Access, and pages the data-security on-call rotation — all before a human has read the first Slack message. The human's job becomes verification and follow-up, not first response.</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>When you get confused between these two, ask which noun the question is describing — a plan, or a workspace. Incident Manager is always the plan. OpsCenter is always the room.</p>
+    </div>
+
+    <div class="exam-angle">
+      <span class="tag">Exam angle</span>
+      <p>Distinguish the two services by role: Incident Manager structures the response workflow (plans, automation, escalation); OpsCenter is the operational workspace where a responder actually works the issue with context attached. A question describing "centralizing an operational issue with related resources" is pointing at OpsCenter, not Incident Manager.</p>
+    </div>
+
+    <p><strong>Takeaway: Incident Manager decides the workflow in advance; OpsCenter is where a human executes it with context already attached.</strong></p>
+  </div>
+</section>
+
+
+<!-- ================= TITLE CARD ================= -->
+<div class="title-card">
+  <div class="scanbeam"></div>
+  <h2 class="kinetic">ISOLATE FIRST.</h2>
+  <h2 class="kinetic" style="margin-top:6px;">TERMINATE DESTROYS THE EVIDENCE.</h2>
+  <div class="sub">The module's single most tested concept</div>
+</div>
+
+<!-- ================= ISOLATE BEFORE TERMINATE ================= -->
+<section class="scene reveal" id="scene-isolate" data-rail="Isolate ≠ Terminate">
+  <div class="ambient-blob" style="width:520px; height:520px; background:var(--c-ir); top:-160px; left:-160px; opacity:0.2;"></div>
+  <div class="container">
+    <div class="eyebrow">THE CENTRAL CONCEPT</div>
+    <h2 class="kinetic">Isolate before you terminate</h2>
+    <p>When you find a compromised EC2 instance, terminating it feels decisive. It feels like you have solved the problem. It has not solved the problem — it has destroyed the evidence you needed to understand what actually happened, confirm the attacker's full reach, prevent recurrence, and in many industries, meet legal or compliance obligations around incident documentation.</p>
+    <p>The correct sequence is: isolate, preserve evidence, then eradicate. Isolation means attaching a locked-down quarantine security group — no inbound, no outbound except to your forensics tooling — so the instance can no longer communicate with the attacker or spread further, while its memory and disk remain intact. Preservation means taking an EBS snapshot, and capturing memory if your tooling supports it, before anything else touches the instance. Only after both of those steps is it safe to eradicate.</p>
+
+    <div class="diagram-wrap">
+      <div class="flow-row" id="isolateDiagram">
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Isolate step detail" data-node="iso-isolate" style="border-color:var(--c-gov);"><span class="fn-icon">🔒</span><span class="fn-label">1. Isolate</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Preserve evidence step detail" data-node="iso-preserve" style="border-color:var(--c-gov);"><span class="fn-icon">💾</span><span class="fn-label">2. Preserve Evidence</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Eradicate step detail" data-node="iso-eradicate" style="border-color:var(--c-gov);"><span class="fn-icon">🧹</span><span class="fn-label">3. Eradicate</span></div>
+      </div>
+      <div style="margin-top:18px; padding-top:18px; border-top:1px dashed var(--c-ir); text-align:center;">
+        <span class="flow-node mindnode" tabindex="0" role="button" aria-label="Wrong sequence detail" data-node="iso-wrong" style="display:inline-flex; align-items:center; gap:10px; border-color:var(--c-ir); max-width:340px;"><span class="fn-icon">💥</span><span class="fn-label">WRONG: Terminate first</span></span>
+      </div>
+      <div class="node-info" id="info-iso-isolate">
+        <strong>Swap the security group, do not touch the data.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">Attach a quarantine security group with no inbound rules and outbound restricted to your forensics tooling only. The instance stays running — its memory, running processes, and disk state remain exactly as they were at detection time.</p>
+      </div>
+      <div class="node-info" id="info-iso-preserve">
+        <strong>Snapshot before you do anything else.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">Take an EBS snapshot of every attached volume, and capture memory if your forensics tooling supports live memory acquisition. This snapshot is your permanent record of the instance's state at the moment of compromise, independent of anything that happens to the instance afterward.</p>
+      </div>
+      <div class="node-info" id="info-iso-eradicate">
+        <strong>Now it is safe to remove the root cause.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">With isolation and evidence preservation complete, you can terminate the instance, rotate credentials, patch the vulnerability — whatever eradication requires — without losing anything you might need later.</p>
+      </div>
+      <div class="node-info" id="info-iso-wrong">
+        <strong>Why terminate-first fails.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">Terminating an EC2 instance destroys its instance store data immediately and makes memory forensics impossible. You lose the ability to determine how the attacker got in, what they accessed, and whether they left a persistence mechanism elsewhere in the account. The incident "looks" resolved. It is not understood.</p>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <span class="tag">Production scenario</span>
+      <p>An on-call engineer discovered cryptomining processes on a production EC2 instance and, wanting to stop the resource drain immediately, terminated it within two minutes of discovery. The mining stopped. But the team could never determine the initial access vector, could not confirm whether the attacker had pivoted to other instances via the same exploited web application, and could not produce the evidence their compliance team needed for a customer-facing incident report. The instance was gone in under two minutes. The uncertainty about the attacker's full reach lasted for months.</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>The urge to terminate is emotional, not technical. It feels like closure. But closure without understanding is just a compromised account waiting to be compromised the same way again. Isolate, snapshot, then act — the ninety extra seconds that takes will never cost you what a lost forensic trail costs.</p>
+    </div>
+
+    <div class="exam-angle">
+      <span class="tag">Exam angle</span>
+      <p>Any scenario question offering "terminate the instance immediately" as the first step of a response, for a compromised-resource situation, is very likely the trap answer. Look for the option that isolates and preserves evidence before any destructive action.</p>
+    </div>
+
+    <p><strong>Takeaway: isolate to stop the harm, preserve to keep the evidence, eradicate only once both are done — in that order, every time.</strong></p>
+
+    <div class="checkpoint reveal">
+      <span class="checkpoint-label">🧠 Quick check — before you scroll on</span>
+      <p class="checkpoint-q">Your team's runbook says to snapshot a compromised instance's volumes before quarantining its security group. What's wrong with that order?</p>
+      <button class="checkpoint-toggle" type="button">Reveal answer</button>
+      <div class="checkpoint-answer">
+        <p>The instance is still fully networked while the snapshot is being taken, giving the attacker more time to do damage or notice the response and react. Isolate first — the quarantine security group can be attached in seconds — then snapshot. The order matters even between two "safe" steps.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ================= AUTOMATED CONTAINMENT ================= -->
+<section class="scene reveal" id="scene-automation" data-rail="Automation">
+  <div class="container">
+    <div class="eyebrow">AUTOMATED CONTAINMENT</div>
+    <h2 class="kinetic">Letting the response move at machine speed</h2>
+    <p>An airbag doesn't wait for a committee to review the crash before deploying — the decision to deploy was engineered in long before any collision, so the response happens in milliseconds instead of minutes. Automated containment works the same way for well-understood, pre-approved incidents: automatically swapping a compromised EC2 instance's security group to quarantine, automatically revoking a compromised IAM credential's active sessions, automatically disabling an access key the moment it is flagged. Human responders are the bottleneck in the first minutes of an incident, and the first minutes are when an attacker does the most damage — automation closes exactly that gap.</p>
+    <p>The connective tissue between Module 10's detection and this module's response is EventBridge. A GuardDuty finding publishes an event, an EventBridge rule matches it, and that rule invokes a Lambda function that executes a specific, pre-approved containment action. No human decision is made in the loop — the decision was already made when the runbook and the automation were approved.</p>
+
+    <div class="diagram-wrap">
+      <div class="flow-row" id="automationDiagram">
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="GuardDuty finding detail" data-node="auto-gd"><span class="fn-icon">🛰️</span><span class="fn-label">GuardDuty Finding</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="EventBridge rule detail" data-node="auto-eb"><span class="fn-icon">🔀</span><span class="fn-label">EventBridge Rule</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Lambda function detail" data-node="auto-lambda"><span class="fn-icon">λ</span><span class="fn-label">Lambda Function</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node mindnode" tabindex="0" role="button" aria-label="Containment action detail" data-node="auto-action"><span class="fn-icon">🔒</span><span class="fn-label">Containment Action</span></div>
+      </div>
+      <div class="node-info" id="info-auto-gd">
+        <strong>The trigger.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">A GuardDuty finding such as UnauthorizedAccess:EC2/SSHBruteForce or CredentialAccess:IAMUser/AnomalousBehavior fires and is published as an event, either directly or via Security Hub's aggregated findings.</p>
+      </div>
+      <div class="node-info" id="info-auto-eb">
+        <strong>The match.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">An EventBridge rule with an event pattern matching the specific finding type routes it to a target — in this case, a Lambda function scoped to handle exactly this class of incident.</p>
+      </div>
+      <div class="node-info" id="info-auto-lambda">
+        <strong>The execution.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">The Lambda function, running under an IAM role scoped to only the containment actions it needs — nothing broader — executes the pre-approved response: swap a security group, revoke a session, disable a key.</p>
+      </div>
+      <div class="node-info" id="info-auto-action">
+        <strong>The outcome.</strong>
+        <p style="margin-top:10px; margin-bottom:0;">The resource is contained within seconds of the finding, not minutes or hours, and the action taken is logged for the post-incident review that follows in the Lessons Learned phase.</p>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <span class="tag">Production scenario</span>
+      <p>A company configured EventBridge to route any GuardDuty UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration finding directly to a Lambda function that immediately attaches a deny-all IAM policy to the affected role and revokes all active sessions. When an EC2 instance's credentials were exfiltrated and used from an unfamiliar geography, the automation contained the credential in under thirty seconds — long before any human had opened the alert.</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>The scariest automation isn't the one that acts too fast — it's the one nobody scoped narrowly enough. Match on the most specific identifier you have, not the broadest tag that happens to be convenient.</p>
+    </div>
+
+    <div class="exam-angle">
+      <span class="tag">Exam angle</span>
+      <p>Automated containment executes pre-approved actions, not novel decisions made in the moment. If an answer choice implies the automation is deciding what to do on the fly, that is a trap — the judgment call happened earlier, when the runbook and automation document were written and approved.</p>
+    </div>
+
+    <p><strong>Takeaway: automation should execute a decision already made, at machine speed — never make a new decision on the fly.</strong></p>
+  </div>
+</section>
+
+<!-- ================= FORENSICS ACCOUNT ================= -->
+<section class="scene reveal" id="scene-forensics" data-rail="Forensics Account">
+  <div class="ambient-blob" style="width:460px; height:460px; background:var(--c-gov); bottom:-100px; right:-140px; opacity:0.16;"></div>
+  <div class="container">
+    <div class="eyebrow">MULTI-ACCOUNT ARCHITECTURE</div>
+    <h2 class="kinetic">Why forensics happens in a dedicated account</h2>
+    <p>A crime scene investigator doesn't run the fingerprint analysis in the same room where the break-in happened, using the suspect's own equipment — they bag the evidence and take it somewhere the suspect never had access to. Cloud forensics needs the same separation. If the account that was compromised is also the account where you perform forensic analysis, you are trusting the integrity of an environment you already know was breached. An attacker with sufficient access could have altered logs, tampered with snapshots, or left IAM changes that interfere with — or actively destroy — the very evidence you are trying to analyze.</p>
+    <p>The fix is a direct application of both blast-radius minimization and the multi-account architecture thread running through this course: copy the evidence — EBS snapshots, memory captures, relevant logs — into a dedicated, isolated forensics account, where the potentially-compromised account's own permissions have no reach. Analysis happens there, on a copy, with clean IAM that was never exposed to the incident.</p>
+
+    <div class="diagram-wrap">
+      <div class="flow-row" style="align-items:center;">
+        <div class="acct-box compromised">
+          <h4>⚠️ Compromised Account</h4>
+          <ul>
+            <li>Affected EC2 instance</li>
+            <li>Original EBS volumes</li>
+            <li>Potentially-tampered IAM</li>
+          </ul>
+        </div>
+        <div class="flow-arrow" style="flex-direction:column; align-items:center;"><span>➜</span><span class="mono" style="font-size:10px; color:var(--text-dim); margin-top:4px;">snapshot copy</span></div>
+        <div class="acct-box forensics">
+          <h4>✅ Forensics Account</h4>
+          <ul>
+            <li>Copied EBS snapshots</li>
+            <li>Memory captures</li>
+            <li>Clean, unexposed IAM roles</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <span class="tag">Production scenario</span>
+      <p>A security team initially performed all forensic analysis inside the compromised account itself, using the account's existing IAM roles. During a later, more sophisticated incident, they discovered the attacker had escalated privileges broadly enough to potentially have altered CloudTrail log delivery. They could no longer fully trust their own analysis. After that incident, the team moved to a dedicated forensics account within their Organizations structure, with cross-account roles that only allow read access to copied evidence — never write access back into the source account.</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>Ask yourself: if the attacker had root in this account, could they have touched the thing I'm about to trust? If the answer is yes, that thing needs to live somewhere else before you trust it.</p>
+    </div>
+
+    <div class="exam-angle">
+      <span class="tag">Exam angle</span>
+      <p>Any answer choice describing forensic analysis performed directly in the compromised account, using that account's own tooling or IAM, is a trap. The correct pattern always copies evidence into a separate, dedicated forensics account first.</p>
+    </div>
+
+    <p><strong>Takeaway: never trust an investigation performed with the tools of the environment under investigation — move the evidence, not the analyst's assumptions.</strong></p>
+  </div>
+</section>
+
+<!-- ================= SHIELD ADVANCED IR ================= -->
+<section class="scene reveal" id="scene-shield" data-rail="Shield Advanced">
+  <div class="container">
+    <div class="eyebrow">DDOS RESPONSE</div>
+    <h2 class="kinetic">Shield Advanced from the response side</h2>
+    <p>A home alarm system that just makes noise is prevention. A monitored alarm system with a response team already dispatched the moment it triggers is something else entirely — and that's the shift this scene covers. Module 5 covered Shield Advanced as prevention: always-on detection and mitigation for network and transport layer DDoS attacks. This module covers what changes once an attack is actually underway. Shield Advanced subscribers get direct engagement with the DDoS Response Team, AWS's specialized team that helps triage and mitigate sophisticated or high-impact attacks in real time — not a generic support ticket, but a team that works your specific attack with you.</p>
+    <p>During an active event, Shield Advanced can also create WAF rules automatically, tuned to the specific attack pattern it observes, without waiting for a human to hand-write a rule under pressure. And Shield Advanced's cost protection covers scaling charges incurred during a DDoS event — so an attack that forces you to scale out horizontally does not also produce a punishing bill on top of the operational disruption.</p>
+
+    <div class="diagram-wrap">
+      <div class="flow-row">
+        <div class="flow-node"><span class="fn-icon">📞</span><span class="fn-label">DRT Engagement</span></div>
+        <div class="flow-arrow">+</div>
+        <div class="flow-node"><span class="fn-icon">🛡️</span><span class="fn-label">Auto WAF Rules</span></div>
+        <div class="flow-arrow">+</div>
+        <div class="flow-node"><span class="fn-icon">💳</span><span class="fn-label">Cost Protection</span></div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <span class="tag">Production scenario</span>
+      <p>An e-commerce platform on Shield Advanced experienced a sophisticated application-layer DDoS attack during a product launch. Rather than manually tuning WAF rules against a shifting attack pattern, they engaged the DRT directly, who helped refine automated WAF rule creation in real time as the attack evolved. The auto-scaling costs incurred defending against the traffic surge were covered under Shield Advanced's cost protection, rather than becoming an unplanned infrastructure bill layered on top of the incident.</p>
+    </div>
+
+    <div class="mentor-aside reveal">
+      <p>Prevention and response are both valuable, but they answer different questions. Prevention asks "how do we stop this from starting?" Response asks "we're already under attack — now what?" Shield Advanced answers both, just with different tools for each.</p>
+    </div>
+
+    <div class="exam-angle">
+      <span class="tag">Exam angle</span>
+      <p>DRT engagement, automatic WAF rule creation, and cost protection are response capabilities, not prevention capabilities. A question framing these as ways to prevent an attack from starting is misreading Shield Advanced's role during an active event.</p>
+    </div>
+
+    <p><strong>Takeaway: once an attack is live, Shield Advanced shifts from silent automatic defense to active, expert-assisted response — engage the DRT rather than hand-tuning rules alone.</strong></p>
+  </div>
+</section>
+
+
+<!-- ================= CONTAIN THIS INCIDENT EXERCISE ================= -->
+<section class="scene reveal" id="scene-exercise" data-rail="Contain This">
+  <div class="container">
+    <div class="eyebrow">APPLIED PRACTICE</div>
+    <h2 class="kinetic">Contain This Incident</h2>
+    <p>Ten active incidents. For each, pick the correct first containment action. Tap an option to reveal the reasoning — including exactly why the tempting terminate-first or shortcut answer is wrong.</p>
+
+    <div id="exerciseList"></div>
+  </div>
+</section>
+
+<!-- ================= PRODUCTION TRAP GALLERY ================= -->
+<section class="scene reveal" id="scene-traps" data-rail="Trap Gallery">
+  <div class="ambient-blob" style="width:480px; height:480px; background:var(--c-ir); top:0; left:-160px; opacity:0.14;"></div>
+  <div class="container">
+    <div class="eyebrow">PRODUCTION TRAP GALLERY</div>
+    <h2 class="kinetic">Six ways real teams got this wrong</h2>
+    <p>Every one of these is a real pattern of failure, not a hypothetical. Study the reasoning, not just the outcome.</p>
+    <div id="trapGallery"></div>
+  </div>
+</section>
+
+
+<!-- ================= MOCK EXAM ================= -->
+<section class="scene reveal" id="scene-exam" data-rail="Mock Exam">
+  <div class="container">
+    <div class="eyebrow">KNOWLEDGE CHECK</div>
+    <h2 class="kinetic">Mock Exam — Module 11</h2>
+    <p>Twelve original SCS-C03-style questions. Tap an answer to reveal the reasoning; your score updates as you go.</p>
+    <div class="score-tracker">SCORE: <span class="sc-val" id="scoreVal">0</span> / <span id="scoreTotal">0</span></div>
+    <div id="examList"></div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="scene reveal" id="scene-faq" data-rail="FAQ">
+  <div class="ambient-blob" style="width:440px; height:440px; background:var(--c-detect); bottom:-100px; right:-140px; opacity:0.15;"></div>
+  <div class="container">
+    <div class="eyebrow">ASK YOUR MENTOR</div>
+    <h2 class="kinetic">Questions learners actually ask</h2>
+    <div class="discussion">
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Isn&#39;t isolating slower than just shutting it down? Why does the exam care about evidence if the threat is contained either way?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Both actions stop the immediate threat, so that part is true. But shutting down or terminating throws away the answer to "how did this happen, and is it still happening somewhere else?" Without evidence, you cannot confirm the attacker did not pivot to another resource, and you cannot prevent the same compromise from recurring next month. Isolation costs you almost nothing in speed — a security group swap takes seconds — while giving you everything termination throws away.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>If automation already contains the resource, why do we still need a human-written runbook at all?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Because the automation is executing the runbook. Someone has to write the specific, pre-approved steps before a Lambda function can execute them. The runbook is the decision; the automation is the execution speed. Skip the runbook and you either have no automation to build, or automation making decisions nobody approved.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>What&#39;s the actual difference between Incident Manager and OpsCenter? They feel like the same thing.</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Incident Manager is the structure — response plans, automation documents, escalation chains, who gets paged. OpsCenter is the workspace — where a human responder actually sits and works the issue, with the relevant resources, runbook, and CloudWatch or Config data already attached. One defines the workflow; the other is where the workflow gets executed.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Do I really need a whole separate AWS account just for forensics? Can&#39;t I just use a separate IAM role in the same account?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>No — a separate role in the same account is still governed by that account's control plane, which may itself be compromised. Account-level isolation means the attacker's reach, however deep, stops at the account boundary. A separate role gives you organizational tidiness. A separate account gives you an actual trust boundary.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>For a compromised IAM access key, is disabling the key enough, or do I need to do more?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Disabling the key stops new requests, but any sessions or tokens already issued from that key may still be valid depending on the service. A thorough response revokes active sessions, disables or deletes the key, and reviews CloudTrail for what the key was actually used for during the compromise window — because disabling the key alone does not tell you what already happened.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>How does this module connect to blast radius minimization from Module 3?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Module 3 introduced blast radius minimization as a side effect of tight permission boundaries and SCPs — limiting what a resource could do if compromised. This module makes it operational and active: isolating a resource so it cannot spread, and running forensics in a separate account so a compromised account's own permissions cannot reach the evidence. Same principle, now applied under live incident pressure.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>What&#39;s the exam-level difference between Shield Advanced prevention and Shield Advanced response?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>Prevention is the always-on detection and mitigation that runs before and during an attack automatically. Response is what activates once you are actively under attack and need more: DRT engagement for hands-on help, automatic WAF rule creation tuned to the live attack pattern, and cost protection for the scaling charges the attack forces on you. If a question mentions engaging AWS's response team or refining WAF rules mid-attack, that is the response side.</div>
+      </div>
+
+      <div class="discussion-pair">
+        <div class="bubble bubble-q"><span class="who">🧑‍💻 You ask <span class="chev">›</span></span>Is it ever correct to terminate an instance first?</div>
+        <div class="bubble bubble-a"><span class="who">🛡️ Your Mentor</span>On the exam, essentially never as the first step for a compromised resource — the tested pattern is always isolate and preserve evidence first. In the real world there are edge cases involving active, catastrophic data exfiltration where every second counts, but even then, most teams find a quarantine security group is just as fast as termination and does not sacrifice the evidence.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESOURCES ================= -->
+<section class="scene reveal" id="scene-resources" data-rail="Resources">
+  <div class="container">
+    <div class="eyebrow">GO DEEPER</div>
+    <h2 class="kinetic">Resources for Domain 2</h2>
+    <div class="resource-grid stagger">
+
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span>
+        <h4>Systems Manager Incident Manager — User Guide</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>Official documentation on response plans, automation documents, and engagement configuration.</p>
+        <a href="https://docs.aws.amazon.com/incident-manager/latest/userguide/what-is-incident-manager.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span>
+        <h4>AWS Systems Manager OpsCenter — User Guide</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>How OpsCenter centralizes OpsItems with related resources and runbooks attached.</p>
+        <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/OpsCenter.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span>
+        <h4>AWS Security Incident Response Guide</h4>
+        <span class="source">aws.amazon.com/whitepapers</span>
+        <p>AWS's official whitepaper on preparing for, responding to, and recovering from security incidents in the cloud.</p>
+        <a href="https://aws.amazon.com/whitepapers/" target="_blank" rel="noopener">Find the whitepaper →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span>
+        <h4>AWS Shield Advanced — DDoS Response Team</h4>
+        <span class="source">docs.aws.amazon.com</span>
+        <p>How DRT engagement works during an active event, and what Shield Advanced automates on your behalf.</p>
+        <a href="https://docs.aws.amazon.com/waf/latest/developerguide/ddos-overview.html" target="_blank" rel="noopener">Read the docs →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span>
+        <h4>Incident Response on AWS — Skill Builder</h4>
+        <span class="source">skillbuilder.aws</span>
+        <p>Free digital training covering AWS-native incident response tooling and patterns.</p>
+        <a href="https://skillbuilder.aws" target="_blank" rel="noopener">Browse Skill Builder →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill free">Free</span>
+        <h4>re:Post — Incident Response discussions</h4>
+        <span class="source">repost.aws</span>
+        <p>Community Q&amp;A on real-world containment automation and forensics account architecture.</p>
+        <a href="https://repost.aws" target="_blank" rel="noopener">Browse re:Post →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill paid">Paid</span>
+        <h4>Tutorials Dojo — SCS-C03 Practice Exams</h4>
+        <span class="source">tutorialsdojo.com</span>
+        <p>Widely-used practice question sets with detailed, scenario-style explanations.</p>
+        <a href="https://tutorialsdojo.com" target="_blank" rel="noopener">Visit Tutorials Dojo →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill paid">Paid</span>
+        <h4>Adrian Cantrill — SCS-C03 Deep Dive Course</h4>
+        <span class="source">learn.cantrill.io</span>
+        <p>In-depth, hands-on video course with strong coverage of IR tooling and automation patterns.</p>
+        <a href="https://learn.cantrill.io" target="_blank" rel="noopener">Visit Cantrill →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill paid">Paid</span>
+        <h4>Stéphane Maarek — AWS Security Specialty Course</h4>
+        <span class="source">udemy.com</span>
+        <p>Comprehensive video course covering all six exam domains with practice questions.</p>
+        <a href="https://www.udemy.com" target="_blank" rel="noopener">Search Udemy →</a>
+      </div>
+
+      <div class="resource-card tilt"><span class="resource-pill paid">Paid</span>
+        <h4>A Cloud Guru — AWS Security Specialty Path</h4>
+        <span class="source">pluralsight.com</span>
+        <p>Structured learning path with hands-on labs relevant to incident response automation.</p>
+        <a href="https://www.pluralsight.com" target="_blank" rel="noopener">Visit Pluralsight →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================= CLOSING BRIDGE ================= -->
+<section class="scene bridge-scene reveal" id="scene-closing" data-rail="Closing">
+  <div class="ambient-blob" style="width:500px; height:500px; background:var(--c-gov); bottom:-140px; right:-160px; opacity:0.18;"></div>
+  <div class="container">
+    <div class="domain-shift-strip">
+      <span class="domain-pill from" style="color:var(--c-ir); border-color:var(--c-ir-dim);">MODULE 11 · DOMAIN 2 — INCIDENT RESPONSE</span>
+      <span style="color:var(--text-dim);">→</span>
+      <span class="domain-pill to" style="color:var(--c-gov); border-color:var(--c-gov-dim); background:var(--c-gov-dim);">MODULE 12 · DOMAIN 6 — GOVERNANCE</span>
+    </div>
+    <div class="eyebrow">WHAT'S NEXT</div>
+    <h2 class="kinetic">From one account to fifty</h2>
+    <p class="lede" style="margin-top:22px;">You now know how to respond when something goes wrong in one account — how to isolate, preserve evidence, contain automatically, and investigate safely. Module 12, Multi-Account Governance &amp; Continuous Compliance, is next: the course's fifth domain shift, moving from Domain 2 into Domain 6.</p>
+    <p class="lede">Module 12 is about the governance structure that keeps things from going wrong the same way across fifty accounts at once — the organizational discipline that makes the incident you just learned to handle less likely to happen again, anywhere in your estate.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="footer-nav">
+    <a href="module-10-threat-detection.html" class="prev"><span class="fn-dir">← Previous</span>Module 10: Threat Detection Services</a>
+    <a href="module-12-governance.html" class="next"><span class="fn-dir">Next →</span>Module 12: Multi-Account Governance &amp; Continuous Compliance</a>
+  </div>
+  <div class="footer-credit">SCS-C03 Certification Course · Module 11 of 16 · Domain 2 — Incident Response</div>
+</footer>
+
+<script>
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Theme toggle — bug fix #3 */
+const html = document.documentElement;
+html.style.colorScheme = html.getAttribute("data-theme") === "light" ? "light" : "dark";
+const themeBtn = document.getElementById("themeToggle");
+themeBtn.textContent = html.getAttribute("data-theme") === "light" ? "☀️ LIGHT" : "🌙 DARK";
+themeBtn.addEventListener("click", () => {
+  const current = html.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  html.setAttribute("data-theme", next);
+  html.style.colorScheme = next;
+  themeBtn.textContent = next === "light" ? "☀️ LIGHT" : "🌙 DARK";
+});
+
+/* Scroll progress */
+function updateProgress(){
+  const h = document.documentElement;
+  const scrolled = h.scrollTop;
+  const height = h.scrollHeight - h.clientHeight;
+  document.getElementById("scrollProgress").style.width = (height > 0 ? (scrolled / height) * 100 : 0) + "%";
+}
+document.addEventListener("scroll", () => requestAnimationFrame(updateProgress));
+
+/* Kinetic word-mask headings */
+function wrapKinetic(el, text){
+  const words = text.split(" ");
+  el.innerHTML = words.map((w, i) => `<span class="kw"><span class="kw-inner" style="transition-delay:${i * 45}ms">${w}</span></span>`).join(" ");
+}
+document.querySelectorAll("h2.kinetic").forEach(h => wrapKinetic(h, h.textContent));
+const kineticIo = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }); }, { threshold: 0.4 });
+document.querySelectorAll("h2.kinetic").forEach(h => kineticIo.observe(h));
+
+/* Scroll reveal + stagger */
+const io = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }); }, { threshold: 0.15 });
+document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+document.querySelectorAll(".stagger > *").forEach((el, i) => { el.style.transitionDelay = (i * 90) + "ms"; });
+
+/* Mind-node click-to-reveal (lifecycle, isolate, automation diagrams) */
+document.querySelectorAll(".mindnode").forEach(node => {
+  function toggleNode(){
+    const target = document.getElementById("info-" + node.dataset.node);
+    if (!target) return;
+    const wasOpen = target.classList.contains("open");
+    document.querySelectorAll(".node-info.open").forEach(n => { if (n !== target && n.closest(".diagram-wrap") === target.closest(".diagram-wrap")) n.classList.remove("open"); });
+    target.classList.toggle("open", !wasOpen);
+  }
+  node.addEventListener("click", toggleNode);
+  node.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); toggleNode(); } });
+});
+
+/* Tilt on hover for resource cards */
+if (!reduceMotion){
+  document.querySelectorAll(".tilt").forEach(card => {
+    card.addEventListener("mousemove", (e) => {
+      const rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(600px) rotateX(${py * -6}deg) rotateY(${px * 6}deg) translateY(-2px)`;
+    });
+    card.addEventListener("mouseleave", () => { card.style.transform = "perspective(600px) rotateX(0) rotateY(0)"; });
+  });
+}
+
+/* Active-recall checkpoints */
+document.querySelectorAll(".checkpoint-toggle").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const answer = btn.nextElementSibling;
+    const isOpen = answer.classList.toggle("open");
+    btn.textContent = isOpen ? "Hide answer" : "Reveal answer";
+  });
+});
+
+/* Discussion-style FAQ */
+document.querySelectorAll(".discussion-pair").forEach(pair => {
+  pair.querySelector(".bubble-q").addEventListener("click", () => pair.classList.toggle("open"));
+});
+
+/* ================= CONTAIN THIS INCIDENT EXERCISE ================= */
+const exerciseData = [
+  {
+    incident: "A GuardDuty finding flags an EC2 instance making outbound connections to a known cryptomining pool.",
+    options: [
+      { text: "Terminate the instance immediately to stop resource drain.", correct: false, reason: "Terminating destroys the instance store data and any chance of memory forensics. You stop the mining but never learn how the attacker got in — or whether they reached other instances." },
+      { text: "Attach a quarantine security group, then snapshot the volumes before further action.", correct: true, reason: "Correct. Isolation stops the outbound traffic immediately; the snapshot preserves evidence of the compromise before eradication begins." },
+      { text: "Leave the instance running and just block the destination IP at the network ACL.", correct: false, reason: "This may reduce the immediate symptom but leaves the instance fully capable of finding another destination or spreading laterally — it is not containment." }
+    ]
+  },
+  {
+    incident: "An IAM access key is discovered committed to a public GitHub repository, still active.",
+    options: [
+      { text: "Rotate the key on the same schedule as your next routine rotation.", correct: false, reason: "A leaked, active credential is an active incident, not a routine maintenance item. Waiting leaves the key usable by anyone who found the commit." },
+      { text: "Immediately disable the access key and revoke any active sessions tied to it, then review CloudTrail for its usage.", correct: true, reason: "Correct. Disabling stops new use immediately; revoking sessions closes tokens already issued; the CloudTrail review tells you what damage, if any, already occurred." },
+      { text: "Delete the IAM user entirely right away.", correct: false, reason: "Deleting the user can remove your ability to see exactly which permissions and history were tied to the account, complicating the investigation. Disable first, investigate, then decide on deletion." }
+    ]
+  },
+  {
+    incident: "An S3 bucket containing customer data is discovered to have public read access enabled.",
+    options: [
+      { text: "Re-apply S3 Block Public Access on the bucket immediately, then determine what was accessed.", correct: true, reason: "Correct. Stopping further public access is the priority containment step; determining scope of exposure (via access logs or CloudTrail data events) follows immediately after." },
+      { text: "Delete the bucket to guarantee no further exposure.", correct: false, reason: "Deleting the bucket destroys the access logs and object-level history needed to determine what was actually exposed and to whom — an overreaction that costs you the investigation." },
+      { text: "Leave it as-is until the scheduled weekly security review.", correct: false, reason: "Public exposure of customer data is an active, ongoing incident. Every minute of delay is more potential exposure." }
+    ]
+  },
+  {
+    incident: "Your application is hit with a large-scale, evolving DDoS attack during a product launch, and you are subscribed to Shield Advanced.",
+    options: [
+      { text: "Engage the DDoS Response Team and let Shield Advanced auto-generate WAF rules tuned to the live pattern.", correct: true, reason: "Correct. This is exactly the response-side capability Shield Advanced provides: hands-on expert help plus automated rule refinement as the attack evolves." },
+      { text: "Manually write and test new WAF rules yourself as the pattern shifts.", correct: false, reason: "This is slower than the automated, expert-assisted path Shield Advanced already provides, and increases the risk of a misconfigured rule under time pressure." },
+      { text: "Scale up EC2 capacity and wait for the attack to subside on its own.", correct: false, reason: "This does not address the attack itself and could produce a very large bill — although Shield Advanced's cost protection helps here, actively mitigating is still the better first move." }
+    ]
+  },
+  {
+    incident: "A GuardDuty finding indicates an EC2 instance's role credentials are being used from an unfamiliar external IP.",
+    options: [
+      { text: "Attach an explicit deny-all policy to the role and revoke active sessions via the automation pipeline.", correct: true, reason: "Correct. This contains the credential immediately without touching the instance itself, preserving it for a possible follow-up isolation and evidence step." },
+      { text: "Stop the EC2 instance to cut off its credential access.", correct: false, reason: "Stopping the instance does not revoke already-issued temporary credentials from the instance profile, which can remain valid for a period — the credential itself needs direct action." },
+      { text: "Wait to see if the anomalous usage continues before acting.", correct: false, reason: "Waiting to confirm intent on an active credential-misuse finding gives an attacker more time with valid access. Contain first." }
+    ]
+  },
+  {
+    incident: "During investigation of a compromised account, you need to analyze EBS snapshots for evidence.",
+    options: [
+      { text: "Run the analysis directly in the compromised account using its existing tooling.", correct: false, reason: "The compromised account's own IAM and tooling may themselves have been tampered with, undermining the integrity of anything you find." },
+      { text: "Copy the snapshots into a dedicated, isolated forensics account and analyze them there.", correct: true, reason: "Correct. This removes the compromised account's permissions from any ability to interfere with the evidence, and is the standard forensics-account pattern." },
+      { text: "Analyze the snapshots in place but under a newly-created IAM role in the same account.", correct: false, reason: "A new role in the same account is still governed by that account's control plane — the trust boundary needs to be the account itself, not just the role." }
+    ]
+  },
+  {
+    incident: "A runbook exists for 'compromised EC2 instance' but it only says 'investigate and remediate as needed.'",
+    options: [
+      { text: "Treat this as sufficient since a runbook technically exists.", correct: false, reason: "A vague checklist is not a runbook in the sense the exam tests. It leaves the on-call responder to make novel judgment calls under pressure, which is exactly what a real runbook prevents." },
+      { text: "Rewrite it with specific, pre-approved steps — exact security group to attach, exact snapshot process, who is authorized to execute it — before the next incident.", correct: true, reason: "Correct. This is the fix: specificity and pre-approval are what make a runbook actually usable during a real incident." },
+      { text: "Escalate every future incident to leadership for a case-by-case decision.", correct: false, reason: "This reintroduces the exact delay pre-approval is meant to eliminate — waiting on a decision mid-incident." }
+    ]
+  },
+  {
+    incident: "A Lambda function automatically quarantines EC2 instances tagged 'prod' when GuardDuty flags them — but it just quarantined a critical database instance due to a tagging mistake, not an actual compromise.",
+    options: [
+      { text: "This proves automated containment is too risky and should be turned off entirely.", correct: false, reason: "The failure here is in tagging hygiene and blast-radius scoping of the automation, not in the concept of automated containment itself." },
+      { text: "Scope the automation more narrowly, add a secondary validation signal before quarantine, and fix the tagging process.", correct: true, reason: "Correct. This addresses the actual root cause — insufficient validation and tagging discipline — while keeping the speed benefit of automated containment." },
+      { text: "Manually review every future GuardDuty finding before any containment action, removing automation from the loop.", correct: false, reason: "This throws away the machine-speed advantage automated containment provides for the vast majority of correctly-tagged, correctly-triggered cases." }
+    ]
+  },
+  {
+    incident: "A compromised IAM role in Account A is discovered to have assumed a cross-account role into Account B, a production account.",
+    options: [
+      { text: "Contain the role in Account A only, since that is where the compromise originated.", correct: false, reason: "This ignores the blast radius that already crossed the account boundary — Account B needs its own containment action for the assumed role's activity." },
+      { text: "Revoke the compromised role's permissions in Account A and separately investigate and contain any resulting activity in Account B.", correct: true, reason: "Correct. Cross-account compromise requires containment actions in every account the access reached, not just the originating one." },
+      { text: "Delete the cross-account trust relationship going forward, but take no action on Account B itself.", correct: false, reason: "This prevents future cross-account access but does nothing about activity that may have already occurred in Account B during the compromise window." }
+    ]
+  },
+  {
+    incident: "An engineer wants to skip the EBS snapshot step because the quarantine security group already stops the instance from doing further harm.",
+    options: [
+      { text: "Agree — isolation alone is sufficient since the instance can no longer communicate.", correct: false, reason: "Isolation stops further harm but does not preserve the point-in-time evidence. Any action after isolation — including a future accidental termination — could still destroy that evidence if it was never snapshotted." },
+      { text: "Take the snapshot anyway, immediately after isolation and before any further action.", correct: true, reason: "Correct. Isolation and evidence preservation are two separate steps addressing two separate risks — containment and evidence loss — and both are required before eradication." },
+      { text: "Skip the snapshot but keep the instance running indefinitely as a substitute.", correct: false, reason: "Keeping the instance running indefinitely is not a substitute for a snapshot and leaves you without a portable, permanent record of the compromise state." }
+    ]
+  }
+];
+
+const exerciseList = document.getElementById("exerciseList");
+exerciseData.forEach((item, idx) => {
+  const card = document.createElement("div");
+  card.className = "exercise-card reveal";
+  const optionsHtml = item.options.map((opt, oi) => `<div class="ex-opt" data-idx="${oi}">${opt.text}</div>`).join("");
+  card.innerHTML = `<span class="ex-num">Scenario ${idx + 1} of ${exerciseData.length}</span><p style="margin-bottom:0;">${item.incident}</p><div class="ex-options">${optionsHtml}</div><div class="ex-reasoning"></div>`;
+  const reasoningBox = card.querySelector(".ex-reasoning");
+  card.querySelectorAll(".ex-opt").forEach(optEl => {
+    optEl.addEventListener("click", () => {
+      if (card.dataset.answered) return;
+      card.dataset.answered = "1";
+      const chosen = item.options[parseInt(optEl.dataset.idx, 10)];
+      card.querySelectorAll(".ex-opt").forEach((el, i) => {
+        if (item.options[i].correct) el.classList.add("correct");
+        else if (el === optEl) el.classList.add("incorrect");
+      });
+      reasoningBox.innerHTML = `<p><strong>${chosen.correct ? "Correct." : "Not quite."}</strong> ${chosen.reason}</p>`;
+      reasoningBox.classList.add("open");
+    });
+  });
+  exerciseList.appendChild(card);
+  io.observe(card);
+});
+
+/* ================= PRODUCTION TRAP GALLERY ================= */
+const trapData = [
+  { label: "Trap 01 — Terminate-first", title: "The team that lost the attack's origin story", body: "A compromised instance running suspicious processes was terminated within minutes. The mining stopped, but with the instance gone, the team could never determine the initial access vector or confirm whether the attacker had reached other resources using the same exploited path." },
+  { label: "Trap 02 — Tagging mistake", title: "The automation that quarantined the wrong resource", body: "An automated containment Lambda matched on a resource tag rather than a more specific identifier. A tagging error caused it to quarantine a critical production database instead of the actual compromised host, creating an outage on top of the ongoing incident." },
+  { label: "Trap 03 — Same-account forensics", title: "The analysis that couldn't be trusted", body: "A team ran forensic analysis directly inside the compromised account using its existing IAM roles. When a later, more sophisticated compromise was suspected of having reached CloudTrail configuration, the team could no longer fully trust their own prior findings." },
+  { label: "Trap 04 — Vague runbook", title: "Forty minutes lost to a Slack debate", body: "A 'runbook' that said only 'contain if necessary' left the on-call engineer debating authority and next steps in a Slack thread while a leaked credential remained active the entire time." },
+  { label: "Trap 05 — Skipped snapshot", title: "The evidence that vanished during 'cleanup'", body: "A team isolated a compromised instance correctly but skipped the EBS snapshot step, planning to take it later. A well-meaning teammate, unaware of the ongoing investigation, terminated the 'already contained' instance during a routine cleanup pass — destroying the unpreserved evidence." },
+  { label: "Trap 06 — Missed cross-account reach", title: "The contained account that wasn't the whole story", body: "A compromised role in one account was disabled and considered resolved. Weeks later, log review revealed the role had assumed a cross-account role into a production account during the compromise window — activity that was never investigated or contained there." }
+];
+const trapGallery = document.getElementById("trapGallery");
+trapData.forEach(t => {
+  const el = document.createElement("div");
+  el.className = "trap-card reveal";
+  el.innerHTML = `<span class="trap-label">${t.label}</span><h4>${t.title}</h4><p>${t.body}</p>`;
+  trapGallery.appendChild(el);
+  io.observe(el);
+});
+
+/* ================= MOCK EXAM ================= */
+const examData = [
+  { q: "GuardDuty flags an EC2 instance for command-and-control traffic. What should the FIRST containment step be?", options: ["Terminate the instance immediately.", "Attach a quarantine security group with no inbound and outbound restricted to forensics tooling.", "Detach and delete all EBS volumes.", "Disable the entire VPC's internet gateway."], correct: 1, reason: "Isolating with a quarantine security group stops further communication while preserving the instance's state for evidence collection — the core isolate-before-terminate pattern." },
+  { q: "Which AWS service structures incident response plans, ties them to automation documents, and configures escalation?", options: ["AWS Config", "Systems Manager OpsCenter", "Systems Manager Incident Manager", "AWS Security Hub"], correct: 2, reason: "Incident Manager is specifically the service for response plans, automation document mapping, and engagement/escalation configuration." },
+  { q: "Which service centralizes an operational issue with its related resources, runbook, and contextual CloudWatch/Config data attached?", options: ["OpsCenter", "Incident Manager", "GuardDuty", "Detective"], correct: 0, reason: "OpsCenter is the operational workspace where a responder works an issue with all relevant context already attached." },
+  { q: "What is the correct sequence for handling a compromised EC2 instance?", options: ["Terminate, then investigate", "Eradicate, then isolate, then preserve evidence", "Isolate, preserve evidence, then eradicate", "Preserve evidence, then eradicate, then isolate"], correct: 2, reason: "Isolate first to stop further harm, preserve evidence (snapshot) before anything destructive, then eradicate the root cause." },
+  { q: "Why should forensic analysis happen in a dedicated forensics account rather than the compromised account?", options: ["It's required by AWS Support SLAs.", "The compromised account's own IAM permissions could interfere with or destroy evidence.", "It reduces AWS billing costs.", "S3 cannot store snapshots in the same account as the source."], correct: 1, reason: "A potentially-compromised account's control plane cannot be trusted to preserve evidence integrity — a separate account removes that risk entirely." },
+  { q: "What connects a GuardDuty finding to an automated Lambda-based containment action?", options: ["AWS Config rules", "An EventBridge rule matching the finding pattern", "A CloudFormation stack update", "An IAM permission boundary"], correct: 1, reason: "EventBridge rules match specific finding event patterns and route them to a Lambda target that executes the pre-approved containment action." },
+  { q: "A team wants automated containment for compromised access keys. What should the Lambda function execute?", options: ["A novel decision about whether the usage looks suspicious", "A pre-approved, specific action such as disabling the key and revoking active sessions", "A request for human approval before acting", "A full IAM policy rewrite for the account"], correct: 1, reason: "Automated containment executes pre-approved, specific actions decided in advance — not novel judgment calls made at execution time." },
+  { q: "During an active, evolving DDoS attack, a Shield Advanced customer wants expert help refining mitigation in real time. What should they do?", options: ["Open a standard AWS Support ticket", "Engage the DDoS Response Team (DRT)", "Manually rewrite WAF rules from scratch", "Disable Shield Advanced and re-enable it"], correct: 1, reason: "DRT engagement is the Shield Advanced response capability for hands-on, real-time help during an active, sophisticated attack." },
+  { q: "Which of the following is a genuine production runbook, versus a checklist?", options: ["\"Investigate the instance and remediate as needed.\"", "\"Assess the situation and contain if necessary.\"", "\"Attach security group sg-quarantine-0091 (no inbound, outbound to forensics VPC only); on-call engineer is pre-authorized to execute without further approval.\"", "\"Escalate to the security team for a decision.\""], correct: 2, reason: "A real runbook specifies the exact action and confirms pre-approval, removing the need for a novel judgment call under pressure." },
+  { q: "A compromised IAM role in Account A assumed a cross-account role into Account B. What is the correct containment scope?", options: ["Contain only in Account A, where the compromise originated", "Contain in both Account A and Account B", "Contain only in Account B, since that's the production impact", "No containment needed once the trust relationship is removed"], correct: 1, reason: "Blast radius crossed the account boundary — every account the access reached needs its own containment and investigation." },
+  { q: "Which Shield Advanced capability protects against unplanned scaling charges incurred while defending against a DDoS attack?", options: ["Automatic WAF rule creation", "DRT engagement", "Cost protection", "Health-based detection"], correct: 2, reason: "Shield Advanced's cost protection specifically covers scaling charges incurred during a DDoS event." },
+  { q: "Why is 'terminate the instance immediately' typically the trap answer in a compromised-EC2 scenario question?", options: ["Termination is always technically impossible mid-incident", "It destroys instance store data and forensic evidence before the cause is understood", "It costs more than isolating the instance", "AWS blocks termination during active GuardDuty findings"], correct: 1, reason: "Termination feels decisive but destroys the evidence needed to understand the attack's full scope and root cause — the exam consistently tests this exact trap." }
+];
+const examList = document.getElementById("examList");
+let examScore = 0, examAnswered = 0;
+document.getElementById("scoreTotal").textContent = examData.length;
+examData.forEach((item, idx) => {
+  const card = document.createElement("div");
+  card.className = "exam-q reveal";
+  const optsHtml = item.options.map((o, oi) => `<div class="ex-opt" data-idx="${oi}">${o}</div>`).join("");
+  card.innerHTML = `<span class="q-num">Question ${idx + 1}</span><p style="margin:10px 0 0;">${item.q}</p><div class="ex-options">${optsHtml}</div><div class="ex-reasoning"></div>`;
+  const reasoningBox = card.querySelector(".ex-reasoning");
+  card.querySelectorAll(".ex-opt").forEach(optEl => {
+    optEl.addEventListener("click", () => {
+      if (card.dataset.answered) return;
+      card.dataset.answered = "1";
+      const chosenIdx = parseInt(optEl.dataset.idx, 10);
+      const isCorrect = chosenIdx === item.correct;
+      card.querySelectorAll(".ex-opt").forEach((el, i) => {
+        if (i === item.correct) el.classList.add("correct");
+        else if (i === chosenIdx) el.classList.add("incorrect");
+      });
+      if (isCorrect) examScore++;
+      examAnswered++;
+      document.getElementById("scoreVal").textContent = examScore;
+      reasoningBox.innerHTML = `<p><strong>${isCorrect ? "Correct." : "Not quite."}</strong> ${item.reason}</p>`;
+      reasoningBox.classList.add("open");
+    });
+  });
+  examList.appendChild(card);
+  io.observe(card);
+});
+
+/* ================= SIDE RAIL NAV + LEFT TOC DRAWER — added last ================= */
+const railScenes = Array.from(document.querySelectorAll(".scene[data-rail]"));
+const railNav = document.getElementById("railNav");
+const tocList = document.getElementById("tocList");
+const leftDrawer = document.getElementById("leftDrawer");
+const drawerBackdrop = document.getElementById("drawerBackdrop");
+const hamburgerBtn = document.getElementById("hamburgerBtn");
+
+function closeDrawer(){
+  leftDrawer.classList.remove("open");
+  drawerBackdrop.classList.remove("open");
+}
+function openDrawer(){
+  leftDrawer.classList.add("open");
+  drawerBackdrop.classList.add("open");
+}
+hamburgerBtn.addEventListener("click", () => {
+  leftDrawer.classList.contains("open") ? closeDrawer() : openDrawer();
+});
+drawerBackdrop.addEventListener("click", closeDrawer);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+
+/* Force-reveal a scene and everything inside it immediately, so a long smooth-scroll
+   jump never lands on a section still sitting at opacity:0 waiting on the IntersectionObserver. */
+function jumpToScene(scene){
+  scene.classList.add("in");
+  scene.querySelectorAll(".reveal, .stagger, h2.kinetic").forEach(el => el.classList.add("in"));
+  scene.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+}
+
+railScenes.forEach((scene, i) => {
+  const dot = document.createElement("div");
+  dot.className = "rail-dot";
+  dot.title = scene.dataset.rail;
+  dot.addEventListener("click", () => jumpToScene(scene));
+  railNav.appendChild(dot);
+
+  const tocItem = document.createElement("a");
+  tocItem.className = "toc-item";
+  tocItem.textContent = scene.dataset.rail;
+  tocItem.addEventListener("click", () => {
+    jumpToScene(scene);
+    closeDrawer();
+  });
+  tocList.appendChild(tocItem);
+});
+const railDots = Array.from(railNav.children);
+const tocItems = Array.from(tocList.children);
+const railIo = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const i = railScenes.indexOf(entry.target);
+    if (entry.isIntersecting && i > -1){
+      railDots.forEach(d => d.classList.remove("active"));
+      railDots[i].classList.add("active");
+      tocItems.forEach(t => t.classList.remove("active"));
+      tocItems[i].classList.add("active");
+    }
+  });
+}, { threshold: 0.5 });
+railScenes.forEach(s => railIo.observe(s));
+</script>
+</body>
+</html>
