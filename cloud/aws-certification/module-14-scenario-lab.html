@@ -63,7 +63,7 @@ html[data-theme="light"]{
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth; background:var(--bg); scroll-padding-top:100px;}
 body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden; margin:0;}
-.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); }
+.scene{ padding:90px 40px; position:relative; background:var(--bg); }
 footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); }
 @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
 
@@ -116,6 +116,16 @@ p{ line-height:1.75; }
 
 .drawer-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px); }
 .drawer-overlay.open{ opacity:1; pointer-events:auto; }
+
+.hamburger-btn{ background:var(--surface); border:1px solid var(--line); border-radius:8px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); font-size:15px; flex-direction:column; gap:3px; }
+.hamburger-btn span{ display:block; width:16px; height:2px; background:var(--text); border-radius:1px; }
+.toc-drawer{ position:fixed; top:0; left:0; bottom:0; width:300px; max-width:82vw; z-index:202; background:var(--surface-raised); border-right:1px solid var(--line); padding:90px 26px 40px; transform:translateX(-100%); transition:transform .4s cubic-bezier(.16,1,.3,1); overflow-y:auto; box-shadow:20px 0 60px rgba(0,0,0,0.35); }
+.toc-drawer.open{ transform:translateX(0); }
+.toc-drawer h4{ font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); margin-bottom:18px; }
+.toc-list{ display:flex; flex-direction:column; gap:3px; }
+.toc-item{ display:block; padding:10px 12px; border-radius:8px; color:var(--text-dim); text-decoration:none; font-size:0.86rem; font-family:'JetBrains Mono', monospace; transition:background .2s ease, color .2s ease; cursor:pointer; border:1px solid transparent; }
+.toc-item:hover{ background:var(--surface); color:var(--text); }
+.toc-item.active{ background:var(--accent-dim); color:var(--accent); border-color:var(--accent-dim); }
 .bottom-sheet-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .3s ease; }
 .bottom-sheet-overlay.open{ opacity:1; pointer-events:auto; }
 .bottom-sheet{ position:fixed; left:0; right:0; bottom:0; z-index:201; background:var(--surface-raised); border-top:1px solid var(--line); border-radius:20px 20px 0 0; padding:32px 40px 40px; transform:translateY(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); max-width:760px; margin:0 auto; box-shadow:0 -20px 60px rgba(0,0,0,0.35); max-height:80vh; overflow-y:auto; }
@@ -162,7 +172,17 @@ p{ line-height:1.75; }
 .case-file{
   background:var(--surface); border:1px solid var(--line); border-radius:18px;
   padding:0; margin-top:36px; box-shadow:var(--shadow); overflow:hidden;
+  transition:border-color .3s ease, transform .3s ease, box-shadow .3s ease;
 }
+.case-file:hover{
+  border-color:var(--accent-dim); transform:translateY(-3px);
+  box-shadow:0 26px 70px rgba(0,0,0,0.5);
+}
+.takeaway{
+  margin-top:20px; padding:14px 18px; background:var(--accent-dim); border-radius:10px;
+  font-size:0.92rem; color:var(--text); line-height:1.6;
+}
+.takeaway strong{ color:var(--accent); }
 .case-file-header{
   padding:24px 32px; border-bottom:1px solid var(--line);
   display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px;
@@ -222,6 +242,9 @@ p{ line-height:1.75; }
 .drill-reasoning{ display:none; margin-top:14px; padding:14px 16px; background:var(--surface-raised); border-radius:8px; font-size:0.86rem; color:var(--text-dim); }
 .drill-reasoning.show{ display:block; }
 .score-tracker{ position:sticky; top:80px; z-index:5; background:var(--surface-raised); border:1px solid var(--line); border-radius:999px; padding:10px 20px; display:inline-flex; gap:10px; font-family:'JetBrains Mono', monospace; font-size:12px; margin-bottom:10px; }
+.drill-cluster{ display:flex; align-items:center; gap:14px; margin:38px 0 6px; }
+.drill-cluster::before, .drill-cluster::after{ content:''; flex:1; height:1px; background:var(--line); }
+.drill-cluster span{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); white-space:nowrap; }
 
 .prevnext{ display:flex; justify-content:space-between; margin-top:40px; gap:16px; flex-wrap:wrap; }
 .prevnext a{ color:var(--accent); text-decoration:none; font-family:'JetBrains Mono', monospace; font-size:12.5px; border:1px solid var(--line); border-radius:999px; padding:10px 20px; }
@@ -231,10 +254,18 @@ p{ line-height:1.75; }
 <div id="grainOverlay"></div>
 <div id="scrollProgress"></div>
 <nav class="topnav">
-  <div class="brand">SCS-C03 · <strong>Module 14</strong> — Cross-Domain Scenario Lab</div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <button class="hamburger-btn" id="tocToggle" aria-label="Open module navigation"><span></span><span></span><span></span></button>
+    <div class="brand">SCS-C03 · <strong>Module 14</strong> — Cross-Domain Scenario Lab</div>
+  </div>
   <button class="theme-toggle" id="themeToggle">☾ DARK</button>
 </nav>
 <div class="rail" id="rail"></div>
+<div class="drawer-overlay" id="tocOverlay"></div>
+<nav class="toc-drawer" id="tocDrawer" aria-label="Module section navigation">
+  <h4>Module 14 Sections</h4>
+  <div class="toc-list" id="tocList"></div>
+</nav>
 <main id="main">
 
 <section class="scene" id="scene-bridge">
@@ -285,6 +316,8 @@ p{ line-height:1.75; }
         <div class="node-info" id="info-cf1-3"><p style="margin:0;">With those credentials, the attacker had no need to escalate privilege — the role already had far more S3 reach than the job needed, so a simple <code>ListBuckets</code> plus <code>GetObject</code> loop was enough to find and pull sensitive records.</p></div>
         <div class="node-info" id="info-cf1-4"><p style="margin:0;">GuardDuty correctly flagged the anomalous access pattern — but only after objects were already gone. Detection did its job. It just was not the layer that should have carried the weight here.</p></div>
 
+        <div class="mentor-aside"><p>A role nobody has looked at in six months is not a stable role — it is an unmonitored one. "It works" and "it is scoped correctly" are different claims, and only an actual review closes the gap between them.</p></div>
+
         <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
         <div class="investigate-choices">
           <div class="investigate-choice" data-feedback="cf1-a">A. Pull CloudTrail data events for the affected bucket to see the exact API calls made</div>
@@ -302,6 +335,7 @@ p{ line-height:1.75; }
           <div class="reveal-block"><h5>Findings</h5><p>CloudTrail data events confirm roughly 40 minutes of sustained <code>GetObject</code> calls against a bucket containing customer billing records, none of which the reconciliation job had ever accessed in its six-month history. The source is the function's own execution role, invoked through a crafted event that triggered the vulnerable dependency's code path.</p></div>
           <div class="reveal-block"><h5>Root Cause</h5><p>The execution role was never scoped to least privilege at creation time. A wildcard S3 grant meant that once the function itself was compromised, there was no permission boundary left to stop the attacker from reaching a completely unrelated bucket.</p></div>
           <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Module 2's least-privilege modeling — resource-scoped policies naming the exact bucket ARN the job needs, nothing wider — would have contained this to a single, harmless bucket the attacker had no use for, regardless of whether the function itself was ever compromised. Prevention at role-creation time is dramatically cheaper than detection after the data is gone: GuardDuty did its job in Module 10, but it is the last line of defense, not the first.</p></div>
+          <div class="takeaway"><strong>Takeaway:</strong> a wildcard grant turns any future compromise, anywhere in the workload, into a compromise of everything the role can touch — scope at creation time, not after an alert fires.</div>
         </div>
       </div>
     </div>
@@ -365,6 +399,7 @@ p{ line-height:1.75; }
           <div class="reveal-block"><h5>Findings</h5><p>CloudTrail data events show a modest but real number of anonymous GetObject calls against the survey-response export over the eleven-week window, consistent with automated internet-wide scanning rather than a single targeted actor — still a genuine exposure requiring notification review.</p></div>
           <div class="reveal-block"><h5>Root Cause</h5><p>Three independent layers all had a chance to prevent this and none of them were in place: Macie was not scoped to this bucket, so it never classified the sensitive content; no RCP existed at the org level to make public access structurally impossible regardless of bucket policy; and no continuous compliance check (Module 12) was watching for public buckets account-wide.</p></div>
           <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>An RCP applied at the organization root, per Module 3, would have made this specific exposure structurally impossible no matter what any individual bucket policy said — the guardrail sits above the mistake, not reliant on any one team getting it right. Module 12's governance guardrails, applied consistently, are the throughline here: prevention through structural constraint beats detection through scanning, every time cost and blast radius are compared.</p></div>
+          <div class="takeaway"><strong>Takeaway:</strong> a single account's mistake is only as costly as the org-wide guardrails let it be — an RCP makes this specific class of mistake structurally impossible, not just less likely.</div>
         </div>
       </div>
     </div>
@@ -422,6 +457,7 @@ p{ line-height:1.75; }
           <div class="reveal-block"><h5>Findings</h5><p>CloudTrail confirms the stolen instance credentials made several <code>AssumeRole</code> calls against a role ARN in a separate, more sensitive member account, all of which were denied. No successful pivot occurred; the compromise remained confined to the original instance and its immediate blast radius.</p></div>
           <div class="reveal-block"><h5>Root Cause</h5><p>Workload hardening failed at the network and metadata-service layer — IMDSv1 being reachable is precisely the kind of defense-in-depth gap Module 6 and Module 5 warn about. That said, defense-in-depth means a failure at one layer should not become a failure of the whole environment, and here it did not.</p></div>
           <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Enforcing IMDSv2 account-wide (Module 6) would have prevented the credential theft outright and should be the immediate remediation. Just as importantly, this case shows why defense-in-depth (Module 1, Module 5) is the whole point: a hardening failure at the workload layer was caught by a completely different, independent layer — the SCP-based governance guardrail (Module 3) — which is exactly what blast-radius minimization (Module 11's thread) is designed to achieve even when an earlier layer fails.</p></div>
+          <div class="takeaway"><strong>Takeaway:</strong> defense-in-depth means one failed layer is an incident, not a catastrophe — the SCP had no idea IMDSv2 was misconfigured, and it did not need to.</div>
         </div>
       </div>
     </div>
@@ -462,6 +498,8 @@ p{ line-height:1.75; }
         <div class="node-info" id="info-cf4-3"><p style="margin:0;">Because the trust policy trusted the account without requiring the external ID, any principal inside that account — including a completely different customer's automation — could successfully call <code>sts:AssumeRole</code> against it.</p></div>
         <div class="node-info" id="info-cf4-4"><p style="margin:0;">GuardDuty's anomaly detection on role-assumption patterns (Module 10) caught the mismatch between expected and actual usage — this is the classic confused-deputy problem, caught here by behavioral detection rather than by the missing structural control.</p></div>
 
+        <div class="mentor-aside"><p>Every cross-account trust relationship you ever set up should answer one question before it goes live: what stops a different customer of this same vendor from using the exact same ARN? If the answer is "nothing," the external ID is missing.</p></div>
+
         <h3 style="margin-top:28px; font-size:1.05rem;">What would you investigate first?</h3>
         <div class="investigate-choices">
           <div class="investigate-choice" data-feedback="cf4-a">A. Immediately update the trust policy to require an external ID and rotate it</div>
@@ -479,6 +517,7 @@ p{ line-height:1.75; }
           <div class="reveal-block"><h5>Findings</h5><p>CloudTrail confirms the unauthorized party's assumed-role sessions were limited to read-only monitoring-scope API calls consistent with the role's designed permission set — no destructive or exfiltration actions occurred, but the trust boundary itself was clearly violated.</p></div>
           <div class="reveal-block"><h5>Root Cause</h5><p>This is the confused-deputy problem, textbook: a cross-account trust relationship that authenticated based on account identity alone, with no second factor tying the trust to a specific, unique customer relationship.</p></div>
           <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>An external ID, unique to this specific customer relationship and required as a condition in the trust policy (Module 4), would have made this exact attack path structurally impossible — the unrelated party would have needed a secret they never had, not just an ARN they could see. GuardDuty (Module 10) and the incident response playbook (Module 11) did their jobs well here, but this is a case where the Module 4 control, correctly applied at setup time, removes the need for detection to catch it at all.</p></div>
+          <div class="takeaway"><strong>Takeaway:</strong> a role ARN is not a secret — trusting an account alone, without an external ID, trusts every principal that account will ever contain.</div>
         </div>
       </div>
     </div>
@@ -535,6 +574,7 @@ p{ line-height:1.75; }
           <div class="reveal-block"><h5>Findings</h5><p>The key policy's decrypt statement matches a role-name wildcard pattern left over from a testing convention, which resolves to several roles far beyond the analytics team's production access boundary — none of which had actually invoked Decrypt in practice, based on CloudTrail history.</p></div>
           <div class="reveal-block"><h5>Root Cause</h5><p>Encryption everywhere, the thread introduced in Module 1 and built out in Module 7, gave the team a false sense of complete coverage. The cryptographic control was sound; the access-control layer governing who could actually decrypt was never tightened once the workload left its testing phase.</p></div>
           <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Scoping the key policy's decrypt grant to an explicit, minimal role list (Module 7) closes the gap directly. More broadly, this case is the strongest possible illustration of why continuous compliance (Module 13) matters even when nothing has gone wrong yet — a scheduled conformance pack check found what eight months of manual confidence missed, and it found it before a breach, not after one.</p></div>
+          <div class="takeaway"><strong>Takeaway:</strong> "encrypted" answers whether data is unreadable in storage — it says nothing about who can decrypt it; that question lives entirely in the key policy.</div>
         </div>
       </div>
     </div>
@@ -592,6 +632,7 @@ p{ line-height:1.75; }
           <div class="reveal-block"><h5>Findings</h5><p>WAF logs show a concentrated series of crafted requests targeting a custom rule group that had not been updated since the application's last major release, consistent with a scripted rule-gap scan rather than manual exploration.</p></div>
           <div class="reveal-block"><h5>Root Cause</h5><p>The volumetric flood and the WAF probing were not two separate incidents but one multi-stage campaign — the flood was a diversion or a first test of defenses, and the probing was the actual objective once the obvious path failed. Treating the volumetric event as the whole incident would have left the real threat unaddressed.</p></div>
           <div class="reveal-block"><h5>Fix &amp; Prevention</h5><p>Updating the stale custom rule group and engaging Shield Advanced's DRT for expert review (Module 5) closes this specific gap. The lasting lesson, per Module 11's incident response process, is treating attack phases as connected rather than resolving each in isolation — GuardDuty's cross-signal correlation (Module 10) is what made the connection visible here, and recognizing multi-stage attacks as a pattern is exactly the reasoning the real exam is testing when a scenario spans two seemingly unrelated events.</p></div>
+          <div class="takeaway"><strong>Takeaway:</strong> when volumetric noise suddenly stops, ask what it was covering for — the attack that ends cleanly is often the one that was never the real objective.</div>
         </div>
       </div>
     </div>
@@ -768,6 +809,12 @@ p{ line-height:1.75; }
   </div>
 </section>
 
+<section class="title-card" id="scene-title-2">
+  <div class="scanbeam"></div>
+  <div class="eyebrow">NO MORE WARM-UPS</div>
+  <h2>FIND THE ONE FACT<br>THAT MATTERS.</h2>
+</section>
+
 <section class="scene" id="scene-drill">
   <div class="ambient-blob" style="width:460px; height:460px; top:6%; right:-10%; background:var(--accent);"></div>
   <div class="content-col">
@@ -824,6 +871,8 @@ p{ line-height:1.75; }
       </div>
       <div class="drill-reasoning">SCPs (Module 3) can deny cross-account AssumeRole regardless of what the source credentials allow. Once that containment layer holds, the correct next move (Module 11) is isolating the still-compromised instance so the credentials cannot be reused elsewhere.</div>
     </div>
+
+    <div class="drill-cluster"><span>Halfway stretch — control ownership</span></div>
 
     <div class="drill-q" data-answered="false">
       <div class="qnum">Question 05 of 13 — Data Protection + Governance</div>
@@ -884,6 +933,8 @@ p{ line-height:1.75; }
       </div>
       <div class="drill-reasoning">Module 11's containment sequencing calls for scoping and preserving evidence before remediating the artifact itself — acting in the wrong order can erase the very data needed to understand what happened and confirm the fix actually addresses the root cause.</div>
     </div>
+
+    <div class="drill-cluster"><span>Final stretch — synthesis under pressure</span></div>
 
     <div class="drill-q" data-answered="false">
       <div class="qnum">Question 10 of 13 — Governance + IAM</div>
@@ -1137,6 +1188,8 @@ p{ line-height:1.75; }
   ];
   var rail = document.getElementById('rail');
   var railDots = {};
+  var tocList = document.getElementById('tocList');
+  var tocItems = {};
   railSections.forEach(function(s){
     var el = document.getElementById(s.id);
     if(!el) return;
@@ -1154,6 +1207,18 @@ p{ line-height:1.75; }
     });
     rail.appendChild(dot);
     railDots[s.id] = dot;
+
+    var tocItem = document.createElement('div');
+    tocItem.className = 'toc-item';
+    tocItem.setAttribute('role','button');
+    tocItem.setAttribute('tabindex','0');
+    tocItem.textContent = s.label;
+    tocItem.addEventListener('click', function(){
+      closeTocDrawer();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    tocList.appendChild(tocItem);
+    tocItems[s.id] = tocItem;
   });
   var railObserver = new IntersectionObserver(function(entries){
     entries.forEach(function(entry){
@@ -1161,6 +1226,8 @@ p{ line-height:1.75; }
       if(entry.isIntersecting && railDots[id]){
         Object.keys(railDots).forEach(function(k){ railDots[k].classList.remove('active'); });
         railDots[id].classList.add('active');
+        Object.keys(tocItems).forEach(function(k){ tocItems[k].classList.remove('active'); });
+        tocItems[id].classList.add('active');
       }
     });
   }, { root: null, rootMargin: '-45% 0px -45% 0px', threshold: 0 });
@@ -1168,6 +1235,21 @@ p{ line-height:1.75; }
     var el = document.getElementById(s.id);
     if(el) railObserver.observe(el);
   });
+
+  /* ---------- Left TOC drawer open/close ---------- */
+  var tocDrawer = document.getElementById('tocDrawer');
+  var tocOverlay = document.getElementById('tocOverlay');
+  var tocToggle = document.getElementById('tocToggle');
+  function openTocDrawer(){
+    tocDrawer.classList.add('open');
+    tocOverlay.classList.add('open');
+  }
+  function closeTocDrawer(){
+    tocDrawer.classList.remove('open');
+    tocOverlay.classList.remove('open');
+  }
+  tocToggle.addEventListener('click', openTocDrawer);
+  tocOverlay.addEventListener('click', closeTocDrawer);
 
   /* ---------- Mindnode (attack path + thread hub) expand ---------- */
   document.querySelectorAll('.mindnode[data-node]').forEach(function(node){

@@ -64,7 +64,8 @@ html[data-theme="light"]{
 /* ===== bug fix #1: explicit backgrounds everywhere ===== */
 html{scroll-behavior:smooth; background:var(--bg);}
 body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; transition:background .4s ease, color .4s ease; overflow-x:hidden;}
-.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); }
+.scene{ padding:90px 40px; position:relative; background:var(--bg); }
+.scene.hero{ min-height:100vh; padding:160px 40px; display:flex; flex-direction:column; justify-content:center; }
 footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); }
 
 *{box-sizing:border-box;}
@@ -134,11 +135,45 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
 .drawer.open{ transform:translateX(0); }
 .drawer-close{ position:absolute; top:24px; right:24px; background:none; border:none; color:var(--text-dim); font-size:22px; cursor:pointer; }
 
+/* left-anchored TOC drawer variant */
+.drawer-left{ left:0; right:auto; border-left:none; border-right:1px solid var(--line); transform:translateX(-100%); box-shadow:20px 0 60px rgba(0,0,0,0.35); }
+.drawer-left.open{ transform:translateX(0); }
+.drawer-left .drawer-close{ right:24px; left:auto; }
+.toc-title{ font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--c-detect); margin-bottom:24px; margin-top:6px; }
+.toc-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; }
+.toc-list li a{ display:block; padding:11px 14px; border-radius:10px; color:var(--text-dim); text-decoration:none; font-size:0.92rem; transition:background .2s ease, color .2s ease; border-left:2px solid transparent; }
+.toc-list li a:hover{ background:var(--surface); color:var(--text); }
+.toc-list li a.active{ background:var(--c-detect-dim); color:var(--c-detect); border-left-color:var(--c-detect); font-weight:600; }
+
+/* hamburger trigger */
+.hamburger-btn{ width:38px; height:38px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; transition:border-color .2s ease; }
+.hamburger-btn:hover{ border-color:var(--c-detect); }
+
 /* ===== production scenario callout ===== */
 .scenario-box{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:26px 28px; margin:30px 0; position:relative; }
 .scenario-box .tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-detect); margin-bottom:10px; display:block; }
 .scenario-box p{ margin-bottom:0; color:var(--text-dim); font-size:0.95rem; line-height:1.75; }
 .scenario-box p + p{ margin-top:12px; }
+
+/* ===== takeaway line ===== */
+.takeaway{ background:var(--c-detect-dim); border-left:3px solid var(--c-detect); border-radius:0 12px 12px 0; padding:14px 20px; margin:24px 0; font-size:0.96rem; color:var(--text); line-height:1.6; }
+.takeaway strong{ color:var(--c-detect); }
+
+/* ===== active-recall quick check (native details/summary) ===== */
+.quickcheck{ background:var(--surface); border:1px solid var(--c-detect-dim); border-radius:14px; padding:4px 24px; margin:30px 0; }
+.quickcheck summary{ cursor:pointer; padding:16px 0; font-family:'JetBrains Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--c-detect); list-style:none; display:flex; align-items:center; gap:10px; }
+.quickcheck summary::-webkit-details-marker{ display:none; }
+.quickcheck summary::before{ content:'❓'; font-size:13px; }
+.quickcheck summary::after{ content:'Tap to reveal'; margin-left:auto; color:var(--text-dim); font-size:10.5px; text-transform:none; letter-spacing:0; }
+.quickcheck[open] summary::after{ content:'Hide answer'; }
+.quickcheck .qc-question{ font-family:'Inter', sans-serif; font-size:0.96rem; color:var(--text); text-transform:none; letter-spacing:0; font-weight:500; }
+.quickcheck .qc-answer{ padding:0 0 20px; font-size:0.9rem; color:var(--text-dim); line-height:1.7; border-top:1px dashed var(--line); padding-top:14px; margin-top:4px; }
+
+/* ===== exam angle callout ===== */
+.examangle-box{ background:var(--surface); border:1px solid var(--c-detect-dim); border-radius:14px; padding:20px 24px; margin:26px 0; }
+.examangle-box .tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-detect); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.examangle-box .tag::before{ content:'🎯'; font-size:12px; }
+.examangle-box p{ margin-bottom:0; font-size:0.92rem; color:var(--text-dim); line-height:1.7; }
 
 /* ===== mentor aside ===== */
 .mentor-aside{ background:var(--surface); border-left:3px solid var(--c-detect); border-radius:0 14px 14px 0; padding:18px 24px; margin:28px 0; }
@@ -257,15 +292,25 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
 <div id="scrollProgress"></div>
 
 <nav>
-  <div class="nav-brand">SCS-C03 <strong>/</strong> Module 10: Threat Detection Services</div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <button class="hamburger-btn" id="tocToggle" aria-label="Open table of contents" aria-expanded="false">☰</button>
+    <div class="nav-brand">SCS-C03 <strong>/</strong> Module 10: Threat Detection Services</div>
+  </div>
   <div class="nav-actions">
     <button class="theme-btn" id="themeToggle" aria-label="Toggle light and dark theme">🌙</button>
   </div>
 </nav>
 
+<div class="drawer-overlay" id="tocOverlay"></div>
+<div class="drawer drawer-left" id="tocDrawer">
+  <button class="drawer-close" id="tocClose" aria-label="Close table of contents">✕</button>
+  <div class="toc-title">Module 10 · Contents</div>
+  <ul class="toc-list" id="tocList"></ul>
+</div>
+
 <div class="rail" id="railNav"></div>
 
-<section class="scene" id="s-bridge">
+<section class="scene hero" id="s-bridge">
   <div class="ambient-blob" style="width:480px; height:480px; background:var(--c-detect); top:-120px; left:-140px;"></div>
   <div class="content-col reveal">
     <div class="eyebrow">Continuing from Module 9</div>
@@ -303,6 +348,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
       <h3>Extended threat detection — correlation over time</h3>
       <p>GuardDuty's newer extended threat detection capability is where the exam's questions get more sophisticated. A single suspicious event — one odd API call, one unusual login — is often just noise; real attacks unfold as a <strong>sequence</strong> across multiple stages: initial access, followed by reconnaissance, followed by privilege escalation, followed by data access or lateral movement. Extended threat detection is GuardDuty's ability to correlate signals across multiple data sources <em>and across time</em> to recognize that sequence as a single, higher-confidence, multi-stage attack — rather than reporting four disconnected low-confidence findings that a human analyst has to mentally stitch together.</p>
       <p>Concretely: instead of surfacing "unusual API call" on Monday and "unusual data access" on Wednesday as two separate low-priority tickets, extended threat detection recognizes the pattern connecting them and raises a single critical finding describing the likely attack sequence. This is what "extended" adds over single-signal detection — it's not just more alerts, it's recognizing that isolated signals belong to one coordinated event.</p>
+      <div class="takeaway"><strong>Takeaway:</strong> GuardDuty is a continuous, managed detector — it reads AWS's own internal log streams, scores what it finds, and generates typed findings automatically. It never decides what happens next; that's a separate pipeline you build.</div>
     </div>
   </div>
 </section>
@@ -335,6 +381,10 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
     <div class="mentor-aside">
       <p>I've watched more than one team assume GuardDuty was "handling" a compromised instance because a finding showed up in the console, while the instance kept mining cryptocurrency for another six hours. GuardDuty told them, clearly, in the finding detail. Nothing was listening for the event to act on it. Detection without a wired response is just a very expensive notification system.</p>
     </div>
+    <details class="quickcheck">
+      <summary><span class="qc-question">Quick check — before you scroll further: if GuardDuty flags a compromised EC2 instance, what actually stops that instance from continuing to do damage?</span></summary>
+      <div class="qc-answer">Nothing does, by default. GuardDuty's job ends at the finding. Something you build — most commonly an EventBridge rule reacting to that finding type, triggering a Lambda function or Systems Manager Automation document — has to actually isolate the instance, revoke credentials, or otherwise contain it. If you answered "GuardDuty stops it," that's the exact misconception this scene just walked through.</div>
+    </details>
   </div>
 </section>
 
@@ -344,6 +394,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
     <div class="eyebrow">Service 2 of 4 — AWS Security Hub</div>
     <h2 class="kinetic">Security Hub: one dashboard, many sources.</h2>
     <div class="body-text">
+      <p>Picture a hospital where four specialists — a radiologist, a cardiologist, a lab tech, and a pharmacist — each write their own notes in their own shorthand, in four separate systems that don't talk to each other. A case manager's entire job is pulling all four into one chart, in one shared language, so the attending physician isn't flipping between four logins during a crisis. That case manager is Security Hub.</p>
       <p>Where GuardDuty is a <em>generator</em> of findings, Security Hub is primarily an <strong>aggregation and normalization layer</strong>. This is the contrast the exam wants you to hold in your head simultaneously: GuardDuty analyzes raw log data and produces new findings from scratch; Security Hub, for the most part, does not generate findings from raw logs the way GuardDuty does. Instead, it collects findings that other services already produced — GuardDuty, Inspector, Macie, Config, and supported third-party security tools — and normalizes all of them into one consistent format (the AWS Security Finding Format) inside a single dashboard.</p>
       <p>Think of it less as a detective and more as a very well-organized inbox: GuardDuty, Inspector, and Macie each speak their own dialect of "here's something wrong"; Security Hub translates all of it into one shared vocabulary so your security team isn't context-switching between five different consoles with five different finding schemas during an investigation.</p>
       <h3>Security standards — Security Hub's own findings</h3>
@@ -354,6 +405,11 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
       </div>
       <h3>Cross-account, cross-region aggregation</h3>
       <p>Security Hub supports a designated <strong>Security Hub administrator account</strong> that can aggregate findings from member accounts across an AWS Organization, and can further aggregate across regions using a designated home region. This is a direct, concrete payoff of the multi-account architecture thread introduced back in Module 3 — the entire point of that account structure is that security visibility shouldn't require logging into 40 separate accounts, and Security Hub's aggregation model is exactly how that promise gets delivered for detection findings specifically.</p>
+      <div class="examangle-box">
+        <span class="tag">Exam Angle</span>
+        <p>Scenario questions love to describe a team that enabled Security Hub in one account and then ask why findings from other accounts aren't showing up. The answer is almost always a missing administrator-account / member-association step — enabling the service somewhere is not the same as configuring aggregation. You'll see this exact trap worked through in the Production Trap Gallery below.</p>
+      </div>
+      <div class="takeaway"><strong>Takeaway:</strong> Security Hub isn't another detector competing with GuardDuty — it's the normalization layer that turns four services' worth of scattered findings into one dashboard your team can actually watch day to day.</div>
     </div>
   </div>
 </section>
@@ -373,9 +429,25 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
         <span class="tag">Production Scenario</span>
         <p>An analyst receives a High-severity GuardDuty finding for a compromised EC2 instance. Rather than manually querying CloudTrail and Flow Log data across three linked accounts, they pivot directly from the finding into Detective's behavior graph, immediately see that the instance's role was assumed from an unusual source, and trace that role's activity backward to a misconfigured trust policy — an investigation that would have taken hours of manual log correlation compressed into minutes of graph navigation.</p>
       </div>
+      <div class="examangle-box">
+        <span class="tag">Exam Angle</span>
+        <p>The most common wrong answer on Detective questions is picking it as the service that would have <em>generated</em> the alert in the first place. If a scenario describes an investigation that starts from an existing finding, Detective is very likely the answer; if it describes something noticing a threat for the first time, it's GuardDuty. Watch which verb the question uses — "detect" versus "investigate."</p>
+      </div>
+      <div class="takeaway"><strong>Takeaway:</strong> Detective never tells you something is wrong — it tells you the full story once something already has, by graphing how an entity, an IP, and a resource are connected across time.</div>
+      <details class="quickcheck">
+        <summary><span class="qc-question">Quick check: Security Hub already shows you a finding with a timestamp and a severity score. What does opening Amazon Detective actually give you that the finding alone didn't?</span></summary>
+        <div class="qc-answer">The relationships around it — a visualized graph of everything else the flagged entity, IP, or resource touched across the surrounding time window, including connections to other accounts if cross-account graphs are enabled. The finding tells you <em>what</em> was flagged; Detective helps you understand <em>how far it reaches</em>.</div>
+      </details>
     </div>
   </div>
 </section>
+
+<div class="title-card">
+  <div class="scanbeam"></div>
+  <h2>EVERY LOG SPEAKS A DIFFERENT DIALECT.</h2>
+  <h2 style="color:var(--c-detect);">OCSF IS THE TRANSLATION LAYER.</h2>
+  <div class="tc-sub">the schema behind Amazon Security Lake</div>
+</div>
 
 <section class="scene" id="s-securitylake">
   <div class="ambient-blob" style="width:440px; height:440px; background:var(--c-data); top:-100px; right:-120px;"></div>
@@ -393,6 +465,10 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
         <span class="tag">Production Scenario</span>
         <p>A company runs AWS workloads alongside an on-premises SIEM that also ingests firewall and endpoint logs from non-AWS sources. Rather than building custom ETL pipelines to reshape CloudTrail and VPC Flow Log data into whatever format their SIEM expects, they enable Security Lake, which normalizes everything into OCSF — and because their SIEM already understands OCSF-formatted data from other vendors, integration is a subscription, not a months-long parsing project.</p>
       </div>
+      <div class="mentor-aside">
+        <p>The question I ask every team standing up Security Lake for the first time: "would your SIEM vendor recognize this schema if it came from a completely different company?" If the honest answer is yes, that's OCSF doing its job. I've seen teams spend months hand-rolling parsers for a normalization problem AWS had already solved — not because Security Lake was hard to use, but because nobody had actually read what schema it outputs.</p>
+      </div>
+      <div class="takeaway"><strong>Takeaway:</strong> Security Lake centralizes raw security telemetry at scale, normalized into the open OCSF standard — it's the foundation for SIEM integration and broad historical querying, not a dashboard you check day to day.</div>
     </div>
 
     <h3 style="margin-top:40px;">Interactive: OCSF data flow</h3>
@@ -647,7 +723,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="true">Nothing is remediated automatically — a finding is generated, and any response must be built separately</button>
           <button class="exam-opt" data-correct="false">GuardDuty revokes the instance's IAM role automatically</button>
         </div>
-        <div class="exam-explain">GuardDuty strictly detects and alerts. Automated remediation requires you to build a response pipeline, typically EventBridge + Lambda/SSM.</div>
+        <div class="exam-explain">GuardDuty strictly detects and alerts — it never terminates instances, blocks traffic, or revokes IAM permissions on its own. If you want any of those outcomes to happen automatically, you build a response pipeline yourself, typically an EventBridge rule watching for the finding type that triggers a Lambda function or Systems Manager Automation document. The exam consistently rewards recognizing this boundary over assuming AWS services quietly "handle" security for you.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 2</span><div class="qtext">Which AWS service is primarily responsible for aggregating and normalizing findings from GuardDuty, Inspector, Macie, and Config into a single dashboard?</div>
@@ -657,7 +733,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">Amazon Security Lake</button>
           <button class="exam-opt" data-correct="false">AWS Config</button>
         </div>
-        <div class="exam-explain">Security Hub is the aggregation and normalization layer; it also runs its own compliance standard checks (FSBP, CIS).</div>
+        <div class="exam-explain">Security Hub is the aggregation and normalization layer — it collects findings that GuardDuty, Inspector, Macie, and Config already generated and presents them in one consistent format and dashboard. The one exception is compliance standard checks (FSBP, CIS AWS Foundations Benchmark), which Security Hub evaluates and generates findings for itself. Detective and Security Lake serve different purposes entirely and don't provide this kind of unified findings dashboard.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 3</span><div class="qtext">A security team needs to visualize the relationships between a flagged IAM role, the IP addresses it interacted with, and the resources it accessed over the past 30 days. Which service should they use?</div>
@@ -667,7 +743,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="true">Amazon Detective</button>
           <button class="exam-opt" data-correct="false">Amazon Security Lake</button>
         </div>
-        <div class="exam-explain">This describes Detective's behavior graph capability — visualizing relationships across entities, resources, and time.</div>
+        <div class="exam-explain">This describes Detective's behavior graph capability precisely — automatically visualizing relationships between a flagged entity, IP addresses, and resources over a chosen time window. Security Hub would show you the finding itself but not the surrounding relationship map, and GuardDuty's job ends once the finding is generated. Detective is the correct choice whenever a question centers on reconstructing "what else happened" around an incident.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 4</span><div class="qtext">Before Amazon Detective can produce a useful behavior graph during an investigation, what must already be true?</div>
@@ -677,7 +753,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">Security Lake must be the exclusive data source</button>
           <button class="exam-opt" data-correct="false">Nothing — Detective reconstructs history independently</button>
         </div>
-        <div class="exam-explain">Detective visualizes data that was already captured; it does not retroactively generate history from sources that were never enabled.</div>
+        <div class="exam-explain">Detective's behavior graphs are built entirely from data sources that were already flowing before the investigation began — GuardDuty findings, VPC Flow Logs, and CloudTrail management events. It has no ability to retroactively reconstruct history from a source that was never enabled; if Flow Logs were off, there's simply no network-activity data for Detective to graph. This is the module's direct dependency on Module 9's logging foundation.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 5</span><div class="qtext">What open standard does Amazon Security Lake use to normalize data from multiple sources?</div>
@@ -687,7 +763,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">CEF (Common Event Format) exclusively</button>
           <button class="exam-opt" data-correct="false">Raw, unmodified source formats</button>
         </div>
-        <div class="exam-explain">OCSF is open and vendor-neutral — a deliberately tested distinction from an AWS-proprietary format.</div>
+        <div class="exam-explain">OCSF (Open Cybersecurity Schema Framework) is open and vendor-neutral, not something AWS invented and controls exclusively. This is precisely why third-party SIEM tools and non-AWS security products can integrate with Security Lake data using the same schema they already understand from other vendors. The exam frequently sets a trap around assuming AWS services use proprietary formats by default — OCSF is the deliberate exception.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 6</span><div class="qtext">What capability does GuardDuty's extended threat detection add over standard single-event findings?</div>
@@ -697,7 +773,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">A higher retention period for findings</button>
           <button class="exam-opt" data-correct="false">Direct integration with third-party SIEM tools</button>
         </div>
-        <div class="exam-explain">Extended threat detection recognizes coordinated, multi-stage sequences rather than reporting isolated low-confidence events separately.</div>
+        <div class="exam-explain">Extended threat detection is a correlation capability — it connects signals across multiple data sources and across time so that what would otherwise look like several disconnected, low-confidence events gets recognized as one coordinated, higher-confidence, multi-stage attack. It never remediates anything or changes retention behavior; it purely improves the quality and confidence of the detection itself. Confusing correlation with automated response is the exact trap this question is testing.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 7</span><div class="qtext">A company wants GuardDuty findings from 25 member accounts visible in one place without logging into each account. What should they configure?</div>
@@ -707,7 +783,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">A separate Security Lake in each account</button>
           <button class="exam-opt" data-correct="false">Amazon Detective's cross-account graphs alone, without Security Hub</button>
         </div>
-        <div class="exam-explain">Cross-account visibility for findings is delivered through a designated Security Hub administrator account.</div>
+        <div class="exam-explain">Cross-account visibility for findings comes specifically from designating a Security Hub administrator account and associating member accounts to it across the Organization. Simply enabling GuardDuty detectors in each account, on their own, does nothing to surface those findings anywhere centrally. This is the concrete payoff of the multi-account architecture thread applied to detection tooling.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 8</span><div class="qtext">Which statement correctly distinguishes Security Hub from GuardDuty?</div>
@@ -717,7 +793,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">Security Hub replaces the need for GuardDuty entirely</button>
           <button class="exam-opt" data-correct="false">GuardDuty aggregates Security Hub's findings</button>
         </div>
-        <div class="exam-explain">This is the core GuardDuty vs Security Hub distinction the exam tests repeatedly.</div>
+        <div class="exam-explain">This is the core GuardDuty vs Security Hub distinction the exam tests repeatedly: GuardDuty independently analyzes raw signals to generate brand-new findings, while Security Hub's main job is collecting and normalizing findings other services already produced. Security Hub doesn't replace GuardDuty or duplicate its raw-log analysis — the two are complementary layers, not competing ones.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 9</span><div class="qtext">Does GuardDuty require you to configure your own dedicated CloudTrail trail before it can analyze management events?</div>
@@ -727,7 +803,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">Yes, but only for organization trails</button>
           <button class="exam-opt" data-correct="false">Only if the account is outside an AWS Organization</button>
         </div>
-        <div class="exam-explain">GuardDuty's managed analysis is separate from any CloudTrail trail you configure for your own purposes.</div>
+        <div class="exam-explain">GuardDuty's managed analysis of CloudTrail management events happens internally as part of the service itself, entirely separate from any CloudTrail trail you configure for your own audit or troubleshooting needs. You only need to enable GuardDuty — there's no trail configuration step required for its own detection pipeline. This nuance trips up teams who assume every AWS security service needs its own dedicated log feed manually wired to it.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 10</span><div class="qtext">Which service would you choose to centralize raw security logs from AWS and supported third-party tools for long-term, broad querying and SIEM integration?</div>
@@ -737,7 +813,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="true">Amazon Security Lake</button>
           <button class="exam-opt" data-correct="false">Amazon GuardDuty</button>
         </div>
-        <div class="exam-explain">Security Lake is purpose-built for centralized, OCSF-normalized raw log storage at scale — distinct from finding aggregation or investigation.</div>
+        <div class="exam-explain">Security Lake is purpose-built for centralizing raw log data — not already-processed findings — from both AWS and supported third-party sources, normalized into OCSF for consistent querying. Security Hub aggregates findings (the processed output of detection), while Detective investigates relationships behind a specific finding; neither is designed as a bulk, long-term raw-data store for SIEM integration the way Security Lake is.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 11</span><div class="qtext">A GuardDuty finding indicates reconnaissance activity (port scanning) against an EC2 instance. Which best describes the appropriate immediate interpretation?</div>
@@ -747,7 +823,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">GuardDuty has already blocked the scanning source</button>
           <button class="exam-opt" data-correct="false">No action is ever needed for reconnaissance findings</button>
         </div>
-        <div class="exam-explain">Reconnaissance findings signal early-stage attacker activity — worth correlating, not necessarily an indicator of confirmed compromise on their own.</div>
+        <div class="exam-explain">Reconnaissance findings signal early-stage attacker activity — someone is probing, not necessarily someone who has already succeeded. The correct instinct is to check whether it correlates with other findings on the same resource or entity before deciding how urgently to respond, rather than either ignoring it entirely or overreacting as if compromise were already confirmed. This calibrated-response judgment is exactly what separates a junior analyst's reaction from a senior one's.</div>
       </div>
 
       <div class="exam-q"><span class="qnum">Question 12</span><div class="qtext">Which of the following is something Amazon Detective is explicitly NOT designed to do?</div>
@@ -757,7 +833,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
           <button class="exam-opt" data-correct="false">Support investigation across linked accounts</button>
           <button class="exam-opt" data-correct="false">Depend on data sources like GuardDuty findings and VPC Flow Logs</button>
         </div>
-        <div class="exam-explain">Detective is an investigation and visualization tool, not a detection source — it picks up after a finding already exists.</div>
+        <div class="exam-explain">Detective is an investigation and visualization tool, not a detection source — it has no mechanism to independently notice that something is wrong the way GuardDuty does. It picks up strictly after a finding already exists, using data sources that were already flowing, to reconstruct the relationships and timeline behind that finding. Expecting Detective to generate proactive alerts on its own is a common and directly tested misconception.</div>
       </div>
     </div>
 
@@ -986,7 +1062,7 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
   document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
   document.querySelectorAll('.stagger > *').forEach(function(el, i){ el.style.transitionDelay = (i * 90) + 'ms'; });
 
-  /* ---------- side rail nav ---------- */
+  /* ---------- side rail nav + left TOC drawer (share one section list) ---------- */
   var railSections = [
     { id: 's-bridge', label: 'Bridge' },
     { id: 's-guardduty', label: 'GuardDuty' },
@@ -1004,7 +1080,34 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
     { id: 's-closing', label: 'Closing' }
   ];
   var rail = document.getElementById('railNav');
+  var tocList = document.getElementById('tocList');
+  var tocDrawer = document.getElementById('tocDrawer');
+  var tocOverlay = document.getElementById('tocOverlay');
+  var tocToggle = document.getElementById('tocToggle');
+  var tocClose = document.getElementById('tocClose');
+
+  function scrollToSection(id){
+    var target = document.getElementById(id);
+    if (target) target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+  function closeToc(){
+    tocDrawer.classList.remove('open');
+    tocOverlay.classList.remove('open');
+    tocToggle.setAttribute('aria-expanded', 'false');
+  }
+  function openToc(){
+    tocDrawer.classList.add('open');
+    tocOverlay.classList.add('open');
+    tocToggle.setAttribute('aria-expanded', 'true');
+  }
+  tocToggle.addEventListener('click', function(){
+    if (tocDrawer.classList.contains('open')) closeToc(); else openToc();
+  });
+  tocClose.addEventListener('click', closeToc);
+  tocOverlay.addEventListener('click', closeToc);
+
   railSections.forEach(function(s){
+    /* right rail dot */
     var dot = document.createElement('div');
     dot.className = 'rail-dot';
     dot.dataset.target = s.id;
@@ -1012,23 +1115,36 @@ nav{ position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-it
     dot.setAttribute('role', 'button');
     dot.setAttribute('aria-label', 'Jump to section: ' + s.label);
     dot.title = s.label;
-    dot.addEventListener('click', function(){
-      var target = document.getElementById(s.id);
-      if (target) target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
-    });
+    dot.addEventListener('click', function(){ scrollToSection(s.id); });
     dot.addEventListener('keydown', function(ev){
       if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); dot.click(); }
     });
     rail.appendChild(dot);
+
+    /* left TOC list item */
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = '#' + s.id;
+    a.textContent = s.label;
+    a.dataset.target = s.id;
+    a.addEventListener('click', function(ev){
+      ev.preventDefault();
+      scrollToSection(s.id);
+      closeToc();
+    });
+    li.appendChild(a);
+    tocList.appendChild(li);
   });
+
   var railIo = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
+      if (!e.isIntersecting) return;
       var dot = rail.querySelector('[data-target="' + e.target.id + '"]');
-      if (!dot) return;
-      if (e.isIntersecting) {
-        rail.querySelectorAll('.rail-dot').forEach(function(d){ d.classList.remove('active'); });
-        dot.classList.add('active');
-      }
+      var link = tocList.querySelector('[data-target="' + e.target.id + '"]');
+      rail.querySelectorAll('.rail-dot').forEach(function(d){ d.classList.remove('active'); });
+      tocList.querySelectorAll('a').forEach(function(l){ l.classList.remove('active'); });
+      if (dot) dot.classList.add('active');
+      if (link) link.classList.add('active');
     });
   }, { threshold: 0.5 });
   railSections.forEach(function(s){

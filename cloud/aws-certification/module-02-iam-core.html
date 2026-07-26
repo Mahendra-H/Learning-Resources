@@ -89,7 +89,7 @@ strong{ color:var(--text); font-weight:600; }
 a{ color:var(--accent); }
 code, .mono{ font-family:'JetBrains Mono',monospace; }
 
-.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); overflow:hidden; }
+.scene{ padding:90px 40px; position:relative; background:var(--bg); overflow:hidden; }
 .scene-inner{ max-width:840px; margin:0 auto; position:relative; z-index:2; }
 .scene-inner.wide{ max-width:1040px; }
 footer{ padding:80px 40px 60px; background:var(--bg); color:var(--text-dim); position:relative; }
@@ -148,6 +148,22 @@ footer{ padding:80px 40px 60px; background:var(--bg); color:var(--text-dim); pos
 @media (max-width:900px){ .rail{display:none;} }
 
 /* ============================================================
+   HAMBURGER + LEFT TOC DRAWER (reuses .drawer / .drawer-overlay)
+   ============================================================ */
+.hamburger-btn{ width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); margin-right:14px; flex-shrink:0; transition:background .25s ease; }
+.hamburger-btn:hover{ background:var(--surface-raised); }
+.hamburger-btn svg{ width:18px; height:18px; }
+.toc-item{ display:block; width:100%; text-align:left; background:none; border:none; padding:12px 10px; border-radius:8px; color:var(--text-dim); font-family:'Inter',sans-serif; font-size:0.92rem; cursor:pointer; transition:background .2s ease, color .2s ease; }
+.toc-item:hover{ background:var(--surface); color:var(--text); }
+.toc-item.active{ background:var(--c-iam-dim); color:var(--c-iam); font-weight:600; }
+.quick-check{ border:1px dashed var(--c-iam); border-radius:14px; padding:24px 26px; margin:36px 0; background:var(--surface); }
+.quick-check-label{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--c-iam); margin-bottom:10px; font-weight:500; }
+.qc-btn{ margin-top:14px; font-family:'JetBrains Mono',monospace; font-size:0.82rem; padding:10px 18px; border-radius:10px; border:1px dashed var(--line); background:transparent; color:var(--text-dim); cursor:pointer; transition:all .25s ease; }
+.qc-btn:hover{ border-color:var(--c-iam); color:var(--c-iam); }
+.quick-check-answer{ display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); color:var(--text-dim); font-size:0.92rem; }
+.quick-check-answer.open{ display:block; }
+
+/* ============================================================
    AMBIENT BLOBS
    ============================================================ */
 .ambient-blob{ position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; opacity:0.35; animation:driftBlob 34s ease-in-out infinite alternate; }
@@ -184,6 +200,7 @@ footer{ padding:80px 40px 60px; background:var(--bg); color:var(--text-dim); pos
 .drawer-overlay.open{ opacity:1; pointer-events:auto; }
 .drawer{ position:fixed; top:0; right:0; height:100%; width:min(420px, 90vw); background:var(--surface-raised); border-left:1px solid var(--line); z-index:201; padding:36px 32px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); box-shadow:-20px 0 60px rgba(0,0,0,0.35); }
 .drawer.open{ transform:translateX(0); }
+.drawer-left{ left:0; right:auto; border-left:none; border-right:1px solid var(--line); transform:translateX(-100%); box-shadow:20px 0 60px rgba(0,0,0,0.35); }
 .drawer-close{ width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; font-size:1.1rem; line-height:1; margin-bottom:20px; }
 .drawer h3{ margin-bottom:14px; }
 .drawer dl{ margin:0; }
@@ -382,7 +399,7 @@ table.compare tr:last-child td{ border-bottom:none; }
    RESPONSIVE + REDUCED MOTION
    ============================================================ */
 @media(max-width:720px){
-  .scene{ padding:120px 22px; }
+  .scene{ padding:70px 22px; }
   .eval-choices{ flex-direction:column; }
   .exam-header{ flex-direction:column; align-items:flex-start; }
 }
@@ -402,6 +419,9 @@ table.compare tr:last-child td{ border-bottom:none; }
 
 <nav class="topnav">
   <div class="nav-id">
+    <button class="hamburger-btn" id="tocToggle" aria-label="Open table of contents" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
     <span class="nav-badge">SCS-C03</span>
     <span class="nav-title">Module 02 · IAM Core</span>
     <span class="nav-domain">Domain 4 — Identity &amp; Access Management</span>
@@ -412,6 +432,14 @@ table.compare tr:last-child td{ border-bottom:none; }
     </button>
   </div>
 </nav>
+
+<div class="drawer-overlay" id="tocOverlay"></div>
+<div class="drawer drawer-left" id="tocDrawer" role="dialog" aria-label="Table of contents">
+  <button class="drawer-close" id="tocClose" aria-label="Close table of contents">×</button>
+  <h3 style="margin-bottom:6px;">Contents</h3>
+  <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:18px;">Module 02 — IAM Core</p>
+  <nav id="tocList" aria-label="Jump to section"></nav>
+</div>
 
 <div class="rail" id="railNav" aria-label="Section navigation"></div>
 
@@ -424,7 +452,8 @@ table.compare tr:last-child td{ border-bottom:none; }
     <h2 class="kinetic reveal">Who Gets To Touch What</h2>
 
     <div class="reveal" style="margin-top:28px;">
-      <p class="lead">Module 1 drew the line of the shared responsibility model — you now know, cleanly, what AWS secures and what is yours. IAM is where that line becomes operational. Shared responsibility told you what you own. IAM is the mechanism you use to control who is allowed to touch it: every S3 bucket, every EC2 instance, every KMS key you are accountable for is only as protected as the identities and policies standing in front of it. This module makes that control mechanism concrete, mechanical, and testable.</p>
+      <p class="lead">Think about how a hotel handles access. A permanent staff badge works every day until someone at the front desk deactivates it — that is a user. A guest keycard is cut for exactly the length of a stay and simply stops working at checkout, with no one having to remember to collect it — that is a role. The guest list clipped to the front desk is not a key at all; it just tells staff which name gets which room — that is a group. AWS IAM runs on exactly this distinction, and the exam expects you to reason from it instinctively, not recite it.</p>
+      <p style="margin-top:16px;">Module 1 drew the line of the shared responsibility model — you now know, cleanly, what AWS secures and what is yours. IAM is where that line becomes operational: the mechanism you use to control who is allowed to touch what you are accountable for. This module makes that control mechanism concrete, mechanical, and testable.</p>
     </div>
 
     <div class="stat-row reveal">
@@ -448,6 +477,7 @@ table.compare tr:last-child td{ border-bottom:none; }
     <div class="reveal">
       <p>A role is the opposite of a user in exactly the way that matters most: it carries no permanent credentials at all. A role is an identity that something else — a person, an application, an AWS service — assumes temporarily. When a caller assumes a role, IAM does not hand over a static secret. The request goes to AWS STS, which checks the caller against the role's trust policy (the "who is allowed to become this role" half of the role) and, if that check passes, issues a temporary security credential: an access key ID, a secret access key, and a session token, bundled together and set to expire automatically — anywhere from 15 minutes up to 12 hours later, depending on how the role is configured.</p>
       <p>Once that credential expires, it is simply gone. Nobody has to rotate it, revoke it, or remember it exists. This is the entire reason roles are the default answer on this exam for almost every access pattern — an EC2 instance calling S3, a Lambda function calling DynamoDB, one AWS account calling into another — because a credential that expires on its own is a credential that cannot quietly turn into a standing liability.</p>
+      <p><strong>A role's real advantage isn't what it can do — it's that its credentials disappear on their own.</strong></p>
     </div>
 
     <div class="diagram-shell reveal" id="assumeRoleFlow">
@@ -512,7 +542,8 @@ table.compare tr:last-child td{ border-bottom:none; }
     <h2 class="kinetic reveal">Four Ways To Grant The Same Permission</h2>
 
     <div class="reveal" style="margin-top:28px;">
-      <p class="lead">Every permission in AWS is granted by a policy, but "policy" is not one thing — it is four distinct mechanisms that differ in where they live, how they are reused, and what they are capable of. Picking the right one is a judgment the exam tests directly: not just "what is a resource-based policy" but "given this exact requirement, which of the four is the only correct tool."</p>
+      <p class="lead">Picture four different ways to grant someone access to a secure floor of a building. You could program the person's own badge to open that floor — permissions traveling with the person, wherever they go next. You could instead post a list of approved badge numbers on the door itself, maintained by whoever owns that floor, regardless of who currently works in the building — and that list can even let in someone from outside your company entirely. You could tape a handwritten exception note to one specific door, thrown out the moment that door gets renovated. Or you could issue a laminated access card that security can hand to anyone and revoke from everyone at once. AWS gives you exactly these four tools, and picking the wrong one is how audits go sideways.</p>
+      <p style="margin-top:16px;">Every permission in AWS is granted by a policy, but "policy" is not one thing — it is four distinct mechanisms that differ in where they live, how they are reused, and what they are capable of. Picking the right one is a judgment the exam tests directly: not just "what is a resource-based policy" but "given this exact requirement, which of the four is the only correct tool."</p>
     </div>
 
     <div class="type-grid reveal">
@@ -546,6 +577,7 @@ table.compare tr:last-child td{ border-bottom:none; }
       <p>An <strong>inline policy</strong> is embedded directly inside a single identity — it has no independent existence, no ARN of its own, and no way to be attached to a second identity. Its defining trait is lifecycle: delete the identity, and its inline policy disappears with it, guaranteed. That guarantee is genuinely useful for a permission so specific to one role that reuse was never the point. The cost is that inline policies do not scale as a management pattern — the same permission duplicated as inline policies across a dozen roles becomes a dozen separate places to remember to update.</p>
 
       <p>A <strong>managed policy</strong> is a standalone object with its own ARN, attachable to many identities at once. AWS-managed policies are written and maintained by AWS — convenient, but you cannot edit them, and their scope tends to run broader than a genuinely least-privilege policy should. Customer-managed policies are the version you own: attach the same policy to twenty roles, and updating it once updates all twenty. AWS keeps up to five previous versions of a customer-managed policy, so a bad edit is a rollback, not an incident — exactly the auditability that inline policies trade away.</p>
+      <p><strong>Same-account access almost always has more than one way to grant it — picking the type is a design decision, not a formality.</strong></p>
     </div>
 
     <div class="table-wrap reveal">
@@ -641,12 +673,14 @@ table.compare tr:last-child td{ border-bottom:none; }
     <h2 class="kinetic reveal">How AWS Actually Decides</h2>
 
     <div class="reveal" style="margin-top:28px;">
-      <p class="lead">Every concept so far — users, roles, policy types — feeds into one mechanical process: how AWS actually decides whether a specific request is allowed. This is the single most exam-critical skill in this module, and arguably in the whole IAM domain. Get the evaluation order internalized as a reflex, not a lookup — the exam will hand you a stack of policies and one request, and expect you to reason to the correct answer without guessing.</p>
+      <p class="lead">Picture a bouncer working a club entrance who checks one list before any other: who is explicitly barred tonight. If a name is on that list, nothing else matters — not a reservation, not a friend's invitation, that person is not getting in. Only once the barred list comes up empty does the bouncer check who is actually invited. And if a name is on neither list — not barred, not invited — that person still is not getting in; the door does not default to "sure, why not." That is the exact order IAM runs, every single time.</p>
+      <p style="margin-top:16px;">Every concept so far — users, roles, policy types — feeds into this one mechanical process: how AWS actually decides whether a specific request is allowed. This is the single most exam-critical skill in this module, and arguably in the whole IAM domain. Get the order internalized as a reflex, not a lookup — the exam will hand you a stack of policies and one request, and expect you to reason to the correct answer without guessing.</p>
     </div>
 
     <div class="reveal">
       <p>The order is fixed and it never changes. <strong>First</strong>, check for an explicit deny anywhere among every policy that applies to this request — identity-based, resource-based, and beyond. If any single statement explicitly denies the action, the request is denied, full stop, no matter how many other statements allow it. <strong>Second</strong>, if no explicit deny fired, check for an explicit allow anywhere among those same policies. If one exists, the request is allowed. <strong>Third</strong>, if neither an explicit deny nor an explicit allow matched anything, the request is denied anyway — this is the implicit deny, IAM's default-closed posture. Nothing has to actively block a request for it to fail; the absence of a matching Allow is enough on its own.</p>
       <p>That third step is the one candidates most often get backwards. There is no "if unsure, allow" fallback anywhere in IAM. Silence is a denial. The exam frequently tests exactly this: a policy configuration where nothing explicitly denies the action in question, and the trap answer assumes that silence means it is allowed.</p>
+      <p><strong>Deny beats Allow, Allow beats nothing, and nothing beats nothing — in that exact order, every time.</strong></p>
     </div>
 
     <div class="diagram-shell reveal" id="evalLogicFlow">
@@ -769,6 +803,13 @@ table.compare tr:last-child td{ border-bottom:none; }
       <div class="callout-label">Exam angle</div>
       <p>Multi-policy scenario questions are the signature format for this topic: you will be shown two or three policy snippets and one specific request, and asked to reason through all of them together. Work the three steps in strict order every time — scan everything for an explicit deny first, only then look for an explicit allow, and only conclude implicit deny if you genuinely found neither. Skipping straight to "does anything allow this" is how candidates miss a deny buried in the second or third policy.</p>
     </div>
+
+    <div class="quick-check reveal">
+      <div class="quick-check-label">Quick check — before you continue</div>
+      <p style="margin-bottom:0;">A role has two attached policies. Policy A grants s3:GetObject on bucket "reports." Policy B has nothing to do with S3 at all. Neither policy contains a Deny. Is a request to call s3:PutObject on bucket "reports" allowed or denied — and why?</p>
+      <button class="qc-btn" data-qc="qc1">Check your answer</button>
+      <div class="quick-check-answer" id="qc1">Denied, by implicit default. Policy A only matches GetObject, not PutObject — it does not apply to this request at all. Policy B does not mention S3. With no explicit deny and no explicit allow matching this specific action, the request falls through to implicit deny, exactly like Scenario 02 in Scene 07.</div>
+    </div>
   </div>
 </section>
 
@@ -779,7 +820,8 @@ table.compare tr:last-child td{ border-bottom:none; }
     <h2 class="kinetic reveal">Two Policies, One Decision</h2>
 
     <div class="reveal" style="margin-top:28px;">
-      <p class="lead">Scene 03 established the rule in the abstract: same-account identity and resource-based policies combine, either one can grant, and any explicit deny anywhere still wins. This scene makes that concrete with the pairing the exam asks about most — an IAM identity and an S3 bucket policy, evaluated together against one request.</p>
+      <p class="lead">Think of a tenant's own keys and a building's front-desk visitor list as two independent ways into the same lobby. A first-time guest with no key at all can still get in if the front desk has them on a pre-approved list — the list alone was enough. But a tenant with every key on their ring still gets turned away if the building posts a notice barring entry during a fumigation, no exceptions — a restriction at the front desk overrides even a full set of keys. Same lobby, two independent gates, either one can let someone in or shut them out.</p>
+      <p style="margin-top:16px;">Scene 03 established the rule in the abstract: same-account identity and resource-based policies combine, either one can grant, and any explicit deny anywhere still wins. This scene makes that concrete with the pairing the exam asks about most — an IAM identity and an S3 bucket policy, evaluated together against one request.</p>
     </div>
 
     <div class="diagram-shell reveal" id="pairToggle">
@@ -837,6 +879,7 @@ table.compare tr:last-child td{ border-bottom:none; }
     <div class="reveal">
       <p>In <strong>Case A</strong>, the role has no S3 permissions in its identity-based policy at all — nothing attached or inline mentions S3. The bucket's own policy explicitly names that role's ARN as a Principal and grants s3:GetObject, so the request succeeds. The identity-based policy's silence is not a deny; it simply has nothing to say about this action, so it does not participate in the outcome one way or the other. The resource-based policy, on its own, was sufficient — exactly the special power Scene 02 flagged: a resource-based policy can grant access without any identity-based policy backing it up, as long as everything stays inside one account.</p>
       <p>In <strong>Case B</strong>, flip it. An administrator role carries full access by design. The bucket policy carries an explicit Deny for any request that does not arrive over TLS, and the administrator's request happens to come in over plain HTTP — so it is denied. Broad permissions elsewhere do not create an exception to an explicit deny anywhere in the evaluation. This surprises engineers constantly: "but they have AdministratorAccess" is not a rebuttal, because step one of the evaluation order never checks who is asking or how broad their other permissions are — only whether any applicable statement says Deny. A bucket-level deny protects the bucket from every principal touching it, admins included, unless that principal is explicitly carved out of the condition.</p>
+      <p><strong>Either policy can grant access on its own; either one can also block it on its own — neither side is just backup.</strong></p>
     </div>
 
     <div class="callout scenario reveal">
@@ -863,7 +906,8 @@ table.compare tr:last-child td{ border-bottom:none; }
     <h2 class="kinetic reveal">Making Allow And Deny Situational</h2>
 
     <div class="reveal" style="margin-top:28px;">
-      <p class="lead">Every policy so far has matched a request unconditionally: right action, right resource, done. Condition keys add a third gate — a specific circumstance that must also be true. They are what turns "this role can read this bucket" into "this role can read this bucket, but only from the corporate network, only with MFA, only over TLS." Six of them show up constantly on this exam; know what each restricts and, just as importantly, how a condition behaves differently depending on whether it sits on an Allow or a Deny.</p>
+      <p class="lead">A parking garage sign reading "Reserved — Permit Holders Only" is unconditional: no permit, no entry, full stop. A sign reading "Reserved 8am–6pm Weekdays" is conditional — outside that window, the reservation simply is not in effect, and the spot behaves like any other. Condition keys work exactly like that second sign: they do not change what a statement grants or denies, they only decide when the statement is even switched on for a given request.</p>
+      <p style="margin-top:16px;">Every policy so far has matched a request unconditionally: right action, right resource, done. Condition keys add a third gate — a specific circumstance that must also be true. Six of them show up constantly on this exam; know what each restricts and, just as importantly, how a condition behaves differently depending on whether it sits on an Allow or a Deny.</p>
     </div>
 
     <div class="cond-grid reveal">
@@ -943,6 +987,7 @@ table.compare tr:last-child td{ border-bottom:none; }
     <div class="reveal">
       <p>A condition behaves differently depending on which effect it is attached to, and this is one of the most frequently misread mechanics on the exam. On an <strong>Allow</strong>, a condition narrows the grant: the statement only allows the request if the condition evaluates true; if the condition is false, the Allow simply does not fire, and evaluation moves on to look elsewhere. On a <strong>Deny</strong>, a condition gates the block: the statement only denies the request if the condition evaluates true.</p>
       <p>Here is the part that trips people up: if that condition evaluates false, the Deny does not fire either. It is not that the request becomes "safer" or "allowed instead" — the Deny statement is just inactive for this particular request, exactly the way an Allow with a false condition is inactive. Whether the request ultimately succeeds still depends on whether some other statement, somewhere else, explicitly allows it. A false condition on a Deny does not grant anything; it only means that specific Deny is not the one deciding this outcome.</p>
+      <p><strong>A condition that evaluates false doesn't flip an Allow into a block, or a Deny into a green light — it just steps out of the decision.</strong></p>
     </div>
 
     <div class="callout scenario reveal">
@@ -969,7 +1014,8 @@ table.compare tr:last-child td{ border-bottom:none; }
     <h2 class="kinetic reveal">Everything Except...</h2>
 
     <div class="reveal" style="margin-top:28px;">
-      <p class="lead">NotAction and NotResource look like scoping tools, and used carefully, they can be. Used carelessly, they are the fastest way to accidentally grant almost an entire AWS account. Both flip the usual logic: instead of listing what a statement matches, you list what it does not match, and the statement applies to everything else. That inversion is exactly where the trap lives.</p>
+      <p class="lead">Imagine a venue owner posting a sign reading "Everyone welcome except the two people banned last month," and believing that counts as a tightly controlled guest list. It does not — it is an open-door policy with exactly two exceptions, and every other stranger in town is implicitly invited. That is precisely what happens when NotAction is paired with Allow: naming what is excluded feels like restriction, but what actually got granted is everyone and everything else.</p>
+      <p style="margin-top:16px;">NotAction and NotResource look like scoping tools, and used carefully, they can be. Used carelessly, they are the fastest way to accidentally grant almost an entire AWS account. Both flip the usual logic: instead of listing what a statement matches, you list what it does not match, and the statement applies to everything else. That inversion is exactly where the trap lives.</p>
     </div>
 
     <div class="reveal">
@@ -1017,6 +1063,7 @@ table.compare tr:last-child td{ border-bottom:none; }
 
     <div class="reveal" style="margin-top:36px;">
       <p>None of this makes NotAction inherently wrong. Paired with a tightly scoped Resource — not Resource: "*" — it can cleanly express "all S3 actions on this bucket except delete," which reads naturally and stays safely contained to one bucket regardless of which S3 actions AWS adds in the future. The trap is specifically the combination of NotAction, Effect: Allow, and a wildcard Resource together: that combination is what turns a seemingly narrow exclusion into an almost-unbounded grant. NotResource carries the identical risk in the other direction — Effect: Allow with a broad Action and a short NotResource list grants that action everywhere except the handful of resources named.</p>
+      <p><strong>NotAction never shrinks a grant to "just this" — it grows it to "everything except this," and those are very different sizes.</strong></p>
     </div>
 
     <div class="callout scenario reveal">
@@ -1032,6 +1079,13 @@ table.compare tr:last-child td{ border-bottom:none; }
     <div class="callout reveal">
       <div class="callout-label">Exam angle</div>
       <p>Expect a question that shows a NotAction policy and asks whether a specific, unlisted action is permitted. Work it exactly like the checklist above: is this action under any excluded prefix? If not, and the Effect is Allow, it is granted — regardless of how dangerous that specific action is. The exam is testing whether you can mechanically evaluate NotAction rather than intuit "this looks restrictive so it must be fine."</p>
+    </div>
+
+    <div class="quick-check reveal">
+      <div class="quick-check-label">Quick check — before you continue</div>
+      <p style="margin-bottom:0;">A policy reads: Effect: Deny, NotAction: ["s3:GetObject","s3:ListBucket"], Resource: "*". It is attached to a role that otherwise has full S3 access from a separate managed policy. Can this role call s3:DeleteBucket?</p>
+      <button class="qc-btn" data-qc="qc2">Check your answer</button>
+      <div class="quick-check-answer" id="qc2">No. NotAction on a Deny denies everything except the two listed read actions — so DeleteBucket, PutObject, and virtually every other S3 action are explicitly denied by this statement, regardless of what the separate managed policy grants elsewhere. This is the safer, more intuitive pairing mentioned earlier: NotAction with Deny reads naturally and behaves the way most people expect, unlike NotAction with Allow.</div>
     </div>
   </div>
 </section>
@@ -1432,7 +1486,7 @@ table.compare tr:last-child td{ border-bottom:none; }
         <button class="exam-opt" data-correct="false">Resource-based policies always override identity-based policies.</button>
         <button class="exam-opt" data-correct="false">The most restrictive matching statement always wins, regardless of Effect.</button>
       </div>
-      <div class="exam-explain">This is the fixed, three-step order this entire module builds on: explicit deny beats everything, an explicit allow (if no deny fired) grants the request, and silence defaults to deny.</div>
+      <div class="exam-explain">This is the fixed, three-step order this entire module builds on: explicit deny beats everything, an explicit allow (if no deny fired) grants the request, and silence defaults to deny. The distractors each describe a different, more familiar-sounding system — recency, policy-type precedence, or severity — but IAM uses none of them; only the Effect field and the deny-first order decide anything.</div>
     </div>
 
     <div class="exam-card reveal">
@@ -1444,7 +1498,7 @@ table.compare tr:last-child td{ border-bottom:none; }
         <button class="exam-opt" data-correct="false">AWS Organizations</button>
         <button class="exam-opt" data-correct="false">Amazon Cognito</button>
       </div>
-      <div class="exam-explain">IAM defines the role and its trust policy, but AWS STS is the service that actually issues and expires the temporary access key, secret key, and session token.</div>
+      <div class="exam-explain">IAM defines the role and its trust policy, but AWS STS is the service that actually issues and expires the temporary access key, secret key, and session token. Cognito issues credentials too, but only for federating end users into an app's own identity pool, not for a straightforward role assumption, and Organizations has no role in issuing credentials at all.</div>
     </div>
 
     <div class="exam-card reveal">
@@ -1456,7 +1510,7 @@ table.compare tr:last-child td{ border-bottom:none; }
         <button class="exam-opt" data-correct="false">Share the account root credentials with the application.</button>
         <button class="exam-opt" data-correct="false">Add the application server's IP to an S3 bucket policy with no principal restriction.</button>
       </div>
-      <div class="exam-explain">An EC2 instance role issues temporary, auto-expiring credentials to the application with no static secret to leak or rotate — the default answer for compute-to-service access on this exam.</div>
+      <div class="exam-explain">An EC2 instance role issues temporary, auto-expiring credentials to the application with no static secret to leak or rotate — the default answer for compute-to-service access on this exam. Every other option here reintroduces a long-lived secret or an unauthenticated network path, exactly the pattern Scene 01 flagged as a standing liability.</div>
     </div>
 
     <div class="exam-card reveal">
@@ -1468,7 +1522,7 @@ table.compare tr:last-child td{ border-bottom:none; }
         <button class="exam-opt" data-correct="true">A resource-based bucket policy in Account A</button>
         <button class="exam-opt" data-correct="false">A service control policy in Account A</button>
       </div>
-      <div class="exam-explain">A resource-based policy is the only policy type here that can name an external account's principal directly and grant access, without that account needing to assume a role.</div>
+      <div class="exam-explain">A resource-based policy is the only policy type here that can name an external account's principal directly and grant access, without that account needing to assume a role. Inline and managed policies are both identity-based mechanisms that only govern what an identity in your own account can do; neither one can reach into Account B at all.</div>
     </div>
 
     <div class="exam-card reveal">
@@ -1552,7 +1606,7 @@ table.compare tr:last-child td{ border-bottom:none; }
         <button class="exam-opt" data-correct="true">Rotate the key on a defined schedule and monitor its last-used activity so it can be retired the moment it is no longer needed.</button>
         <button class="exam-opt" data-correct="false">Share the same key across every tool that needs similar access, to reduce the number of keys to track.</button>
       </div>
-      <div class="exam-explain">Access keys are not forbidden; the exam expects you to know the compensating control for the genuinely unavoidable case — scheduled rotation and active monitoring, not blanket prohibition or, worse, key sharing.</div>
+      <div class="exam-explain">Access keys are not forbidden; the exam expects you to know the compensating control for the genuinely unavoidable case — scheduled rotation and active monitoring, not blanket prohibition or, worse, key sharing. Sharing one key across multiple tools also erases any audit trail of which system actually made a given call, which defeats the point of monitoring it in the first place.</div>
     </div>
 
     <div class="exam-card reveal">
@@ -1903,39 +1957,91 @@ document.querySelectorAll(".faq-q").forEach(function(q){
   });
 });
 
+document.querySelectorAll(".qc-btn").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    var target = document.getElementById(btn.getAttribute("data-qc"));
+    if(target) target.classList.toggle("open");
+  });
+});
+
 (function(){
   var scenes = ["scene-users","scene-policy-types","scene-evaluation","scene-identity-resource","scene-conditions","scene-notaction","scene-evaluator","scene-trap-gallery","scene-mock-exam","scene-faq","scene-closing"];
   var labels = ["Users, Groups & Roles","Policy Types","Evaluation Logic","Identity + Resource","Condition Keys","NotAction Trap","Policy Evaluator","Trap Gallery","Mock Exam","FAQ","What's Next"];
   var rail = document.getElementById("railNav");
-  if(!rail) return;
-  var dots = [];
+  var tocList = document.getElementById("tocList");
+  var items = [];
+
   scenes.forEach(function(id, i){
     var el = document.getElementById(id);
     if(!el) return;
-    var dot = document.createElement("button");
-    dot.className = "rail-dot";
-    dot.setAttribute("aria-label", labels[i] || id);
-    dot.setAttribute("data-target", id);
-    dot.addEventListener("click", function(){
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    rail.appendChild(dot);
-    dots.push({ id: id, el: el, dot: dot });
-  });
-  if(dots.length){ dots[0].dot.classList.add("active"); }
 
-  var railIo = new IntersectionObserver(function(entries){
+    var dot = null;
+    if(rail){
+      dot = document.createElement("button");
+      dot.className = "rail-dot";
+      dot.setAttribute("aria-label", labels[i] || id);
+      dot.setAttribute("data-target", id);
+      dot.addEventListener("click", function(){ el.scrollIntoView({ behavior: "smooth", block: "start" }); });
+      rail.appendChild(dot);
+    }
+
+    var tocBtn = null;
+    if(tocList){
+      tocBtn = document.createElement("button");
+      tocBtn.className = "toc-item";
+      var num = (i + 1 < 10 ? "0" : "") + (i + 1);
+      tocBtn.textContent = num + " — " + (labels[i] || id);
+      tocBtn.addEventListener("click", function(){
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        closeToc();
+      });
+      tocList.appendChild(tocBtn);
+    }
+
+    items.push({ id: id, el: el, dot: dot, tocBtn: tocBtn });
+  });
+
+  if(items.length){
+    if(items[0].dot) items[0].dot.classList.add("active");
+    if(items[0].tocBtn) items[0].tocBtn.classList.add("active");
+  }
+
+  var sectionIo = new IntersectionObserver(function(entries){
     entries.forEach(function(entry){
       var match = null;
-      dots.forEach(function(d){ if(d.el === entry.target) match = d; });
+      items.forEach(function(it){ if(it.el === entry.target) match = it; });
       if(!match) return;
       if(entry.isIntersecting){
-        dots.forEach(function(d){ d.dot.classList.remove("active"); });
-        match.dot.classList.add("active");
+        items.forEach(function(it){
+          if(it.dot) it.dot.classList.remove("active");
+          if(it.tocBtn) it.tocBtn.classList.remove("active");
+        });
+        if(match.dot) match.dot.classList.add("active");
+        if(match.tocBtn) match.tocBtn.classList.add("active");
       }
     });
   }, { rootMargin: "-15% 0px -75% 0px", threshold: 0 });
-  dots.forEach(function(d){ railIo.observe(d.el); });
+  items.forEach(function(it){ sectionIo.observe(it.el); });
+
+  /* ---------- Left TOC drawer open/close (independent of the right-side rail, which is unchanged) ---------- */
+  var tocToggle = document.getElementById("tocToggle");
+  var tocOverlay = document.getElementById("tocOverlay");
+  var tocDrawer = document.getElementById("tocDrawer");
+  var tocClose = document.getElementById("tocClose");
+
+  function openToc(){
+    if(tocDrawer) tocDrawer.classList.add("open");
+    if(tocOverlay) tocOverlay.classList.add("open");
+    if(tocToggle) tocToggle.setAttribute("aria-expanded", "true");
+  }
+  function closeToc(){
+    if(tocDrawer) tocDrawer.classList.remove("open");
+    if(tocOverlay) tocOverlay.classList.remove("open");
+    if(tocToggle) tocToggle.setAttribute("aria-expanded", "false");
+  }
+  if(tocToggle) tocToggle.addEventListener("click", openToc);
+  if(tocOverlay) tocOverlay.addEventListener("click", closeToc);
+  if(tocClose) tocClose.addEventListener("click", closeToc);
 })();
 
 })();

@@ -90,7 +90,7 @@ a{color:var(--accent);}
 @keyframes spinIcon{ from{transform:rotate(0);} to{transform:rotate(360deg);} }
 
 /* Scene structure */
-.scene{ min-height:100vh; padding:160px 40px; position:relative; background:var(--bg); display:flex; align-items:center; }
+.scene{ min-height:auto; padding:90px 40px; position:relative; background:var(--bg); display:flex; align-items:center; }
 .scene-inner{ max-width:840px; margin:0 auto; position:relative; z-index:2; width:100%; }
 .eyebrow{ display:flex; align-items:center; gap:10px; font-family:'JetBrains Mono', monospace; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent); margin-bottom:22px; }
 .eyebrow::before{ content:''; width:24px; height:1px; background:var(--accent); display:inline-block; }
@@ -124,6 +124,12 @@ footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); text-ali
 .drawer-overlay{ position:fixed; inset:0; background:var(--overlay); z-index:200; opacity:0; pointer-events:none; transition:opacity .35s ease; backdrop-filter:blur(2px); }
 .drawer-overlay.open{ opacity:1; pointer-events:auto; }
 .drawer{ position:fixed; top:0; right:0; height:100%; width:min(420px, 90vw); background:var(--surface-raised); border-left:1px solid var(--line); z-index:201; padding:36px 32px; overflow-y:auto; transform:translateX(100%); transition:transform .4s cubic-bezier(.16,1,.3,1); box-shadow:-20px 0 60px rgba(0,0,0,0.35); }
+.drawer.left{ right:auto; left:0; border-left:none; border-right:1px solid var(--line); transform:translateX(-100%); box-shadow:20px 0 60px rgba(0,0,0,0.35); }
+.drawer.left.open{ transform:translateX(0); }
+.hamburger-btn{ width:38px; height:38px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1rem; }
+.toc-item{ display:block; width:100%; text-align:left; background:none; border:none; padding:12px 10px; color:var(--text-dim); cursor:pointer; font-family:'Inter',sans-serif; font-size:0.92rem; border-radius:8px; border-left:2px solid transparent; transition:background .2s ease, color .2s ease, border-color .2s ease; }
+.toc-item:hover{ background:var(--surface); color:var(--text); }
+.toc-item.active{ color:var(--accent); border-left-color:var(--accent); background:var(--accent-dim); }
 .drawer.open{ transform:translateX(0); }
 .drawer-close{ background:none; border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 12px; cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:0.75rem; margin-bottom:20px; }
 
@@ -140,7 +146,7 @@ footer{ padding:60px 40px; background:var(--bg); color:var(--text-dim); text-ali
 html[data-theme="light"] .btn:hover{ color:#fff; }
 
 @media (prefers-reduced-motion: reduce){ *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;} }
-@media (max-width:640px){ .scene{padding:120px 22px;} .title-card{padding:22px;} #trapGrid{grid-template-columns:1fr !important;} }
+@media (max-width:640px){ .scene{padding:64px 22px;} .title-card{padding:22px;} #trapGrid{grid-template-columns:1fr !important;} #resourceGrid{grid-template-columns:1fr !important;} }
 </style>
 </head>
 <body>
@@ -148,7 +154,10 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
 <div id="scrollProgress"></div>
 
 <nav class="topnav">
-  <div class="brand">SCS-C03 <strong>· Module 01</strong> — Foundations &amp; Shared Responsibility</div>
+  <div style="display:flex; align-items:center; gap:14px;">
+    <button class="hamburger-btn" id="tocToggle" aria-label="Open table of contents" aria-expanded="false">☰</button>
+    <div class="brand">SCS-C03 <strong>· Module 01</strong> — Foundations &amp; Shared Responsibility</div>
+  </div>
   <div class="nav-actions">
     <button class="theme-btn" id="themeToggle" aria-label="Toggle light and dark theme">🌙</button>
   </div>
@@ -156,12 +165,20 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
 
 <nav class="rail" id="railNav" aria-label="Scene navigator"></nav>
 
+<div class="drawer-overlay" id="tocOverlay"></div>
+<div class="drawer left" id="tocDrawer" aria-label="Table of contents">
+  <button class="drawer-close" id="tocCloseBtn">✕ Close</button>
+  <h3 style="margin-bottom:18px; font-size:1rem;">Module 01 Contents</h3>
+  <div id="tocList"></div>
+</div>
+
 <section class="title-card" id="hero">
   <div class="scanbeam"></div>
   <div class="eyebrow" style="justify-content:center;">Module 01 · Cross-Cutting</div>
   <h2 class="tc-kinetic" data-text="THE BRIEFING'S OVER."></h2>
   <h2 class="tc-kinetic" data-text="HERE'S THE GROUND YOU STAND ON." style="margin-top:6px; font-size:clamp(1.6rem, 4.6vw, 3.2rem); color:var(--accent);"></h2>
   <p>Module 0 walked you through the exam's shape — six domains, 65 questions, a scaled score you need to clear. You haven't touched real security content yet. That changes now. Everything you learn from here — IAM policies in Module 2, KMS key grants in Module 7, GuardDuty findings in Module 10 — sits on top of two ideas this module exists to make automatic: <strong style="color:var(--card-text);">who is responsible for what</strong>, and <strong style="color:var(--card-text);">why no single control is ever enough</strong>.</p>
+  <p style="max-width:600px; margin:22px auto 0;">Run this module the way you'd actually work the problem: picture yourself as the new security engineer at <strong style="color:var(--card-text);">Meridian Health</strong>, a mid-size healthcare startup two months into its first real AWS migration. Every concept below is a decision Meridian's team has to get right this week — not an abstraction for later.</p>
   <p class="mono" style="margin-top:28px; font-size:0.78rem; color:#5C6690;">Estimated study time: 90 minutes · Scroll to begin</p>
 </section>
 
@@ -170,10 +187,14 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
   <div class="scene-inner">
     <div class="eyebrow">Scene 01 — The Line That Moves</div>
     <h2 class="kinetic">The Shared Responsibility Model, Not the Marketing Slide</h2>
+    <p class="reveal">Think of renting a furnished apartment versus buying raw land. The landlord maintains the building's structure, wiring, and plumbing — you'd never be expected to fix a failing foundation. But what you keep inside, who you give a key to, and whether you lock the door at night is entirely yours, no matter how much the landlord handles. AWS's shared responsibility model works the same way, and <strong>Meridian Health's</strong> team is about to learn it the hard way if they don't internalize it now.</p>
     <p class="reveal">Every AWS training deck shows the same picture: AWS secures "of the cloud," you secure "in the cloud." It's not wrong, but it's a sentence, not a mental model — and the exam does not test sentences. It tests whether you can look at a service you've never touched before and correctly reason about where the line sits. That phrasing itself is worth pausing on: "of the cloud" means the physical and virtualization layer that makes AWS possible at all; "in the cloud" means everything you built, configured, or uploaded into that layer. The confusion isn't in the words — it's that people memorize the phrase instead of the reasoning behind it, and the reasoning is what breaks down under exam pressure.</p>
     <p class="reveal">Here's the part the marketing slide skips: the line is not fixed. It slides along a spectrum depending on how much of the stack AWS abstracts away from you. On one end sits EC2 — pure infrastructure-as-a-service. AWS secures the physical hosts, the hypervisor, and the network fabric beneath your instance; you own the guest operating system, every patch inside it, your security group rules, and anything you install. Move one step up to RDS and the line shifts: AWS now manages the underlying database engine's patching, backups, and the host OS, but you still choose your parameter groups, control network access via security groups, and decide what's inside the database and who can query it. Move further to ECS or EKS and the line fractures into three separate pieces at once — AWS operates the control plane (the API server, etcd, scheduler), but on EKS with self-managed or even managed node groups, you are still responsible for patching the worker node OS, and you are always responsible for what's baked into your container image, because AWS never inspects or patches your image contents. Keep moving toward Lambda, S3, and DynamoDB and the abstraction becomes nearly total: AWS owns the runtime, the OS, the scaling, the physical layer, and the patching of everything underneath your code. What's left is narrow but non-negotiable — your code's logic, your IAM permissions, and your data.</p>
     <p class="reveal"><strong>And here is the sentence the exam is actually testing, over and over, in different disguises:</strong> no matter how abstracted the service, three things never move off your side of the line — <strong>data classification</strong> (deciding what's sensitive), <strong>IAM configuration</strong> (deciding who can reach it), and <strong>client-side encryption choices</strong> (deciding whether you encrypt before it ever reaches AWS). A serverless function doesn't decide those things for you. Neither does S3. Those are judgment calls only you can make, and the exam will hand you a scenario about the most "hands-off" service in the catalog specifically to see if you remember that.</p>
     <p class="reveal">On the other end, some things never move at all, and the exam never treats these as ambiguous: physical data center security, hardware lifecycle, and global network infrastructure are always AWS, full stop, regardless of which service you're using. If an answer choice suggests a customer action related to physical security, it's a distractor.</p>
+    <div class="card reveal" style="margin-top:20px; border-color:var(--green);">
+      <p style="margin-bottom:0;"><strong style="color:var(--green);">Takeaway:</strong> the abstraction level of a service tells you how much AWS owns — but data classification, IAM configuration, and encryption choices never leave your side of the line, on any service, at any abstraction level.</p>
+    </div>
   </div>
 </section>
 
@@ -182,6 +203,13 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
     <div class="eyebrow">Production Scenario</div>
     <h2 class="kinetic">The Migration That Assumed Too Much</h2>
     <p class="reveal">A mid-size fintech moved its transaction-matching service from on-prem VMs to EC2 over a single sprint. The infra team's mental model going in was simple: "AWS is now hosting our servers, so AWS is now securing our servers." Six weeks later, an external scan flagged a dozen EC2 instances still running a kernel version with a known privilege-escalation CVE — a patch that had been available for eleven weeks. Nobody had applied it, because nobody on the team believed patching the guest OS was still their job once the workload "lived in AWS." The instances were, technically, exactly as secure as AWS's shared responsibility model always said they would be: AWS had patched the hypervisor flawlessly. The guest OS — the thing actually running the vulnerable kernel — was never AWS's to patch in the first place. <strong>The fix</strong> wasn't a tool, it was a job assignment: patch management for guest OS layers became an explicit, owned, on-call responsibility with its own SLA, the same as it had been on-prem. <strong>The principle that would have prevented it:</strong> treating "moved to AWS" as synonymous with "AWS secures it," instead of asking, service by service, exactly where the line actually sits.</p>
+    <div class="card reveal" style="margin-top:20px; border-left:3px solid var(--accent); border-color:var(--line);">
+      <span class="mono" style="color:var(--accent); font-size:0.7rem;">MENTOR ASIDE</span>
+      <p style="margin:8px 0 0;">I've seen this exact postmortem three separate times across three companies, always with the same shape: a migration goes well enough operationally that nobody stops to ask "wait, whose job is this now?" The pattern isn't a knowledge gap — every one of those teams could recite the shared responsibility model on a whiteboard. It's an ownership gap. Knowing the model and assigning the model to a real person's Tuesday are two different projects.</p>
+    </div>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--amber);">
+      <p style="margin-bottom:0;"><strong style="color:var(--amber);">Before you scroll further —</strong> Meridian Health is about to deploy its patient-intake service on EKS with managed node groups. Without looking ahead: whose job is it to patch the worker node operating system? Hold your answer, then keep reading — this exact question resurfaces in the exercise below.</p>
+    </div>
   </div>
 </section>
 
@@ -239,8 +267,20 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
   <div class="scene-inner">
     <div class="eyebrow">Scene 02 — Principles, Not Slogans</div>
     <h2 class="kinetic">The Well-Architected Security Pillar</h2>
-    <p class="reveal">AWS's Well-Architected Framework names a short list of security design principles. Trainers list them and move on; the exam expects you to recognize each one in a scenario where it isn't labeled. Each principle below comes with the judgment call it actually forces you to make.</p>
+    <p class="reveal">A pilot doesn't improvise a pre-flight checklist from memory each time — the checklist exists precisely because memory fails under pressure, and skipping an item never announces itself until it's too late to matter. AWS's Well-Architected Framework names a short list of security design principles that work the same way. Trainers list them and move on; the exam expects you to recognize each one in a scenario where it isn't labeled — and Meridian's platform lead runs every new service decision through this exact checklist before signing off.</p>
+    <p class="reveal">Each principle below comes with the judgment call it actually forces you to make.</p>
     <div class="stagger" id="waList" style="display:flex; flex-direction:column; gap:14px;"></div>
+    <div class="card reveal" style="margin-top:22px; border-color:var(--green);">
+      <p style="margin-bottom:0;"><strong style="color:var(--green);">Takeaway:</strong> these principles aren't independent slogans — they're the same instinct (assume failure, minimize standing exposure, make the safe path the automatic path) applied to seven different angles of the same system.</p>
+    </div>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--amber);">
+      <h3 style="color:var(--amber); font-size:1rem; margin-bottom:10px;">Common mistake</h3>
+      <p style="margin-bottom:0;">Treating these as a compliance checklist to recite rather than a lens to apply. A team can genuinely believe they're "Well-Architected" because they've enabled a list of AWS features, while still violating the underlying principle — for example, enabling CloudTrail (traceability, technically satisfied) but never actually reviewing the logs or alerting on anything in them (traceability, practically absent).</p>
+    </div>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--accent);">
+      <h3 style="color:var(--accent); font-size:1rem; margin-bottom:10px;">Exam angle</h3>
+      <p style="margin-bottom:0;">Expect scenario questions that never say "Well-Architected" by name but clearly map to one principle. If a question describes a team granting broad standing access "just in case," that's a "keep people away from data" violation dressed up as an operational convenience — learn to spot the principle underneath the story, not just the AWS service being discussed.</p>
+    </div>
   </div>
 </section>
 
@@ -254,8 +294,9 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
   <div class="scene-inner">
     <div class="eyebrow">Scene 03 — Defense-in-Depth</div>
     <h2 class="kinetic">Five Layers, One Attacker</h2>
-    <p class="reveal">Defense-in-depth means no single layer is trusted to stop everything on its own — edge, network, compute, application, and data each assume the layers around them might fail. The exam never accepts "just use a WAF" or "just tighten IAM" as a complete answer, because real incidents rarely get stopped at the first layer they hit. They get stopped — or don't — layer by layer.</p>
-    <p class="reveal">Walk one scenario through all five: an attacker finds a SQL injection flaw in a public web app hosted on EC2 behind an Application Load Balancer.</p>
+    <p class="reveal">A medieval castle was never protected by one wall. A moat slows an approach, an outer wall stops a charge, an inner keep survives a breach of the outer wall, and armed defenders are the last line if everything else fails — each layer assumes the one before it might not hold. Defense-in-depth is the same architecture applied to a cloud workload: no single layer is trusted to stop everything on its own.</p>
+    <p class="reveal">Meridian's patient portal is exactly the kind of target this section is built around — public-facing, handling sensitive data, and one of the first things an attacker will try. Edge, network, compute, application, and data each assume the layers around them might fail. The exam never accepts "just use a WAF" or "just tighten IAM" as a complete answer, because real incidents rarely get stopped at the first layer they hit. They get stopped — or don't — layer by layer.</p>
+    <p class="reveal">Walk one scenario through all five: an attacker finds a SQL injection flaw in Meridian's public patient portal, hosted on EC2 behind an Application Load Balancer.</p>
   </div>
 </section>
 
@@ -282,10 +323,22 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
   <div class="scene-inner">
     <div class="eyebrow">Scene 04 — Why One Account Doesn't Scale</div>
     <h2 class="kinetic">AWS Organizations, the Real Mechanics</h2>
+    <p class="reveal">A hospital doesn't run its pharmacy, its billing office, and its research lab out of one shared room with one shared key. Different sensitivity, different access needs, different consequences if something goes wrong — so the building gets divided into wings, each with its own access controls. AWS accounts are Meridian's wings.</p>
     <p class="reveal">AWS Organizations gives you a <strong>management account</strong> (formerly called the "master" or "payer" account) and any number of <strong>member accounts</strong> underneath it. The management account can create and close member accounts, consolidate billing, and apply organization-wide policies — but it should almost never run actual workloads itself, because it's the single most sensitive account in the whole structure; if it's compromised, everything beneath it is at risk. This is a genuinely common exam trap: people assume the management account is just "the admin account" and deploy things into it out of convenience.</p>
     <p class="reveal">Why does "one big account" fail once a company is real-sized? Four concrete failure modes, each with a face:</p>
     <div class="stagger" id="orgFailureModes" style="display:flex; flex-direction:column; gap:12px; margin:20px 0;"></div>
     <p class="reveal">This module is only planting the seed here. Module 3 goes deep on Service Control Policies (SCPs) and Resource Control Policies (RCPs) — the actual guardrail mechanisms Organizations enables. Module 12 covers multi-account governance operationally: how you structure, monitor, and enforce policy across dozens or hundreds of accounts at once. What you need from this module is simpler: understand <em>why</em> the boundary exists before you learn <em>how</em> to enforce it.</p>
+    <div class="card reveal" style="margin-top:20px; border-color:var(--green);">
+      <p style="margin-bottom:0;"><strong style="color:var(--green);">Takeaway:</strong> account boundaries aren't organizational bureaucracy — they're a security control, containing blast radius the same way a firewall or an IAM policy does.</p>
+    </div>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--amber);">
+      <h3 style="color:var(--amber); font-size:1rem; margin-bottom:10px;">Common mistake</h3>
+      <p style="margin-bottom:0;">Deploying a workload — even a small internal tool — directly into the management account "just for now." There is rarely a "later" cleanup; the account accumulates workloads and standing access it was never designed to hold, and its blast radius grows quietly until an incident makes the mistake visible.</p>
+    </div>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--accent);">
+      <h3 style="color:var(--accent); font-size:1rem; margin-bottom:10px;">Exam angle</h3>
+      <p style="margin-bottom:0;">If a scenario mentions the management/payer account being used to host application workloads, that's very likely the flaw the question wants you to identify — regardless of what else the scenario describes.</p>
+    </div>
   </div>
 </section>
 
@@ -293,8 +346,45 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
   <div class="scene-inner">
     <div class="eyebrow">Scene 05 — Landing Zone, Conceptually</div>
     <h2 class="kinetic">More Than "Has Multiple Accounts"</h2>
+    <p class="reveal">A new hospital wing isn't safe to open just because it has walls. It needs the same fire suppression, the same badge-access system, the same emergency protocols as every other wing — built in before day one, not bolted on after an incident. A landing zone is that built-in baseline for AWS accounts.</p>
     <p class="reveal">A landing zone is not a synonym for "we use AWS Organizations." It's a standardized, guardrail-enforced <em>baseline</em> that every new account is born into — automatically, not by someone remembering to configure it by hand. Three things a real landing zone standardizes: <strong>account vending</strong> (new accounts come from a repeatable template, not an ad-hoc console click-through), <strong>baseline guardrails</strong> (SCPs, mandatory logging, mandatory encryption defaults applied the moment an account exists, not added later if someone remembers), and <strong>centralized logging</strong> (every account's CloudTrail and Config data flows to a dedicated, access-restricted logging account from day one).</p>
+    <div class="card reveal tilt" style="margin:20px 0; padding:32px;">
+      <div style="text-align:center; margin-bottom:22px;">
+        <div style="display:inline-block; padding:12px 22px; border:1px solid var(--accent); border-radius:10px; background:var(--accent-dim); color:var(--accent); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Management Account</div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap;">
+        <div style="border:1px dashed var(--line); border-radius:12px; padding:14px; text-align:center; min-width:120px;"><span class="mono" style="font-size:0.7rem; color:var(--text-dim);">Log Archive</span></div>
+        <div style="border:1px dashed var(--line); border-radius:12px; padding:14px; text-align:center; min-width:120px;"><span class="mono" style="font-size:0.7rem; color:var(--text-dim);">Security Tooling</span></div>
+        <div style="border:1px solid var(--c-gov); border-radius:12px; padding:14px; text-align:center; min-width:120px; background:var(--c-gov-dim);"><span class="mono" style="font-size:0.7rem; color:var(--c-gov);">Prod (Meridian App)</span></div>
+        <div style="border:1px solid var(--c-gov); border-radius:12px; padding:14px; text-align:center; min-width:120px; background:var(--c-gov-dim);"><span class="mono" style="font-size:0.7rem; color:var(--c-gov);">Staging</span></div>
+      </div>
+      <p class="mono" style="text-align:center; margin:18px 0 0; font-size:0.72rem; color:var(--text-dim);">Every account below inherits the same guardrails and logging baseline automatically — that inheritance is the landing zone.</p>
+    </div>
     <p class="reveal">The distinction that matters for the exam: an organization can have a dozen AWS accounts and zero landing zone — accounts created manually, each with different logging setups, different baseline permissions, inconsistent guardrails. That's "multiple accounts" without the standardization that makes multi-account actually safer. AWS Control Tower is the service that operationalizes landing zone concepts, but the deep mechanics of Control Tower, account factory, and guardrail enforcement are Module 12's job — here, just recognize what a landing zone is <em>for</em>.</p>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--green);">
+      <p style="margin-bottom:0;"><strong style="color:var(--green);">Takeaway:</strong> account count is not the same as security maturity — standardized, automatic guardrails are what actually make a multi-account structure safer than a single account.</p>
+    </div>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--amber);">
+      <h3 style="color:var(--amber); font-size:1rem; margin-bottom:10px;">Common mistake</h3>
+      <p style="margin-bottom:0;">Declaring victory after splitting into multiple accounts, without standardizing what each new account gets by default. Six months later, an audit finds wildly inconsistent baselines — some accounts logged, some not; some with default-deny guardrails, most without.</p>
+    </div>
+    <div class="card reveal" style="margin-top:16px; border-color:var(--accent);">
+      <h3 style="color:var(--accent); font-size:1rem; margin-bottom:10px;">Exam angle</h3>
+      <p style="margin-bottom:0;">If a question describes an organization with many accounts but inconsistent logging or guardrails across them, the gap isn't "not enough accounts" — it's the missing landing zone standardization. Don't recommend "add more accounts" as the fix; recommend standardizing what already exists.</p>
+    </div>
+  </div>
+</section>
+
+<section class="scene" id="scene-mindmap">
+  <div class="ambient-blob" style="width:420px; height:420px; top:0; right:-8%; background:var(--c-data);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Interactive Mind Map</div>
+    <h2 class="kinetic">How the Five Ideas Connect</h2>
+    <p class="reveal">These five topics aren't independent — they reinforce each other. Click any node to see how it connects to the others.</p>
+    <div class="card reveal tilt" style="padding:32px;">
+      <div id="mindMapNodes" style="display:flex; flex-wrap:wrap; justify-content:center; gap:16px;"></div>
+      <div id="mindMapDetail" style="margin-top:24px; min-height:60px; border-top:1px solid var(--line); padding-top:18px; display:none;"></div>
+    </div>
   </div>
 </section>
 
@@ -344,10 +434,21 @@ html[data-theme="light"] .btn:hover{ color:#fff; }
   </div>
 </section>
 
+<section class="scene" id="scene-resources">
+  <div class="ambient-blob" style="width:400px; height:400px; bottom:0; right:-8%; background:var(--c-detect);"></div>
+  <div class="scene-inner">
+    <div class="eyebrow">Go Deeper</div>
+    <h2 class="kinetic">Resources Worth Your Time</h2>
+    <p class="reveal">Not required reading, but genuinely useful if any of this module's topics need more depth than a 90-minute module can give.</p>
+    <div class="stagger" id="resourceGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:14px;"></div>
+  </div>
+</section>
+
 <section class="title-card" id="scene-closing">
   <div class="scanbeam"></div>
   <h2 class="tc-kinetic" data-text="NOW YOU KNOW WHAT'S YOURS."></h2>
   <p>Shared responsibility and defense-in-depth aren't standalone trivia — they're the reasoning you'll lean on the moment Module 2 asks you to design an IAM policy. You can't decide the right level of access until you know exactly what you're on the hook for protecting. That's next: <strong style="color:var(--card-text);">least privilege</strong>, the single biggest idea in this entire exam, starting from first principles.</p>
+  <p style="max-width:600px; margin:18px auto 0; color:#9AA4C0;">Meridian's foundation is set: the team knows what's theirs to patch, their portal has layered defenses instead of one, and their accounts are structured instead of sprawling. The next decision on their list is exactly Module 2's opening question — who gets access to what, and how little can that access actually be?</p>
   <div style="display:flex; gap:14px; margin-top:34px; flex-wrap:wrap; justify-content:center;">
     <a href="module-00-orientation.html" class="btn" style="text-decoration:none;">&larr; Module 00 — Orientation</a>
     <a href="module-02-iam-core.html" class="btn" style="text-decoration:none;">Module 02 — IAM Core &rarr;</a>
@@ -639,14 +740,21 @@ faqItems.forEach((item, i) => {
   faqListEl.appendChild(wrap);
 });
 
-// ---- Side rail scene navigator (wired last, once all scene IDs exist) ----
+// ---- Side rail scene navigator + Left TOC drawer (wired last, once all scene IDs exist) ----
 const railSceneIds = [
   'hero','scene-shared-responsibility','scene-sr-scenario','scene-sr-diagram','scene-sr-table',
   'scene-well-architected','scene-did-title','scene-defense-in-depth','scene-did-diagram',
-  'scene-organizations','scene-landing-zone','scene-wr-title','scene-whos-responsible',
-  'scene-trap-gallery','scene-mock-exam','scene-faq','scene-closing'
+  'scene-organizations','scene-landing-zone','scene-mindmap','scene-wr-title','scene-whos-responsible',
+  'scene-trap-gallery','scene-mock-exam','scene-faq','scene-resources','scene-closing'
+];
+const railSceneLabels = [
+  'Opening Bridge','Shared Responsibility Model','Production Scenario: The Migration','Interactive: The Line, Five Services',
+  'Patching Responsibility Reference','Well-Architected Security Pillar','Defense-in-Depth: Title Card','Defense-in-Depth Concept',
+  'Interactive: Trace the Attack','AWS Organizations Basics','Landing Zone Orientation','Interactive Mind Map','Who\u2019s Responsible: Title Card',
+  'Who\u2019s Responsible Exercise (15)','Production Trap Gallery','Mock Exam Knowledge Check','FAQ','Resources','Closing Bridge'
 ];
 const railEl = document.getElementById('railNav');
+const tocListEl = document.getElementById('tocList');
 const railScenes = railSceneIds.map(id => document.getElementById(id)).filter(Boolean);
 railScenes.forEach((sec, i) => {
   const dot = document.createElement('button');
@@ -654,6 +762,12 @@ railScenes.forEach((sec, i) => {
   dot.setAttribute('aria-label', 'Jump to section ' + (i + 1));
   dot.addEventListener('click', () => sec.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }));
   railEl.appendChild(dot);
+
+  const tocBtn = document.createElement('button');
+  tocBtn.className = 'toc-item';
+  tocBtn.textContent = railSceneLabels[i] || sec.id;
+  tocBtn.addEventListener('click', () => { sec.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' }); closeTocDrawer(); });
+  tocListEl.appendChild(tocBtn);
 });
 const railIo = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
@@ -661,11 +775,25 @@ const railIo = new IntersectionObserver((entries) => {
     if (idx === -1) return;
     if (entry.isIntersecting) {
       document.querySelectorAll('.rail-dot').forEach(d => d.classList.remove('active'));
+      document.querySelectorAll('.toc-item').forEach(d => d.classList.remove('active'));
       railEl.children[idx] && railEl.children[idx].classList.add('active');
+      tocListEl.children[idx] && tocListEl.children[idx].classList.add('active');
     }
   });
 }, { threshold: 0.5 });
 railScenes.forEach(sec => railIo.observe(sec));
+
+// ---- Left TOC drawer open/close (reuses the same sliding-drawer mechanic, mirrored to the left edge) ----
+const tocOverlay = document.getElementById('tocOverlay');
+const tocDrawer = document.getElementById('tocDrawer');
+const tocToggleBtn = document.getElementById('tocToggle');
+const tocCloseBtnEl = document.getElementById('tocCloseBtn');
+function openTocDrawer(){ tocOverlay.classList.add('open'); tocDrawer.classList.add('open'); tocToggleBtn.setAttribute('aria-expanded','true'); }
+function closeTocDrawer(){ tocOverlay.classList.remove('open'); tocDrawer.classList.remove('open'); tocToggleBtn.setAttribute('aria-expanded','false'); }
+tocToggleBtn.addEventListener('click', () => { tocDrawer.classList.contains('open') ? closeTocDrawer() : openTocDrawer(); });
+tocOverlay.addEventListener('click', closeTocDrawer);
+tocCloseBtnEl.addEventListener('click', closeTocDrawer);
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeTocDrawer(); });
 
 // ---- Tilt-on-hover (respects reduced motion) ----
 if (!reduceMotion){
@@ -679,6 +807,57 @@ if (!reduceMotion){
     card.addEventListener('mouseleave', () => { card.style.transform = 'perspective(600px) rotateX(0) rotateY(0)'; });
   });
 }
+
+// ---- Bonus: Interactive mind map connecting the module's five core ideas ----
+const mindMapData = [
+  { id:'sr', label:'Shared Responsibility', color:'var(--accent)', detail:'Determines what you\u2019re actually on the hook to protect. That scope is exactly what defense-in-depth layers around, exactly what a compromised account puts at risk, and exactly what a landing zone\u2019s guardrails enforce automatically.' },
+  { id:'wa', label:'Well-Architected', color:'var(--c-gov)', detail:'The seven principles are the reasoning behind every other topic here — "apply security at all layers" is defense-in-depth by another name, and "keep people away from data" is why account boundaries and least-standing-access matter.' },
+  { id:'did', label:'Defense-in-Depth', color:'var(--c-ir)', detail:'Only works if you first know which layer is yours (shared responsibility) and is itself one of the seven Well-Architected principles — "apply security at all layers" — applied concretely.' },
+  { id:'org', label:'Organizations', color:'var(--c-infra)', detail:'The account boundary is itself a defense-in-depth layer — a structural one — and it\u2019s meaningless without the landing zone standardization that makes every account safe by default.' },
+  { id:'lz', label:'Landing Zone', color:'var(--c-data)', detail:'Operationalizes Well-Architected\u2019s "automate security best practices" principle at the account level — the guardrails from shared responsibility and defense-in-depth get baked into every account\u2019s birth, not bolted on later.' }
+];
+const mindMapNodesEl = document.getElementById('mindMapNodes');
+const mindMapDetailEl = document.getElementById('mindMapDetail');
+mindMapData.forEach(node => {
+  const btn = document.createElement('button');
+  btn.className = 'btn';
+  btn.style.borderColor = node.color; btn.style.color = node.color; btn.style.background = 'transparent';
+  btn.textContent = node.label;
+  btn.setAttribute('tabindex','0'); btn.setAttribute('role','button'); btn.setAttribute('aria-label', 'Show connections for ' + node.label);
+  function reveal(){
+    mindMapDetailEl.style.display = 'block';
+    mindMapDetailEl.innerHTML = `<span class="mono" style="color:${node.color}; font-size:0.75rem;">${node.label.toUpperCase()} CONNECTS TO —</span><p style="margin-top:8px; margin-bottom:0;">${node.detail}</p>`;
+    document.querySelectorAll('#mindMapNodes .btn').forEach(b => { b.style.background = 'transparent'; });
+    btn.style.background = node.color; btn.style.color = '#fff';
+  }
+  btn.addEventListener('click', reveal);
+  btn.addEventListener('keydown', (e) => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); reveal(); } });
+  mindMapNodesEl.appendChild(btn);
+});
+
+// ---- Bonus: Resource cards (Free/Paid tagged) ----
+const resourceItems = [
+  { title:'AWS Shared Responsibility Model', tag:'Free', publisher:'AWS', url:'https://aws.amazon.com/compliance/shared-responsibility-model/', note:'The canonical source diagram — worth reading once directly from AWS, not just secondhand.' },
+  { title:'AWS Well-Architected Framework — Security Pillar', tag:'Free', publisher:'AWS', url:'https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html', note:'The full whitepaper behind the six... seven principles covered in this module.' },
+  { title:'AWS Organizations User Guide', tag:'Free', publisher:'AWS Documentation', url:'https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html', note:'Reference for the mechanics this module only introduced conceptually.' },
+  { title:'AWS Control Tower Documentation', tag:'Free', publisher:'AWS Documentation', url:'https://docs.aws.amazon.com/controltower/latest/userguide/what-is-control-tower.html', note:'How AWS operationalizes the landing zone concept — deep dive is Module 12.' },
+  { title:'AWS Security Reference Architecture (SRA)', tag:'Free', publisher:'AWS', url:'https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/welcome.html', note:'A prescriptive, real reference architecture that ties multi-account, guardrails, and defense-in-depth together.' },
+  { title:'AWS Certified Security – Specialty Exam Guide', tag:'Free', publisher:'AWS', url:'https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/certification/approved/pdfs/docs-security-spec/AWS-Certified-Security-Specialty_Exam-Guide-03.pdf', note:'The official domain weightings and task statements this whole course is built against.' },
+  { title:'AWS Skill Builder — Security Learning Plans', tag:'Free / Paid tiers', publisher:'AWS Training', url:'https://explore.skillbuilder.aws/', note:'Official AWS training platform; core content is free, some labs and exam-prep courses are subscription-gated.' },
+  { title:'A Cloud Guru — AWS Security Specialty Path', tag:'Paid', publisher:'Pluralsight / A Cloud Guru', url:'https://www.pluralsight.com/cloud-guru', note:'Video-first alternative if you want a second explanation style alongside this course.' },
+  { title:'Tutorials Dojo — SCS-C03 Practice Exams', tag:'Paid', publisher:'Tutorials Dojo', url:'https://portal.tutorialsdojo.com/courses/aws-certified-security-specialty-practice-exams-scs-c03/', note:'140-question practice bank with detailed explanations for this specific exam version; useful once you\u2019ve covered all 16 modules.' },
+  { title:'AWS Whitepapers & Guides Library', tag:'Free', publisher:'AWS', url:'https://aws.amazon.com/whitepapers/', note:'Browse by topic — several modules ahead (encryption, IR, governance) have dedicated whitepapers here.' }
+];
+const resourceGridEl = document.getElementById('resourceGrid');
+resourceItems.forEach(r => {
+  const tagColor = r.tag === 'Free' ? 'var(--green)' : (r.tag === 'Paid' ? 'var(--amber)' : 'var(--accent)');
+  const card = document.createElement('a');
+  card.href = r.url; card.target = '_blank'; card.rel = 'noopener noreferrer';
+  card.className = 'card tilt';
+  card.style.cssText += 'text-decoration:none; display:block; color:inherit;';
+  card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;"><h3 style="font-size:0.95rem; margin-bottom:6px;">${r.title}</h3><span class="mono" style="font-size:0.65rem; color:${tagColor}; border:1px solid ${tagColor}; padding:2px 8px; border-radius:20px; white-space:nowrap;">${r.tag.toUpperCase()}</span></div><p style="font-size:0.82rem; margin-bottom:4px;">${r.note}</p><span class="mono" style="font-size:0.68rem; color:var(--text-dim);">${r.publisher}</span>`;
+  resourceGridEl.appendChild(card);
+});
 
 // ---- Wire scroll reveal for all dynamically-injected content ----
 wireReveal();
