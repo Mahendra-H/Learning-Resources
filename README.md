@@ -90,57 +90,9 @@ If you want a simple progression, this is a practical order to follow:
 
 ## Visual learning map
 
-This diagram gives a more polished quick view of the repository structure and how the main learning paths connect.
+This diagram now renders as a polished SVG image so it displays reliably in the README.
 
-```mermaid
-flowchart TB
-    Start(["🚀 Start Here<br/>Choose your route"])
-
-    subgraph Foundation["Foundation"]
-        A["🔐 IAM Basics<br/>Auth & identity fundamentals"]
-        B["🧭 Federation & Architecture<br/>OAuth, SAML, Entra ID"]
-    end
-
-    subgraph Specialization["Specialization"]
-        C["🤖 AI Foundations<br/>LLMs, RAG, serving"]
-        D["☁️ Cloud & Automation<br/>AWS, GitHub Actions, Terraform"]
-        E["🛡️ Security & Governance<br/>CISSP, cyber org"]
-    end
-
-    subgraph Applied["Applied & Advanced"]
-        F["🧠 Agentic AI & MCP"]
-        G["🏗️ Architect Pathways"]
-        H["📦 Applied Projects<br/>PoCs, portfolios, demos"]
-    end
-
-    Start --> A
-    A --> B
-    B --> C
-    B --> D
-    B --> E
-    C --> F
-    B --> G
-    C --> H
-    D --> H
-    E --> H
-    F --> H
-    G --> H
-
-    classDef start fill:#111827,stroke:#F8FAFC,color:#F8FAFC,stroke-width:2px;
-    classDef foundation fill:#E0F2FE,stroke:#0284C7,color:#083344,stroke-width:1.6px;
-    classDef specialization fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.6px;
-    classDef applied fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:1.6px;
-
-    class Start start;
-    class A,B foundation;
-    class C,D,E specialization;
-    class F,G,H applied;
-
-    style Foundation fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
-    style Specialization fill:#FFF7ED,stroke:#FDBA74,stroke-width:1px;
-    style Applied fill:#F0FDF4,stroke:#86EFAC,stroke-width:1px;
-    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11 stroke:#64748B,stroke-width:2px;
-```
+![Learning Resource Map](learning-map.svg)
 
 ## Strong starting points
 
