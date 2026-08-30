@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Identity Troubleshooter AI — Architecture Series</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:        #000000;
+      --sidebar-bg:   #0C0C0C;
+      --sidebar-sep:  #1D1D1D;
+      --content-bg:   #F6F6F6;
+      --white:        #FFFFFF;
+      --border:       #E4E4E4;
+      --muted:        #7A7A7A;
+      --sidebar-w:    272px;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+              "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --mono: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      background: var(--sidebar-bg);
+      color: var(--white);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Shell ─────────────────────────────────── */
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Sidebar ───────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-sep);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 30px 22px 22px;
+      border-bottom: 1px solid var(--sidebar-sep);
+      flex-shrink: 0;
+    }
+
+    .s-eyebrow {
+      font-family: var(--mono);
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .s-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      line-height: 1.45;
+    }
+
+    .s-sub {
+      margin-top: 7px;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: #707070;
+      letter-spacing: 0.04em;
+    }
+
+    /* Nav list */
+    .nav-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+      scrollbar-width: thin;
+      scrollbar-color: #484848 transparent;
+    }
+    .nav-list::-webkit-scrollbar { width: 3px; }
+    .nav-list::-webkit-scrollbar-thumb { background: #484848; border-radius: 2px; }
+
+    .nav-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 10px 22px 10px 19px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: background 0.12s ease;
+    }
+    .nav-item:hover { background: #171717; }
+
+    /* Active state: inverted */
+    .nav-item.active {
+      background: var(--white);
+      border-left-color: var(--black);
+    }
+    .nav-item.active .nav-num  { color: #999; }
+    .nav-item.active .nav-tag  { color: #888; }
+    .nav-item.active .nav-name { color: var(--black); font-weight: 600; }
+
+    .nav-num {
+      font-family: var(--mono);
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #686868;
+      padding-top: 2px;
+      min-width: 18px;
+      flex-shrink: 0;
+    }
+
+    .nav-text { display: flex; flex-direction: column; gap: 2px; }
+
+    .nav-tag {
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #686868;
+    }
+
+    .nav-name {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #B0B0B0;
+      letter-spacing: -0.01em;
+      line-height: 1.35;
+    }
+
+    /* Footer */
+    .sidebar-footer {
+      border-top: 1px solid var(--sidebar-sep);
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .footer-label {
+      font-family: var(--mono);
+      font-size: 8px;
+      color: #606060;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .footer-pip {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #484848;
+    }
+
+    /* ── Content Area ──────────────────────────── */
+    .content {
+      flex: 1;
+      background: var(--content-bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top bar */
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .tb-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .tb-rule {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+    }
+
+    .tb-tag {
+      font-family: var(--mono);
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .tb-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--black);
+    }
+
+    .tb-series {
+      font-family: var(--mono);
+      font-size: 8.5px;
+      color: #C0C0C0;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* Panels wrapper */
+    #panels { flex: 1; overflow: hidden; position: relative; }
+
+    /* Each panel */
+    .panel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: 36px 40px 36px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #D0D0D0 transparent;
+    }
+    .panel::-webkit-scrollbar { width: 4px; }
+    .panel::-webkit-scrollbar-thumb { background: #D0D0D0; border-radius: 2px; }
+    .panel.active { display: flex; }
+
+    /* Ghost number — signature watermark */
+    .ghost {
+      position: absolute;
+      top: 16px;
+      right: 32px;
+      font-family: var(--mono);
+      font-size: 128px;
+      font-weight: 800;
+      color: rgba(0,0,0,0.04);
+      line-height: 1;
+      letter-spacing: -0.06em;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+    }
+
+    /* One-liner */
+    .oneliner {
+      position: relative;
+      z-index: 1;
+      font-size: 13px;
+      font-weight: 400;
+      color: #555;
+      line-height: 1.7;
+      letter-spacing: -0.005em;
+      max-width: 700px;
+      border-left: 2px solid #C8C8C8;
+      padding-left: 16px;
+      margin-bottom: 28px;
+      flex-shrink: 0;
+    }
+
+    /* Image frame */
+    .img-frame {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+      box-shadow:
+        0 1px 3px rgba(0,0,0,0.05),
+        0 6px 24px rgba(0,0,0,0.05);
+      cursor: grab;
+      user-select: none;
+    }
+    .img-frame.dragging { cursor: grabbing; }
+
+    /* Zoomable / pannable canvas inside frame */
+    .img-canvas {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      transform-origin: center center;
+      will-change: transform;
+      transition: transform 0.12s ease;
+    }
+    .img-canvas.no-tr { transition: none; }
+
+    .img-canvas img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    /* ── Zoom toolbar ─────────────────────────── */
+    .zoom-bar {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      background: rgba(10,10,10,0.84);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 7px;
+      padding: 4px 6px;
+      z-index: 20;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.3);
+      gap: 1px;
+    }
+
+    .zoom-btn {
+      background: none;
+      border: none;
+      color: #ffffff;
+      width: 28px;
+      height: 28px;
+      font-size: 17px;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s ease;
+      font-family: var(--font);
+      flex-shrink: 0;
+    }
+    .zoom-btn:hover  { background: rgba(255,255,255,0.13); }
+    .zoom-btn:active { background: rgba(255,255,255,0.22); }
+    .zoom-btn.reset-btn {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      width: auto;
+      padding: 0 8px;
+      color: #aaaaaa;
+    }
+    .zoom-btn.reset-btn:hover { color: #ffffff; }
+
+    .zoom-level {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.04em;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .zoom-sep {
+      width: 1px;
+      height: 16px;
+      background: rgba(255,255,255,0.14);
+      margin: 0 5px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <p class="s-eyebrow">ITS-AI Architecture Series</p>
+      <h1 class="s-title">Identity Troubleshooter<br>AI</h1>
+      <p class="s-sub">15 Diagrams · Enterprise AI</p>
+    </div>
+
+    <div class="nav-list" id="navList"></div>
+
+    <div class="sidebar-footer">
+      <span class="footer-label">ITS-AI · Stage 2</span>
+      <div class="footer-pip"></div>
+    </div>
+  </nav>
+
+  <!-- ── CONTENT ── -->
+  <main class="content">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="tb-num"  id="tb-num">00</span>
+        <div class="tb-rule"></div>
+        <span class="tb-tag"  id="tb-tag">The Map</span>
+        <div class="tb-rule"></div>
+        <span class="tb-title" id="tb-title">Architecture Series Index</span>
+      </div>
+      <span class="tb-series">ITS-AI Series &middot; 15 Diagrams</span>
+    </div>
+
+    <div id="panels"></div>
+
+  </main>
+</div>
+
+<script>
+  const diagrams = [
+    {
+      num: "00",
+      tag: "The Map",
+      title: "Architecture Series Index",
+      file: "ITS-AI-00_Architecture_Series_Index.png",
+      oneliner: "Master index showing how all 14 architecture sections fit together as a coherent, end-to-end enterprise AI framework."
+    },
+    {
+      num: "01",
+      tag: "The Why",
+      title: "Business Vision",
+      file: "ITS-AI-01_Business_Vision.png",
+      oneliner: "Defines the business problem, value proposition, target users, and intended organisational impact of the AI Troubleshooter."
+    },
+    {
+      num: "02",
+      tag: "The Blueprint",
+      title: "End-to-End Architecture",
+      file: "ITS-AI-02_End-to-End_Architecture.png",
+      oneliner: "Shows the complete application, security, AI, configuration, and response architecture from end to end."
+    },
+    {
+      num: "03",
+      tag: "The Context Engine",
+      title: "Troubleshooting Context",
+      file: "ITS-AI-03_Troubleshooting_Context.png",
+      oneliner: "Explains what troubleshooting data is collected and how the AI receives meaningful, structured system context."
+    },
+    {
+      num: "04",
+      tag: "The Secure Pipeline",
+      title: "Secure AI Pipeline",
+      file: "ITS-AI-04_Secure_AI_Pipeline.png",
+      oneliner: "Shows the complete controlled flow from request validation through AI analysis, diagnosis, and audit logging."
+    },
+    {
+      num: "05",
+      tag: "The Data Shield",
+      title: "Data Security",
+      file: "ITS-AI-05_Data_Security.png",
+      oneliner: "Explains how data is validated, minimised, sanitised, masked, and protected before it ever reaches the AI."
+    },
+    {
+      num: "06",
+      tag: "The AI Firewall",
+      title: "Prompt Injection Defense",
+      file: "ITS-AI-06_Prompt_Injection_Defense.png",
+      oneliner: "Shows how hostile or manipulative input is detected, isolated, rejected, and prevented from controlling the AI."
+    },
+    {
+      num: "07",
+      tag: "The Control Prompt",
+      title: "Prompt Engineering",
+      file: "ITS-AI-07_Prompt_Engineering.png",
+      oneliner: "Explains how a structured, policy-driven prompt controls exactly how the LLM analyses troubleshooting evidence."
+    },
+    {
+      num: "08",
+      tag: "The AI Gateway",
+      title: "LLM Interaction",
+      file: "ITS-AI-08_LLM_Interaction.png",
+      oneliner: "Shows the secured, governed interaction between the application layer and the approved enterprise LLM."
+    },
+    {
+      num: "09",
+      tag: "The AI Guardrail",
+      title: "Output Validation",
+      file: "ITS-AI-09_Output_Validation.png",
+      oneliner: "Explains how structured output, policy rules, confidence scoring, and safety checks prevent unreliable AI results reaching engineers."
+    },
+    {
+      num: "10",
+      tag: "The Engineer View",
+      title: "AI Diagnosis",
+      file: "ITS-AI-10_AI_Diagnosis.png",
+      oneliner: "Shows the final actionable diagnosis presented to the engineer with evidence, confidence, findings, and recommended next steps."
+    },
+    {
+      num: "11",
+      tag: "The Audit Trail",
+      title: "Security and Audit",
+      file: "ITS-AI-11_Security_and_Audit.png",
+      oneliner: "Maps cybersecurity controls, access protection, logging, traceability, monitoring, and accountability across the AI lifecycle."
+    },
+    {
+      num: "12",
+      tag: "The Attack Map",
+      title: "Red-Team Map",
+      file: "ITS-AI-12_Red-Team_Map.png",
+      oneliner: "Maps realistic red-team attack scenarios to their impacts, defences, detection mechanisms, and residual risk."
+    },
+    {
+      num: "13",
+      tag: "The Safety Net",
+      title: "Failure and Resilience",
+      file: "ITS-AI-13_Failure_and_Resilience.png",
+      oneliner: "Shows how the platform detects AI failures, falls back safely, recovers, and continues operating without total AI dependency."
+    },
+    {
+      num: "14",
+      tag: "The Launch Plan",
+      title: "V1 Roadmap and Scope",
+      file: "ITS-AI-14_V1_Roadmap_and_Scope.png",
+      oneliner: "Defines the V1 scope, phased implementation roadmap, success measures, exclusions, and future expansion path."
+    }
+  ];
+
+  const navList  = document.getElementById('navList');
+  const panelsEl = document.getElementById('panels');
+  const tbNum    = document.getElementById('tb-num');
+  const tbTag    = document.getElementById('tb-tag');
+  const tbTitle  = document.getElementById('tb-title');
+
+  // ── Per-diagram zoom/pan state ────────────────
+  const MIN_SCALE = 0.25;
+  const MAX_SCALE = 4.0;
+  const STEP      = 0.25;
+
+  const states = diagrams.map(() => ({ scale: 1, tx: 0, ty: 0 }));
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function applyTransform(canvas, levelEl, state) {
+    canvas.style.transform =
+      `translate(${state.tx}px, ${state.ty}px) scale(${state.scale})`;
+    levelEl.textContent = Math.round(state.scale * 100) + '%';
+  }
+
+  // ── Build nav + panels ────────────────────────
+  diagrams.forEach((d, i) => {
+
+    // Nav item
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (i === 0 ? ' active' : '');
+    item.innerHTML = `
+      <span class="nav-num">${d.num}</span>
+      <div class="nav-text">
+        <span class="nav-tag">${d.tag}</span>
+        <span class="nav-name">${d.title}</span>
+      </div>`;
+    item.addEventListener('click', () => activate(i));
+    navList.appendChild(item);
+
+    // Content panel
+    const panel = document.createElement('div');
+    panel.className = 'panel' + (i === 0 ? ' active' : '');
+    panel.innerHTML = `
+      <div class="ghost">${d.num}</div>
+      <p class="oneliner">${d.oneliner}</p>
+      <div class="img-frame" data-idx="${i}">
+        <div class="img-canvas">
+          <img src="${d.file}" alt="${d.title}" loading="lazy" draggable="false" />
+        </div>
+        <div class="zoom-bar">
+          <button class="zoom-btn zoom-out" title="Zoom out (scroll down)">&#x2212;</button>
+          <span class="zoom-level">100%</span>
+          <button class="zoom-btn zoom-in"  title="Zoom in (scroll up)">&#x2B;</button>
+          <div class="zoom-sep"></div>
+          <button class="zoom-btn reset-btn" title="Reset zoom &amp; position">Reset</button>
+        </div>
+      </div>`;
+    panelsEl.appendChild(panel);
+
+    // Wire up this panel's controls
+    const frame   = panel.querySelector('.img-frame');
+    const canvas  = panel.querySelector('.img-canvas');
+    const levelEl = panel.querySelector('.zoom-level');
+    const state   = states[i];
+
+    // Button: zoom in
+    panel.querySelector('.zoom-in').addEventListener('click', e => {
+      e.stopPropagation();
+      state.scale = clamp(state.scale + STEP, MIN_SCALE, MAX_SCALE);
+      canvas.classList.remove('no-tr');
+      applyTransform(canvas, levelEl, state);
+    });
+
+    // Button: zoom out
+    panel.querySelector('.zoom-out').addEventListener('click', e => {
+      e.stopPropagation();
+      state.scale = clamp(state.scale - STEP, MIN_SCALE, MAX_SCALE);
+      canvas.classList.remove('no-tr');
+      applyTransform(canvas, levelEl, state);
+    });
+
+    // Button: reset
+    panel.querySelector('.reset-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      state.scale = 1; state.tx = 0; state.ty = 0;
+      canvas.classList.remove('no-tr');
+      applyTransform(canvas, levelEl, state);
+    });
+
+    // Mouse wheel zoom
+    frame.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.12 : -0.12;
+      state.scale = clamp(state.scale + delta, MIN_SCALE, MAX_SCALE);
+      canvas.classList.add('no-tr');
+      applyTransform(canvas, levelEl, state);
+    }, { passive: false });
+
+    // Drag / pan
+    let dragging = false, startX = 0, startY = 0;
+
+    frame.addEventListener('mousedown', e => {
+      if (e.target.closest('.zoom-bar')) return; // ignore toolbar clicks
+      dragging = true;
+      startX = e.clientX - state.tx;
+      startY = e.clientY - state.ty;
+      frame.classList.add('dragging');
+      canvas.classList.add('no-tr');
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      state.tx = e.clientX - startX;
+      state.ty = e.clientY - startY;
+      applyTransform(canvas, levelEl, state);
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      frame.classList.remove('dragging');
+      canvas.classList.remove('no-tr');
+    });
+  });
+
+  // ── Activate panel ────────────────────────────
+  function activate(i) {
+    const d = diagrams[i];
+    tbNum.textContent   = d.num;
+    tbTag.textContent   = d.tag;
+    tbTitle.textContent = d.title;
+
+    document.querySelectorAll('.nav-item')
+      .forEach((el, j) => el.classList.toggle('active', j === i));
+    document.querySelectorAll('.panel')
+      .forEach((el, j) => el.classList.toggle('active', j === i));
+
+    navList.querySelectorAll('.nav-item')[i]
+      .scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // ── Keyboard navigation (arrows) ─────────────
+  document.addEventListener('keydown', e => {
+    // Don't steal arrow keys if a button is focused
+    if (e.target.closest('.zoom-bar')) return;
+    const active = [...document.querySelectorAll('.nav-item')]
+      .findIndex(el => el.classList.contains('active'));
+    if (e.key === 'ArrowDown' && active < diagrams.length - 1) activate(active + 1);
+    if (e.key === 'ArrowUp'   && active > 0)                   activate(active - 1);
+  });
+</script>
+</body>
+</html>
